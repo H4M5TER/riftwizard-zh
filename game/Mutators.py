@@ -38,7 +38,7 @@ class StackLimit(Mutator):
 	def __init__(self, stack_max):
 		Mutator.__init__(self)
 		self.stack_max = stack_max
-		self.description = "A maximum of %d of each consumable can be held at any one time" % stack_max
+		self.description = "消耗品最多同时持有 %d 个" % stack_max
 
 	def on_game_begin(self, game):
 		game.p1.stack_max = self.stack_max
@@ -48,7 +48,7 @@ class LairMultiplier(Mutator):
 	def __init__(self, mult):
 		Mutator.__init__(self)
 		self.mult = mult
-		self.description = "Levels contain %dx Monster Spawners" % self.mult
+		self.description = "每关有 %d 倍的刷怪笼" % self.mult
 
 	def on_levelgen_pre(self, levelgen):
 		levelgen.num_generators *= self.mult
@@ -58,7 +58,10 @@ class NumPortals(Mutator):
 	def __init__(self, num):
 		Mutator.__init__(self)
 		self.num = num
-		self.description = "All levels contain %d rifts" % self.num
+		if num < 3:
+			self.description = "每关只有 %d 个裂隙" % self.num
+		else:
+			self.description = "每关有 %d 个裂隙" % self.num
 
 	def on_levelgen_pre(self, levelgen):
 		levelgen.num_exits = self.num
@@ -69,7 +72,7 @@ class MonsterHPMult(Mutator):
 	def __init__(self, mult=2):
 		Mutator.__init__(self)
 		self.mult = mult
-		self.description = "All enemy units have %d%% HP" % (self.mult*100)
+		self.description = "所有敌人的血量是 %d%%" % (self.mult*100)
 		self.global_triggers[EventOnUnitPreAdded] = self.on_enemy_added
 
 	def on_enemy_added(self, evt):
@@ -96,7 +99,7 @@ class EnemyShields(Mutator):
 	def __init__(self, shields):
 		Mutator.__init__(self)
 		self.shields = shields
-		self.description = "All enemy units have %d extra SH" % self.shields
+		self.description = "敌人获得 %d 点护盾" % self.shields
 		self.global_triggers[EventOnUnitPreAdded] = self.on_enemy_added
 
 	def on_enemy_added(self, evt):
@@ -121,7 +124,7 @@ class EnemyBuff(Mutator):
 	def __init__(self, buff, exclude_named=None):
 		Mutator.__init__(self)
 		self.buff = buff
-		self.description = "All enemy units have %s" % buff().name
+		self.description = "敌人获得 %s" % buff().name
 		self.global_triggers[EventOnUnitAdded] = self.on_enemy_added
 		self.exclude_named = exclude_named
 
@@ -149,7 +152,7 @@ class RandomSkillRestriction(Mutator):
 	def __init__(self, chance=.5):
 		Mutator.__init__(self)		
 		self.chance = chance
-		self.description = "A random %d%% of the skillbook is removed" % (self.chance*100)
+		self.description = "%d%% 的能力被移除了" % (self.chance*100)
 
 	def on_generate_skills(self, skills):
 		
@@ -167,7 +170,7 @@ class RandomSpellRestriction(Mutator):
 	def __init__(self, chance=.5):
 		Mutator.__init__(self)		
 		self.chance = chance
-		self.description = "A random %d%% of the spellbook is removed" % (self.chance*100)
+		self.description = "%d%% 的法术被移除了" % (self.chance*100)
 
 	def on_generate_spells(self, spells):
 		
@@ -189,7 +192,7 @@ class SpellTagRestriction(Mutator):
 	def __init__(self, tag):
 		Mutator.__init__(self)
 		self.tag = tag
-		self.description = "Only %s spells" % self.tag.name
+		self.description = "仅限 %s 法术" % self.tag.name
 
 	def on_generate_spells(self, spells):
 		allowed = [s for s in spells if self.tag in s.tags]
@@ -203,7 +206,7 @@ class OnlySpell(Mutator):
 	def __init__(self, spellname):
 		Mutator.__init__(self)
 		self.spellname = spellname
-		self.description = "The only available spell is %s" % self.spellname
+		self.description = "唯一可用的法术是 %s" % self.spellname
 
 	def on_generate_spells(self, spells):
 		allowed = [s for s in spells if s.name == self.spellname]
@@ -216,7 +219,7 @@ class NoSkills(Mutator):
 
 	def __init__(self):
 		Mutator.__init__(self)
-		self.description = "Passive skills are unavailable"
+		self.description = "没有被动技能"
 
 	def on_generate_skills(self, skills):
 		skills.clear()
@@ -226,7 +229,7 @@ class SpawnWizards(Mutator):
 
 	def __init__(self):
 		Mutator.__init__(self)
-		self.description = "Each level beyond the first contains an extra enemy wizard"
+		self.description = "第二关开始多含有一个巫师敌人"
 
 	def on_levelgen_pre(self, levelgen):
 		if levelgen.difficulty == 1:
@@ -240,9 +243,9 @@ class SpPerLevel(Mutator):
 		Mutator.__init__(self)
 		self.num = num
 		if num < 3:
-			self.description = "Levels contain only %d SP orbs" % self.num
+			self.description = "每关只能捡到 %d 个技能点" % self.num
 		else:
-			self.description = "Levels contain %d SP orbs" % self.num
+			self.description = "每关能捡到 %d 个技能点" % self.num
 
 	def on_levelgen_pre(self, levelgen):
 		levelgen.num_xp = self.num
@@ -266,7 +269,7 @@ class ExtraElites(Mutator):
 	def __init__(self, num):
 		Mutator.__init__(self)
 		self.num = num
-		self.description = "Each level has %d extra random high level monsters" % self.num
+		self.description = "每关有额外 %d 个随机高级怪物" % self.num
 
 	def on_levelgen_pre(self, levelgen):
 		for i in range(self.num):
@@ -278,7 +281,7 @@ class SpellChargeMultiplier(Mutator):
 	def __init__(self, mult):
 		Mutator.__init__(self)
 		self.mult = mult
-		self.description = "Each spell has %d%% max charges" % (self.mult * 100)
+		self.description = "法术有额外 %d%% 的充能" % (self.mult * 100)
 
 	def on_generate_spells(self, spells):
 		for s in spells:
@@ -292,7 +295,7 @@ class ExtraSpawns(Mutator):
 		self.spawn = spawn
 		self.num_extra = num_extra
 		ex = spawn()
-		self.description = "Levels beyond the first contain %d extra %ss" % (self.num_extra, ex.name)
+		self.description = "第二关开始多含有 %d 个 %s" % (self.num_extra, ex.name)
 
 	def on_levelgen(self, levelgen):
 		if levelgen.difficulty == 1:
@@ -310,15 +313,15 @@ all_trials = [Trial(n, m) for n, m in [
 	("即兴表演", [RandomSpellRestriction(.85), RandomSkillRestriction(.7)]),
 	("兽群求生", [ExtraElites(6)]),
 	("巨魔拦路", [NumPortals(1), EnemyBuff(TrollRegenBuff)]),
-	("苦修法术", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
+	("咒术专精", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
 	("节俭巫师", [StackLimit(1), RandomSpellRestriction(.9)]),
 	("巫师军阀", [SpawnWizards(), LairMultiplier(2)]),
 	("谦卑部族", [SpPerLevel(2), SpellTagRestriction(Tags.Conjuration)]),
 	("巨人杀手", [MonsterHPMult(3)]),
 	("临危旅团", [EnemyBuff(lambda: DamageAuraBuff(1, Tags.Poison, 4)), EnemyShields(2)]),
 	("火焰狂欢", [MonsterHPMult(2), SpellTagRestriction(Tags.Fire)]),
-	("狼人成行", OnlySpell("Wolf")),
-	("猎吸血鬼", [EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"), SpellTagRestriction(Tags.Holy)]),
+	("与狼为伴", OnlySpell("Wolf")),
+	("吸血猎人", [EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"), SpellTagRestriction(Tags.Holy)]),
 ]]
 
 def get_weekly_seed():
