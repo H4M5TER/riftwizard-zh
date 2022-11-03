@@ -1,0 +1,3 @@
+game/*
+!game/*.py
+!game/requirements.txt
