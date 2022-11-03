@@ -17,11 +17,8 @@
 - [怪物 0/5365](Monsters.py) 和 [稀有怪物 0/3079](RareMonsters.py) 的名称、技能和属性的翻译。
 - [法术 1200/9054](Spells.py) 和 [能力 0/2360](Upgrades.py) 说明、升级说明的翻译。
 - 其他文件的翻译
-  - [主文件 ????/5000+](RiftWizard.py)
   - [祭祠 0/2109](Shrines.py)
   - [关卡 0/3498](Level.py)
-  - [变体规则 ??/500+](Mutators.py)
-  - [游戏 0/?](Game.py)
   - [NPCs 0/25](NPCs.py)
 - 最后再润色字体、大小和界面等。
 
