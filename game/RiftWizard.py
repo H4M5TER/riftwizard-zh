@@ -1093,18 +1093,12 @@ class PyGameView(object):
 				pass
 
 		pygame.font.init()
-		# self.font = pygame.font.SysFont("sylfaen", 20)
 		# 字体锚点
 		font_path = os.path.join("rl_data", "sarasa-mono-sc-bold.ttf")
 		self.font = pygame.font.Font(font_path, 16)
 		self.ascii_idle_font = pygame.font.Font(font_path, 16)
 		self.ascii_attack_font = pygame.font.Font(font_path, 16)
 		self.ascii_flinch_font = pygame.font.Font(font_path, 16)
-
-		# self.font.set_bold(True)
-		# self.ascii_idle_font.set_bold(True)
-		# self.ascii_attack_font.set_bold(True)
-		# self.ascii_flinch_font.set_bold(True)
 
 		self.frameno = 0
 
@@ -4272,7 +4266,7 @@ class PyGameView(object):
 		elif spell.range:
 			fmt = "射程 %d" % spell.get_stat('range')
 			if not spell.requires_los:
-				fmt += "（忽略视野）"
+				fmt += "（无需视线）"
 			self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 

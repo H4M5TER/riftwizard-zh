@@ -92,9 +92,9 @@ endings = ["乌托邦", "涅槃", "诸神黄昏"]
 frozen_desc = "[Frozen] 无法行动。受到 [fire] 或 [physical] 伤害时结束。"
 petrify_desc = ("[Petrified] 的单位无法行动。\n"
 				"[Petrified] 的单位获得 [100_ice:ice] 抗性。\n"
-				"[Petrified]  的单位获得 [100_lightning:lightning] 抗性。\n"
-				"[Petrified]  的单位获得 [75_physical:physical] 抗性。\n"
-				"[Petrified]  的单位获得 [75_fire:fire] 抗性。")
+				"[Petrified] 的单位获得 [100_lightning:lightning] 抗性。\n"
+				"[Petrified] 的单位获得 [75_physical:physical] 抗性。\n"
+				"[Petrified] 的单位获得 [75_fire:fire] 抗性。")
 glassify_desc = ("[Glassified] 的单位无法行动。\n"
 				"[Glassified] 的单位获得 [-100_physical:physical] 抗性。\n"
 				"[Glassified] 的单位获得 [100_ice:ice] 抗性。\n"

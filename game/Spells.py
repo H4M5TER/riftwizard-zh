@@ -16,7 +16,7 @@ class FlameTongue(Spell):
 
 		self.tags = [Tags.Fire, Tags.Sorcery]
 
-		self.description = "Deal fire damage in a beam"
+		self.description = "在一束范围内造成 [fire] 伤害。"
 
 		self.upgrades['range'] = (3, 1)
 		self.upgrades['damage'] = (5, 1)
@@ -66,7 +66,6 @@ class FireballSpell(Spell):
 		self.upgrades['ash'] = (1, 5, "Ash Ball", "火球术随机造成 [poison]、[dark] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。\n火球术致盲一回合。", "damage type")
 
 	def get_description(self):
-		# return "Deals [{damage}:damage] [fire] damage to units in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
 		return "对 [{radius}格:radius] 范围内的所有单位造成 [{damage}:damage] 点 [fire] 伤害。".format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -124,14 +123,16 @@ class MeteorShower(Spell):
 
 		self.upgrades['num_targets'] = (3, 4)
 		self.upgrades['stun_duration'] = (3, 2)
-		self.upgrades['rock_size'] = (1, 2, "Meteor Size", "Increase the physical damage and stun radius from 0 to 1")
+		self.upgrades['rock_size'] = (1, 2, "Meteor Size", "物理伤害和击晕范围从 0 提升至 1。")
 		self.upgrades['max_channel'] = (5, 2)
 
 	def get_description(self):
-		return ("Rains [{num_targets}_meteors:num_targets] down on random tiles in a [{storm_radius}_tile:radius] radius each turn.\n"
-				"Meteors deal [{damage}_physical:physical] damage, destroy walls, and inflict stun for [{stun_duration}_turns:duration].\n"
-				"Meteors also deal [{damage}_fire:fire] damage in a [{radius}_tile:radius] radius.\n"
-				"This spell can be channeled for up to [{max_channel}_turns:duration].  The effect is repeated each turn the spell is channeled.").format(**self.fmt_dict())
+		return (
+			"每回合在 [{storm_radius}格:radius] 范围内随机地块上降下 [{num_targets}_个陨石:num_targets]。\n"
+			"陨石造成 [{damage}_点_物理:physical] 伤害，摧毁墙，施加击晕 [{stun_duration}_回合:duration]。\n"
+			"陨石还在 [{radius}格:radius] 范围内造成 [{damage}_点_火焰:fire] 伤害。\n"
+			"此咒语可引导至多 [{max_channel}_回合:duration]。引导时每回合重复此效果。").format(
+			**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		return self.caster.level.get_points_in_ball(x, y, self.get_stat('storm_radius') + self.get_stat('radius'))
@@ -182,13 +183,13 @@ class LightningBoltSpell(Spell):
 		self.upgrades['damage'] = (9, 3)
 		self.upgrades['range'] = (5, 2)
 		self.upgrades['max_charges'] = (12, 2)
-		self.upgrades['channel'] = (1, 3, "Channeling", "Lightning bolt can be channeled for up to 10 turns.")
+		self.upgrades['channel'] = (1, 3, "Channeling", "闪电箭可引导至多 10 个回合。")
 
-		self.upgrades['judgement'] = (1, 6, "Judgement Bolt", "Lightning bolt also deals holy and dark damage", "bolt")
-		self.upgrades['energy'] = (1, 6, "Energy Bolt", "Lightning bolt also deals fire and arcane damage", "bolt")
+		self.upgrades['judgement'] = (1, 6, "Judgement Bolt", "闪电箭还造成 [holy] 和 [dark] 伤害。", "bolt")
+		self.upgrades['energy'] = (1, 6, "Energy Bolt", "闪电箭还造成 [fire] 和 [arcane] 伤害。", "bolt")
 
 	def get_description(self):
-		return "Deals [{damage}_lightning:lightning] damage in a beam.".format(**self.fmt_dict())
+		return "在一束范围内造成 [{damage}_点_闪电:lightning] 伤害。".format(**self.fmt_dict())
 
 	def cast(self, x, y, channel_cast=False):
 
@@ -231,16 +232,15 @@ class AnnihilateSpell(Spell):
 		self.arcane = 0
 		self.dark = 0
 
-		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', 'Hits from Annihilate will jump to nearby targets if the main target is killed')
-		self.upgrades['dark'] =  (1, 1, 'Dark Annihilation', 'Annihilate deals an additional dark damage hit')
-		self.upgrades['arcane'] =  (1, 1, 'Arcane Annihilation', 'Annihilate deals an additional arcane damage hit')
+		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', '若主目标被消灭，歼灭术会跳跃并击中其相邻目标。')
+		self.upgrades['dark'] = (1, 1, 'Dark Annihilation', '歼灭术额外造成 [dark] 伤害。')
+		self.upgrades['arcane'] = (1, 1, 'Arcane Annihilation', '歼灭术额外造成 [arcane] 伤害。')
 		self.upgrades['max_charges'] = (4, 2)
 
 		self.can_target_empty = False
 
 	def get_description(self):
-		desc = "Deals [{damage}_fire:fire] damage, [{damage}_lightning:lightning] damage,"
-		desc += " and [{damage}_physical:physical] damage to the target."
+		desc = "对目标造成 [{damage}_点_火焰:fire] 伤害、[{damage}_点_闪电:lightning] 伤害和 [{damage}_点_物理:physical] 伤害。"
 		return desc.format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -276,9 +276,9 @@ class MegaAnnihilateSpell(AnnihilateSpell):
 		self.arcane = 0
 		self.dark = 0
 
-		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', 'Hits from Annihilate will jump to nearby targets if the main target is killed')
-		self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', 'Annihilate deals an additional dark damage hit')
-		self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', 'Annihilate deals an additional arcane damage hit')
+		self.upgrades['cascade_range'] = (4, 3, 'Cascade', '若主目标被消灭，歼灭术会跳跃并击中其相邻目标。')
+		self.upgrades['dark'] = (1, 2, 'Dark Annihilation', '歼灭术额外造成 [dark] 伤害。')
+		self.upgrades['arcane'] = (1, 2, 'Arcane Annihilation', '歼灭术额外造成 [arcane] 伤害。')
 		self.upgrades['damage'] = (99, 4)
 
 class Teleport(Spell):
@@ -294,10 +294,10 @@ class Teleport(Spell):
 
 		self.upgrades['max_charges'] = (2, 3)
 		self.upgrades['range'] = (8, 2)
-		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "Teleport deals arcane damage to all enemy units in line of sight of the targeted tile equal to its maximum number of charges.")
+		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "传送术对目标地块视线内的所有敌方单位造成 [arcane] 伤害，数量为充能上限。")
 
 	def get_description(self):
-		return "Teleport to target tile"
+		return "传送到目标地块。"
 
 	def can_cast(self, x, y):
 		return Spell.can_cast(self, x, y) and self.caster.level.can_move(self.caster, x, y, teleport=True)
@@ -336,11 +336,11 @@ class BlinkSpell(Teleport):
 		self.tags = [Tags.Arcane, Tags.Sorcery, Tags.Translocation]
 		self.level = 3
 
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Blink can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "扑闪术施放无需视线。")
 		self.upgrades['range'] = (3, 3)
 		self.upgrades['max_charges'] = (5, 2)
-		self.upgrades['lightning_blink'] = (1, 4, "Lightning Blink", "Blink deals lightning damage in a 3 tile burst upon arrival.  The damage is equal to twice the distance travelled, rounded up.", 'damage')
-		self.upgrades['dark_blink'] = (1, 4, "Dark Blink", "Blink deals dark damage in a 3 tile burst upon arrival.  The damage is equal to twice the distance travelled, rounded up.", 'damage')
+		self.upgrades['lightning_blink'] = (1, 4, "Lightning Blink", "扑闪术在抵达时对 3格 范围内造成 [lightning] 伤害，数量为移动距离的两倍，上整。", 'damage')
+		self.upgrades['dark_blink'] = (1, 4, "Dark Blink", "扑闪术在抵达时对 3格 范围内造成 [dark] 伤害，数量为移动距离的两倍，上整。", 'damage')
 
 		#del(self.upgrades['void_teleport'])
 class FlameGateBuff(Buff):
@@ -352,7 +352,7 @@ class FlameGateBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'flame_gate']
 		self.cast = True
-		self.description = "Whenever you cast a fire spell, temporarily summon a fire elemental near the target.\n\nThis enchantment ends if you move or cast a non fire spell."
+		self.description = "每当你施放火焰咒语时，临时在目标旁召唤一个火元素。\n\n你移动或施放非火焰咒语时，此附魔结束。"
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -413,11 +413,11 @@ class FlameGateSpell(Spell):
 		yield
 
 	def get_description(self):
-		return ("Whenever you cast a [fire] spell, summon a fire elemental at the target of that spell.\n"
-				"Fire elementals have [{minion_health}_HP:minion_health], [100_fire:fire] resist, [50_physical:physical] resist, and [-50_ice:ice] resist.\n"
-				"Fire elementals have an attack which deals [{minion_damage}_fire:fire] damage with a [{minion_range}_tile:minion_range] range.\n"
-				"Fire elementals vanish after [{minion_duration}_turns:minion_duration].\n"
-				"This effect lasts until you fail to cast a fire spell.").format(**self.fmt_dict())
+		return ("每当你施放 [fire] 咒语时，在咒语目标处召唤一个火元素。\n"
+				"火元素有 [{minion_health}_点_HP:minion_health]、[100_点_火焰:fire] 抗性、[50_点_物理:physical] 抗性和 [-50_点_寒冰:ice] 抗性。\n"
+				"火元素的攻击造成 [{minion_damage}_点_火焰:fire] 伤害，射程为 [{minion_range}格:minion_range]。\n"
+				"火元素在 [{minion_duration}_回合:minion_duration] 后消失。\n"
+				"此效果持续到你不施放火焰咒语为止。").format(**self.fmt_dict())
 
 class LightningFormBuff(Buff):
 
@@ -429,7 +429,7 @@ class LightningFormBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'lightning_form']
 		self.color = Tags.Lightning.color
-		self.description = "Whenever you cast a lightning spell, if the target square is empty, teleport to the target square.\n\nThis enchantment ends if you move or cast a non lightning spell."
+		self.description = "每当你施放闪电咒语时，若目标地块为空，传送到目标地块。\n\n你移动或施放非闪电咒语时，此附魔结束。"
 		self.cast = True
 		self.stack_type = STACK_TYPE_TRANSFORM
 
@@ -478,10 +478,10 @@ class LightningFormSpell(Spell):
 		yield
 
 	def get_description(self):
-		return ("Whenever you cast a [lightning] spell, teleport to that spell's target.\n"
-				"Gain [100_lightning:lightning] resistance.\n"
-				"Gain [100_physical:physical] resistance.\n"
-				"This effect ends the first turn that you fail to cast a [lightning] spell.").format(**self.fmt_dict())
+		return ("每当你施放 [lightning] 咒语时，传送到该咒语的目标地块。\n"
+				"获得 [100_点_闪电:lightning] 抗性。\n"
+				"获得 [100_点_物理:physical] 抗性。\n"
+				"此效果持续到你不施放 [lightning] 咒语的首个回合为止。").format(**self.fmt_dict())
 
 class VoidBeamSpell(Spell):
 
@@ -530,7 +530,7 @@ class VoidBeamSpell(Spell):
 		return list(self.aoe(x, y))
 
 	def get_description(self):
-		return "Deal [{damage}_arcane:arcane] damage and destroy walls in a beam.".format(**self.fmt_dict())
+		return "在一束范围内造成 [{damage}_点_奥术:arcane] 伤害，并摧毁墙。".format(**self.fmt_dict())
 
 class ThunderStrike(Spell):
 
@@ -548,14 +548,14 @@ class ThunderStrike(Spell):
 
 		self.storm_power = 0
 		self.upgrades['duration'] = (3, 2)
-		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Thunderstrike can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "雷击术施放无需视线。")
 		self.upgrades['damage'] = (36, 4)
-		self.upgrades['storm_power'] = (1, 2, "Storm Power", "Radius and stun duration are doubled if the target is inside of a storm cloud.")
-		self.upgrades['heaven_strike'] = (1, 4, "Heaven Strike", "Thunder Strike also deals holy damage")
+		self.upgrades['storm_power'] = (1, 2, "Storm Power", "若目标在风暴云中，范围和击晕持续翻倍。")
+		self.upgrades['heaven_strike'] = (1, 4, "Heaven Strike", "雷击术还造成 [holy] 伤害。")
 
 	def get_description(self):
-		return ("Deal [{damage}_lightning:lightning] damage to the target.\n"
-				"Stun all enemies in a [{radius}_tile:radius] burst around the target.").format(**self.fmt_dict())
+		return ("对目标造成 [{damage}_点_闪电:lightning] 伤害。\n"
+				"击晕目标周围 [{radius}格:radius] 范围内的所有敌人。").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -619,7 +619,7 @@ class GiantStrengthSpell(Spell):
 		self.upgrades['duration'] = (15, 1)
 
 	def get_description(self):
-		return "Temporarily gain physical resistance and the ability to hurl boulders."
+		return "临时获得物理抗性和投掷巨石的能力。"
 
 	def cast(self, x, y):
 		buff = GiantStrengthBuff()
@@ -646,8 +646,8 @@ class ChaosBarrage(Spell):
 		self.upgrades['num_targets'] = (5, 4, "Extra Bolts")
 
 	def get_description(self):
-		return ("Fire [{num_targets}_bolts:num_targets] of chaotic energy at random units in a cone.\n"
-				"Each bolt randomly deals [{damage}_fire:fire], [{damage}_lightning:lightning], or [{damage}_physical:physical] damage.").format(**self.fmt_dict())
+		return ("在锥形范围内发射随机向单位发射有混沌能量的 [{num_targets}_支箭矢:num_targets]。\n"
+				"每支箭矢随机造成 [{damage}_点_火焰:fire]、[{damage}_点_闪电:lightning] 或 [{damage}_点_物理:physical] 伤害。").format(**self.fmt_dict())
 
 	def get_cone_burst(self, x, y):
 		# TODO- this is very generous and frequently goes through walls, fix that
@@ -690,7 +690,7 @@ class InfernoCloud(Cloud):
 		self.spread_chance = .7
 		self.duration = 5
 		self.name = "Inferno"
-		self.description = "A spreading cloud of fire.  Deals %d damage to creatures caught within each turn."
+		self.description = "一朵飘动的火云。每回合对捕捉的生物造成 %d 点伤害。"
 
 	def on_advance(self):
 
@@ -725,7 +725,7 @@ class InfernoSpell(Spell):
 		self.upgrades['max_charges'] = (2, 1)
 
 	def get_description(self):
-		return "Create a spreading inferno that deals damage each turn to units inside."
+		return "生成一朵飘动的地狱火云，每回合对其中的所有单位造成伤害。"
 
 	def cast(self, x, y):
 		self.caster.level.add_obj(InfernoCloud(self.caster, self.get_stat('damage')), x, y)
@@ -746,8 +746,8 @@ class DispersalSpell(Spell):
 		self.upgrades['max_charges'] = (10, 2)
 
 	def get_description(self):
-		return ("Teleport all units in a [{radius}_tile:radius] radius to random locations\n"
-				"The caster is unaffected.").format(**self.fmt_dict())
+		return ("将 [{radius}格:radius] 范围内的所有单位随机传送到新的地块。\n"
+				"施法者不受影响。").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		return self.caster.level.get_points_in_ball(x, y, self.get_stat('radius'))
@@ -786,7 +786,7 @@ class PetrifySpell(Spell):
 		self.duration = 10
 
 		self.upgrades['max_charges'] = (5, 1)
-		self.upgrades['glassify'] = (1, 3, 'Glassify', 'Turn the target to glass instead of stone.  Glass targets have -100 physical resist.')
+		self.upgrades['glassify'] = (1, 3, 'Glassify', '改为将目标变为玻璃，而非石头。被璃化的目标 -100 物理抗性。')
 
 		self.tags = [Tags.Arcane, Tags.Enchantment]
 		self.level = 2
@@ -803,7 +803,7 @@ class PetrifySpell(Spell):
 		yield
 
 	def get_description(self):
-		desc = "Inflict [petrify] on the target for [{duration}_turns:duration].\n"
+		desc = "对目标施加 [petrify] ，持续 [{duration}_回合:duration]。\n"
 		desc += text.petrify_desc
 		return desc.format(**self.fmt_dict())
 
@@ -815,7 +815,7 @@ class StoneAuraBuff(Buff):
 
 	def on_init(self):
 		self.name = "Petrification Aura"
-		self.description = "Petrify nearby enemies each turn"
+		self.description = "每回合石化相邻的敌人。"
 	
 	def on_advance(self):
 		BuffClass = GlassPetrifyBuff if self.spell.get_stat('glassify') else PetrifyBuff
@@ -853,12 +853,12 @@ class StoneAuraSpell(Spell):
 		self.upgrades['petrify_duration'] = (2, 3)
 		self.upgrades['num_targets'] = (2, 2)
 		self.upgrades['duration'] = (15, 2)
-		self.upgrades['glassify'] = (1, 6, "Glassify", "Turn enemies to glass instead of stone, makeing them take double physical damage instead of one quarter.")
+		self.upgrades['glassify'] = (1, 6, "Glassify", "改为将敌人变为玻璃，而非石头，使其受到双倍的物理伤害，而非四分之一。")
 
 	def get_description(self):
-		return ("Each turn, inflict [petrify] on up to [{num_targets}:num_targets] unpetrified enemy units in a [{radius}_tile:radius] radius each turn.\n" +
+		return ("每回合在 [{radius}格:radius] 范围内 [petrify] 至多 [{num_targets}:num_targets] 个未石化的敌方单位。\n" +
 				text.petrify_desc + '\n'
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"持续 [{duration}_回合:duration]。").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(StoneAuraBuff(self), self.get_stat('duration'))
@@ -870,14 +870,14 @@ class SummonWolfSpell(Spell):
 		self.name = "Wolf"
 		self.minion_health = 11
 		self.minion_damage = 5
-		self.upgrades['leap_range'] = (4, 3, "Pounce", "Summoned wolves gain a leap attack")
+		self.upgrades['leap_range'] = (4, 3, "Pounce", "召唤的狼获得一次跳跃攻击。")
 		self.upgrades['minion_damage'] = 4
 		self.upgrades['minion_health'] = (12, 3)
 
-		self.upgrades['blood_hound'] = (1, 3, "Blood Hound", "Summon blood hounds instead of wolves.", "hound")
-		self.upgrades['ice_hound'] = (1, 3, "Ice Hound", "Summon ice hounds instead of wolves.", "hound")
-		self.upgrades['clay_hound'] = (1, 6, "Clay Hound", "Summon clay hounds instead of wolves.", "hound")
-		self.upgrades['wolf_pack'] = (1, 8, "Wolf Pack", "Each cast of wolf consumes 2 charges and summons 4 wolves.")
+		self.upgrades['blood_hound'] = (1, 3, "Blood Hound", "改为召唤鲜血猎犬，而非狼。", "hound")
+		self.upgrades['ice_hound'] = (1, 3, "Ice Hound", "改为召唤寒冰猎犬，而非狼。", "hound")
+		self.upgrades['clay_hound'] = (1, 6, "Clay Hound", "改为召唤粘土猎犬，而非狼。", "hound")
+		self.upgrades['wolf_pack'] = (1, 8, "Wolf Pack", "每次施放召狼术消耗 2 点充能并召唤 4 头狼。")
 
 
 		self.tags = [Tags.Nature, Tags.Conjuration]
@@ -906,7 +906,7 @@ class SummonWolfSpell(Spell):
 
 			wolf.spells[0].onhit = bloodrage(2)
 			wolf.spells[0].name = "Frenzy Bite"
-			wolf.spells[0].description = "Gain +2 damage for 10 turns with each attack"
+			wolf.spells[0].description = "每次攻击获得 +2 伤害，持续 10 回合。"
 			
 			wolf.tags = [Tags.Demon, Tags.Nature]
 			wolf.resists[Tags.Dark] = 75
@@ -947,9 +947,9 @@ class SummonWolfSpell(Spell):
 			yield
 
 	def get_description(self):
-		return ("Summon a wolf.\n"
-				"The wolf has [{minion_health}_HP:minion_health].\n"
-				"The wolf has a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+		return ("召唤一头狼。\n"
+				"狼具有 [{minion_health}_点_HP:minion_health]。\n"
+				"狼的近战攻击造成 [{minion_damage}_点_物理:physical] 伤害。").format(**self.fmt_dict())
 
 class SummonDireWolfSpell(Spell):
 
@@ -976,7 +976,7 @@ class SummonDireWolfSpell(Spell):
 		wolf.sprite.char = 'w'
 		wolf.sprite.color = Color(202, 77, 51)
 		wolf.name = "Dire Wolf"
-		wolf.description = "A large sized beast"
+		wolf.description = "大型野兽。"
 		wolf.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
 
 		if self.get_stat('leap_range'):
@@ -989,7 +989,7 @@ class SummonDireWolfSpell(Spell):
 		yield
 
 	def get_description(self):
-		return "Summon a dire wolf."
+		return "召唤一头恐龙。"
 
 class SummonGiantBear(Spell):
 
@@ -1007,9 +1007,9 @@ class SummonGiantBear(Spell):
 		self.upgrades['minion_damage'] = (15, 4)
 		self.upgrades['max_charges'] = (2, 3)
 		self.upgrades['minion_attacks'] = (1, 3)
-		self.upgrades['armored'] = (1, 3, "Armored Bear", "Summons an armored bear instead of a giant bear.  Armored bears have increased physical resistance and HP, but are vulnerable to lightning damage.", "species")
-		self.upgrades['venom'] = (1, 4, "Venom Bear", "Summons a venom bear instead of a giant bear.  Venom Bears have a poison bite, and heal whenever an enemy takes poison damage.", "species")
-		self.upgrades['blood'] = (1, 5, "Blood Bear", "Summons a blood bear instead of a giant bear.  Blood bears are resistant to dark damage, and deal increasing damage with each attack.", "species")
+		self.upgrades['armored'] = (1, 3, "Armored Bear", "召唤一头装甲巨熊，而非巨熊。装甲巨熊有提升的物理抗性和 HP，但易受闪电伤害。", "species")
+		self.upgrades['venom'] = (1, 4, "Venom Bear", "召唤一头毒液巨熊，而非巨熊。毒液巨熊的撕咬带毒，每当敌人受到毒性伤害时会治疗。", "species")
+		self.upgrades['blood'] = (1, 5, "Blood Bear", "召唤一头鲜血巨熊，而非巨熊。鲜血巨熊有黑暗抗性，每次攻击不断提升伤害。", "species")
 
 		self.must_target_walkable = True
 		self.must_target_empty = True
@@ -1049,15 +1049,15 @@ class SummonGiantBear(Spell):
 		
 		bear.spells[0].attacks = self.get_stat('minion_attacks')
 		if self.get_stat('minion_attacks') > 1:
-			bear.spells[0].description += "\nAttacks %d times." % self.get_stat('minion_attacks')
+			bear.spells[0].description += "\n攻击 %d 次。" % self.get_stat('minion_attacks')
 		
 		self.summon(bear, Point(x, y))
 		yield
 
 	def get_description(self):
-		return ("Summon a giant bear.\n"
-				"The bear has [{minion_health}_HP:minion_health].\n"
-				"The bear has a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+		return ("召唤一头巨熊。\n"
+				"巨熊有 [{minion_health}_点_HP:minion_health]。\n"
+				"巨熊的近战攻击造成 [{minion_damage}_点_物理:physical] 伤害。").format(**self.fmt_dict())
 
 class FeedingFrenzySpell(Spell):
 
@@ -1069,8 +1069,8 @@ class FeedingFrenzySpell(Spell):
 
 		self.demon_units = 0
 		self.upgrades['duration'] = (3, 3)
-		self.upgrades['demon_units'] = (1, 2, "Demon Frenzy", "Demon units are also affected")
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Sight of Blood can be cast without line of sight")
+		self.upgrades['demon_units'] = (1, 2, "Demon Frenzy", "恶魔单位也受影响。")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "鲜血视线施放无需视线。")
 		
 		self.tags = [Tags.Nature, Tags.Enchantment]
 		self.level = 4
@@ -1114,10 +1114,10 @@ class FeedingFrenzySpell(Spell):
 		return Spell.can_cast(self, x, y)
 
 	def get_description(self):
-		return ("Must target a damaged [living] unit.\n"
-				"The target is [stunned] for [{duration}_turns:duration].\n"
+		return ("必须以 [living] 单位为目标。\n"
+				"目标被 [stunned]，持续 [{duration}_回合:duration]。\n"
 				+ text.stun_desc + '\n'
-				+ "All [living] units in line of sight of the target go [berserk] for [{duration}_turns:duration].\n"
+				+ "目标视线内的所有 [living] 单位 [berserk]，持续 [{duration}_回合:duration]。\n"
 				+ text.berserk_desc).format(**self.fmt_dict())
 
 
@@ -1126,7 +1126,7 @@ class DarknessBuff(Buff):
 	def on_init(self):
 		self.name = "Darkness"
 		self.color = Tags.Dark.color
-		self.description = "Blind all units on the map except demons and undead each turn"
+		self.description = "每回合致盲地图上所有的非恶魔、非不死的单位。"
 		self.asset = ['status', 'darkness']
 		self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
 
@@ -1175,10 +1175,10 @@ class Darkness(Spell):
 		self.caster.apply_buff(DarknessBuff(), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Each turn, [blind] all units for [1_turn:duration].\n"
+		return ("每回合 [blind] 所有单位，持续 [1_回合:duration]。\n"
 				+ text.blind_desc + '\n'
-				"[Demon] and [undead] units are unaffected.\n"
-				"Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
+				"[Demon] 和 [undead] 单位不受影响。\n"
+				"持续 [{duration}_回合:duration]。").format(**self.fmt_dict())
 
 class StormSpell(Spell):
 
@@ -1192,7 +1192,7 @@ class StormSpell(Spell):
 		self.strikechance = 50
 		
 		self.upgrades['strikechance'] = (25, 2)
-		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Lightning Storm can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "闪电风暴施放无需视线。")
 		self.upgrades['radius'] = (2, 2)
 		self.upgrades['damage'] = 7
 
@@ -1214,9 +1214,9 @@ class StormSpell(Spell):
 		return [p for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')) for p in stage]
 
 	def get_description(self):
-		return ("Create a thunderstorm with a [{radius}_tile:radius] radius.\n"
-				"Each turn, each tile in the storm has a [{strikechance}%_chance:strikechance] of taking [{damage}_lightning:lightning] damage.\n"
-				"The storm lasts for [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Create a thunderstorm with a [{radius}格:radius] radius.\n"
+				"Each turn, each tile in the storm has a [{strikechance}%_chance:strikechance] of taking [{damage}_点_闪电:lightning] damage.\n"
+				"The storm lasts for [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class ThornyPrisonSpell(Spell):
 
@@ -1239,8 +1239,8 @@ class ThornyPrisonSpell(Spell):
 
 	def get_description(self):
 		return ("Surround a group of enemies with carnivorous plants.\n"
-				"The plants have [{minion_health}_HP:minion_health] and cannot move.\n"
-				"The plants have a melee attack which deals [{minion_damage}_physical:physical] damage.\n"
+				"The plants have [{minion_health}_点_HP:minion_health] and cannot move.\n"
+				"The plants have a melee attack which deals [{minion_damage}_点_物理:physical] damage.\n"
 				"The plants vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -1337,7 +1337,7 @@ class FlameStrikeSpell(Spell):
 			return [p for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')) for p in stage]
 
 	def get_description(self):
-		return ("Deal [{damage}_fire:fire] in a [{radius}_tile:radius] burst.\n"
+		return ("Deal [{damage}_点_火焰:fire] in a [{radius}格:radius] burst.\n"
 			    "Deal double damage to the center tile.").format(**self.fmt_dict())
 
 class CloudArmorBuff(Buff):
@@ -1437,7 +1437,7 @@ class BloodlustSpell(Spell):
 
 
 	def get_description(self):
-		return "All allied units gain stacking [{extra_damage}_damage:damage] bonus to their fire and physical abilities.\nLasts [{duration}_turns:duration].".format(**self.fmt_dict())
+		return "All allied units gain stacking [{extra_damage}_damage:damage] bonus to their fire and physical abilities.\nLasts [{duration}_回合:duration].".format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -1506,7 +1506,7 @@ class RegenAuraSpell(Spell):
 		self.upgrades['whole_map'] = (1, 4, "Global", "The aura heals all allies on the level")
 
 	def get_description(self):
-		return ("Each turn for [{duration}_turns:duration], all allied units in a [{radius}_tile:radius] radius are healed for [{heal}_HP:heal].").format(**self.fmt_dict())
+		return ("Each turn for [{duration}_回合:duration], all allied units in a [{radius}格:radius] radius are healed for [{heal}_HP:heal].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(HealAuraBuff(self.get_stat('heal'), self.get_stat('radius'), whole_map=self.get_stat('whole_map')), self.get_stat('duration'))
@@ -1737,7 +1737,7 @@ class VoidOrbSpell(OrbSpell):
 
 	def get_description(self):
 		return ("Summon a void orb next to the caster.\n"
-				"The orb melts through walls along the way, and deals [{minion_damage}_arcane:arcane] damage each turn to all adjacent units.\n"
+				"The orb melts through walls along the way, and deals [{minion_damage}_点_奥术:arcane] damage each turn to all adjacent units.\n"
 				"The orb has no will of its own, each turn it will float one tile towards the target.\n"
 				"The orb can be destroyed by arcane damage.").format(**self.fmt_dict())
 
@@ -1761,7 +1761,7 @@ class SearingOrb(OrbSpell):
 
 	def get_description(self):
 		return ("Summon a searing orb next to the caster.\n"
-				"The orb deals [{minion_damage}_fire:fire] damage each turn to all units in line of sight.\n"
+				"The orb deals [{minion_damage}_点_火焰:fire] damage each turn to all units in line of sight.\n"
 				"The caster is immune to this damage.\n"
 				"The orb has no will of its own, each turn it will float one tile towards the target.\n"
 				"The orb can be destroyed by ice damage.").format(**self.fmt_dict())
@@ -1806,7 +1806,7 @@ class BallLightning(OrbSpell):
 
 	def get_description(self):
 		return ("Summon a lighting orb next to the caster.\n"
-				"Each turn the orb fires [{num_targets}_beams:num_targets] of electricity at random enemy units in line of sight. The beams deal [{minion_damage}_lightning:lightning] damage.\n"
+				"Each turn the orb fires [{num_targets}_beams:num_targets] of electricity at random enemy units in line of sight. The beams deal [{minion_damage}_点_闪电:lightning] damage.\n"
 				"The orb has no will of its own, each turn it will float one tile towards the target.\n"
 				"The orb can be destroyed by lightning damage.").format(**self.fmt_dict())
 
@@ -1861,7 +1861,7 @@ class GlassOrbSpell(OrbSpell):
 
 	def get_description(self):
 		return ("Summon a glass orb next to the caster.\n"
-				"Each turn the orb inflicts [glassify] on enemy units in a [{radius}_tile:radius] area.\n"
+				"Each turn the orb inflicts [glassify] on enemy units in a [{radius}格:radius] area.\n"
 				+ text.glassify_desc + "\n" + 
 				"The orb has no will of its own, each turn it will float one tile towards the target.\n"
 				"The orb can be destroyed by physical damage.").format(**self.fmt_dict())
@@ -1924,7 +1924,7 @@ class FrozenOrbSpell(OrbSpell):
 
 	def get_description(self):
 		return ("Summon an ice orb next to the caster.\n"
-				"Each turn the orb deals [{minion_damage}_ice:ice] damage to enemy units in a [{radius}_tile:radius] radius.\n"
+				"Each turn the orb deals [{minion_damage}_ice:ice] damage to enemy units in a [{radius}格:radius] radius.\n"
 				+ text.frozen_desc +
 				"The orb has no will of its own, each turn it will float one tile towards the target.\n"
 				"The orb can be destroyed by fire damage.").format(**self.fmt_dict())
@@ -2163,8 +2163,8 @@ class EyeOfFireSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_fire:fire] damage to a random enemy unit in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_点_火焰:fire] damage to a random enemy unit in line of sight.\n"
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class EyeOfLightningSpell(Spell):
 
@@ -2190,8 +2190,8 @@ class EyeOfLightningSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_lightning:lightning] damage to a random enemy unit in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_点_闪电:lightning] damage to a random enemy unit in line of sight.\n"
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class EyeOfIceSpell(Spell):
 
@@ -2218,7 +2218,7 @@ class EyeOfIceSpell(Spell):
 
 	def get_description(self):
 		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_ice:ice] damage to a random enemy unit in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class EyeOfRageSpell(Spell):
 
@@ -2245,7 +2245,7 @@ class EyeOfRageSpell(Spell):
 
 	def get_description(self):
 		return ("Every [{shot_cooldown}_turns:shot_cooldown], inflict [berserk] on a random enemy unit in line of sight for [{berserk_duration}_turns:berserk].\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class NightmareBuff(DamageAuraBuff):
 
@@ -2307,9 +2307,9 @@ class NightmareSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Each turn, randomly deals [{aura_damage}_arcane:arcane] or [{aura_damage}_dark:dark] damage to each enemy in a [{radius}_tile:radius] radius.\n"
+		return ("Each turn, randomly deals [{aura_damage}_点_奥术:arcane] or [{aura_damage}_dark:dark] damage to each enemy in a [{radius}格:radius] radius.\n"
 				"This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class CockatriceSkinSpell(Spell):
 
@@ -2330,7 +2330,7 @@ class CockatriceSkinSpell(Spell):
 
 	def get_description(self):
 		return ("Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [2:duration] turns.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class WatcherFormBuff(Stun):
 
@@ -2395,13 +2395,13 @@ class WatcherFormSpell(Spell):
 		self.caster.apply_buff(WatcherFormDefenses(), self.get_stat('duration') + 1)
 
 	def get_description(self):
-		return ("Each turn, fire a lightning bolt at the farthest enemy in line of sight dealing [{damage}_lightning:lightning] damage in a beam.\n"
+		return ("Each turn, fire a lightning bolt at the farthest enemy in line of sight dealing [{damage}_点_闪电:lightning] damage in a beam.\n"
 				"You cannot move or cast spells.\n"
 				"Gain 100 [physical] resist.\n"
 				"Gain 100 [fire] resist.\n"
 				"Gain 100 [lightning] resist.\n"
 				"Gain 100 [poison] resist.\n"
-				"Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration]").format(**self.fmt_dict())
 
 class ImpCallBuff(Buff):
 
@@ -2473,10 +2473,10 @@ class ImpGateSpell(Spell):
 
 	def get_description(self):
 		return ("Each turn, summon [{num_summons}_imps:num_summons] near the caster.\n"
-				"Imps have [{minion_health}_HP:minion_health] and can fly.\n"
+				"Imps have [{minion_health}_点_HP:minion_health] and can fly.\n"
 				"Imps have a ranged attack dealing [{minion_damage}_damage:minion_damage] with a [{minion_range}_tile:minion_range] range.\n"
 				"Each imp is either a [fire], [iron:physical], or [spark:lightning] imp.\n"
-				"The imps each last [{minion_duration}_turns:minion_duration], and this effect lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"The imps each last [{minion_duration}_turns:minion_duration], and this effect lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class LightningHaloBuff(Buff):
 	
@@ -2541,8 +2541,8 @@ class LightningHaloSpell(Spell):
 		return points
 
 	def get_description(self):
-		return ("Deal [{damage}_lightning:lightning] damage to all units in a [{radius}_tile:radius] ring each turn.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Deal [{damage}_点_闪电:lightning] damage to all units in a [{radius}格:radius] ring each turn.\n"
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class ArcaneVisionSpell(Spell):
 
@@ -2575,7 +2575,7 @@ class ArcaneVisionSpell(Spell):
 
 	def get_description(self):
 		return ("All other spells gain [{bonus}_range:range].\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class ArcaneDamageSpell(Spell):
 
@@ -2600,7 +2600,7 @@ class ArcaneDamageSpell(Spell):
 
 	def get_description(self):
 		return ("All other spells gain [{bonus}_damage:damage].\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class PainBuff(GlobalAttrBonus):
 
@@ -2727,7 +2727,7 @@ class FlameBurstSpell(Spell):
 				self.caster.level.show_effect(p.x, p.y, Tags.Fire)
 
 	def get_description(self):
-		return ("Deal [{damage}_fire:fire] damage in a [{radius}_tile:radius] burst around the caster.").format(**self.fmt_dict())
+		return ("Deal [{damage}_点_火焰:fire] damage in a [{radius}格:radius] burst around the caster.").format(**self.fmt_dict())
 
 class SummonFireDrakeSpell(Spell):
 
@@ -2769,9 +2769,9 @@ class SummonFireDrakeSpell(Spell):
 
 	def get_description(self):
 		return ("Summon a Fire Drake at target square.\n"
-				"Fire Drakes have [{minion_health}_HP:minion_health], fly, and have [100_fire:fire] resist.\n"
-				"Fire Drakes have a breath weapon which deals [{breath_damage}_fire:fire] damage.\n"
-				"Fire Drakes have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Fire Drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_点_火焰:fire] resist.\n"
+				"Fire Drakes have a breath weapon which deals [{breath_damage}_点_火焰:fire] damage.\n"
+				"Fire Drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 
 class LightningSwapBuff(Buff):
@@ -2843,9 +2843,9 @@ class SummonStormDrakeSpell(Spell):
 
 	def get_description(self):
 		return ("Summon a storm drake at target square.\n"
-				"Storm drakes have [{minion_health}_HP:minion_health], fly, and have [100_lightning:lightning] resist.\n"
-				"Storm drakes have a breath weapon which creates storm clouds that deal [{breath_damage}_lightning:lightning] damage.\n"
-				"Storm drakes have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Storm drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_点_闪电:lightning] resist.\n"
+				"Storm drakes have a breath weapon which creates storm clouds that deal [{breath_damage}_点_闪电:lightning] damage.\n"
+				"Storm drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 		
 class EssenceDrakeBuff(Buff):
 
@@ -2918,9 +2918,9 @@ class SummonVoidDrakeSpell(Spell):
 
 	def get_description(self):
 		return ("Summon a Void Drake at target square.\n"		
-				"Void Drakes have [{minion_health}_HP:minion_health], fly, and have [100_arcane:arcane] resist.\n"
-				"Void Drakes have a breath weapon which deals [{minion_damage}_arcane:arcane] damage and melts walls.\n"
-				"Void Drakes have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Void Drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_点_奥术:arcane] resist.\n"
+				"Void Drakes have a breath weapon which deals [{minion_damage}_点_奥术:arcane] damage and melts walls.\n"
+				"Void Drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 class SummonIceDrakeSpell(Spell):
 
@@ -2964,9 +2964,9 @@ class SummonIceDrakeSpell(Spell):
 
 	def get_description(self):
 		return ("Summon an Ice Drake at target square.\n"		
-				"Ice Drakes have [{minion_health}_HP:minion_health], fly, and have [100_ice:ice] resist.\n"
+				"Ice Drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_ice:ice] resist.\n"
 				"Ice Drakes have a breath weapon which deals [{minion_damage}_ice:ice] damage and [freezes] units.\n"
-				"Ice Drakes have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Ice Drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 
 class SparkSpell(Spell):
@@ -3037,7 +3037,7 @@ class ChainLightningSpell(Spell):
 		self.upgrades['shield'] = (1, 6, "Lightning Shield", "Chain Lightning can arc to friendly targets.\nFriendly units hit by Chain Lightning gain 1 SH, up to a max of 3, instead of damaged.")
 
 	def get_description(self):
-		return ("Fire an arcing bolt of electricity dealing [{damage}_lightning:lightning] damage.\n"
+		return ("Fire an arcing bolt of electricity dealing [{damage}_点_闪电:lightning] damage.\n"
 				"The bolt repeatably arcs to new targets within the cascade range.\n"
 				"Each arc deals damage to all units along a beam.\n"
 				"The bolt can arc up to [{cascade_range}_tiles:radius], and cannot pass through walls.\n"
@@ -3153,7 +3153,7 @@ class DeathBolt(Spell):
 	def get_description(self):
 		return ("Deals [{damage}_dark:dark] damage to one target.\n"
 				"Slain living units are raised as skeletons.\n"
-				"Raised skeletons have max HP equal to that of the slain unit, and deal [{minion_damage}_physical:physical] damage in melee.\n"
+				"Raised skeletons have max HP equal to that of the slain unit, and deal [{minion_damage}_点_物理:physical] damage in melee.\n"
 				"Skeletons of flying units can fly.").format(**self.fmt_dict())
 
 class DeathrouletteStack(Buff):
@@ -3300,7 +3300,7 @@ class SealFate(Spell):
 
 		self.damage = 160
 		self.upgrades['range'] = 7
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Seal Fate can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Seal Fate 施放无需视线。")
 		self.upgrades['damage'] = (80, 2)
 		self.upgrades['spreads'] = (1, 2, "Spreading Curse", "When Sealed Fate's duration expires, it jumps to a random enemy in line of sight.")
 
@@ -3310,7 +3310,7 @@ class SealFate(Spell):
 			unit.apply_buff(SealedFateBuff(self), self.get_stat('delay'))
 
 	def get_description(self):
-		return "After [{delay}_turns:duration], deal [{damage}_dark:dark] damage to target unit.".format(**self.fmt_dict())
+		return "After [{delay}_回合:duration], deal [{damage}_dark:dark] damage to target unit.".format(**self.fmt_dict())
 
 class Volcano(Spell):
 
@@ -3330,14 +3330,14 @@ class Volcano(Spell):
 		self.range = 10
 
 		self.upgrades['flow_range'] = (2, 3)
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Volcano can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Volcano 施放无需视线。")
 		self.upgrades['damage'] = (24, 3)
 		self.upgrades['wall_cast']= (1, 4, "Wallcano", "In addition to chasms, volcano may target walls.  Doing so turns the walls into chasms")
 
 	def get_description(self):
-		return ("Create a [{radius}_tile:radius] burst of lava in a chasm.\n"
+		return ("Create a [{radius}格:radius] burst of lava in a chasm.\n"
 				"The burst flows up to [{flow_range}_tiles:radius] out of the chasm.\n"
-				"The lava deals [{damage}_fire:fire] damage").format(**self.fmt_dict())
+				"The lava deals [{damage}_点_火焰:fire] damage").format(**self.fmt_dict())
 
 	def get_chasm_points(self, caster, x, y):
 		chasm_points = set([Point(x, y)])
@@ -3556,8 +3556,8 @@ class SummonEarthElemental(Spell):
 
 	def get_description(self):
 		return ("Summon an Earth Elemental.\n"
-				"Earth elementals have [{minion_health}_HP:minion_health], [50_physical:physical] resist, [50_fire:fire] resist, [50_lightning:lightning] resist, and cannot move.\n"
-				"Earth elementals have a melee attack which deals [{minion_damage}_physical:physical]."
+				"Earth elementals have [{minion_health}_点_HP:minion_health], [50_点_物理:physical] resist, [50_点_火焰:fire] resist, [50_点_闪电:lightning] resist, and cannot move.\n"
+				"Earth elementals have a melee attack which deals [{minion_damage}_点_物理:physical]."
 				"The elemental vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 
@@ -3602,9 +3602,9 @@ class CallSpirits(Spell):
 				unit.deal_damage(self.get_stat('damage'), Tags.Dark, self)
 
 	def get_description(self):
-		return ("Deal [{damage}_dark:dark] damage to enemy units in a [{radius}_tile:radius] radius.\n"
+		return ("Deal [{damage}_dark:dark] damage to enemy units in a [{radius}格:radius] radius.\n"
 				"Summon ghosts at empty tiles in the radius.\n"
-				"Ghosts have [{minion_health}_HP:minion_health], fly, [100_physical:physical] resist, [50_dark:dark] resist, and passively blink.\n"
+				"Ghosts have [{minion_health}_点_HP:minion_health], fly, [100_点_物理:physical] resist, [50_dark:dark] resist, and passively blink.\n"
 				"Ghosts have a melee attack which deals [{minion_damage}_dark:dark] damage.\n"
 				"The ghosts vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
@@ -3721,8 +3721,8 @@ class Permenance(Spell):
 		self.caster.apply_buff(PermenanceBuff(), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Your spells and temporary summons last an extra [5_turns:duration].\n"
-				"This effect lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Your spells and temporary summons last an extra [5_回合:duration].\n"
+				"This effect lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class DeathGazeSpell(Spell):
 
@@ -3890,7 +3890,7 @@ class InvokeSavagerySpell(Spell):
 
 	def get_description(self):
 		return ("Each living ally attacks a random enemy unit in melee range.\n"
-				"The attack deals [{damage}_physical:physical] damage and inflicts [{duration}_turns:duration] of [stun].").format(**self.fmt_dict())
+				"The attack deals [{damage}_点_物理:physical] damage and inflicts [{duration}_回合:duration] of [stun].").format(**self.fmt_dict())
 
 class MagicMissile(Spell):
 
@@ -3942,7 +3942,7 @@ class MagicMissile(Spell):
 					yield
 
 	def get_description(self):
-		return "Deal [{damage}_arcane:arcane] damage to the target.".format(**self.fmt_dict())
+		return "Deal [{damage}_点_奥术:arcane] damage to the target.".format(**self.fmt_dict())
 
 class MindDevour(Spell):
 
@@ -3966,7 +3966,7 @@ class MindDevour(Spell):
 
 
 	def get_description(self):
-		return ("Deal [{damage}_arcane:arcane] to an enemy unit.\n"
+		return ("Deal [{damage}_点_奥术:arcane] to an enemy unit.\n"
 				"Then, if the target is under 50% HP, deal it an additional [{damage}_dark:dark] damage.\n"
 				"Can only target [living] units.").format(**self.fmt_dict())
 
@@ -4023,7 +4023,7 @@ class DeathShock(Spell):
 		self.upgrades['infinite_bounces'] = (1, 4, "Infinite Cascades", "There is no limit to the number of targets Death Shock can cascade to")
 
 	def get_description(self):
-		return ("Deal [{damage}_lightning:lightning] damage and [{damage}_dark:dark] damage to the target.\n"
+		return ("Deal [{damage}_点_闪电:lightning] damage and [{damage}_dark:dark] damage to the target.\n"
 				"If the target is slain, this effect bounces to a random enemy in line of sight up to [{cascade_range}_tiles:range] away.\n"
 				"Can hit up to [{num_targets}_targets:num_targets].").format(**self.fmt_dict())
 
@@ -4103,7 +4103,7 @@ class MeltSpell(Spell):
 			unit.apply_buff(MeltBuff(self), self.get_stat('duration'))
 
 	def get_description(self):
-		return "Target unit takes [{damage}_fire:fire] damage and loses [100_physical:physical] resist.".format(**self.fmt_dict())
+		return "Target unit takes [{damage}_点_火焰:fire] damage and loses [100_点_物理:physical] resist.".format(**self.fmt_dict())
 
 class DragonRoarBuff(Buff):
 
@@ -4177,7 +4177,7 @@ class DragonRoarSpell(Spell):
 
 
 	def get_description(self):
-		return "All allied dragons gain [{hp_bonus}_max_HP:minion_health], [{damage}:damage] attack damage, and [{cooldown_reduction}_turn:duration] cooldown reduction.\nLasts [{duration}_turns:duration].".format(**self.fmt_dict())
+		return "All allied dragons gain [{hp_bonus}_max_HP:minion_health], [{damage}:damage] attack damage, and [{cooldown_reduction}_回合:duration] cooldown reduction.\nLasts [{duration}_回合:duration].".format(**self.fmt_dict())
 
 class IronSkinBuff(Buff):
 
@@ -4232,8 +4232,8 @@ class ProtectMinions(Spell):
 			unit.deal_damage(0, Tags.Physical, self)
 
 	def get_description(self):
-		return ("All allied units gain [{resist}_physical:physical] resist, [{resist}_fire:fire] resist, and [{resist}_lightning:lightning] resist and become metallic.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("All allied units gain [{resist}_点_物理:physical] resist, [{resist}_点_火焰:fire] resist, and [{resist}_点_闪电:lightning] resist and become metallic.\n"
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class WordOfUndeath(Spell):
 
@@ -4288,10 +4288,10 @@ class WordOfChaos(Spell):
 		self.upgrades['damage'] = (20, 2)
 
 	def get_description(self):
-		return ("[Stun] each enemy for [{duration}_turns:duration] and teleport them to random tiles."
-				"\nDeal [{damage}_lightning:lightning] damage to all [fire] enemies."
-				"\nDeal [{damage}_fire:fire] damage to all [lightning] enemies."
-				"\nEach enemy construct loses all [physical] resist and takes [{damage}_physical:physical] damage.").format(**self.fmt_dict())
+		return ("[Stun] each enemy for [{duration}_回合:duration] and teleport them to random tiles."
+				"\nDeal [{damage}_点_闪电:lightning] damage to all [fire] enemies."
+				"\nDeal [{damage}_点_火焰:fire] damage to all [lightning] enemies."
+				"\nEach enemy construct loses all [physical] resist and takes [{damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		return [u for u in self.owner.level.units if u != self.caster]
@@ -4340,8 +4340,8 @@ class WordOfBeauty(Spell):
 
 	def get_description(self):
 		return ("Heal yourself and all living units fully."
-				"\nDeal [{damage}_lightning:lightning] damage to [demon] and [undead] units."
-				"\n[Stun] all [arcane] units for [{duration}_turns:duration].").format(**self.fmt_dict())
+				"\nDeal [{damage}_点_闪电:lightning] damage to [demon] and [undead] units."
+				"\n[Stun] all [arcane] units for [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		units = list(self.caster.level.units)
@@ -4372,7 +4372,7 @@ class WordOfMadness(Spell):
 		self.upgrades['duration'] = (4, 5)
 
 	def get_description(self):
-		return ("[Berserk] all units except the caster for [{duration}_turns:duration].\n"
+		return ("[Berserk] all units except the caster for [{duration}_回合:duration].\n"
 				"Deal [dark] damage to all [construct] units equal to half their current HP.\n"
 				"Fully heal all [demon] units.").format(**self.fmt_dict())
 
@@ -4436,7 +4436,7 @@ class SummonFloatingEye(Spell):
 
 	def get_description(self):
 		return ("Summon a floating eye.\n"
-				"Floating eyes have [{minion_health}_HP:minion_health], [{shields}_SH:shields], float in place, and passively blink.\n"
+				"Floating eyes have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], float in place, and passively blink.\n"
 				"Floating eyes have no attacks of their own, but will cast any other [eye] spells you know upon being summoned.\n"
 				"Floating eyes vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
@@ -4511,7 +4511,7 @@ class ChimeraFarmiliar(Spell):
 	def get_description(self):
 		tagstr = ' or '.join(t.name for t in self.get_tags())
 		return ("Summon a Chimera Familiar.\n"
-				"The chimera has [{minion_damage}_fire:fire] damage and [{minion_damage}_lightning:lightning] damage attacks with a range of [{minion_range}_tiles:minion_range].\n"
+				"The chimera has [{minion_damage}_点_火焰:fire] damage and [{minion_damage}_点_闪电:lightning] damage attacks with a range of [{minion_range}_tiles:minion_range].\n"
 			    "The chimera mimics your casts of %s [sorcery] spells if the target is in range and line of sight."
 			    % ' or '.join('[' + t.name.lower() + ']' for t in self.get_tags())).format(**self.fmt_dict())
 
@@ -4557,7 +4557,7 @@ class ArcLightning(Spell):
 
 	def get_description(self):
 		return ("Lightning arcs to [{num_targets}_enemies:num_targets] visible from the target tile.\n"
-				"Each arc deals [{damage}_lightning:lightning] damage to units in a beam.").format(**self.fmt_dict())
+				"Each arc deals [{damage}_点_闪电:lightning] damage to units in a beam.").format(**self.fmt_dict())
 
 	def cast(self, x, y, is_echo=False):
 		center_unit = self.caster.level.get_unit_at(x, y)
@@ -4626,8 +4626,8 @@ class PoisonSting(Spell):
 			unit.apply_buff(Poison(), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Deal [{damage}_physical:physical] damage to target unit.\n"
-				"That unit is [poisoned] for [{duration}_turns:duration].\n"
+		return ("Deal [{damage}_点_物理:physical] damage to target unit.\n"
+				"That unit is [poisoned] for [{duration}_回合:duration].\n"
 				+ text.poison_desc).format(**self.fmt_dict())
 
 class Flameblast(Spell):
@@ -4653,8 +4653,8 @@ class Flameblast(Spell):
 		self.channel = 1
 
 	def get_description(self):
-		return ("Deal [{damage}_fire:fire] damage to all units in a cone.\n"
-				"This spell can be channeled for up to [{max_channel}_turns:duration].  The effect is repeated each turn the spell is channeled.").format(**self.fmt_dict())
+		return ("Deal [{damage}_点_火焰:fire] damage to all units in a cone.\n"
+				"This spell can be channeled for up to [{max_channel}_回合:duration].  The effect is repeated each turn the spell is channeled.").format(**self.fmt_dict())
  
 	def aoe(self, x, y):
 		origin = get_cast_point(self.caster.x, self.caster.y, x, y)
@@ -4734,9 +4734,9 @@ class SummonBlueLion(Spell):
 
 	def get_description(self):
 		return ("Summon a blue lion.\n"
-				"Blue lions have [{minion_health}_HP:minion_health], fly, have [50_arcane:arcane] resist and [50_physical:physical] resist.\n"			
-				"Blue lions have a spell that grants [1_SH:shield] to themselves and allies in their line of sight, up to a maximum of [{shield_max}_SH:shield] with a cooldown of [{shield_cooldown}_turns:duration].\n"
-				"Blue lions also have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Blue lions have [{minion_health}_点_HP:minion_health], fly, have [50_点_奥术:arcane] resist and [50_点_物理:physical] resist.\n"			
+				"Blue lions have a spell that grants [1_SH:shield] to themselves and allies in their line of sight, up to a maximum of [{shield_max}_SH:shield] with a cooldown of [{shield_cooldown}_回合:duration].\n"
+				"Blue lions also have a melee attack which deals [{minion_damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 
 class DeathCleaveBuff(Buff):
@@ -4823,7 +4823,7 @@ class DeathCleaveSpell(Spell):
 	def get_description(self):
 		return ("Whenever a spell you cast kills its primary target, that spell is recast on a randomly selected nearby valid enemy target up to [{cascade_range}_tiles:cascade_range] away.\n"
 		  		"This process repeats until the target survives the spell, or there are no nearby valid targets.\n"
-		  		"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		  		"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class CantripCascade(Spell):
 
@@ -4912,7 +4912,7 @@ class MulticastSpell(Spell):
 
 	def get_description(self):
 		return ("Whenever you cast a [sorcery] spell, copy it.\n"
-				"Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration]").format(**self.fmt_dict())
 
 class FaeCourt(Spell):
 
@@ -4942,9 +4942,9 @@ class FaeCourt(Spell):
 
 	def get_description(self):
 		return ("Summons a group of [{num_summons}:num_summons] faeries near the caster.\n"
-				"The faeries fly, and have [{minion_health}_HP:minion_health], [{shields}_SH:shields], [75_arcane:arcane] resistance, and a passive blink.\n"
+				"The faeries fly, and have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], [75_点_奥术:arcane] resistance, and a passive blink.\n"
 			    "The faeries can heal allies for [{heal}_HP:heal], with a range of [{minion_range}_tiles:minion_range].\n"
-			    "The faeries have a [{minion_damage}_arcane:arcane] damage attack, with a range of [{minion_range}_tiles:minion_range].\n"
+			    "The faeries have a [{minion_damage}_点_奥术:arcane] damage attack, with a range of [{minion_range}_tiles:minion_range].\n"
 			    "The faeries vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -5016,10 +5016,10 @@ class RingOfSpiders(Spell):
 
 	def get_description(self):
 		return ("Summons a ring of giant spiders at the target, surrounded by a ring of webs.\n"
-			 	"Units blocking the spider ring are [poisoned] for [{duration}_turns:duration], creatures blocking the web ring are [stunned] for [1_turn:duration].\n"
-			 	"Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
-			 	"Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [5_turns:duration] of [poison].\n"
-			 	"Webs [stun] non spider units which step on them for [1_turn:duration].\n"
+			 	"Units blocking the spider ring are [poisoned] for [{duration}_回合:duration], creatures blocking the web ring are [stunned] for [1_回合:duration].\n"
+			 	"Giant spiders have [{minion_health}_点_HP:minion_health] and spin webs.\n"
+			 	"Giant spiders have a melee attack which deals [{minion_damage}_点_物理:physical] and inflicts [5_回合:duration] of [poison].\n"
+			 	"Webs [stun] non spider units which step on them for [1_回合:duration].\n"
 			 	+ text.poison_desc + text.stun_desc).format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
@@ -5085,7 +5085,7 @@ class HolyBlast(Spell):
 		self.upgrades['echo_heal'] = (1, 4, "Echo Heal", "Affected ally units are re-healed for half the initial amount each turn for 5 turns.")
 
 	def get_description(self):
-		return "Deal [{damage}_holy:holy] damage to enemies and heal allies for [{damage}_hp:heal] along a beam and in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
+		return "Deal [{damage}_holy:holy] damage to enemies and heal allies for [{damage}_hp:heal] along a beam and in a [{radius}格:radius] burst.".format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		burst = set(p for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')) for p in stage)
@@ -5179,7 +5179,7 @@ class HolyFlame(Spell):
 		self.level = 3
 
 	def get_description(self):
-		return ("Deal [{damage}_fire:fire] damage in a vertical line and [{damage}_holy:holy] damage in a horizontal line.\n"
+		return ("Deal [{damage}_点_火焰:fire] damage in a vertical line and [{damage}_holy:holy] damage in a horizontal line.\n"
 				"[Stun] [demon] and [undead] units in the affected area.").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
@@ -5279,8 +5279,8 @@ class AngelicChorus(Spell):
 
 	def get_description(self):
 		return ("Summons a choir of [{num_summons}:num_summons] angelic singers.\n"
-				"The singers have [{minion_health}_HP:minion_health], [{shields}_SH:shields], 50% resistance to [fire] and [holy] damage, and 100% resistance to [dark] damage.\n"
-				"The angels can sing, dealing [{minion_damage}_fire:fire] and [{minion_damage}_holy:holy] damage to all [undead], [demon], and [dark] units in a [{radius}_tile:radius] radius. "
+				"The singers have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], 50% resistance to [fire] and [holy] damage, and 100% resistance to [dark] damage.\n"
+				"The angels can sing, dealing [{minion_damage}_点_火焰:fire] and [{minion_damage}_holy:holy] damage to all [undead], [demon], and [dark] units in a [{radius}格:radius] radius. "
 				"[Living] and [holy] units in the song's radius are healed for [{heal}_HP:heal].  The Wizard cannot be healed in this way.\n"
 				"The angels vanish after [{minion_duration}:minion_duration] turns.").format(**self.fmt_dict())
 
@@ -5339,7 +5339,7 @@ class HeavensWrath(Spell):
 		self.range = 0
 
 	def get_description(self):
-		return ("Deal [{damage}_lightning:lightning] damage and [{damage}_holy:holy] damage to [{num_targets}_units:num_targets] with the highest current HP.\n"
+		return ("Deal [{damage}_点_闪电:lightning] damage and [{damage}_holy:holy] damage to [{num_targets}_units:num_targets] with the highest current HP.\n"
 				"Does not target friendly units or gates.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -5384,7 +5384,7 @@ class BestowImmortality(Spell):
 		self.upgrades['lives'] = (3, 2)
 
 	def get_description(self):
-		return "Target allied unit gains the ability to reincarnate on death for [{duration}_turns:duration].".format(**self.fmt_dict())
+		return "Target allied unit gains the ability to reincarnate on death for [{duration}_回合:duration].".format(**self.fmt_dict())
 
 	def can_cast(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
@@ -5473,11 +5473,11 @@ class HolyShieldSpell(Spell):
 		self.caster.apply_buff(HolyShieldBuff(self.get_stat('resist')), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Gain [{resist}_physical:physical] resist.\n"
-				"Gain [{resist}_fire:fire] resist.\n"
-				"Gain [{resist}_lightning:lightning] resist.\n"
+		return ("Gain [{resist}_点_物理:physical] resist.\n"
+				"Gain [{resist}_点_火焰:fire] resist.\n"
+				"Gain [{resist}_点_闪电:lightning] resist.\n"
 				"Gain [{resist}_dark:dark] resist.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class BlindingLightSpell(Spell):
 
@@ -5499,7 +5499,7 @@ class BlindingLightSpell(Spell):
 
 
 	def get_description(self):
-		return ("[Blind] all units in line of sight of the caster for [{duration}_turns:duration].\n"
+		return ("[Blind] all units in line of sight of the caster for [{duration}_回合:duration].\n"
 				+ text.blind_desc +
 				"Deals [{damage}_holy:holy] damage to affected undead and demon units.").format(**self.fmt_dict())
 
@@ -5542,8 +5542,8 @@ class FlockOfEaglesSpell(Spell):
 
 	def get_description(self):
 		return ("Summons [{num_summons}_eagles:num_summons] near the caster.\n"
-				"Eagles have [{minion_health}_HP:minion_health] and can fly.\n"
-				"Eagles have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Eagles have [{minion_health}_点_HP:minion_health] and can fly.\n"
+				"Eagles have a melee attack which deals [{minion_damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		for i in range(self.get_stat('num_summons')):
@@ -5689,11 +5689,11 @@ class HeavenlyIdol(Spell):
 
 	def get_description(self):
 		return ("Summon an Idol of Beauty.\n"
-				"The idol has [{minion_health}_HP:minion_health], [{shields}_SH:shields], and is stationary.\n"
+				"The idol has [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], and is stationary.\n"
 				"The idol has a passive aura which affects all units in line of sight of the idol each turn.\n"
 				"Affected allies are healed for [{heal}_HP:heal]. The Wizard cannot be healed in this way.\n"
 				"Affected enemies take [1_holy:holy] damage.\n"
-				"Affected [undead] and [demon] units take an additional [1_lightning:lightning] damage.\n"
+				"Affected [undead] and [demon] units take an additional [1_点_闪电:lightning] damage.\n"
 				"The idol vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -5782,9 +5782,9 @@ class SummonGoldDrakeSpell(Spell):
 
 	def get_description(self):
 		return ("Summon a Gold Drake.\n"
-				"Gold drakes have [{minion_health}_HP:minion_health], [100_holy:holy] resist, and can fly.\n"
+				"Gold drakes have [{minion_health}_点_HP:minion_health], [100_holy:holy] resist, and can fly.\n"
 				"Gold drakes have a breath weapon which deals [{breath_damage}_holy:holy] damage to enemies and heals allies for [{breath_damage}_HP:heal].\n"
-				"Gold drakes have a melee attack which deals [{minion_damage}_physical:physical] damage").format(**self.fmt_dict())
+				"Gold drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage").format(**self.fmt_dict())
 
 class SeraphimSwordSwing(Spell):
 
@@ -5836,15 +5836,15 @@ class SummonSeraphim(Spell):
 		self.upgrades['moonblade'] = (1, 3, "Moonblade", "The Seraph deals arcane damage in addition to fire and holy damage with its cleave attack.")
 		self.upgrades['essence'] = (1, 5, "Essence Aura", "The Seraph increases the duration of all temporary allies within 5 tiles by 1 each turn.", "aura")
 		self.upgrades['heal'] = (5, 2, "Heal Aura", "The Seraph heals all your other minions allies within 5 tiles for 5 HP each turn.", "aura")
-		self.upgrades['holy_fire'] = (1, 5, "Holy Fire Aura", "The Seraph gains a damage aura, randomly dealing either [2_fire:fire] or [2_holy:holy] damage to enemies within 5 tiles each turn.", "aura")
+		self.upgrades['holy_fire'] = (1, 5, "Holy Fire Aura", "The Seraph gains a damage aura, randomly dealing either [2_点_火焰:fire] or [2_holy:holy] damage to enemies within 5 tiles each turn.", "aura")
 		self.level = 4
 
 		self.must_target_empty = True
 
 	def get_description(self):
 		return ("Summon a seraph.\n"
-				"Seraphim have [{minion_health}_HP:minion_health], [{shields}_SH:shields], and can fly.\n"
-				"Seraphim have a cleaving melee attack which deals [{minion_damage}_fire:fire] and [{minion_damage}_holy:holy] damage.\n"
+				"Seraphim have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], and can fly.\n"
+				"Seraphim have a cleaving melee attack which deals [{minion_damage}_点_火焰:fire] and [{minion_damage}_holy:holy] damage.\n"
 				"The seraph vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -5925,8 +5925,8 @@ class SummonArchon(Spell):
 
 	def get_description(self):
 		return ("Summon an Archon.\n"
-				"Archons have [{minion_health}_HP:minion_health], [{shields}_SH:shields], and can fly.\n"
-				"Archons have beam attacks which deal [{minion_damage}_lightning:lightning] damage to enemies and shield allies.\n"
+				"Archons have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], and can fly.\n"
+				"Archons have beam attacks which deal [{minion_damage}_点_闪电:lightning] damage to enemies and shield allies.\n"
 				"The Archon vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -5979,7 +5979,7 @@ class PainMirrorSpell(Spell):
 
 	def get_description(self):
 		return ("Whenever you take damage, deal that much [dark] damage to all enemies in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class PyrostaticPulse(Spell):
 
@@ -5998,8 +5998,8 @@ class PyrostaticPulse(Spell):
 		self.upgrades['max_charges'] = (8, 2)
 
 	def get_description(self):
-		return ("Deal [{damage}_fire:fire] damage in a beam.\n"
-				"Deal [{damage}_lightning:lightning] damage to tiles adjacent to the beam.").format(**self.fmt_dict())
+		return ("Deal [{damage}_点_火焰:fire] damage in a beam.\n"
+				"Deal [{damage}_点_闪电:lightning] damage to tiles adjacent to the beam.").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		center_beam = self.caster.level.get_points_in_line(self.caster, Point(x, y), find_clear=True)[1:]
@@ -6180,7 +6180,7 @@ class VoidRip(Spell):
 		self.damage = 16
 		self.level = 3
 
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Aether Swap can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Aether Swap 施放无需视线。")
 		self.upgrades['range'] = (3, 1)
 		self.upgrades['max_charges'] = (10, 3)
 
@@ -6188,7 +6188,7 @@ class VoidRip(Spell):
 
 	def get_description(self):
 		return ("Swap places with target unit.\n"
-				"That unit takes [{damage}_arcane:arcane] damage.\n"
+				"That unit takes [{damage}_点_奥术:arcane] damage.\n"
 				"Cannot target [arcane] immune units.").format(**self.fmt_dict())
 
 	def can_cast(self, x, y):
@@ -6288,8 +6288,8 @@ class VoidMaw(Spell):
 
 	def get_description(self):
 		return ("Summons a hungry maw.\n"
-				"The maw has [{minion_health}_HP:minion_health], [{shields}_SH:shields], floats, and is stationary.\n"
-				"The maw has a [{minion_damage}_physical:physical] damage attack, which pulls enemies towards it, with a range of [{minion_range}_tiles:minion_range].\n"
+				"The maw has [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], floats, and is stationary.\n"
+				"The maw has a [{minion_damage}_点_物理:physical] damage attack, which pulls enemies towards it, with a range of [{minion_range}_tiles:minion_range].\n"
 				"The maw vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 	
 	def cast_instant(self, x, y):
@@ -6456,9 +6456,9 @@ class ConductanceSpell(Spell):
 
 	def get_description(self):
 		return ("Curse an enemy with the essence of conductivity.\n"
-				"That enemy loses [50_lightning:lightning] resist.\n"
+				"That enemy loses [50_点_闪电:lightning] resist.\n"
 				"Whenever you cast a [lightning] spell targeting that enemy, copy that spell.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class ShrapnelBlast(Spell):
 
@@ -6480,9 +6480,9 @@ class ShrapnelBlast(Spell):
 
 	def get_description(self):
 		return ("Detonate target wall tile.\n" 
-				"Enemies adjacent to the wall tile take [{damage}_fire:fire] damage.\n"
-				"The explosion fires [{num_targets}_shards:num_targets] at random tiles in a [{radius}_tile:radius] burst.\n"
-				"Each shard deals [{damage}_physical:physical] damage.").format(**self.fmt_dict())
+				"Enemies adjacent to the wall tile take [{damage}_点_火焰:fire] damage.\n"
+				"The explosion fires [{num_targets}_shards:num_targets] at random tiles in a [{radius}格:radius] burst.\n"
+				"Each shard deals [{damage}_点_物理:physical] damage.").format(**self.fmt_dict())
 
 
 	def can_cast(self, x, y):
@@ -6570,13 +6570,13 @@ class PlagueOfFilth(Spell):
 
 	def get_description(self):
 		return ("Summon a group of [{num_summons}:num_summons] toads and fly swarms.\n"
-				"Toads have [{minion_health}_HP:minion_health].\n"
-				"Toads have a ranged tongue attack which deals [{minion_damage}_physical:physical] damage and pulls enemies towards it.\n"
+				"Toads have [{minion_health}_点_HP:minion_health].\n"
+				"Toads have a ranged tongue attack which deals [{minion_damage}_点_物理:physical] damage and pulls enemies towards it.\n"
 				"Toads can hop up to [4_tiles:range] away.\n"
-				"Fly swarms have [{fly_health}_HP:minion_health], [75_dark:dark] resist, [75_physical:physical] resist, [-50_ice:ice] resist, and can fly.\n"
-				"Fly swarms have a melee attack which deals [{fly_damage}_physical:physical] damage.\n"
+				"Fly swarms have [{fly_health}_点_HP:minion_health], [75_dark:dark] resist, [75_点_物理:physical] resist, [-50_ice:ice] resist, and can fly.\n"
+				"Fly swarms have a melee attack which deals [{fly_damage}_点_物理:physical] damage.\n"
 				"The summons vanish after [{minion_duration}_turns:minion_duration].\n"
-				"This spell can be channeled for up to [{max_channel}_turns:duration].").format(**self.fmt_dict())
+				"This spell can be channeled for up to [{max_channel}_回合:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y, channel_cast=False):
 
@@ -6646,8 +6646,8 @@ class SummonFieryTormentor(Spell):
 
 	def get_description(self):
 		return ("Summon a fiery tormentor.\n"
-				"The tormentor has [{minion_health}_HP:minion_health].\n"
-				"The tormentor has a burst attack dealing [{minion_damage}_fire:fire] damage with a [{radius}_tile:radius] radius.\n"
+				"The tormentor has [{minion_health}_点_HP:minion_health].\n"
+				"The tormentor has a burst attack dealing [{minion_damage}_点_火焰:fire] damage with a [{radius}格:radius] radius.\n"
 				"The tormentor has a lifesteal attack dealing [{minion_leech_damage}_dark:dark] damage with a [{minion_range}_tile:minion_range] range.\n"
 				"The tormentor vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
@@ -6732,8 +6732,8 @@ class DispersionFieldSpell(Spell):
 		self.upgrades['max_charges'] = (5, 4)
 
 	def get_description(self):
-		return ("Each turn, teleport [{num_targets}_enemies:num_targets] in a [{radius}_tile:radius] radius to random locations on the map.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Each turn, teleport [{num_targets}_enemies:num_targets] in a [{radius}格:radius] radius to random locations on the map.\n"
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(DispersionFieldBuff(self), self.get_stat('duration'))
@@ -6775,7 +6775,7 @@ class SummonKnights(Spell):
 
 	def get_description(self):
 		return ("Summon a void knight, a chaos knight, and a storm knight.\n"
-				"Each knight has [{minion_health}_HP:minion_health], various resistances, and an arsenal of unique magical abilities.\n"
+				"Each knight has [{minion_health}_点_HP:minion_health], various resistances, and an arsenal of unique magical abilities.\n"
 				"The caster takes [40_holy:holy] damage whenever a knight dies.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -6830,7 +6830,7 @@ class ToxinBurst(Spell):
 				yield
 
 	def get_description(self):
-		return ("Deal [{damage}_poison:poison] damage and inflict [poison] on all units in a [{radius}_tile:radius] radius for [{duration}_turns:duration].\n"
+		return ("Deal [{damage}_poison:poison] damage and inflict [poison] on all units in a [{radius}格:radius] radius for [{duration}_回合:duration].\n"
 				+ text.poison_desc).format(**self.fmt_dict())
 
 class ToxicSpore(Spell):
@@ -6857,9 +6857,9 @@ class ToxicSpore(Spell):
 
 	def get_description(self):
 		return ("Summons [{num_summons}:num_summons] Mushbooms.\n"
-				"Mushbooms have [{minion_health}_HP:minion_health].\n"
-				"Mushbooms have a ranged attack dealing [{minion_damage}_poison:poison] damage and inflicting [4_turns:duration] of [poison].\n"
-				"Mushbooms inflict [12_turns:duration] of [poison] on units in melee range when they die.").format(**self.fmt_dict())
+				"Mushbooms have [{minion_health}_点_HP:minion_health].\n"
+				"Mushbooms have a ranged attack dealing [{minion_damage}_poison:poison] damage and inflicting [4_回合:duration] of [poison].\n"
+				"Mushbooms inflict [12_回合:duration] of [poison] on units in melee range when they die.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		for i in range(self.get_stat('num_summons')):
@@ -6908,7 +6908,7 @@ class AmplifyPoisonSpell(Spell):
 		self.upgrades['spread'] = (1, 2, "Spread Poison", "Amplify Poison spreads poison to nearby enemies (radius 2)")
 
 	def get_description(self):
-		return ("All [poisoned] enemies lose [100_poison:poison] resist for [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("All [poisoned] enemies lose [100_poison:poison] resist for [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -6961,7 +6961,7 @@ class IgnitePoison(Spell):
 
 	def get_description(self):
 		return ("Consume all [poison] on enemy units.\n"
-				"Deal [fire] damage in an [{radius}_tile:radius] burst around each affected enemy equal to [{multiplier}x:damage] the amount of poison consumed.").format(**self.fmt_dict())		
+				"Deal [fire] damage in an [{radius}格:radius] burst around each affected enemy equal to [{multiplier}x:damage] the amount of poison consumed.").format(**self.fmt_dict())		
 
 	def cast(self, x, y):
 
@@ -7036,8 +7036,8 @@ class VenomBeast(Spell):
 
 	def get_description(self):
 		return ("Summon a venom best.\n"
-				"The venom beast has [{minion_health}_HP:minion_health], and heals whenever any unit takes poison damage.\n"
-				"The venom beast has a melee attack which deals [{minion_damage}_physical:physical] damage and inflicts [5_turns:duration] of [poison].").format(**self.fmt_dict())
+				"The venom beast has [{minion_health}_点_HP:minion_health], and heals whenever any unit takes poison damage.\n"
+				"The venom beast has a melee attack which deals [{minion_damage}_点_物理:physical] damage and inflicts [5_回合:duration] of [poison].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		beast = Unit()
@@ -7096,10 +7096,10 @@ class SummonSpiderQueen(Spell):
 
 	def get_description(self):
 		return ("Summon a spider queen.\n"
-				"The spider queen has [{queen_hp}_HP:minion_health].\n"
-				"The spider queen hatches [{num_summons}:num_summons] baby spiders every [12_turns:duration].\n"
-				"Baby spiders have [3_HP:minion_health] and prefer to flee than attack, but they mature into giant spiders after [8_turns:duration] which have [{spider_hp}_HP:minion_health].\n"
-				"Giant spiders and the spider queen have melee attacks which deal [{minion_damage}_physical:physical] physical damage and inflicts 10 turns of [poison].").format(**self.fmt_dict())
+				"The spider queen has [{queen_hp}_点_HP:minion_health].\n"
+				"The spider queen hatches [{num_summons}:num_summons] baby spiders every [12_回合:duration].\n"
+				"Baby spiders have [3_HP:minion_health] and prefer to flee than attack, but they mature into giant spiders after [8_回合:duration] which have [{spider_hp}_点_HP:minion_health].\n"
+				"Giant spiders and the spider queen have melee attacks which deal [{minion_damage}_点_物理:physical] physical damage and inflicts 10 turns of [poison].").format(**self.fmt_dict())
 
 	def spawn_with_bonuses(self, base_spawner):
 		unit = base_spawner()
@@ -7168,7 +7168,7 @@ class Freeze(Spell):
 		target.apply_buff(FrozenBuff(), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Target unit is [frozen] for [{duration}_turns:duration].\n"
+		return ("Target unit is [frozen] for [{duration}_回合:duration].\n"
 			    + text.frozen_desc).format(**self.fmt_dict())
 
 class Iceball(Spell):
@@ -7193,8 +7193,8 @@ class Iceball(Spell):
 
 
 	def get_description(self):
-		return ("Deals [{damage}_ice:ice] damage in a [{radius}_tile:radius] burst.\n"
-				"Affected units in the area are [frozen] for [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Deals [{damage}_ice:ice] damage in a [{radius}格:radius] burst.\n"
+				"Affected units in the area are [frozen] for [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		target = Point(x, y)
@@ -7239,13 +7239,13 @@ class BlizzardSpell(Spell):
 		self.upgrades['damage'] = (5, 2)
 		self.upgrades['radius'] = (2, 3)
 		self.upgrades['duration'] = (5, 2)
-		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Blizzard can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Blizzard 施放无需视线。")
 
 	def get_description(self):
-		return ("Create a blizzard with a [{radius}_tile:radius] radius.\n" +
+		return ("Create a blizzard with a [{radius}格:radius] radius.\n" +
 				"Each turn, units in the blizzard take [{damage}_ice:ice] damage, and have a 50% chance to be [frozen].\n" +
 				text.frozen_desc +
-				"The blizzard lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"The blizzard lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -7283,8 +7283,8 @@ class SummonFrostfireHydra(Spell):
 
 	def get_description(self):
 		return ("Summon a frostfire hydra.\n"
-				"The hydra has [{minion_health}_HP:minion_health], and is stationary.\n"
-				"The hydra has a beam attack which deals [{minion_damage}_fire:fire] damage with a [{minion_range}_tile:minion_range] range.\n"
+				"The hydra has [{minion_health}_点_HP:minion_health], and is stationary.\n"
+				"The hydra has a beam attack which deals [{minion_damage}_点_火焰:fire] damage with a [{minion_range}_tile:minion_range] range.\n"
 				"The hydra has a beam attack which deals [{minion_damage}_ice:ice] damage with a [{minion_range}_tile:minion_range] range.\n"
 				"The hydra vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
@@ -7335,10 +7335,10 @@ class StormNova(Spell):
 		self.upgrades['radius'] = (2, 3)
 
 	def get_description(self):
-		return ("Unleashes a [{radius}_tile:radius] burst of storm energy.\n"
-				"Each tile in the burst takes either [{damage}_ice:ice] damage or [{damage}_lightning:lightning] damage.\n"
-				"Units dealt ice damage are [frozen] for [{duration}_turns:duration].\n"
-				"Units dealt lightning damage are [stunned] for [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("Unleashes a [{radius}格:radius] burst of storm energy.\n"
+				"Each tile in the burst takes either [{damage}_ice:ice] damage or [{damage}_点_闪电:lightning] damage.\n"
+				"Units dealt ice damage are [frozen] for [{duration}_回合:duration].\n"
+				"Units dealt lightning damage are [stunned] for [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		for stage in Burst(self.caster.level, self.caster, self.get_stat('radius')):
@@ -7420,8 +7420,8 @@ class DeathChill(Spell):
 		self.upgrades['duration'] = (4, 3)
 
 	def get_description(self):
-		return ("Deal [{damage}_dark:dark] damage to the target each turn for [{duration}_turns:duration].\n"
-				"If the target dies during this time, deals [{damage}_ice:ice] damage and inflicts [frozen] for [{duration}_turns:duration] on all enemies within a [{radius}_tiles:radius] radius.\n"
+		return ("Deal [{damage}_dark:dark] damage to the target each turn for [{duration}_回合:duration].\n"
+				"If the target dies during this time, deals [{damage}_ice:ice] damage and inflicts [frozen] for [{duration}_回合:duration] on all enemies within a [{radius}_tiles:radius] radius.\n"
 				+ text.frozen_desc).format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -7469,9 +7469,9 @@ class SummonIcePhoenix(Spell):
 
 	def get_description(self):
 		return ("Summon an ice phoenix.\n"
-				"The phoenix has [{minion_health}_HP:minion_health], flies, and reincarnates once upon death.\n"
+				"The phoenix has [{minion_health}_点_HP:minion_health], flies, and reincarnates once upon death.\n"
 				"The phoenix has a ranged attack which deals [{minion_damage}_ice:ice] damage with a [{minion_range}_tile:minion_range] range.\n"
-				"When the phoenix dies, it explodes in a [6_tile:radius] burst, dealing [25_ice:ice] damage to enemies and granting [2_SH:shields] to allies."
+				"When the phoenix dies, it explodes in a [6格:radius] burst, dealing [25_ice:ice] damage to enemies and granting [2_SH:shields] to allies."
 			).format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -7524,7 +7524,7 @@ class WordOfIce(Spell):
 		return [u for u in self.caster.level.units if are_hostile(u, self.caster) and (u.resists[Tags.Ice] < 100 or Tags.Fire in u.tags)]
 
 	def get_description(self):
-		return ("All non [ice] immune enemies under 50 HP are [frozen] for [{duration}_turns:duration].\n"
+		return ("All non [ice] immune enemies under 50 HP are [frozen] for [{duration}_回合:duration].\n"
 				"Deals [{damage}_ice:ice] damage to all fire units.").format(**self.fmt_dict())
 
 class IceWeave(Spell):
@@ -7542,7 +7542,7 @@ class IceWeave(Spell):
 		self.upgrades['max_charges'] = (4, 3)
 
 	def get_description(self):
-		return ("All [frozen] enemies are [frozen] for an additional [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("All [frozen] enemies are [frozen] for an additional [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		for u in self.caster.level.units:
@@ -7601,8 +7601,8 @@ class Icicle(Spell):
 		self.add_upgrade(IcicleHarvest())
 
 	def get_description(self):
-		return ("Deal [{damage}_physical:physical] damage to the target.\n"
-				"Then, deal [{damage}_ice:ice] to the target and a [{radius}_tile:radius] area around it.").format(**self.fmt_dict())
+		return ("Deal [{damage}_点_物理:physical] damage to the target.\n"
+				"Then, deal [{damage}_ice:ice] to the target and a [{radius}格:radius] area around it.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -7644,7 +7644,7 @@ class IceWind(Spell):
 		self.upgrades['damage'] = (14, 2)
 
 	def get_description(self):
-		return ("Deals [{damage}_ice:ice] damage and inflicts [{duration}_turns:duration] of [frozen] on units in a [3_tile:radius] wide line perpendicular to the caster.").format(**self.fmt_dict())
+		return ("Deals [{damage}_ice:ice] damage and inflicts [{duration}_回合:duration] of [frozen] on units in a [3格:radius] wide line perpendicular to the caster.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		for p in self.get_impacted_tiles(x, y):
@@ -7691,7 +7691,7 @@ class IceWall(Spell):
 
 	def get_description(self):
 		return ("Summons a line of ice elementals with a length of [{width}_tiles:num_summons].\n"
-				"Ice elementals have [{minion_health}_HP:minion_health], [50_physical:physical] resist, [100_ice:ice] resist, [-100_fire:fire] resist, and cannot move.\n"
+				"Ice elementals have [{minion_health}_点_HP:minion_health], [50_点_物理:physical] resist, [100_ice:ice] resist, [-100_点_火焰:fire] resist, and cannot move.\n"
 				"Ice elementals have a ranged attack which deals [{minion_damage}_ice:ice] damage at a range of up to [{minion_range}_tiles:minion_range].\n"
 				"The elementals vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
@@ -7739,9 +7739,9 @@ class EarthquakeSpell(Spell):
 		self.upgrades['safety'] = (1, 2, "Safety", "Earthquake will not damage friendly units")
 
 	def get_description(self):
-		return ("Invoke an earthquake with a [{radius}_tile:radius] radius.\n"
+		return ("Invoke an earthquake with a [{radius}格:radius] radius.\n"
 				"Each tile in the area has a 50% chance to be affected.\n"
-				"Units on affected tiles take [{damage}_physical:physical] physical damage.\n"
+				"Units on affected tiles take [{damage}_点_物理:physical] physical damage.\n"
 				"Walls on affected tiles are destroyed.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -7821,8 +7821,8 @@ class SearingSealSpell(Spell):
 	def get_description(self):
 		return ("Gain Seal of Searing.\n"
 				"Whenever an enemy takes [fire] damage, the seal gains that many charges.\n"
-				"When the seal expires, it deals [1_fire:fire] damage to all enemies in line of sight for every 4 charges it has.\n"
-				"The seal lasts [{duration}_turns:duration].\n"
+				"When the seal expires, it deals [1_点_火焰:fire] damage to all enemies in line of sight for every 4 charges it has.\n"
+				"The seal lasts [{duration}_回合:duration].\n"
 				"Recasting the spell will expire the current seal and create a new one.").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -7860,7 +7860,7 @@ class PuritySpell(Spell):
 	def get_description(self):
 		return ("Lose all debuffs.\n"
 				"You cannot gain new debuffs.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		buffs = list(self.caster.buffs)
@@ -7906,7 +7906,7 @@ class TwilightGazeSpell(Spell):
 
 	def get_description(self):
 		return ("All enemies in line of sight lose [{resistance_debuff}_dark:dark] resist and [{resistance_debuff}_holy:holy] resist.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		units = [u for u in self.caster.level.get_units_in_los(self.caster) if are_hostile(u, self.caster)]
@@ -7974,11 +7974,11 @@ class SlimeformSpell(Spell):
 		self.minion_range = 3
 
 	def get_description(self):
-		return ("Assume slime form for [{duration}_turns:duration].\n"
-				"Gain [50_physical:physical] resist while in slime form.\n"
+		return ("Assume slime form for [{duration}_回合:duration].\n"
+				"Gain [50_点_物理:physical] resist while in slime form.\n"
 				"Gain [100_poison:poison] resist while in slime form.\n"
 				"Summon a friendly slime each turn while in slime form.\n"
-				"Slimes have [{minion_health}_HP:minion_health], have a 50% chance each turn to gain 1 max HP, and split into two slimes upon reaching twice their starting HP.\n"
+				"Slimes have [{minion_health}_点_HP:minion_health], have a 50% chance each turn to gain 1 max HP, and split into two slimes upon reaching twice their starting HP.\n"
 				"Slimes have a melee attack which deals [{minion_damage}_poison:poison] damage.").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -8017,7 +8017,7 @@ class Blazerip(Spell):
 		return d
 
 	def get_description(self):
-		return ("Deals [{damage}_arcane:arcane] and [{damage}_fire:fire] damage in a [{width}_tile:radius] line perpendicular to the caster.\n"
+		return ("Deals [{damage}_点_奥术:arcane] and [{damage}_点_火焰:fire] damage in a [{width}格:radius] line perpendicular to the caster.\n"
 				"Melts walls in the affected area.").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y): 
@@ -8052,7 +8052,7 @@ class IceVortex(Spell):
 
 	def get_description(self):
 		return ("Must target a frozen unit.\n"
-				"All enemy units in a [{radius}_tile:radius] radius are pulled towards that unit, [frozen] for [{duration}_turns:duration], and dealt [{damage}_arcane:arcane] and [{damage}_ice:ice] damage.").format(**self.fmt_dict())
+				"All enemy units in a [{radius}格:radius] radius are pulled towards that unit, [frozen] for [{duration}_回合:duration], and dealt [{damage}_点_奥术:arcane] and [{damage}_ice:ice] damage.").format(**self.fmt_dict())
 
 	def modify_test_level(self, level):
 		first_enemy = [u for u in level.units if u.team != TEAM_PLAYER][0]
@@ -8174,9 +8174,9 @@ class RestlessDead(Spell):
 
 	def get_description(self):
 		return ("Whenever a living enemy dies, raise it as a skeleton.\n"
-				"Raised skeletons have max HP equal to that of the slain unit, and deal [{minion_damage}_physical:physical] damage in melee.\n"
+				"Raised skeletons have max HP equal to that of the slain unit, and deal [{minion_damage}_点_物理:physical] damage in melee.\n"
 				"Skeletons of flying units can fly.\n"
-				"This effect lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"This effect lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(RestlessDeadBuff(self), self.get_stat('duration'))
@@ -8202,7 +8202,7 @@ class GustOfWind(Spell):
 
 	def get_description(self):
 		return ("Push back units in a cone [{force}:range] tiles.\n"
-				"If a unit collides with a wall, chasm, or another unit, it is [stunned] for [{duration}_turns:duration] and takes [{damage}_physical:physical] damage.\n"
+				"If a unit collides with a wall, chasm, or another unit, it is [stunned] for [{duration}_回合:duration] and takes [{damage}_点_物理:physical] damage.\n"
 				"Stationary enemise are unaffected.\n"
 				"Stormclouds and webs in the area are destroyed.\n").format(**self.fmt_dict())
 		
@@ -8299,7 +8299,7 @@ class PyrostaticHexSpell(Spell):
 		self.upgrades['beam'] = (1, 5, "Linear Conductance", "Redealt lightning damage is dealt along a beam instead of just to one target.")
 
 	def get_description(self):
-		return ("Curses targets in a [{radius}_tile:radius] radius for [{duration}_turns:duration].\n"
+		return ("Curses targets in a [{radius}格:radius] radius for [{duration}_回合:duration].\n"
 				"Whenever a cursed target takes fire damage, 2 random enemy units in line of sight of that unit are dealt half that much [lightning] damage.\n").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -8446,10 +8446,10 @@ class MercurizeSpell(Spell):
 		self.upgrades['vengeance'] = (1, 5, "Mercurial Vengeance", "When a Quicksilver Geist is killed, its killer is affliected with Mercurize.")
 
 	def get_description(self):
-		return("Afflict the target with Mercurize.  The target takes [{damage}_poison:poison] and [{damage}_physical:physical] damage each turn for [{duration}_turns:duration].\n"
+		return("Afflict the target with Mercurize.  The target takes [{damage}_poison:poison] and [{damage}_点_物理:physical] damage each turn for [{duration}_回合:duration].\n"
 			   "If the target dies while cursed, it is raised as a Quicksilver Geist.\n"
 			   "Geists are flying undead metallic units with many resistances and immunities.\n"
-			   "The Geist has max HP equal to the cursed unit, and a trample attack dealing [{minion_damage}_physical:physical] damage.\n".format(**self.fmt_dict()))
+			   "The Geist has max HP equal to the cursed unit, and a trample attack dealing [{minion_damage}_点_物理:physical] damage.\n".format(**self.fmt_dict()))
 
 	def can_cast(self, x, y):
 		return self.caster.level.get_unit_at(x, y) is not None and Spell.can_cast(self, x, y)
@@ -8534,9 +8534,9 @@ class MagnetizeSpell(Spell):
 
 	def get_description(self):
 		return ("Magnetize target metallic unit.\n"
-				"Enemy units within a [{radius}_tile:radius] radius of the magnetized unit are pulled [{pull_strength}_tiles:range] towards the unit each turn.\n"
+				"Enemy units within a [{radius}格:radius] radius of the magnetized unit are pulled [{pull_strength}_tiles:range] towards the unit each turn.\n"
 				"Afterwards, adjecent enemy units are stunned for 1 turn.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+				"Lasts [{duration}_回合:duration].").format(**self.fmt_dict())
 
 class SilverSpearSpell(Spell):
 
@@ -8556,8 +8556,8 @@ class SilverSpearSpell(Spell):
 		self.upgrades['max_charges'] = (12, 3)
 
 	def get_description(self):
-		return ("Deals [{damage}_physical:physical] damage to the target.\n"
-				"Deals [{damage}_holy:holy] damage to [dark] and [arcane] units within a [{radius}_tile:radius] away from the projectiles path.".format(**self.fmt_dict()))
+		return ("Deals [{damage}_点_物理:physical] damage to the target.\n"
+				"Deals [{damage}_holy:holy] damage to [dark] and [arcane] units within a [{radius}格:radius] away from the projectiles path.".format(**self.fmt_dict()))
 
 	def get_impacted_tiles(self, x, y):
 		points = set()
@@ -8637,8 +8637,8 @@ class SummonSiegeGolemsSpell(Spell):
 	def get_description(self):
 		return ("Summons a crew of [{num_summons}:num_summons] siege golems.\n"
 				"The siege golems will assemble an inferno cannon, or operate one if it is within [3_tiles:range].\n"
-				"The inferno cannon deals [{minion_damage}_fire:fire] damage to units in a [{radius}_tile:radius] radius.\n"
-				"The cannon will explode when destroyed, dealing [{minion_damage}_fire:fire] damage equal to one quarter its maximum hp to units in a [3_tile:radius].\n".format(**self.fmt_dict()))
+				"The inferno cannon deals [{minion_damage}_点_火焰:fire] damage to units in a [{radius}格:radius] radius.\n"
+				"The cannon will explode when destroyed, dealing [{minion_damage}_点_火焰:fire] damage equal to one quarter its maximum hp to units in a [3格:radius].\n".format(**self.fmt_dict()))
 
 	def cannon(self):
 		unit = Unit()
@@ -8754,7 +8754,7 @@ class LightningSpire(Spell):
 	def get_description(self):
 		return ("Summon a Lightning Spire.\n"
 				"Lightning Spires are stationary [metallic] constructs with [{minion_health}:minion_health] max hp.\n"
-				"Each turn, the spire will zap up to [{num_targets}:num_targets] enemy units up to [{radius}:minion_range] tiles away, dealing [{minion_damage}_lightning:lightning] damage.").format(**self.fmt_dict())
+				"Each turn, the spire will zap up to [{num_targets}:num_targets] enemy units up to [{radius}:minion_range] tiles away, dealing [{minion_damage}_点_闪电:lightning] damage.").format(**self.fmt_dict())
 
 
 	def get_impacted_tiles(self, x, y):
