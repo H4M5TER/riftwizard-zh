@@ -3,3 +3,4 @@ tcod==11.9.0
 pygame==2.0.0.dev6
 PyInstaller==3.6
 objgraph==3.5.0
+cffi==1.14.4
