@@ -131,7 +131,7 @@ class MeteorShower(Spell):
 			"每回合在 [{storm_radius}格:radius] 范围内随机地块上降下 [{num_targets}_个陨石:num_targets]。\n"
 			"陨石造成 [{damage}_点_物理:physical] 伤害，摧毁墙，施加击晕 [{stun_duration}_回合:duration]。\n"
 			"陨石还在 [{radius}格:radius] 范围内造成 [{damage}_点_火焰:fire] 伤害。\n"
-			"此咒语可引导至多 [{max_channel}_回合:duration]。引导时每回合重复此效果。").format(
+			"此法术可引导至多 [{max_channel}_回合:duration]。引导时每回合重复此效果。").format(
 			**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
@@ -352,7 +352,7 @@ class FlameGateBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'flame_gate']
 		self.cast = True
-		self.description = "每当你施放火焰咒语时，临时在目标旁召唤一个火元素。\n\n你移动或施放非火焰咒语时，此附魔结束。"
+		self.description = "每当你施放火焰法术时，临时在目标旁召唤一个火元素。\n\n你移动或施放非火焰法术时，此附魔结束。"
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -413,11 +413,11 @@ class FlameGateSpell(Spell):
 		yield
 
 	def get_description(self):
-		return ("每当你施放 [fire] 咒语时，在咒语目标处召唤一个火元素。\n"
+		return ("每当你施放 [fire] 法术时，在法术目标处召唤一个火元素。\n"
 				"火元素有 [{minion_health}_点_HP:minion_health]、[100_点_火焰:fire] 抗性、[50_点_物理:physical] 抗性和 [-50_点_寒冰:ice] 抗性。\n"
 				"火元素的攻击造成 [{minion_damage}_点_火焰:fire] 伤害，射程为 [{minion_range}格:minion_range]。\n"
 				"火元素在 [{minion_duration}_回合:minion_duration] 后消失。\n"
-				"此效果持续到你不施放火焰咒语为止。").format(**self.fmt_dict())
+				"此效果持续到你不施放火焰法术为止。").format(**self.fmt_dict())
 
 class LightningFormBuff(Buff):
 
@@ -429,7 +429,7 @@ class LightningFormBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'lightning_form']
 		self.color = Tags.Lightning.color
-		self.description = "每当你施放闪电咒语时，若目标地块为空，传送到目标地块。\n\n你移动或施放非闪电咒语时，此附魔结束。"
+		self.description = "每当你施放闪电法术时，若目标地块为空，传送到目标地块。\n\n你移动或施放非闪电法术时，此附魔结束。"
 		self.cast = True
 		self.stack_type = STACK_TYPE_TRANSFORM
 
@@ -478,10 +478,10 @@ class LightningFormSpell(Spell):
 		yield
 
 	def get_description(self):
-		return ("每当你施放 [lightning] 咒语时，传送到该咒语的目标地块。\n"
+		return ("每当你施放 [lightning] 法术时，传送到该法术的目标地块。\n"
 				"获得 [100_点_闪电:lightning] 抗性。\n"
 				"获得 [100_点_物理:physical] 抗性。\n"
-				"此效果持续到你不施放 [lightning] 咒语的首个回合为止。").format(**self.fmt_dict())
+				"此效果持续到你不施放 [lightning] 法术的首个回合为止。").format(**self.fmt_dict())
 
 class VoidBeamSpell(Spell):
 

@@ -167,7 +167,7 @@ def mana_potion():
 	item = Item()
 	item.name = "Mana Potion"
 	duration = 3
-	item.description = "补满所有咒语的充能。"
+	item.description = "补满所有法术的充能。"
 	item.set_spell(SpellCouponSpell())
 	return item
 
@@ -306,7 +306,7 @@ class YouthElixerBuff(Buff):
 
 	def on_init(self):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-		self.description = "咒语的充能得到返还。"
+		self.description = "法术的充能得到返还。"
 		self.name = "Youth"
 
 	def on_spell_cast(self, evt
@@ -317,7 +317,7 @@ class YouthElixerBuff(Buff):
 def youth_elixer():
 	item = Item()
 	item.name = "Elixir of Youth"
-	item.description = "所有咒语消耗的充能立刻返还，持续 7 回合。"
+	item.description = "所有法术消耗的充能立刻返还，持续 7 回合。"
 	item.set_spell(PotionSpell(YouthElixerBuff, 7))
 	return item
 
@@ -363,7 +363,7 @@ class OculusBuff(Buff):
 def oculus():
 	item = Item()
 	item.name = "Oculus"
-	item.description = "你的所有咒语获得 15 点射程且无需视线，持续 10 回合。"
+	item.description = "你的所有法术获得 15 点射程且无需视线，持续 10 回合。"
 	item.set_spell(PotionSpell(OculusBuff, 10))
 	return item
 

@@ -134,9 +134,9 @@ class TooltipExamineTarget(object):
 	def __init__(self, desc):
 		self.description = desc
 
-LEARN_SPELL_TARGET = TooltipExamineTarget("学习新咒语")
-LEARN_SKILL_TARGET = TooltipExamineTarget("学习新被动")
-CHAR_SHEET_TARGET = TooltipExamineTarget("学习新咒语和被动")
+LEARN_SPELL_TARGET = TooltipExamineTarget("学习新法术")
+LEARN_SKILL_TARGET = TooltipExamineTarget("学习新能力")
+CHAR_SHEET_TARGET = TooltipExamineTarget("学习新法术和能力")
 INSTRUCTIONS_TARGET = TooltipExamineTarget("学习游戏规则")
 OPTIONS_TARGET = TooltipExamineTarget("调整选项设置")
 
@@ -2179,7 +2179,7 @@ class PyGameView(object):
 		spell_x_offset = self.border_margin + 18
 		cur_x = spell_x_offset
 		cur_y = self.linesize
-		self.draw_string("咒语", self.middle_menu_display, cur_x, cur_y)
+		self.draw_string("法术", self.middle_menu_display, cur_x, cur_y)
 
 		m_loc = self.get_mouse_pos()
 
@@ -2219,13 +2219,13 @@ class PyGameView(object):
 
 		learn_color = (255, 255, 255) if len(self.game.p1.spells) < 20 else (170, 170, 170)
 
-		self.draw_string("学习咒语 (S)", self.middle_menu_display, cur_x, cur_y, learn_color, mouse_content=LEARN_SPELL_TARGET, content_width=col_width)
+		self.draw_string("学习法术 (S)", self.middle_menu_display, cur_x, cur_y, learn_color, mouse_content=LEARN_SPELL_TARGET, content_width=col_width)
 
 		# Skills
 		skill_x_offset = self.middle_menu_display.get_width() // 2 + self.border_margin
 		cur_x = skill_x_offset
 		cur_y = self.linesize
-		self.draw_string("被动", self.middle_menu_display, cur_x, cur_y)
+		self.draw_string("能力", self.middle_menu_display, cur_x, cur_y)
 
 		cur_y += self.linesize
 		cur_y += self.linesize
@@ -2234,7 +2234,7 @@ class PyGameView(object):
 			_name = loc.dic.get(skill.name) if skill.name in loc.dic else skill.name
 			self.draw_string(_name, self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
 			cur_y += self.linesize
-		self.draw_string("学习被动 (K)", self.middle_menu_display, cur_x, cur_y, mouse_content=LEARN_SKILL_TARGET,  content_width=col_width)
+		self.draw_string("学习能力 (K)", self.middle_menu_display, cur_x, cur_y, mouse_content=LEARN_SKILL_TARGET,  content_width=col_width)
 
 		self.screen.blit(self.middle_menu_display, (self.h_margin, 0))
 
@@ -2871,11 +2871,11 @@ class PyGameView(object):
 		num_options = len(shoptions)
 
 		if self.shop_type == SHOP_TYPE_SPELLS:
-			self.draw_string("学习咒语：", self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("学习法术：", self.middle_menu_display, cur_x, cur_y)
 			self.draw_string("SP", self.middle_menu_display, level_x - self.font.size('X')[0], cur_y, COLOR_XP)
 			self.draw_string("类别", self.middle_menu_display, cur_x + tag_offset, cur_y)
 		if self.shop_type == SHOP_TYPE_UPGRADES:
-			self.draw_string("学习被动：", self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("学习能力：", self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
 			_name = loc.dic.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name)
 			self.draw_string("升级%s：" % _name, self.middle_menu_display, cur_x, cur_y)
@@ -3944,7 +3944,7 @@ class PyGameView(object):
 
 		cur_y += linesize
 
-		self.draw_string("咒语：", self.character_display, cur_x, cur_y)
+		self.draw_string("法术：", self.character_display, cur_x, cur_y)
 		cur_y += linesize
 
 		# Spells
@@ -4038,7 +4038,7 @@ class PyGameView(object):
 		if skills:
 			cur_y += linesize
 
-			self.draw_string("被动：", self.character_display, cur_x, cur_y)
+			self.draw_string("能力：", self.character_display, cur_x, cur_y)
 			cur_y += linesize
 
 			skill_x_max = self.character_display.get_width() - self.border_margin - 16
@@ -4136,7 +4136,7 @@ class PyGameView(object):
 		for tag, bonuses in self.examine_target.tag_bonuses.items():
 			for attr, val in bonuses.items():
 				#cur_color = tag.color
-				fmt = "%s 咒语和被动获得 [%s_%s:%s]。" % (tag.name, val, attr, attr)
+				fmt = "%s法术和能力获得 [%s_%s:%s]。" % (tag.name, val, attr, attr)
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
 			cur_y += self.linesize
@@ -4161,9 +4161,9 @@ class PyGameView(object):
 
 		for attr, val in self.examine_target.global_bonuses.items():
 			if val >= 0:
-				fmt = "所有咒语和被动获得 %d %s" % (val, format_attr(attr))
+				fmt = "所有法术和能力获得 %d %s" % (val, format_attr(attr))
 			else:
-				fmt = "所有咒语和被动失去 %d %s" % (-val, format_attr(attr))
+				fmt = "所有法术和能力失去 %d %s" % (-val, format_attr(attr))
 			lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width)
 			cur_y += (lines+1) * self.linesize
 

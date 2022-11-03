@@ -6,7 +6,7 @@ dic = {
     'Arcane': '奥术',
     'Dark': '黑暗',
     'Holy': '神圣',
-    'Sorcery': '法术',
+    'Sorcery': '咒术',
     'Conjuration': '召唤',
     'Enchantment': '附魔',
     'Word': '真言',
@@ -39,10 +39,10 @@ dic = {
 
     'Damage': '伤害',
     'Max Charges': '充能上限',
-    'Radius': '范围',
+    'Radius': '半径',
     'Range': '射程',
-    # 玩家咒语
-    'Death Bolt': '死亡之箭',
+    # 玩家法术
+    'Death Bolt': '死亡之矢',
     'Fireball': '火球术',
     'Icicle': '冰锥术',
     'Lightning Bolt': '闪电箭',
@@ -183,7 +183,7 @@ dic = {
     'Word of Ice': '寒冰真言',
     'Word of Madness': '疯狂真言',
     'Word of Undeath': '不死真言',
-    # 玩家咒语分支
+    # 玩家法术升级
     'Chaos Ball': '混沌球',
     'Energy Ball': '能量球',
     'Ash Ball': '灰烬球',
@@ -216,7 +216,7 @@ dic = {
     'Pounce': '猛扑',
     '': '',
 
-    # 其他咒语和召唤物
+    # 其他法术和召唤物
     'Flame Tongue': '火焰吐息',
     'Fire Elemental': '火元素',
     'Giant Strength': '巨人之力',
@@ -224,7 +224,7 @@ dic = {
     'Dire Wolf': '恐狼',
     '': '',
 
-    # 玩家被动
+    # 玩家能力
     'Arcane Accounting': '奥术会计',
     'Arcane Combustion': '奥术燃烧',
     'Arcane Shield': '奥术护盾',
