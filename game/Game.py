@@ -141,48 +141,48 @@ class Game():
 			os.makedirs(dirname)
 
 		with open(filename, 'w') as stats:
-			stats.write("Realm %d\n" % self.level_num)
+			stats.write("区域 %d\n" % self.level_num)
 			if self.trial_name:
 				stats.write(self.trial_name + "\n")
-			stats.write("Outcome: %s\n" % ("VICTORY" if victory else "DEFEAT"))
-			stats.write("\nTurns taken:\n")
-			stats.write("%d (L)\n" % self.cur_level.turn_no)
-			stats.write("%d (G)\n" % self.total_turns)
+			stats.write("结果: %s\n" % ("胜利" if victory else "失败"))
+			stats.write("\n经过回合:\n")
+			stats.write("%d (当前)\n" % self.cur_level.turn_no)
+			stats.write("%d (全部)\n" % self.total_turns)
 
 			counts = sorted(self.cur_level.spell_counts.items(), key=lambda t: -t[1])
 
 			spell_counts = [(s, c) for (s, c) in counts if not s.item]
 			if spell_counts:
-				stats.write("\nSpell Casts:\n")
+				stats.write("\n施放法术:\n")
 				for s, c in spell_counts:
 					stats.write("%s: %d\n" % (s.name, c))
 
 			dealers = sorted(self.cur_level.damage_dealt_sources.items(), key=lambda t: -t[1])
 			if dealers:
-				stats.write("\nDamage to Enemies:\n")
+				stats.write("\n造成伤害:\n")
 				for s, d in dealers[:5]:
 					stats.write("%d %s\n" % (d, s))
 				if len(dealers) > 6:
 					total_other = sum(d for s,d in dealers[5:])
-					stats.write("%d Other\n" % total_other)
+					stats.write("%d 其他\n" % total_other)
 
 			sources = sorted(self.cur_level.damage_taken_sources.items(), key=lambda t: -t[1])
 			if sources:
-				stats.write("\nDamage to Wizard:\n")				
+				stats.write("\n受到伤害:\n")				
 				for s, d in sources[:5]:
 					stats.write("%d %s\n" % (d, s))
 				if len(sources) > 6:
 					total_other = sum(d for s,d in sources[5:])
-					stats.write("%d Other\n" % total_other)
+					stats.write("%d 其他\n" % total_other)
 
 			item_counts = [(s, c) for (s, c) in counts if s.item]
 			if item_counts:
-				stats.write("\nItems Used:\n")
+				stats.write("\n使用物品:\n")
 				for s, c in item_counts:
 					stats.write("%s: %d\n" % (s.name, c))
 
 			if self.recent_upgrades:
-				stats.write("\nPurchases:\n")
+				stats.write("\n技能点:\n")
 				for u in self.recent_upgrades:
 					fmt = u.name
 					if getattr(u, 'prereq', None):
