@@ -137,8 +137,8 @@ class TooltipExamineTarget(object):
 LEARN_SPELL_TARGET = TooltipExamineTarget("学习新法术")
 LEARN_SKILL_TARGET = TooltipExamineTarget("学习新能力")
 CHAR_SHEET_TARGET = TooltipExamineTarget("学习新法术和能力")
-INSTRUCTIONS_TARGET = TooltipExamineTarget("学习游戏规则")
-OPTIONS_TARGET = TooltipExamineTarget("调整选项设置")
+INSTRUCTIONS_TARGET = TooltipExamineTarget("学习如何游玩")
+OPTIONS_TARGET = TooltipExamineTarget("调整游戏设置")
 
 WELCOME_TARGET = TooltipExamineTarget(text.welcome_text)
 DEPLOY_TARGET = TooltipExamineTarget(text.deploy_text)
@@ -167,7 +167,8 @@ TITLE_SELECTION_BESTIARY = 4
 TITLE_SELECTION_DISCORD = 5
 TITLE_SELECTION_EXIT = 6
 TITLE_SELECTION_QQ = 7
-TITLE_SELECTION_MAX = TITLE_SELECTION_EXIT
+TITLE_SELECTION_INSTRUCTIONS = 8
+TITLE_SELECTION_MAX = TITLE_SELECTION_INSTRUCTIONS
 
 OPTION_HELP = 0
 OPTION_SOUND_VOLUME = 1
@@ -2950,7 +2951,7 @@ class PyGameView(object):
 			cur_y = self.linesize
 
 			tag_width = self.middle_menu_display.get_width() - cur_x - self.border_margin
-			self.draw_string("筛选器：", self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("过滤：", self.middle_menu_display, cur_x, cur_y)
 			cur_y += 2*self.linesize
 
 			for tag in self.game.spell_tags:
@@ -4171,7 +4172,7 @@ class PyGameView(object):
 		for tag in Tags:
 			if tag not in self.examine_target.resists:
 				continue
-			self.draw_string('%d%% %s 抵抗' % (self.examine_target.resists[tag], tag.name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
+			self.draw_string('%d%% %s抵抗' % (self.examine_target.resists[tag], tag.name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
 			has_resists = True
 			cur_y += self.linesize
 
@@ -4627,10 +4628,11 @@ class PyGameView(object):
 		else:
 			opts.append((TITLE_SELECTION_NEW, "开始游戏"))
 
-		opts.extend([(TITLE_SELECTION_OPTIONS, "选项设置"),
+		opts.extend([(TITLE_SELECTION_OPTIONS, "游戏设置"),
+					 (TITLE_SELECTION_INSTRUCTIONS, "如何游玩"),
 					 (TITLE_SELECTION_BESTIARY, "怪物图鉴"),
 					 (TITLE_SELECTION_DISCORD, "DISCORD"),
-					 (TITLE_SELECTION_QQ, "QQ群"),
+					 (TITLE_SELECTION_QQ, "QQ 群"),
 					 (TITLE_SELECTION_EXIT, "退出游戏")])
 
 		for o, w in opts:
@@ -4700,21 +4702,23 @@ class PyGameView(object):
 		if selection == TITLE_SELECTION_NEW:
 			self.state = STATE_PICK_MODE
 			self.examine_target = 0
+		if selection == TITLE_SELECTION_LOAD:
+			if can_continue_game():
+				self.load_game()
 		if selection == TITLE_SELECTION_ABANDON:
 			self.open_abandon_prompt()
 		if selection == TITLE_SELECTION_OPTIONS:
 			self.open_options()
-		if selection == TITLE_SELECTION_LOAD:
-			if can_continue_game():
-				self.load_game()
+		if selection == TITLE_SELECTION_INSTRUCTIONS:
+			self.show_help()
+		if selection == TITLE_SELECTION_BESTIARY:
+			self.open_shop(SHOP_TYPE_BESTIARY)
 		if selection == TITLE_SELECTION_DISCORD:
 			webbrowser.open("https://discord.gg/NngFZ7B")
-		if selection == TITLE_SELECTION_DISCORD:
+		if selection == TITLE_SELECTION_QQ:
 			webbrowser.open("https://jq.qq.com/?_wv=1027&k=C1ejcsdb")
 		if selection == TITLE_SELECTION_EXIT:
 			self.running = False
-		if selection == TITLE_SELECTION_BESTIARY:
-			self.open_shop(SHOP_TYPE_BESTIARY)
 
 	def draw_pick_mode(self):
 		opts = [("普通冒险", GAME_MODE_NORMAL),
@@ -4722,7 +4726,7 @@ class PyGameView(object):
 				("每周挑战", GAME_MODE_WEEKLY)]
 
 		rect_w = self.font.size("魔导师的试炼")[0]
-		cur_x = self.screen.get_width() // 2 - (self.font.size("大法师试炼")[0] // 2)
+		cur_x = self.screen.get_width() // 2 - (self.font.size("魔导师的试炼")[0] // 2)
 		cur_y = self.screen.get_height() // 2 - self.linesize * 4
 
 		cur_color = (255, 255, 255)
@@ -4894,13 +4898,13 @@ class PyGameView(object):
 
 		rect_w = self.font.size("动画速度：最快")[0]
 
-		self.draw_string("游戏规则", self.screen, cur_x, cur_y, mouse_content=OPTION_HELP, content_width=rect_w)
+		self.draw_string("如何游玩", self.screen, cur_x, cur_y, mouse_content=OPTION_HELP, content_width=rect_w)
 		cur_y += self.linesize
 
-		self.draw_string("音效音量：%3d" % self.options['sound_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_SOUND_VOLUME, content_width=rect_w)
+		self.draw_string("音效大小：%3d" % self.options['sound_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_SOUND_VOLUME, content_width=rect_w)
 		cur_y += self.linesize
 
-		self.draw_string("音乐音量：%3d" % self.options['music_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_MUSIC_VOLUME, content_width=rect_w)
+		self.draw_string("音乐大小：%3d" % self.options['music_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_MUSIC_VOLUME, content_width=rect_w)
 		cur_y += self.linesize
 
 		if self.options['spell_speed'] == 0:
@@ -4930,7 +4934,7 @@ class PyGameView(object):
 			cur_y += self.linesize
 
 		else:
-			self.draw_string("返回跳题画面", self.screen, cur_x, cur_y, mouse_content=OPTION_EXIT, content_width=rect_w)
+			self.draw_string("返回标题界面", self.screen, cur_x, cur_y, mouse_content=OPTION_EXIT, content_width=rect_w)
 			cur_y += self.linesize
 
 
