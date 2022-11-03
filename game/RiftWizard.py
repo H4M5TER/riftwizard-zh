@@ -3937,7 +3937,7 @@ class PyGameView(object):
 		self.draw_string("SP %d" % self.game.p1.xp, self.character_display, cur_x, cur_y, color=COLOR_XP)
 		cur_y += linesize
 
-		self.draw_string("领域 %d" % self.game.level_num, self.character_display, cur_x, cur_y)
+		self.draw_string("区域 %d" % self.game.level_num, self.character_display, cur_x, cur_y)
 		cur_y += linesize
 
 		# TODO- buffs here
@@ -4059,7 +4059,7 @@ class PyGameView(object):
 		cur_y += linesize
 
 		color = self.game.p1.discount_tag.color.to_tup() if self.game.p1.discount_tag else (255, 255, 255)
-		self.draw_string("角色表 (C)", self.character_display, cur_x, cur_y, color=color, mouse_content=CHAR_SHEET_TARGET)
+		self.draw_string("角色界面 (C)", self.character_display, cur_x, cur_y, color=color, mouse_content=CHAR_SHEET_TARGET)
 
 		self.screen.blit(self.character_display, (0, 0))
 

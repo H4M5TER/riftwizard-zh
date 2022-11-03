@@ -786,7 +786,7 @@ class PetrifySpell(Spell):
 		self.duration = 10
 
 		self.upgrades['max_charges'] = (5, 1)
-		self.upgrades['glassify'] = (1, 3, 'Glassify', '改为将目标变为玻璃，而非石头。被璃化的目标 -100 物理抗性。')
+		self.upgrades['glassify'] = (1, 3, 'Glassify', '改为将目标变为玻璃，而非石头。被变成玻璃的目标 -100 物理抗性。')
 
 		self.tags = [Tags.Arcane, Tags.Enchantment]
 		self.level = 2
