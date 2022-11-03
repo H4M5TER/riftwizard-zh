@@ -306,19 +306,19 @@ class ExtraSpawns(Mutator):
 			levelgen.level.add_obj(obj, spawn_point.x, spawn_point.y)
 
 all_trials = [Trial(n, m) for n, m in [
-	("Limited Spellbook", [RandomSpellRestriction(.85)]),
-	("Improviser", [RandomSpellRestriction(.85), RandomSkillRestriction(.7)]),
-	("Menagerie", [ExtraElites(6)]),
-	("Trollpath", [NumPortals(1), EnemyBuff(TrollRegenBuff)]),
-	("Sorcerer Ascetic", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
-	("Thrifty Wizard", [StackLimit(1), RandomSpellRestriction(.9)]),
-	("Wizard Warlords", [SpawnWizards(), LairMultiplier(2)]),
-	("Humble Horde", [SpPerLevel(2), SpellTagRestriction(Tags.Conjuration)]),
-	("Giantslayer", [MonsterHPMult(3)]),
-	("Danger Brigade", [EnemyBuff(lambda: DamageAuraBuff(1, Tags.Poison, 4)), EnemyShields(2)]),
-	("Flamefest", [MonsterHPMult(2), SpellTagRestriction(Tags.Fire)]),
-	("Wolfer", OnlySpell("Wolf")),
-	("Vampire Hunter", [EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"), SpellTagRestriction(Tags.Holy)]),
+	("妙解残篇", [RandomSpellRestriction(.85)]),
+	("即兴表演", [RandomSpellRestriction(.85), RandomSkillRestriction(.7)]),
+	("兽群求生", [ExtraElites(6)]),
+	("巨魔拦路", [NumPortals(1), EnemyBuff(TrollRegenBuff)]),
+	("苦修法术", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
+	("节俭巫师", [StackLimit(1), RandomSpellRestriction(.9)]),
+	("巫师军阀", [SpawnWizards(), LairMultiplier(2)]),
+	("谦卑部族", [SpPerLevel(2), SpellTagRestriction(Tags.Conjuration)]),
+	("巨人杀手", [MonsterHPMult(3)]),
+	("临危旅团", [EnemyBuff(lambda: DamageAuraBuff(1, Tags.Poison, 4)), EnemyShields(2)]),
+	("火焰狂欢", [MonsterHPMult(2), SpellTagRestriction(Tags.Fire)]),
+	("狼人成行", OnlySpell("Wolf")),
+	("猎吸血鬼", [EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"), SpellTagRestriction(Tags.Holy)]),
 ]]
 
 def get_weekly_seed():

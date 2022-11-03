@@ -61,12 +61,13 @@ class FireballSpell(Spell):
 		self.upgrades['max_charges'] = (8, 2)
 		self.upgrades['range'] = (3, 1)
 
-		self.upgrades['chaos'] = (1, 3, "Chaos Ball", "Fireball randomly deals [physical], [lightning], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.", "damage type")
-		self.upgrades['energy'] = (1, 4, "Energy Ball", "Fireball randomly deals [arcane], [holy], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.", "damage type")
-		self.upgrades['ash'] = (1, 5, "Ash Ball", "Fireball randomly deals [poison], [dark], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.\nFireball blinds for 1 turn.", "damage type")
+		self.upgrades['chaos'] = (1, 3, "Chaos Ball", "火球术随机造成 [physical]、[lightning] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。", "damage type")
+		self.upgrades['energy'] = (1, 4, "Energy Ball", "火球术随机造成 [arcane]、[holy] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。", "damage type")
+		self.upgrades['ash'] = (1, 5, "Ash Ball", "火球术随机造成 [poison]、[dark] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。\n火球术致盲一回合。", "damage type")
 
 	def get_description(self):
-		return "Deals [{damage}:damage] [fire] damage to units in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
+		# return "Deals [{damage}:damage] [fire] damage to units in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
+		return "对 [{radius}格:radius] 范围内的所有单位造成 [{damage}:damage] 点 [fire] 伤害。".format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		target = Point(x, y)
