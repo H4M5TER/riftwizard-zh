@@ -6,6 +6,7 @@ import dict_tags
 import dict_spells
 import dict_upgrades
 import dict_consumables
+import dict_shrines
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -3981,7 +3982,8 @@ class PyGameView(object):
 				cur_color = (128, 128, 128)
 
 			# 针对字体自定义
-			fmt = "%3s    %-17s%2d" % (hotkey_str, spell.name, spell.cur_charges)
+			spell_name = dict_spells.names.get(spell.name, spell.name)
+			fmt = "%3s    %s%2d" % (hotkey_str, f'{spell_name}{" " * (17 - self.font.size(spell_name)[0] // self.space_width)}', spell.cur_charges)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=SpellCharacterWrapper(spell), char_panel=True)
 			# 针对字体自定义
@@ -4004,7 +4006,8 @@ class PyGameView(object):
 			if item.spell == self.cur_spell:
 				cur_color = (0, 255, 0)
 			# 针对字体自定义
-			fmt = "%3s    %-17s%2d" % (hotkey_str, item.name, item.quantity)
+			item_name = dict_consumables.names.get(item.name, item.name)
+			fmt = "%3s    %s%2d" % (hotkey_str, f'{item_name}{" " * (17 - self.font.size(item_name)[0] // self.space_width)}', item.quantity)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=item)
 			# 针对字体自定义
