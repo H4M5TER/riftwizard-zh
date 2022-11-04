@@ -7,8 +7,8 @@ class GlobalBonus(Upgrade):
 		Upgrade.__init__(self)
 		self.tags = tags
 		self.global_bonuses[attribute] = amount
-		self.name = name if name else "Increased %s" % format_attr(attribute)
-		self.description = "Increase all spell %s by %d" % (format_attr(attribute), amount)
+		self.name = name if name else "增加 %s" % format_attr(attribute)
+		self.description = "给所有法术增加 %d %s" % (amount, format_attr(attribute))
 		self.level = level
 		self.attribute = attribute
 		self.amount = amount
@@ -19,7 +19,7 @@ class TagBonus(Upgrade):
 		Upgrade.__init__(self)
 		self.tag_bonuses[tag][attribute] = amount
 		self.name = name if name else "%s %s" % (tag.name, format_attr(attribute))
-		self.description = "Increase %s spell %s by %d" % (tag.name, format_attr(attribute), amount)
+		self.description = "给%s法术增加 %d %s" % (tag.name, amount, format_attr(attribute))
 		self.level = level
 		self.tags = [tag]
 		self.attribute = attribute
@@ -29,7 +29,7 @@ class TagBonus(Upgrade):
 class UnblinkingEye(Upgrade):
 
 	def on_init(self):
-		self.name = "Unblinking Eye"
+		self.name = "坚毅眼神"
 		self.tags = [Tags.Eye]
 
 		self.tag_bonuses[Tags.Eye]['shot_cooldown'] = -1
@@ -42,7 +42,7 @@ class UnblinkingEye(Upgrade):
 class StoneCollector(Upgrade):
 
 	def on_init(self):
-		self.name = "Rock Collection"
+		self.name = "石头收藏"
 		self.tags = [Tags.Sorcery]
 
 		self.tag_bonuses[Tags.Sorcery]['num_stones'] = 3
@@ -51,7 +51,7 @@ class StoneCollector(Upgrade):
 class DragonLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Dragon Lord"
+		self.name = "巨龙君主"
 		self.tags = [Tags.Dragon]
 
 		self.tag_bonuses[Tags.Dragon]['max_charges'] = 3
@@ -63,7 +63,7 @@ class DragonLord(Upgrade):
 class Translocator(Upgrade):
 
 	def on_init(self):
-		self.name = "Translocation Master"
+		self.name = "传送大师"
 		self.tags = [Tags.Translocation]
 
 		self.tag_bonuses[Tags.Translocation]['max_charges'] = 5
@@ -74,7 +74,7 @@ class Translocator(Upgrade):
 class ArchEnchanter(Upgrade):
 
 	def on_init(self):
-		self.name = "Arch Enchanter"
+		self.name = "附魔大师"
 		self.tags = [Tags.Enchantment]
 
 		self.tag_bonuses[Tags.Enchantment]['max_charges'] = 2
@@ -86,7 +86,7 @@ class ArchEnchanter(Upgrade):
 class ArchSorcerer(Upgrade):
 
 	def on_init(self):
-		self.name = "Arch Sorcerer"
+		self.name = "咒术大师"
 		self.tags = [Tags.Sorcery]
 
 		self.tag_bonuses[Tags.Sorcery]['max_charges'] = 2
@@ -98,7 +98,7 @@ class ArchSorcerer(Upgrade):
 class ArchConjurer(Upgrade):
 
 	def on_init(self):
-		self.name = "Arch Conjurer"
+		self.name = "召唤大师"
 		self.tags = [Tags.Conjuration]
 
 		self.tag_bonuses[Tags.Conjuration]['max_charges'] = 2
@@ -112,7 +112,7 @@ class ArchConjurer(Upgrade):
 class FireLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Fire Lord"
+		self.name = "火焰君主"
 		self.tags = [Tags.Fire]
 
 		self.tag_bonuses[Tags.Fire]['max_charges'] = 1
@@ -124,7 +124,7 @@ class FireLord(Upgrade):
 class IceLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Ice Lord"
+		self.name = "冰霜君主"
 		self.tags = [Tags.Ice]
 
 		self.tag_bonuses[Tags.Ice]['max_charges'] = 1
@@ -136,7 +136,7 @@ class IceLord(Upgrade):
 class ThunderLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Thunder Lord"
+		self.name = "雷霆君主"
 		self.tags = [Tags.Lightning]
 		
 		self.tag_bonuses[Tags.Lightning]['max_charges'] = 1
@@ -150,7 +150,7 @@ class ThunderLord(Upgrade):
 class NatureLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Nature Lord"
+		self.name = "自然君主"
 		self.tags = [Tags.Nature]
 		
 		self.tag_bonuses[Tags.Nature]['max_charges'] = 3
@@ -163,7 +163,7 @@ class NatureLord(Upgrade):
 class DarkLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Dark Lord"
+		self.name = "黑暗君主"
 		self.tags = [Tags.Dark]
 
 		self.tag_bonuses[Tags.Dark]['max_charges'] = 3
@@ -175,7 +175,7 @@ class DarkLord(Upgrade):
 class VoidLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Void Lord"
+		self.name = "虚空君主"
 		self.tags = [Tags.Arcane]
 
 		self.tag_bonuses[Tags.Arcane]['max_charges'] = 2
@@ -187,7 +187,7 @@ class VoidLord(Upgrade):
 class HeavenLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Light Lord"
+		self.name = "光明君主"
 		self.tags = [Tags.Holy]
 
 		self.tag_bonuses[Tags.Holy]['max_charges'] = 2
@@ -201,7 +201,7 @@ class HeavenLord(Upgrade):
 class OrbLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Orb Lord"
+		self.name = "法球君主"
 		self.tags = [Tags.Orb]
 		self.tag_bonuses[Tags.Orb]['max_charges'] = 3
 		self.tag_bonuses[Tags.Orb]['range'] = 4
@@ -212,7 +212,7 @@ class OrbLord(Upgrade):
 class MetalLord(Upgrade):
 
 	def on_init(self):
-		self.name = "Metal Lord"
+		self.name = "钢铁君主"
 		self.tags = [Tags.Metallic]
 		self.tag_bonuses[Tags.Metallic]['max_charges'] = 3
 		self.tag_bonuses[Tags.Metallic]['duration'] = 5
@@ -224,7 +224,7 @@ class MetalLord(Upgrade):
 class PyrophiliaUpgrade(Upgrade):
 
 	def on_init(self):
-		self.name = "Pyrophilia"
+		self.name = "嗜火如命"
 		self.tags = [Tags.Fire, Tags.Nature]
 		self.global_triggers[EventOnDamaged] = self.on_spell_cast
 		self.level = 5
@@ -247,7 +247,7 @@ class PyrophiliaUpgrade(Upgrade):
 				unit.deal_damage(-heal, Tags.Heal, self)
 
 	def get_description(self):
-		return "Whenever a summoned minion witnesses an enemy take [fire] damage, that minion heals for half that damage."
+		return "当一个召唤物视野内的敌人受到 [火焰:fire] 伤害时，该召唤物回复造成伤害的一半"
 
 class PyrostaticStack(Buff):
 
@@ -299,7 +299,7 @@ class PyrostaticsBuff(Upgrade):
 			yield
 
 	def get_description(self):
-		return "Whenever you deal damage with a [lightning] spell, gain that many stacks of pyrostatic charge for 10 turns.\n Whenever an enemy takes [fire] damage, consume that many pyrostatic charges and deal that much [lightning] damage to up that many units in line of sight of the damaged enemy."
+		return "当你用 [闪电:lightning] 法术造成伤害时，获得造成伤害层数的热静力学充能 (持续 10 回合)\n当敌人受到 [火焰:fire] 伤害时，消耗热静力学充能对该敌人视野内至多充能数的单位造成充能数数量的 [闪电:lightning] 伤害"
 
 class SoulHarvest(Upgrade):
 
@@ -326,8 +326,8 @@ class SoulHarvest(Upgrade):
 				self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Dark)
 
 	def get_description(self):
-		return ("Whenever an enemy unit dies, each of your [dark] spells has a 10% chance of gaining a charge.\n"
-				"This chance is tripled if the unit died to [dark] damage.")
+		return ("敌人死亡时，每个你的 [黑暗:dark] 法术有 10% 几率获得 1 充能\n"
+				"如果敌人死于 [黑暗:dark] 伤害，那个几率翻三倍")
 
 class ArcaneCombustion(Upgrade):
 
@@ -350,7 +350,7 @@ class ArcaneCombustion(Upgrade):
 		yield
 
 	def get_description(self):
-		return ("Whenever a unit is killed by arcane damage, that unit explodes for [%d_arcane:arcane] damage in a [3_tile:radius] square, melting walls on effected tiles.") % self.get_stat('damage')
+		return ("单位被奥法伤害击杀时爆炸，对 [3_格:radius] 的正方形造成 [%d_奥法:arcane] 伤害，融化墙壁") % self.get_stat('damage')
 
 class SearingHeat(Upgrade):
 
@@ -372,7 +372,7 @@ class SearingHeat(Upgrade):
 				u.deal_damage(self.damage, Tags.Fire, self)
 
 	def get_description(self):
-		return "Whenever you cast a [fire] spell, deal [3_fire:fire] damage to all enemies in line of sight of the target.\nThis damage is fixed and cannot be modified.".format(**self.fmt_dict())
+		return "你释放 [火焰:fire] 法术时，对目标视野范围内的所有敌人造成 [3_火焰:fire] 伤害\n伤害值固定，不能被修正".format(**self.fmt_dict())
 
 class DevourerOfNations(Upgrade):
 
@@ -399,7 +399,7 @@ class DevourerOfChampions(Upgrade):
 		self.global_triggers[EventOnDeath] = self.on_death
 
 	def get_description(self):
-		return "Gain a charge of a random level 4 spell whenever you kill a boss"
+		return "击杀 boss 给予随机 4 级法术一点充能"
 
 	def on_death(self, evt):
 		if "boss" in evt.unit.name.lower():
@@ -415,7 +415,7 @@ class MinionRepair(Upgrade):
 		self.name = "Minion Regeneration"
 
 	def get_description(self):
-		return "Each turn, heal each of your minions for [2_HP:heal]"
+		return "每回合治疗你的随从 [2_点血量:heal]"
 
 	def on_advance(self):
 		for unit in self.owner.level.units:
@@ -444,11 +444,11 @@ class Teleblink(Upgrade):
 		self.cast_last = False
 
 	def get_description(self):
-		return ("When you cast three [arcane] spells in a row, regain a charge of a random [translocation] spell and summon [2_faeries:num_summons].\n"
-				"The faeries fly, and have [{minion_health}_HP:minion_health], [{shields}_SH:shields], [75_arcane:arcane] resistance, and a passive blink.\n"
-			    "The faeries can heal allies for [{heal}_HP:heal], with a range of [{minion_range}_tiles:minion_range].\n"
-			    "The faeries have a [{minion_damage}_arcane:arcane] damage attack, with a range of [{minion_range}_tiles:minion_range].\n"
-			    "The faeries vanish after [{minion_duration}_turns:minion_duration].\n").format(**self.fmt_dict())
+		return ("当你连续释放 3 个 [奥法:arcane] 法术时，给予随机 [传送:translocation] 法术 1 点充能，并召唤 [2_只仙灵:num_summons]\n"
+					"仙灵会飞, 有 [{minion_health}_点血量:minion_health], [{shields}_点护盾:shields], [75_奥法:arcane] 抗性, 以及被动闪烁.\n"
+			    "仙灵可以给 [{minion_range}_格:minion_range] 内的友方治疗 [{heal}_点生命值:heal]\n"
+			    "仙灵攻击造成 [{minion_damage}_点奥法伤害:arcane] , 有 [{minion_range}_格:minion_range] 攻击距离\n"
+			    "仙灵在 [{minion_duration}_回合:minion_duration] 后消失\n").format(**self.fmt_dict())
 
 	def on_advance(self):
 		if not self.cast_last:
@@ -479,7 +479,7 @@ class Teleblink(Upgrade):
 					unit.sprite.char = 'f'
 					unit.sprite.color = Color(252, 141, 249)
 					unit.name = "Good Faery"
-					unit.description = "A capricious creature who delights in providing comfort to wizards"
+					unit.description = "一个变化无常的生命，很高兴能给巫师提供一些慰藉"
 					unit.max_hp = self.minion_health
 					unit.shields = self.get_stat('shields')
 					unit.buffs.append(TeleportyBuff(chance=.7))
@@ -496,7 +496,7 @@ class ArcaneCredit(Buff):
 		self.name = "Arcane Credit"
 		self.owner_triggers[EventOnSpellCast] = self.on_cast
 		self.color = Tags.Arcane.color
-		self.description = "Charge cost of next non [arcane] spell will be refunded."
+		self.description = "下一个非 [奥法:arcane] 法术不消耗充能"
 
 	def on_cast(self, evt):
 		if Tags.Arcane not in evt.spell.tags:
@@ -513,7 +513,7 @@ class ArcaneAccountant(Upgrade):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def get_description(self):
-		return "Whenever you cast the last charge of an [arcane] spell, your next non arcane spell is free for 1 turn."
+		return "耗尽一个 [奥法:arcane] 法术的充能时, 第二个回合施放非 [奥法:arcane] 法术不消耗充能】"
 
 	def on_spell_cast(self, evt):
 		if Tags.Arcane in evt.spell.tags and evt.spell.cur_charges == 0:
@@ -528,7 +528,7 @@ class NaturalHealing(Upgrade):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def get_description(self):
-		return "Whenever you cast a [nature] spell, regain [5_HP:heal]"
+		return "每当你施放 [自然:nature] 法术时, 回复 [5_点血量:heal]"
 
 	def on_spell_cast(self, evt):
 		if Tags.Nature in evt.spell.tags:
@@ -555,7 +555,7 @@ class LightningFrenzy(Upgrade):
 		self.buff_duration = 6
 
 	def get_description(self):
-		return "Whenever you cast a [lightning] spell, your [lightning] spells and skills gain [%d_damage:damage] for [%d_turns:duration]" % (self.bonus, self.buff_duration)
+		return "每当你施放 [闪电:lightning] 法术时, 你的 [闪电:lightning] 法术与能力获得 [%d_点伤害:damage], 持续 [%d_回合:duration]" % (self.bonus, self.buff_duration)
 
 	def on_spell_cast(self, evt):
 		if Tags.Lightning in evt.spell.tags:
@@ -581,7 +581,7 @@ class ArmorMelter(Upgrade):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def get_description(self):
-		return "Whenever an enemy takes [fire] damage, it loses [10_physical:physical] and [10_fire:fire] resist."
+		return "敌人受到 [火焰:fire] 伤害时损失 [10_点物理:physical] 抗性和 [10_点火焰抗性:fire] 抗性"
 
 	def on_damage(self, evt):
 		if Tags.Fire == evt.damage_type and self.owner.level.are_hostile(evt.unit, self.owner):
@@ -596,7 +596,7 @@ class NaturalVigor(Upgrade):
 		self.level = 4
 
 	def get_description(self):
-		return "Your summoned units gain [25_physical:physical] resist, [25_lightning:lightning] resist, [25_ice:ice] resist and [25_fire:fire] resist."
+		return "你的召唤物获得 25 点 [物理:physical] [闪电:lightning] [寒冰:ice] [火焰:fire] 抗性."
 
 	def on_unit_added(self, evt):
 		if evt.unit.is_player_controlled:
@@ -638,7 +638,7 @@ class Hunger(Upgrade):
 		self.minion_damage = 7
 
 	def get_description(self):
-		return ("Your summoned [undead] units gain Hunger.\n"
+		return ("你召唤的 [不死:undead] 单位获得 饥饿\n"
 			  	"Hunger deals [{minion_damage}_dark:dark] damage to a target up to [{minion_range}_tiles:range] away, "
 			  	"healing the caster for all damage dealt, and has a [3_turn:cooldown] cooldown.\n".format(**self.fmt_dict()))
 
