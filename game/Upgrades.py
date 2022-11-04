@@ -29,7 +29,7 @@ class TagBonus(Upgrade):
 class UnblinkingEye(Upgrade):
 
 	def on_init(self):
-		self.name = "坚毅眼神"
+		self.name = "Unblinking Eye"
 		self.tags = [Tags.Eye]
 
 		self.tag_bonuses[Tags.Eye]['shot_cooldown'] = -1
@@ -42,7 +42,7 @@ class UnblinkingEye(Upgrade):
 class StoneCollector(Upgrade):
 
 	def on_init(self):
-		self.name = "石头收藏"
+		self.name = "Rock Collection"
 		self.tags = [Tags.Sorcery]
 
 		self.tag_bonuses[Tags.Sorcery]['num_stones'] = 3
@@ -51,7 +51,7 @@ class StoneCollector(Upgrade):
 class DragonLord(Upgrade):
 
 	def on_init(self):
-		self.name = "巨龙君主"
+		self.name = "Dragon Lord"
 		self.tags = [Tags.Dragon]
 
 		self.tag_bonuses[Tags.Dragon]['max_charges'] = 3
@@ -63,7 +63,7 @@ class DragonLord(Upgrade):
 class Translocator(Upgrade):
 
 	def on_init(self):
-		self.name = "传送大师"
+		self.name = "Translocation Master"
 		self.tags = [Tags.Translocation]
 
 		self.tag_bonuses[Tags.Translocation]['max_charges'] = 5
@@ -74,7 +74,7 @@ class Translocator(Upgrade):
 class ArchEnchanter(Upgrade):
 
 	def on_init(self):
-		self.name = "附魔大师"
+		self.name = "Arch Enchanter"
 		self.tags = [Tags.Enchantment]
 
 		self.tag_bonuses[Tags.Enchantment]['max_charges'] = 2
@@ -86,7 +86,7 @@ class ArchEnchanter(Upgrade):
 class ArchSorcerer(Upgrade):
 
 	def on_init(self):
-		self.name = "咒术大师"
+		self.name = "Arch Sorcerer"
 		self.tags = [Tags.Sorcery]
 
 		self.tag_bonuses[Tags.Sorcery]['max_charges'] = 2
@@ -98,7 +98,7 @@ class ArchSorcerer(Upgrade):
 class ArchConjurer(Upgrade):
 
 	def on_init(self):
-		self.name = "召唤大师"
+		self.name = "Arch Conjurer"
 		self.tags = [Tags.Conjuration]
 
 		self.tag_bonuses[Tags.Conjuration]['max_charges'] = 2
@@ -112,7 +112,7 @@ class ArchConjurer(Upgrade):
 class FireLord(Upgrade):
 
 	def on_init(self):
-		self.name = "火焰君主"
+		self.name = "Fire Lord"
 		self.tags = [Tags.Fire]
 
 		self.tag_bonuses[Tags.Fire]['max_charges'] = 1
@@ -124,7 +124,7 @@ class FireLord(Upgrade):
 class IceLord(Upgrade):
 
 	def on_init(self):
-		self.name = "冰霜君主"
+		self.name = "Ice Lord"
 		self.tags = [Tags.Ice]
 
 		self.tag_bonuses[Tags.Ice]['max_charges'] = 1
@@ -136,7 +136,7 @@ class IceLord(Upgrade):
 class ThunderLord(Upgrade):
 
 	def on_init(self):
-		self.name = "雷霆君主"
+		self.name = "Thunder Lord"
 		self.tags = [Tags.Lightning]
 		
 		self.tag_bonuses[Tags.Lightning]['max_charges'] = 1
@@ -150,7 +150,7 @@ class ThunderLord(Upgrade):
 class NatureLord(Upgrade):
 
 	def on_init(self):
-		self.name = "自然君主"
+		self.name = "Nature Lord"
 		self.tags = [Tags.Nature]
 		
 		self.tag_bonuses[Tags.Nature]['max_charges'] = 3
@@ -163,7 +163,7 @@ class NatureLord(Upgrade):
 class DarkLord(Upgrade):
 
 	def on_init(self):
-		self.name = "黑暗君主"
+		self.name = "Dark Lord"
 		self.tags = [Tags.Dark]
 
 		self.tag_bonuses[Tags.Dark]['max_charges'] = 3
@@ -175,7 +175,7 @@ class DarkLord(Upgrade):
 class VoidLord(Upgrade):
 
 	def on_init(self):
-		self.name = "虚空君主"
+		self.name = "Void Lord"
 		self.tags = [Tags.Arcane]
 
 		self.tag_bonuses[Tags.Arcane]['max_charges'] = 2
@@ -187,7 +187,7 @@ class VoidLord(Upgrade):
 class HeavenLord(Upgrade):
 
 	def on_init(self):
-		self.name = "光明君主"
+		self.name = "Light Lord"
 		self.tags = [Tags.Holy]
 
 		self.tag_bonuses[Tags.Holy]['max_charges'] = 2
@@ -201,7 +201,7 @@ class HeavenLord(Upgrade):
 class OrbLord(Upgrade):
 
 	def on_init(self):
-		self.name = "法球君主"
+		self.name = "Orb Lord"
 		self.tags = [Tags.Orb]
 		self.tag_bonuses[Tags.Orb]['max_charges'] = 3
 		self.tag_bonuses[Tags.Orb]['range'] = 4
@@ -212,7 +212,7 @@ class OrbLord(Upgrade):
 class MetalLord(Upgrade):
 
 	def on_init(self):
-		self.name = "钢铁君主"
+		self.name = "Metal Lord"
 		self.tags = [Tags.Metallic]
 		self.tag_bonuses[Tags.Metallic]['max_charges'] = 3
 		self.tag_bonuses[Tags.Metallic]['duration'] = 5
@@ -224,7 +224,7 @@ class MetalLord(Upgrade):
 class PyrophiliaUpgrade(Upgrade):
 
 	def on_init(self):
-		self.name = "嗜火如命"
+		self.name = "Pyrophilia"
 		self.tags = [Tags.Fire, Tags.Nature]
 		self.global_triggers[EventOnDamaged] = self.on_spell_cast
 		self.level = 5
