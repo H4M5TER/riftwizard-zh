@@ -4252,7 +4252,7 @@ class PyGameView(object):
 		linesize = self.linesize
 
 		spell = self.examine_target
-		self.draw_string(spell.name, self.examine_display, cur_x, cur_y)
+		self.draw_string(dict_spells.names.get(spell.name, spell.name), self.examine_display, cur_x, cur_y)
 		cur_y += linesize
 		cur_y += linesize
 		tag_x = cur_x
