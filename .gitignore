@@ -3,3 +3,6 @@ build/*
 dist/*
 !game/*.py
 !game/requirements.txt
+
+.vscode
+.idea
