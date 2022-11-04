@@ -3788,14 +3788,16 @@ class PyGameView(object):
 		num_lines = 0 
 		linesize = self.linesize # font linesize +2
 		max_width = width
- 
-		for line in lines: 
+
+		for line in lines:
 			cur_x = x # start x pos
-			# This regex separates periods, spaces, commas, and tokens 
-			exp = '[\[\]:|\w\|\'|%|-]+|.| |,' 
-			words = re.findall(exp, line) 
+			# 这个正则用来决定哪些文本被视为不会被切断的整块
+			# 对于中文来说似乎不是很需要
+			# 改动后优先匹配颜色块
+			exp = "\[[^]]+\]|[a-zA-Z]+| |."
+			words = re.findall(exp, line)
 			# print(words)
-			words.reverse() 
+			words.reverse()
 
 			while words: 
 				cur_color = color 
@@ -3816,11 +3818,13 @@ class PyGameView(object):
 
 					# check exceed max width
 					word_width = self.font.size(word)[0]
-					if cur_x + word_width > x + max_width: 
-						cur_y += linesize 
-						num_lines += 1 
-						# Indent by one for next line 
-						cur_x = x
+					if cur_x + word_width > x + max_width:
+						# 避免行首标点
+						if (word != ',' and word != '。' and word != ':' and word != '、'):
+							cur_y += linesize
+							num_lines += 1
+							# Indent by one for next line
+							cur_x = x + self.space_width
 
 					self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
 					cur_x += word_width
@@ -4256,7 +4260,7 @@ class PyGameView(object):
 			cur_y += self.linesize
 
 		if spell.max_charges:
-			self.draw_string("充能: %d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
+			self.draw_string("充能 %d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		cur_y += linesize
