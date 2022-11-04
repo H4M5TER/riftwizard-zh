@@ -2260,7 +2260,7 @@ class PyGameView(object):
 
 	def open_abandon_prompt(self):
 		self.state = STATE_CONFIRM
-		self.confirm_text = "确认放弃本次冒险？"
+		self.confirm_text = "确认放弃本次冒险?"
 		self.confirm_yes = self.confirm_abandon
 		self.confirm_no = self.abort_abandon
 		self.examine_target = False
@@ -2288,10 +2288,10 @@ class PyGameView(object):
 
 		if self.shop_type == SHOP_TYPE_SHOP:
 			attr = self.chosen_purchase.name.replace(self.chosen_purchase.shrine_name + ' ', '').lower()
-			self.confirm_text = "Use %s on %s?" % (self.game.cur_level.cur_shop.name, self.chosen_purchase.prereq.name)
+			self.confirm_text = "对 %s 使用 %s 吗?" % (self.chosen_purchase.prereq.name, self.game.cur_level.cur_shop.name)
 		else:
 			cost = self.game.get_upgrade_cost(self.chosen_purchase)
-			self.confirm_text = "支付 %s 点 SP，学习 %s，确定吗？" % (cost, self.chosen_purchase)
+			self.confirm_text = "支付 %s 点 SP, 学习 %s, 确定吗?" % (cost, self.chosen_purchase)
 
 		# Default to no (?)
 		self.examine_target = False
@@ -2870,17 +2870,17 @@ class PyGameView(object):
 		num_options = len(shoptions)
 
 		if self.shop_type == SHOP_TYPE_SPELLS:
-			self.draw_string("学习法术：", self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("学习法术: ", self.middle_menu_display, cur_x, cur_y)
 			self.draw_string("SP", self.middle_menu_display, level_x - self.font.size('X')[0], cur_y, COLOR_XP)
 			self.draw_string("类别", self.middle_menu_display, cur_x + tag_offset, cur_y)
 		if self.shop_type == SHOP_TYPE_UPGRADES:
-			self.draw_string("学习能力：", self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("学习能力: ", self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-			self.draw_string("升级%s：" % self.shop_upgrade_spell.name, self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("升级%s: " % self.shop_upgrade_spell.name, self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SHOP:
 			self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 		if self.shop_type == SHOP_TYPE_BESTIARY:
-			self.draw_string("怪物图鉴：消灭过 %d/%d 种怪兽" % (SteamAdapter.get_num_slain(), len(all_monsters)), self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("怪物图鉴: 消灭过 %d/%d 种怪兽" % (SteamAdapter.get_num_slain(), len(all_monsters)), self.middle_menu_display, cur_x, cur_y)
 
 
 		cur_y += self.linesize
@@ -2947,7 +2947,7 @@ class PyGameView(object):
 			cur_y = self.linesize
 
 			tag_width = self.middle_menu_display.get_width() - cur_x - self.border_margin
-			self.draw_string("过滤：", self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("过滤: ", self.middle_menu_display, cur_x, cur_y)
 			cur_y += 2*self.linesize
 
 			for tag in self.game.spell_tags:
@@ -3945,7 +3945,7 @@ class PyGameView(object):
 
 		cur_y += linesize
 
-		self.draw_string("法术：", self.character_display, cur_x, cur_y)
+		self.draw_string("法术: ", self.character_display, cur_x, cur_y)
 		cur_y += linesize
 
 		# Spells
@@ -3975,7 +3975,7 @@ class PyGameView(object):
 		cur_y += linesize
 		# Items
 
-		self.draw_string("物品：", self.character_display, cur_x, cur_y)
+		self.draw_string("物品: ", self.character_display, cur_x, cur_y)
 		cur_y += linesize
 		index = 1
 		for item in self.game.p1.items:
@@ -4007,7 +4007,7 @@ class PyGameView(object):
 
 		if status_effects:
 			cur_y += linesize
-			self.draw_string("状态效果：", self.character_display, cur_x, cur_y, (255, 255, 255))
+			self.draw_string("状态效果: ", self.character_display, cur_x, cur_y, (255, 255, 255))
 			cur_y += linesize
 			for buff_name, (buff, stacks, duration, color) in counts.items():
 
@@ -4026,7 +4026,7 @@ class PyGameView(object):
 		if skills:
 			cur_y += linesize
 
-			self.draw_string("能力：", self.character_display, cur_x, cur_y)
+			self.draw_string("能力: ", self.character_display, cur_x, cur_y)
 			cur_y += linesize
 
 			skill_x_max = self.character_display.get_width() - self.border_margin - 16
@@ -4256,7 +4256,7 @@ class PyGameView(object):
 			cur_y += self.linesize
 
 		if spell.max_charges:
-			self.draw_string("充能：%d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
+			self.draw_string("充能: %d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		cur_y += linesize
@@ -4265,7 +4265,7 @@ class PyGameView(object):
 		cur_y += linesize * lines
 
 		if spell.spell_upgrades:
-			self.draw_string("升级：", self.examine_display, cur_x, cur_y)
+			self.draw_string("升级: ", self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
 			for upg in spell.spell_upgrades:
@@ -4879,15 +4879,15 @@ class PyGameView(object):
 		cur_x = self.screen.get_width() // 2 - self.font.size("Sound Volume")[0]
 		cur_y = self.screen.get_height() // 2 - self.linesize * OPTION_MAX
 
-		rect_w = self.font.size("动画速度：最快")[0]
+		rect_w = self.font.size("动画速度: 最快")[0]
 
 		self.draw_string("如何游玩", self.screen, cur_x, cur_y, mouse_content=OPTION_HELP, content_width=rect_w)
 		cur_y += self.linesize
 
-		self.draw_string("音效大小：%3d" % self.options['sound_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_SOUND_VOLUME, content_width=rect_w)
+		self.draw_string("音效大小: %3d" % self.options['sound_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_SOUND_VOLUME, content_width=rect_w)
 		cur_y += self.linesize
 
-		self.draw_string("音乐大小：%3d" % self.options['music_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_MUSIC_VOLUME, content_width=rect_w)
+		self.draw_string("音乐大小: %3d" % self.options['music_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_MUSIC_VOLUME, content_width=rect_w)
 		cur_y += self.linesize
 
 		if self.options['spell_speed'] == 0:
@@ -4900,7 +4900,7 @@ class PyGameView(object):
 			speed_fmt = "最快"
 
 
-		self.draw_string("动画速度：%s" % speed_fmt, self.screen, cur_x, cur_y, mouse_content=OPTION_SPELL_SPEED, content_width=rect_w)
+		self.draw_string("动画速度: %s" % speed_fmt, self.screen, cur_x, cur_y, mouse_content=OPTION_SPELL_SPEED, content_width=rect_w)
 		cur_y += self.linesize
 
 		self.draw_string("调整键位", self.screen, cur_x, cur_y, mouse_content=OPTION_CONTROLS, content_width=rect_w)
@@ -5218,7 +5218,7 @@ class PyGameView(object):
 		self.message = text.intro_text
 
 		if mutators:
-			self.message += "\n\n\n\n挑战修正："
+			self.message += "\n\n\n\n挑战修正: "
 			for mutator in mutators:
 				self.message += "\n" + mutator.description
 

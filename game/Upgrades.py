@@ -247,7 +247,7 @@ class PyrophiliaUpgrade(Upgrade):
 				unit.deal_damage(-heal, Tags.Heal, self)
 
 	def get_description(self):
-		return "当一个召唤物视野内的敌人受到 [火焰:fire] 伤害时，该召唤物回复造成伤害的一半"
+		return "当一个召唤物视野内的敌人受到 [火焰:fire] 伤害时, 该召唤物回复造成伤害的一半"
 
 class PyrostaticStack(Buff):
 
@@ -299,7 +299,7 @@ class PyrostaticsBuff(Upgrade):
 			yield
 
 	def get_description(self):
-		return "当你用 [闪电:lightning] 法术造成伤害时，获得造成伤害层数的热静力学充能 (持续 10 回合)\n当敌人受到 [火焰:fire] 伤害时，消耗热静力学充能对该敌人视野内至多充能数的单位造成充能数数量的 [闪电:lightning] 伤害"
+		return "当你用 [闪电:lightning] 法术造成伤害时, 获得造成伤害层数的热静力学充能 (持续 10 回合)\n当敌人受到 [火焰:fire] 伤害时, 消耗热静力学充能对该敌人视野内至多充能数的单位造成充能数数量的 [闪电:lightning] 伤害"
 
 class SoulHarvest(Upgrade):
 
@@ -326,8 +326,8 @@ class SoulHarvest(Upgrade):
 				self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Dark)
 
 	def get_description(self):
-		return ("敌人死亡时，每个你的 [黑暗:dark] 法术有 10% 几率获得 1 充能\n"
-				"如果敌人死于 [黑暗:dark] 伤害，那个几率翻三倍")
+		return ("敌人死亡时, 每个你的 [黑暗:dark] 法术有 10% 几率获得 1 充能\n"
+				"如果敌人死于 [黑暗:dark] 伤害, 那个几率翻三倍")
 
 class ArcaneCombustion(Upgrade):
 
@@ -350,7 +350,7 @@ class ArcaneCombustion(Upgrade):
 		yield
 
 	def get_description(self):
-		return ("单位被奥法伤害击杀时爆炸，对 [3_格:radius] 的正方形造成 [%d_奥法:arcane] 伤害，融化墙壁") % self.get_stat('damage')
+		return ("单位被奥法伤害击杀时爆炸, 对 [3_格:radius] 的正方形造成 [%d_奥法:arcane] 伤害, 融化墙壁") % self.get_stat('damage')
 
 class SearingHeat(Upgrade):
 
@@ -372,7 +372,7 @@ class SearingHeat(Upgrade):
 				u.deal_damage(self.damage, Tags.Fire, self)
 
 	def get_description(self):
-		return "你释放 [火焰:fire] 法术时，对目标视野范围内的所有敌人造成 [3_火焰:fire] 伤害\n伤害值固定，不能被修正".format(**self.fmt_dict())
+		return "你释放 [火焰:fire] 法术时, 对目标视野范围内的所有敌人造成 [3_火焰:fire] 伤害\n伤害值固定, 不能被修正".format(**self.fmt_dict())
 
 class DevourerOfNations(Upgrade):
 
@@ -444,7 +444,7 @@ class Teleblink(Upgrade):
 		self.cast_last = False
 
 	def get_description(self):
-		return ("当你连续释放 3 个 [奥法:arcane] 法术时，给予随机 [传送:translocation] 法术 1 点充能，并召唤 [2_只仙灵:num_summons]\n"
+		return ("当你连续释放 3 个 [奥法:arcane] 法术时, 给予随机 [传送:translocation] 法术 1 点充能, 并召唤 [2_只仙灵:num_summons]\n"
 					"仙灵会飞, 有 [{minion_health}_点血量:minion_health], [{shields}_点护盾:shields], [75_奥法:arcane] 抗性, 以及被动闪烁.\n"
 			    "仙灵可以给 [{minion_range}_格:minion_range] 内的友方治疗 [{heal}_点生命值:heal]\n"
 			    "仙灵攻击造成 [{minion_damage}_点奥法伤害:arcane] , 有 [{minion_range}_格:minion_range] 攻击距离\n"
@@ -479,7 +479,7 @@ class Teleblink(Upgrade):
 					unit.sprite.char = 'f'
 					unit.sprite.color = Color(252, 141, 249)
 					unit.name = "Good Faery"
-					unit.description = "一个变化无常的生命，很高兴能给巫师提供一些慰藉"
+					unit.description = "一个变化无常的生命, 很高兴能给巫师提供一些慰藉"
 					unit.max_hp = self.minion_health
 					unit.shields = self.get_stat('shields')
 					unit.buffs.append(TeleportyBuff(chance=.7))

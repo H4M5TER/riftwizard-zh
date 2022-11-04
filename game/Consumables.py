@@ -65,7 +65,7 @@ class ChaosBellSpell(Spell):
 def chaos_bell():
 	item = Item()
 	item.name = "Chaos Bell"
-	item.description = "每个敌方单位各有 50% 几率狂暴，可与其朋友互相攻击，持续 10 回合。"
+	item.description = "每个敌方单位各有 50% 几率狂暴, 可与其朋友互相攻击, 持续 10 回合。"
 	item.set_spell(ChaosBellSpell())
 	return item
 
@@ -83,7 +83,7 @@ class TimeStopSpell(Spell):
 def golden_stopwatch():
 	item = Item()
 	item.name = "Golden Stopwatch"
-	item.description = "击晕所有敌方单位，持续 10 回合。"
+	item.description = "击晕所有敌方单位, 持续 10 回合。"
 	item.set_spell(TimeStopSpell())
 	return item
 
@@ -132,7 +132,7 @@ class EnergyShield(Buff):
 def energy_shield():
 	item = Item()
 	item.name = "Energy Shield"
-	item.description = "对 [arcane]、[dark]、[lightning] 和 [holy] 伤害免疫，持续 30 回合。"
+	item.description = "对 [arcane]、[dark]、[lightning] 和 [holy] 伤害免疫, 持续 30 回合。"
 	item.set_spell(PotionSpell(EnergyShield, 30))
 	return item
 
@@ -148,7 +148,7 @@ class StoneShield(Buff):
 def stone_shield():
 	item = Item()
 	item.name = "Stone Shield"
-	item.description = "对 [physical]、[fire] 和 [ice] 伤害免疫，持续 30 回合。"
+	item.description = "对 [physical]、[fire] 和 [ice] 伤害免疫, 持续 30 回合。"
 	item.set_spell(PotionSpell(StoneShield, 30))
 	return item
 
@@ -317,7 +317,7 @@ class YouthElixerBuff(Buff):
 def youth_elixer():
 	item = Item()
 	item.name = "Elixir of Youth"
-	item.description = "所有法术消耗的充能立刻返还，持续 7 回合。"
+	item.description = "所有法术消耗的充能立刻返还, 持续 7 回合。"
 	item.set_spell(PotionSpell(YouthElixerBuff, 7))
 	return item
 
@@ -363,7 +363,7 @@ class OculusBuff(Buff):
 def oculus():
 	item = Item()
 	item.name = "Oculus"
-	item.description = "你的所有法术获得 15 点射程且无需视线，持续 10 回合。"
+	item.description = "你的所有法术获得 15 点射程且无需视线, 持续 10 回合。"
 	item.set_spell(PotionSpell(OculusBuff, 10))
 	return item
 
@@ -381,7 +381,7 @@ class MemoryEnhancement(Buff):
 def memory_draught():
 	item = Item()
 	item.name = "Draught of Memories"
-	item.description = "你拾起的回忆法珠效果翻倍，持续 10 回合。"
+	item.description = "你拾起的回忆法珠效果翻倍, 持续 10 回合。"
 	item.set_spell(PotionSpell(MemoryEnhancement, 10))
 	return item
 

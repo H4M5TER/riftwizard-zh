@@ -61,9 +61,9 @@ class FireballSpell(Spell):
 		self.upgrades['max_charges'] = (8, 2)
 		self.upgrades['range'] = (3, 1)
 
-		self.upgrades['chaos'] = (1, 3, "Chaos Ball", "火球术随机造成 [physical]、[lightning] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。", "damage type")
-		self.upgrades['energy'] = (1, 4, "Energy Ball", "火球术随机造成 [arcane]、[holy] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。", "damage type")
-		self.upgrades['ash'] = (1, 5, "Ash Ball", "火球术随机造成 [poison]、[dark] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性，火球术造成其抗性最低类型的伤害。\n火球术致盲一回合。", "damage type")
+		self.upgrades['chaos'] = (1, 3, "Chaos Ball", "火球术随机造成 [physical]、[lightning] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性, 火球术造成其抗性最低类型的伤害。", "damage type")
+		self.upgrades['energy'] = (1, 4, "Energy Ball", "火球术随机造成 [arcane]、[holy] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性, 火球术造成其抗性最低类型的伤害。", "damage type")
+		self.upgrades['ash'] = (1, 5, "Ash Ball", "火球术随机造成 [poison]、[dark] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性, 火球术造成其抗性最低类型的伤害。\n火球术致盲一回合。", "damage type")
 
 	def get_description(self):
 		return "对 [{radius}格:radius] 范围内的所有单位造成 [{damage}:damage] 点 [fire] 伤害。".format(**self.fmt_dict())
@@ -129,7 +129,7 @@ class MeteorShower(Spell):
 	def get_description(self):
 		return (
 			"每回合在 [{storm_radius}格:radius] 范围内随机地块上降下 [{num_targets}_个陨石:num_targets]。\n"
-			"陨石造成 [{damage}_点_物理:physical] 伤害，摧毁墙，施加击晕 [{stun_duration}_回合:duration]。\n"
+			"陨石造成 [{damage}_点_物理:physical] 伤害, 摧毁墙, 施加击晕 [{stun_duration}_回合:duration]。\n"
 			"陨石还在 [{radius}格:radius] 范围内造成 [{damage}_点_火焰:fire] 伤害。\n"
 			"此法术可引导至多 [{max_channel}_回合:duration]。引导时每回合重复此效果。").format(
 			**self.fmt_dict())
@@ -232,7 +232,7 @@ class AnnihilateSpell(Spell):
 		self.arcane = 0
 		self.dark = 0
 
-		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', '若主目标被消灭，歼灭术会跳跃并击中其相邻目标。')
+		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', '若主目标被消灭, 歼灭术会跳跃并击中其相邻目标。')
 		self.upgrades['dark'] = (1, 1, 'Dark Annihilation', '歼灭术额外造成 [dark] 伤害。')
 		self.upgrades['arcane'] = (1, 1, 'Arcane Annihilation', '歼灭术额外造成 [arcane] 伤害。')
 		self.upgrades['max_charges'] = (4, 2)
@@ -276,7 +276,7 @@ class MegaAnnihilateSpell(AnnihilateSpell):
 		self.arcane = 0
 		self.dark = 0
 
-		self.upgrades['cascade_range'] = (4, 3, 'Cascade', '若主目标被消灭，歼灭术会跳跃并击中其相邻目标。')
+		self.upgrades['cascade_range'] = (4, 3, 'Cascade', '若主目标被消灭, 歼灭术会跳跃并击中其相邻目标。')
 		self.upgrades['dark'] = (1, 2, 'Dark Annihilation', '歼灭术额外造成 [dark] 伤害。')
 		self.upgrades['arcane'] = (1, 2, 'Arcane Annihilation', '歼灭术额外造成 [arcane] 伤害。')
 		self.upgrades['damage'] = (99, 4)
@@ -294,7 +294,7 @@ class Teleport(Spell):
 
 		self.upgrades['max_charges'] = (2, 3)
 		self.upgrades['range'] = (8, 2)
-		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "传送术对目标地块视线内的所有敌方单位造成 [arcane] 伤害，数量为充能上限。")
+		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "传送术对目标地块视线内的所有敌方单位造成 [arcane] 伤害, 数量为充能上限。")
 
 	def get_description(self):
 		return "传送到目标地块。"
@@ -339,8 +339,8 @@ class BlinkSpell(Teleport):
 		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "扑闪术施放无需视线。")
 		self.upgrades['range'] = (3, 3)
 		self.upgrades['max_charges'] = (5, 2)
-		self.upgrades['lightning_blink'] = (1, 4, "Lightning Blink", "扑闪术在抵达时对 3格 范围内造成 [lightning] 伤害，数量为移动距离的两倍，上整。", 'damage')
-		self.upgrades['dark_blink'] = (1, 4, "Dark Blink", "扑闪术在抵达时对 3格 范围内造成 [dark] 伤害，数量为移动距离的两倍，上整。", 'damage')
+		self.upgrades['lightning_blink'] = (1, 4, "Lightning Blink", "扑闪术在抵达时对 3格 范围内造成 [lightning] 伤害, 数量为移动距离的两倍, 上整。", 'damage')
+		self.upgrades['dark_blink'] = (1, 4, "Dark Blink", "扑闪术在抵达时对 3格 范围内造成 [dark] 伤害, 数量为移动距离的两倍, 上整。", 'damage')
 
 		#del(self.upgrades['void_teleport'])
 class FlameGateBuff(Buff):
@@ -352,7 +352,7 @@ class FlameGateBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'flame_gate']
 		self.cast = True
-		self.description = "每当你施放火焰法术时，临时在目标旁召唤一个火元素。\n\n你移动或施放非火焰法术时，此附魔结束。"
+		self.description = "每当你施放火焰法术时, 临时在目标旁召唤一个火元素。\n\n你移动或施放非火焰法术时, 此附魔结束。"
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -413,9 +413,9 @@ class FlameGateSpell(Spell):
 		yield
 
 	def get_description(self):
-		return ("每当你施放 [fire] 法术时，在法术目标处召唤一个火元素。\n"
+		return ("每当你施放 [fire] 法术时, 在法术目标处召唤一个火元素。\n"
 				"火元素有 [{minion_health}_点_HP:minion_health]、[100_点_火焰:fire] 抗性、[50_点_物理:physical] 抗性和 [-50_点_寒冰:ice] 抗性。\n"
-				"火元素的攻击造成 [{minion_damage}_点_火焰:fire] 伤害，射程为 [{minion_range}格:minion_range]。\n"
+				"火元素的攻击造成 [{minion_damage}_点_火焰:fire] 伤害, 射程为 [{minion_range}格:minion_range]。\n"
 				"火元素在 [{minion_duration}_回合:minion_duration] 后消失。\n"
 				"此效果持续到你不施放火焰法术为止。").format(**self.fmt_dict())
 
@@ -429,7 +429,7 @@ class LightningFormBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'lightning_form']
 		self.color = Tags.Lightning.color
-		self.description = "每当你施放闪电法术时，若目标地块为空，传送到目标地块。\n\n你移动或施放非闪电法术时，此附魔结束。"
+		self.description = "每当你施放闪电法术时, 若目标地块为空, 传送到目标地块。\n\n你移动或施放非闪电法术时, 此附魔结束。"
 		self.cast = True
 		self.stack_type = STACK_TYPE_TRANSFORM
 
@@ -478,7 +478,7 @@ class LightningFormSpell(Spell):
 		yield
 
 	def get_description(self):
-		return ("每当你施放 [lightning] 法术时，传送到该法术的目标地块。\n"
+		return ("每当你施放 [lightning] 法术时, 传送到该法术的目标地块。\n"
 				"获得 [100_点_闪电:lightning] 抗性。\n"
 				"获得 [100_点_物理:physical] 抗性。\n"
 				"此效果持续到你不施放 [lightning] 法术的首个回合为止。").format(**self.fmt_dict())
@@ -530,7 +530,7 @@ class VoidBeamSpell(Spell):
 		return list(self.aoe(x, y))
 
 	def get_description(self):
-		return "在一束范围内造成 [{damage}_点_奥术:arcane] 伤害，并摧毁墙。".format(**self.fmt_dict())
+		return "在一束范围内造成 [{damage}_点_奥术:arcane] 伤害, 并摧毁墙。".format(**self.fmt_dict())
 
 class ThunderStrike(Spell):
 
@@ -550,7 +550,7 @@ class ThunderStrike(Spell):
 		self.upgrades['duration'] = (3, 2)
 		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "雷击术施放无需视线。")
 		self.upgrades['damage'] = (36, 4)
-		self.upgrades['storm_power'] = (1, 2, "Storm Power", "若目标在风暴云中，范围和击晕持续翻倍。")
+		self.upgrades['storm_power'] = (1, 2, "Storm Power", "若目标在风暴云中, 范围和击晕持续翻倍。")
 		self.upgrades['heaven_strike'] = (1, 4, "Heaven Strike", "雷击术还造成 [holy] 伤害。")
 
 	def get_description(self):
@@ -725,7 +725,7 @@ class InfernoSpell(Spell):
 		self.upgrades['max_charges'] = (2, 1)
 
 	def get_description(self):
-		return "生成一朵飘动的地狱火云，每回合对其中的所有单位造成伤害。"
+		return "生成一朵飘动的地狱火云, 每回合对其中的所有单位造成伤害。"
 
 	def cast(self, x, y):
 		self.caster.level.add_obj(InfernoCloud(self.caster, self.get_stat('damage')), x, y)
@@ -786,7 +786,7 @@ class PetrifySpell(Spell):
 		self.duration = 10
 
 		self.upgrades['max_charges'] = (5, 1)
-		self.upgrades['glassify'] = (1, 3, 'Glassify', '改为将目标变为玻璃，而非石头。被变成玻璃的目标 -100 物理抗性。')
+		self.upgrades['glassify'] = (1, 3, 'Glassify', '改为将目标变为玻璃, 而非石头。被变成玻璃的目标 -100 物理抗性。')
 
 		self.tags = [Tags.Arcane, Tags.Enchantment]
 		self.level = 2
@@ -803,7 +803,7 @@ class PetrifySpell(Spell):
 		yield
 
 	def get_description(self):
-		desc = "对目标施加 [petrify] ，持续 [{duration}_回合:duration]。\n"
+		desc = "对目标施加 [petrify] , 持续 [{duration}_回合:duration]。\n"
 		desc += text.petrify_desc
 		return desc.format(**self.fmt_dict())
 
@@ -853,7 +853,7 @@ class StoneAuraSpell(Spell):
 		self.upgrades['petrify_duration'] = (2, 3)
 		self.upgrades['num_targets'] = (2, 2)
 		self.upgrades['duration'] = (15, 2)
-		self.upgrades['glassify'] = (1, 6, "Glassify", "改为将敌人变为玻璃，而非石头，使其受到双倍的物理伤害，而非四分之一。")
+		self.upgrades['glassify'] = (1, 6, "Glassify", "改为将敌人变为玻璃, 而非石头, 使其受到双倍的物理伤害, 而非四分之一。")
 
 	def get_description(self):
 		return ("每回合在 [{radius}格:radius] 范围内 [petrify] 至多 [{num_targets}:num_targets] 个未石化的敌方单位。\n" +
@@ -874,9 +874,9 @@ class SummonWolfSpell(Spell):
 		self.upgrades['minion_damage'] = 4
 		self.upgrades['minion_health'] = (12, 3)
 
-		self.upgrades['blood_hound'] = (1, 3, "Blood Hound", "改为召唤鲜血猎犬，而非狼。", "hound")
-		self.upgrades['ice_hound'] = (1, 3, "Ice Hound", "改为召唤寒冰猎犬，而非狼。", "hound")
-		self.upgrades['clay_hound'] = (1, 6, "Clay Hound", "改为召唤粘土猎犬，而非狼。", "hound")
+		self.upgrades['blood_hound'] = (1, 3, "Blood Hound", "改为召唤鲜血猎犬, 而非狼。", "hound")
+		self.upgrades['ice_hound'] = (1, 3, "Ice Hound", "改为召唤寒冰猎犬, 而非狼。", "hound")
+		self.upgrades['clay_hound'] = (1, 6, "Clay Hound", "改为召唤粘土猎犬, 而非狼。", "hound")
 		self.upgrades['wolf_pack'] = (1, 8, "Wolf Pack", "每次施放召狼术消耗 2 点充能并召唤 4 头狼。")
 
 
@@ -906,7 +906,7 @@ class SummonWolfSpell(Spell):
 
 			wolf.spells[0].onhit = bloodrage(2)
 			wolf.spells[0].name = "Frenzy Bite"
-			wolf.spells[0].description = "每次攻击获得 +2 伤害，持续 10 回合。"
+			wolf.spells[0].description = "每次攻击获得 +2 伤害, 持续 10 回合。"
 			
 			wolf.tags = [Tags.Demon, Tags.Nature]
 			wolf.resists[Tags.Dark] = 75
@@ -1007,9 +1007,9 @@ class SummonGiantBear(Spell):
 		self.upgrades['minion_damage'] = (15, 4)
 		self.upgrades['max_charges'] = (2, 3)
 		self.upgrades['minion_attacks'] = (1, 3)
-		self.upgrades['armored'] = (1, 3, "Armored Bear", "召唤一头装甲巨熊，而非巨熊。装甲巨熊有提升的物理抗性和 HP，但易受闪电伤害。", "species")
-		self.upgrades['venom'] = (1, 4, "Venom Bear", "召唤一头毒液巨熊，而非巨熊。毒液巨熊的撕咬带毒，每当敌人受到毒性伤害时会治疗。", "species")
-		self.upgrades['blood'] = (1, 5, "Blood Bear", "召唤一头鲜血巨熊，而非巨熊。鲜血巨熊有黑暗抗性，每次攻击不断提升伤害。", "species")
+		self.upgrades['armored'] = (1, 3, "Armored Bear", "召唤一头装甲巨熊, 而非巨熊。装甲巨熊有提升的物理抗性和 HP, 但易受闪电伤害。", "species")
+		self.upgrades['venom'] = (1, 4, "Venom Bear", "召唤一头毒液巨熊, 而非巨熊。毒液巨熊的撕咬带毒, 每当敌人受到毒性伤害时会治疗。", "species")
+		self.upgrades['blood'] = (1, 5, "Blood Bear", "召唤一头鲜血巨熊, 而非巨熊。鲜血巨熊有黑暗抗性, 每次攻击不断提升伤害。", "species")
 
 		self.must_target_walkable = True
 		self.must_target_empty = True
@@ -1115,9 +1115,9 @@ class FeedingFrenzySpell(Spell):
 
 	def get_description(self):
 		return ("必须以 [living] 单位为目标。\n"
-				"目标被 [stunned]，持续 [{duration}_回合:duration]。\n"
+				"目标被 [stunned], 持续 [{duration}_回合:duration]。\n"
 				+ text.stun_desc + '\n'
-				+ "目标视线内的所有 [living] 单位 [berserk]，持续 [{duration}_回合:duration]。\n"
+				+ "目标视线内的所有 [living] 单位 [berserk], 持续 [{duration}_回合:duration]。\n"
 				+ text.berserk_desc).format(**self.fmt_dict())
 
 
@@ -1175,7 +1175,7 @@ class Darkness(Spell):
 		self.caster.apply_buff(DarknessBuff(), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("每回合 [blind] 所有单位，持续 [1_回合:duration]。\n"
+		return ("每回合 [blind] 所有单位, 持续 [1_回合:duration]。\n"
 				+ text.blind_desc + '\n'
 				"[Demon] 和 [undead] 单位不受影响。\n"
 				"持续 [{duration}_回合:duration]。").format(**self.fmt_dict())

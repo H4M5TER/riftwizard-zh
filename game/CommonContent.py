@@ -536,7 +536,7 @@ class SpiderWeb(Cloud):
 		Cloud.__init__(self)
 		self.name = "Spider Web"
 		self.color = Color(210, 210, 210)
-		self.description = "被踩踏时将非蜘蛛的单位眩晕 1 回合，之后消散\n\n火焰伤害会摧毁蛛网"
+		self.description = "被踩踏时将非蜘蛛的单位眩晕 1 回合, 之后消散\n\n火焰伤害会摧毁蛛网"
 		self.duration = 12
 
 		self.asset_name = 'web'
@@ -681,7 +681,7 @@ class TrollRegenBuff(Buff):
 		self.recently_burned = False
 
 	def get_tooltip(self):
-		return "每回合回复 5 点血量，受到火焰伤害时无效"
+		return "每回合回复 5 点血量, 受到火焰伤害时无效"
 
 	def get_tooltip_color(self):
 		return Color(0, 255, 0)
@@ -846,7 +846,7 @@ class LeapAttack(Spell):
 		else:
 			fmt = "冲刺攻击"
 		if self.charge_bonus:
-			fmt += "，每位移 1 格造成 %d 点额外伤害" % self.charge_bonus
+			fmt += ", 每位移 1 格造成 %d 点额外伤害" % self.charge_bonus
 		return fmt
 
 	def can_cast(self, x, y):
@@ -1061,7 +1061,7 @@ class ShieldRegenBuff(Buff):
 				self.turns = 0
 
 	def get_tooltip(self):
-		return "每 %d 回合获得 1 点护盾，最多 %d 点" % (self.shield_freq, self.shield_max)
+		return "每 %d 回合获得 1 点护盾, 最多 %d 点" % (self.shield_freq, self.shield_max)
 
 class ReincarnationBuff(Buff):
 
@@ -1142,7 +1142,7 @@ class ShieldSightSpell(Spell):
 		Spell.__init__(self)
 		self.shields = shields
 		self.name = "Shield Allies"
-		self.description = "给予视线里的友方 1 点护盾，最多 %d 点" % self.shields
+		self.description = "给予视线里的友方 1 点护盾, 最多 %d 点" % self.shields
 		self.cool_down = cool_down
 		self.buff_type = BUFF_TYPE_BLESS
 		
@@ -1164,7 +1164,7 @@ class Poison(Buff):
 		self.name = "Poison"
 		self.buff_type = BUFF_TYPE_CURSE
 		self.asset = ['status', 'poison']
-		self.description = "每回合受到 1 点毒素伤害，无法回复血量"
+		self.description = "每回合受到 1 点毒素伤害, 无法回复血量"
 		self.resists[Tags.Heal] = 100
 
 	def on_applied(self, owner):
@@ -1488,7 +1488,7 @@ class DeathExplosion(Buff):
 
 	def __init__(self, damage, radius, damage_type):
 		Buff.__init__(self)
-		self.description = "死亡时自爆，在 %d 格范围内造成 %d 点%s伤害" % (radius, damage, damage_type.name)
+		self.description = "死亡时自爆, 在 %d 格范围内造成 %d 点%s伤害" % (radius, damage, damage_type.name)
 		self.damage = damage
 		self.damage_type = damage_type
 		self.radius = radius
@@ -1635,7 +1635,7 @@ class WizardHealAura(Spell):
 		self.duration = duration
 		self.cool_down = 16
 		self.radius = radius
-		self.description = "每回合治疗 [%d_tile:radius] 格半径内的友方 [%d_HP:heal] 点血量，持续 [%d_turns:duration] 回合" % (self.radius, self.heal, self.duration)
+		self.description = "每回合治疗 [%d_tile:radius] 格半径内的友方 [%d_HP:heal] 点血量, 持续 [%d_turns:duration] 回合" % (self.radius, self.heal, self.duration)
 		
 
 	def get_ai_target(self):
@@ -1663,7 +1663,7 @@ class WizardBloodlust(Spell):
 		self.damage_type = Tags.Fire
 
 	def get_description(self):
-		return "给 [%d_tile:radius] 格范围内的友方增加 %d 点伤害，持续 [%d_turns:duration] 回合" % (self.bonus, self.radius, self.duration)
+		return "给 [%d_tile:radius] 格范围内的友方增加 %d 点伤害, 持续 [%d_turns:duration] 回合" % (self.bonus, self.radius, self.duration)
 
 	def cast_instant(self, x, y):
 		for p in self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, self.radius):
@@ -1699,7 +1699,7 @@ class GlassReflection(Buff):
 		yield
 
 	def get_tooltip(self):
-		return "当这个单位被作魔能法术的目标时，这个单位对施法者施放一个一样的法术"
+		return "当这个单位被作魔能法术的目标时, 这个单位对施法者施放一个一样的法术"
 
 class ShieldAllySpell(Spell):
 
@@ -1711,7 +1711,7 @@ class ShieldAllySpell(Spell):
 
 	def on_init(self):
 		self.name = "Shield Ally"
-		self.description = "给予单体友方 %d 点护盾，最多 %d 点" % (self.shields, self.shields)
+		self.description = "给予单体友方 %d 点护盾, 最多 %d 点" % (self.shields, self.shields)
 		self.target_allies = True
 
 	def cast_instant(self, x, y):
@@ -1797,7 +1797,7 @@ class FireProtection(Spell):
 	def on_init(self):
 		self.name = "Fire Protection"
 		self.duration = 8
-		self.description = "给予施法者与盟友 50%% 的火焰抗性，持续 %d 回合" % self.duration
+		self.description = "给予施法者与盟友 50%% 的火焰抗性, 持续 %d 回合" % self.duration
 		self.cool_down = 12
 		self.range = 0
 
