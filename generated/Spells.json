@@ -1,0 +1,1441 @@
+[
+  {
+    "name": "Flame Tongue",
+    "description": "在一束范围内造成 [fire] 伤害。",
+    "upgrades": {}
+  },
+  {
+    "name": "Fireball",
+    "description": "对 [{radius}格:radius] 范围内的所有单位造成 [{damage}:damage] 点 [fire] 伤害。",
+    "upgrades": {
+      "Chaos Ball": [
+        "火球术随机造成 [physical]、[lightning] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性, 火球术造成其抗性最低类型的伤害。",
+        "damage type"
+      ],
+      "Energy Ball": [
+        "火球术随机造成 [arcane]、[holy] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性, 火球术造成其抗性最低类型的伤害。",
+        "damage type"
+      ],
+      "Ash Ball": [
+        "火球术随机造成 [poison]、[dark] 或 [fire] 伤害。若单位对一种或多种伤害类型有抗性, 火球术造成其抗性最低类型的伤害。\\n火球术致盲一回合。",
+        "damage type"
+      ]
+    }
+  },
+  {
+    "name": "Meteor Shower",
+    "description": "",
+    "upgrades": {
+      "Meteor Size": [
+        "物理伤害和击晕范围从 0 提升至 1。"
+      ]
+    }
+  },
+  {
+    "name": "Lightning Bolt",
+    "description": "在一束范围内造成 [{damage}_点_闪电:lightning] 伤害。",
+    "upgrades": {
+      "Channeling": [
+        "闪电箭可引导至多 10 个回合。"
+      ],
+      "Judgement Bolt": [
+        "闪电箭还造成 [holy] 和 [dark] 伤害。",
+        "bolt"
+      ],
+      "Energy Bolt": [
+        "闪电箭还造成 [fire] 和 [arcane] 伤害。",
+        "bolt"
+      ]
+    }
+  },
+  {
+    "name": "Annihilate",
+    "description": "",
+    "upgrades": {
+      "Cascade": [
+        "若主目标被消灭, 歼灭术会跳跃并击中其相邻目标。"
+      ],
+      "Dark Annihilation": [
+        "歼灭术额外造成 [dark] 伤害。"
+      ],
+      "Arcane Annihilation": [
+        "歼灭术额外造成 [arcane] 伤害。"
+      ]
+    }
+  },
+  {
+    "name": "Mega Annihilate",
+    "description": "",
+    "upgrades": {
+      "Cascade": [
+        "若主目标被消灭, 歼灭术会跳跃并击中其相邻目标。"
+      ],
+      "Dark Annihilation": [
+        "歼灭术额外造成 [dark] 伤害。"
+      ],
+      "Arcane Annihilation": [
+        "歼灭术额外造成 [arcane] 伤害。"
+      ]
+    }
+  },
+  {
+    "name": "Teleport",
+    "description": "传送到目标地块。",
+    "upgrades": {
+      "Void Teleport": [
+        "传送术对目标地块视线内的所有敌方单位造成 [arcane] 伤害, 数量为充能上限。"
+      ]
+    }
+  },
+  {
+    "name": "Blink",
+    "description": "",
+    "upgrades": {
+      "Blindcasting": [
+        "扑闪术施放无需视线。"
+      ],
+      "Lightning Blink": [
+        "扑闪术在抵达时对 3格 范围内造成 [lightning] 伤害, 数量为移动距离的两倍, 上整。",
+        "damage"
+      ],
+      "Dark Blink": [
+        "扑闪术在抵达时对 3格 范围内造成 [dark] 伤害, 数量为移动距离的两倍, 上整。",
+        "damage"
+      ]
+    }
+  },
+  {
+    "name": "Flame Gate",
+    "description": "每当你施放 [fire] 法术时, 在法术目标处召唤一个火元素。\\n火元素有 [{minion_health}_点_HP:minion_health]、[100_点_火焰:fire] 抗性、[50_点_物理:physical] 抗性和 [-50_点_寒冰:ice] 抗性。\\n火元素的攻击造成 [{minion_damage}_点_火焰:fire] 伤害, 射程为 [{minion_range}格:minion_range]。\\n火元素在 [{minion_duration}_回合:minion_duration] 后消失。\\n此效果持续到你不施放火焰法术为止。",
+    "upgrades": {}
+  },
+  {
+    "name": "Lightning Form",
+    "description": "每当你施放 [lightning] 法术时, 传送到该法术的目标地块。\\n获得 [100_点_闪电:lightning] 抗性。\\n获得 [100_点_物理:physical] 抗性。\\n此效果持续到你不施放 [lightning] 法术的首个回合为止。",
+    "upgrades": {}
+  },
+  {
+    "name": "Void Beam",
+    "description": "在一束范围内造成 [{damage}_点_奥术:arcane] 伤害, 并摧毁墙。",
+    "upgrades": {}
+  },
+  {
+    "name": "Thunder Strike",
+    "description": "对目标造成 [{damage}_点_闪电:lightning] 伤害。\\n击晕目标周围 [{radius}格:radius] 范围内的所有敌人。",
+    "upgrades": {
+      "Blindcasting": [
+        "雷击术施放无需视线。"
+      ],
+      "Storm Power": [
+        "若目标在风暴云中, 范围和击晕持续翻倍。"
+      ],
+      "Heaven Strike": [
+        "雷击术还造成 [holy] 伤害。"
+      ]
+    }
+  },
+  {
+    "name": "Stone Giant Form",
+    "description": "临时获得物理抗性和投掷巨石的能力。",
+    "upgrades": {}
+  },
+  {
+    "name": "Chaos Barrage",
+    "description": "在锥形范围内发射随机向单位发射有混沌能量的 [{num_targets}_支箭矢:num_targets]。\\n每支箭矢随机造成 [{damage}_点_火焰:fire]、[{damage}_点_闪电:lightning] 或 [{damage}_点_物理:physical] 伤害。",
+    "upgrades": {
+      "Extra Bolts": []
+    }
+  },
+  {
+    "name": "Inferno",
+    "description": "生成一朵飘动的地狱火云, 每回合对其中的所有单位造成伤害。",
+    "upgrades": {}
+  },
+  {
+    "name": "Disperse",
+    "description": "将 [{radius}格:radius] 范围内的所有单位随机传送到新的地块。\\n施法者不受影响。",
+    "upgrades": {}
+  },
+  {
+    "name": "Petrify",
+    "description": "",
+    "upgrades": {
+      "Glassify": [
+        "改为将目标变为玻璃, 而非石头。被变成玻璃的目标 -100 物理抗性。"
+      ]
+    }
+  },
+  {
+    "name": "Petrification Aura",
+    "description": "",
+    "upgrades": {
+      "Glassify": [
+        "改为将敌人变为玻璃, 而非石头, 使其受到双倍的物理伤害, 而非四分之一。"
+      ]
+    }
+  },
+  {
+    "name": "Wolf",
+    "description": "召唤一头狼。\\n狼具有 [{minion_health}_点_HP:minion_health]。\\n狼的近战攻击造成 [{minion_damage}_点_物理:physical] 伤害。",
+    "upgrades": {
+      "Pounce": [
+        "召唤的狼获得一次跳跃攻击。"
+      ],
+      "Blood Hound": [
+        "改为召唤鲜血猎犬, 而非狼。",
+        "hound"
+      ],
+      "Ice Hound": [
+        "改为召唤寒冰猎犬, 而非狼。",
+        "hound"
+      ],
+      "Clay Hound": [
+        "改为召唤粘土猎犬, 而非狼。",
+        "hound"
+      ],
+      "Wolf Pack": [
+        "每次施放召狼术消耗 2 点充能并召唤 4 头狼。"
+      ]
+    }
+  },
+  {
+    "name": "Dire Wolf",
+    "description": "召唤一头恐龙。",
+    "upgrades": {}
+  },
+  {
+    "name": "Giant Bear",
+    "description": "召唤一头巨熊。\\n巨熊有 [{minion_health}_点_HP:minion_health]。\\n巨熊的近战攻击造成 [{minion_damage}_点_物理:physical] 伤害。",
+    "upgrades": {
+      "Armored Bear": [
+        "召唤一头装甲巨熊, 而非巨熊。装甲巨熊有提升的物理抗性和 HP, 但易受闪电伤害。",
+        "species"
+      ],
+      "Venom Bear": [
+        "召唤一头毒液巨熊, 而非巨熊。毒液巨熊的撕咬带毒, 每当敌人受到毒性伤害时会治疗。",
+        "species"
+      ],
+      "Blood Bear": [
+        "召唤一头鲜血巨熊, 而非巨熊。鲜血巨熊有黑暗抗性, 每次攻击不断提升伤害。",
+        "species"
+      ]
+    }
+  },
+  {
+    "name": "Sight of Blood",
+    "description": "",
+    "upgrades": {
+      "Demon Frenzy": [
+        "恶魔单位也受影响。"
+      ],
+      "Blindcasting": [
+        "鲜血视线施放无需视线。"
+      ]
+    }
+  },
+  {
+    "name": "Darkness",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Lightning Storm",
+    "description": "Create a thunderstorm with a [{radius}格:radius] radius.\\nEach turn, each tile in the storm has a [{strikechance}%_chance:strikechance] of taking [{damage}_点_闪电:lightning] damage.\\nThe storm lasts for [{duration}_回合:duration].",
+    "upgrades": {
+      "Blindcasting": [
+        "闪电风暴施放无需视线。"
+      ]
+    }
+  },
+  {
+    "name": "Prison of Thorns",
+    "description": "Surround a group of enemies with carnivorous plants.\\nThe plants have [{minion_health}_点_HP:minion_health] and cannot move.\\nThe plants have a melee attack which deals [{minion_damage}_点_物理:physical] damage.\\nThe plants vanish after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Iron Prison": [
+        "Summon iron thorns instead, which deal 3 more damage and are resistant to many forms of damage.",
+        "prison"
+      ],
+      "Icy Prison": [
+        "Summon icy thorns instead, which have a ranged ice attack.",
+        "prison"
+      ]
+    }
+  },
+  {
+    "name": "Pillar of Fire",
+    "description": "",
+    "upgrades": {
+      "Channeling": [
+        "Pillar of Flame becomes a channeled spell"
+      ]
+    }
+  },
+  {
+    "name": "Cloud Armor",
+    "description": "Target unit standing in a lightning storm gains 100%% lighting resistance, 50%% physical resistance, and %d hp regeneration per turn for %d turns",
+    "upgrades": {}
+  },
+  {
+    "name": "Boiling Blood",
+    "description": "All allied units gain stacking [{extra_damage}_damage:damage] bonus to their fire and physical abilities.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Holy Fury": [
+        "Boiling Blood also impacts holy abilities"
+      ],
+      "Dark Fury": [
+        "Boiling Blood also impacts dark abilities"
+      ]
+    }
+  },
+  {
+    "name": "Healing Light",
+    "description": "Heal all allies in line of sight for [{heal}_health:heal].",
+    "upgrades": {
+      "Shielding Light": [
+        "Allies in line of sight gain 1 shield"
+      ]
+    }
+  },
+  {
+    "name": "Regeneration Aura",
+    "description": "Each turn for [{duration}_回合:duration], all allied units in a [{radius}格:radius] radius are healed for [{heal}_HP:heal].",
+    "upgrades": {
+      "Global": [
+        "The aura heals all allies on the level"
+      ]
+    }
+  },
+  {
+    "name": "Void Orb",
+    "description": "Summon a void orb next to the caster.\\nThe orb melts through walls along the way, and deals [{minion_damage}_点_奥术:arcane] damage each turn to all adjacent units.\\nThe orb has no will of its own, each turn it will float one tile towards the target.\\nThe orb can be destroyed by arcane damage.",
+    "upgrades": {
+      "Red Dwarf": [
+        "Void orb deals an additional layer of fire damage"
+      ],
+      "Void Walk": [
+        "Targeting an existing void orb with another detonates it, and then teleports you to that location."
+      ]
+    }
+  },
+  {
+    "name": "Searing Orb",
+    "description": "Summon a searing orb next to the caster.\\nThe orb deals [{minion_damage}_点_火焰:fire] damage each turn to all units in line of sight.\\nThe caster is immune to this damage.\\nThe orb has no will of its own, each turn it will float one tile towards the target.\\nThe orb can be destroyed by ice damage.",
+    "upgrades": {
+      "Matter Melting": [
+        "Searing Orb can melt and be cast through walls"
+      ]
+    }
+  },
+  {
+    "name": "Ball Lightning",
+    "description": "Summon a lighting orb next to the caster.\\nEach turn the orb fires [{num_targets}_beams:num_targets] of electricity at random enemy units in line of sight. The beams deal [{minion_damage}_点_闪电:lightning] damage.\\nThe orb has no will of its own, each turn it will float one tile towards the target.\\nThe orb can be destroyed by lightning damage.",
+    "upgrades": {
+      "Magnetic Pulse": [
+        "Targeting an existing lightning orb causes it to emit a magnetic pulse that pulls [construct] and [lightning] units in line of sight 3 tiles towards the orb."
+      ]
+    }
+  },
+  {
+    "name": "Glass Orb",
+    "description": "",
+    "upgrades": {
+      "Shielding": [
+        "The orb shields minions (1 shield, up to a max of 3) in the radius."
+      ]
+    }
+  },
+  {
+    "name": "Ice Orb",
+    "description": "",
+    "upgrades": {
+      "Freeze Chance": [
+        "The orb has a 50% chance to freeze damaged targets for 1 turn"
+      ]
+    }
+  },
+  {
+    "name": "Orb Control",
+    "description": "Retarget all allied [orbs:orb] to target tile.",
+    "upgrades": {}
+  },
+  {
+    "name": "Dominate",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Eye of Fire",
+    "description": "Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_点_火焰:fire] damage to a random enemy unit in line of sight.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Eye of Lightning",
+    "description": "Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_点_闪电:lightning] damage to a random enemy unit in line of sight.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Eye of Ice",
+    "description": "Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_ice:ice] damage to a random enemy unit in line of sight.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Eye of Rage",
+    "description": "Every [{shot_cooldown}_turns:shot_cooldown], inflict [berserk] on a random enemy unit in line of sight for [{berserk_duration}_turns:berserk].\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Lycanthropy": [
+        "When Eye of Rage targets a [living] unit with 25 or less HP, that unit is instantly killed and raised as friendly Werewolf.  That Werewolf is berserked for 14 turns."
+      ]
+    }
+  },
+  {
+    "name": "Nightmare Aura",
+    "description": "Each turn, randomly deals [{aura_damage}_点_奥术:arcane] or [{aura_damage}_dark:dark] damage to each enemy in a [{radius}格:radius] radius.\\nThis damage is fixed, and cannot be increased using shrines, skills, or buffs.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Dark Dream": [
+        "Upon ending, temporarily summon Ravens, Werewolves, and Old Witches based on the total damage dealt by the spell.",
+        "dream"
+      ],
+      "Electric Dream": [
+        "Upon ending, temporarily summon Spark Spirits, Thunderbirds, and Aelves based on the total damage dealt by the spell.",
+        "dream"
+      ],
+      "Fever Dream": [
+        "Upon ending, temporarily summon Fire Lizards, Fire Spirits, and Flame Rifts based on the total damage dealt by the spell.",
+        "dream"
+      ]
+    }
+  },
+  {
+    "name": "Basilisk Armor",
+    "description": "Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [2:duration] turns.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Watcher Form",
+    "description": "Each turn, fire a lightning bolt at the farthest enemy in line of sight dealing [{damage}_点_闪电:lightning] damage in a beam.\\nYou cannot move or cast spells.\\nGain 100 [physical] resist.\\nGain 100 [fire] resist.\\nGain 100 [lightning] resist.\\nGain 100 [poison] resist.\\nLasts [{duration}_回合:duration]",
+    "upgrades": {}
+  },
+  {
+    "name": "Imp Swarm",
+    "description": "Each turn, summon [{num_summons}_imps:num_summons] near the caster.\\nImps have [{minion_health}_点_HP:minion_health] and can fly.\\nImps have a ranged attack dealing [{minion_damage}_damage:minion_damage] with a [{minion_range}_tile:minion_range] range.\\nEach imp is either a [fire], [iron:physical], or [spark:lightning] imp.\\nThe imps each last [{minion_duration}_turns:minion_duration], and this effect lasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Metal Swarm": [
+        "Imp swarm summons copper imps instead of spark imps, and furnace imps instead of fire imps.",
+        "swarm"
+      ],
+      "Dark Swarm": [
+        "Imp swarm summons rot imps, void imps, and insanity imps instead of fire, spark, and iron imps.",
+        "swarm"
+      ],
+      "Mega Swarm": [
+        "Imp swarm summons giant imps instead of normal sized ones",
+        "swarm"
+      ]
+    }
+  },
+  {
+    "name": "Lightning Halo",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Mystic Vision",
+    "description": "All other spells gain [{bonus}_range:range].\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Vision Aura": [
+        "Mystic vision affects all allied units"
+      ]
+    }
+  },
+  {
+    "name": "Mystic Power",
+    "description": "All other spells gain [{bonus}_damage:damage].\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Damage Bonus": [
+        "Mystic Power's damage bonus is increased by 4"
+      ],
+      "Intensity": [
+        "Mystic Power stacks in intensity instead of duration"
+      ]
+    }
+  },
+  {
+    "name": "Power of Pain",
+    "description": "Your spells deal +%d damage.  Each turn you take %d dark damage.  Ends when you move.",
+    "upgrades": {}
+  },
+  {
+    "name": "Flame Burst",
+    "description": "Deal [{damage}_点_火焰:fire] damage in a [{radius}格:radius] burst around the caster.",
+    "upgrades": {
+      "Melting Flame": [
+        "Melt walls adjacent to the blast",
+        "flame"
+      ],
+      "Bright Flame": [
+        "Flame Burst deals [holy] instead of [fire], and shields allied units instead of damaging them.",
+        "flame"
+      ],
+      "Spreading Flame": [
+        "Each cast of flame burst consumes all remaining charges.\\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\\nSlain enemies create additional explosions with half radius and damage.",
+        "flame"
+      ]
+    }
+  },
+  {
+    "name": "Fire Drake",
+    "description": "Summon a Fire Drake at target square.\\nFire Drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_点_火焰:fire] resist.\\nFire Drakes have a breath weapon which deals [{breath_damage}_点_火焰:fire] damage.\\nFire Drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.",
+    "upgrades": {
+      "Dragon Mage": [
+        "Summoned Fire Drakes can cast Fireball with a 3 turn cooldown.\\nThis Fireball gains all of your upgrades and bonuses."
+      ]
+    }
+  },
+  {
+    "name": "Storm Drake",
+    "description": "",
+    "upgrades": {
+      "Cloudform": [
+        "Summoned Storm Drakes have 75% physical resist."
+      ],
+      "Drake Swap": [
+        "Whenever you target a summoned Storm Drake with a lightning spell, swap places with it."
+      ],
+      "Dragon Mage": [
+        "Summoned Storm Drakes can cast Lightning Bolt with a 3 turn cooldown.\\nThis Lightning Bolt gains all of your upgrades and bonuses."
+      ]
+    }
+  },
+  {
+    "name": "Void Drake",
+    "description": "Summon a Void Drake at target square.\\nVoid Drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_点_奥术:arcane] resist.\\nVoid Drakes have a breath weapon which deals [{minion_damage}_点_奥术:arcane] damage and melts walls.\\nVoid Drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.",
+    "upgrades": {
+      "Dragon Mage": [
+        "Summoned Void Drakes can cast Magic Missile with a 3 turn cooldown.\\nThis Magic Missile gains all of your upgrades and bonuses."
+      ],
+      "Essence Drake": [
+        "Whenever a summoned Void Drake kills an enemy unit, a random temporary ally gains +4 turns to its duration."
+      ]
+    }
+  },
+  {
+    "name": "Ice Drake",
+    "description": "Summon an Ice Drake at target square.\\nIce Drakes have [{minion_health}_点_HP:minion_health], fly, and have [100_ice:ice] resist.\\nIce Drakes have a breath weapon which deals [{minion_damage}_ice:ice] damage and [freezes] units.\\nIce Drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage.",
+    "upgrades": {
+      "Freeze Duration": [],
+      "Dragon Mage": [
+        "Summoned Ice Drakes can cast Death Chill with an 8 turn cooldown.\\nThis Death Chill gains all of your upgrades and bonuses."
+      ]
+    }
+  },
+  {
+    "name": "Spark",
+    "description": "Deal lightning damage to the target.  Chains to a limited number of nearby targets.",
+    "upgrades": {}
+  },
+  {
+    "name": "Chain Lightning",
+    "description": "Fire an arcing bolt of electricity dealing [{damage}_点_闪电:lightning] damage.\\nThe bolt repeatably arcs to new targets within the cascade range.\\nEach arc deals damage to all units along a beam.\\nThe bolt can arc up to [{cascade_range}_tiles:radius], and cannot pass through walls.\\nThe bolt terminates when it cannot arc to any new targets.",
+    "upgrades": {
+      "Cloud Conductance": [
+        "Chain Lightning can arc to blizzards and storm clouds"
+      ],
+      "Lightning Shield": [
+        "Chain Lightning can arc to friendly targets.\\nFriendly units hit by Chain Lightning gain 1 SH, up to a max of 3, instead of damaged."
+      ]
+    }
+  },
+  {
+    "name": "Death Bolt",
+    "description": "Deals [{damage}_dark:dark] damage to one target.\\nSlain living units are raised as skeletons.\\nRaised skeletons have max HP equal to that of the slain unit, and deal [{minion_damage}_点_物理:physical] damage in melee.\\nSkeletons of flying units can fly.",
+    "upgrades": {
+      "Withering": [
+        "Non living units damaged by Death Bolt lose max hp equal to the damage dealt."
+      ],
+      "Soul Battery": [
+        "Deathbolt permenantly gains 1 damage whenever it slays a living target."
+      ]
+    }
+  },
+  {
+    "name": "Wheel of Death",
+    "description": "Deal [{damage}_dark:dark] damage to a random enemy unit.",
+    "upgrades": {
+      "Death Roulette": [
+        "On kill, gain a Roulette stack for 10 turns.\\nWheel of death hits an additional enemy for each Roulette stack you have at cast time."
+      ]
+    }
+  },
+  {
+    "name": "Touch of Death",
+    "description": "Deal [{damage}_dark:dark] damage to one unit in melee range.",
+    "upgrades": {
+      "Voidtouch": [
+        "Touch of death also deals 150 [arcane] damage."
+      ],
+      "Flametouch": [
+        "Touch of death also deals 150 [fire] damage."
+      ],
+      "Wrathtouch": [
+        "Touch of death also deals 150 [physical] damage."
+      ],
+      "Touch of the Raven": [
+        "When a [living] target dies to touch of death, it is raised as a friendly Raven.",
+        "raising"
+      ],
+      "Touch of the Vampire": [
+        "When a [living] target dies to touch of death, it is raised as a friendly Vampire.",
+        "raising"
+      ],
+      "Touch of the Reaper": [
+        "When a [living] target dies to touch of death, it is raise as a friendly Reaper for 6 turns",
+        "raising"
+      ]
+    }
+  },
+  {
+    "name": "Seal Fate",
+    "description": "After [{delay}_回合:duration], deal [{damage}_dark:dark] damage to target unit.",
+    "upgrades": {
+      "Blindcasting": [
+        "Seal Fate 施放无需视线。"
+      ],
+      "Spreading Curse": [
+        "When Sealed Fate's duration expires, it jumps to a random enemy in line of sight."
+      ]
+    }
+  },
+  {
+    "name": "Volcanic Eruption",
+    "description": "Create a [{radius}格:radius] burst of lava in a chasm.\\nThe burst flows up to [{flow_range}_tiles:radius] out of the chasm.\\nThe lava deals [{damage}_点_火焰:fire] damage",
+    "upgrades": {
+      "Blindcasting": [
+        "Volcano 施放无需视线。"
+      ],
+      "Wallcano": [
+        "In addition to chasms, volcano may target walls.  Doing so turns the walls into chasms"
+      ]
+    }
+  },
+  {
+    "name": "Soul Swap",
+    "description": "Swap places with a friendly [undead] unit.",
+    "upgrades": {
+      "Forced Transfer": [
+        "Soul Swap can target enemy undead units as well."
+      ]
+    }
+  },
+  {
+    "name": "Underworld Passage",
+    "description": "Teleport to any tile adjacent to a chasm.\\nCan only be cast while adjacent to a chasm.",
+    "upgrades": {}
+  },
+  {
+    "name": "Void Spawning",
+    "description": "Summon a void spawner for 10 turns.  The void spawner is a stationary arcane creature that summons void bombers.",
+    "upgrades": {}
+  },
+  {
+    "name": "Earthen Sentinel",
+    "description": "Summon an Earth Elemental.\\nEarth elementals have [{minion_health}_点_HP:minion_health], [50_点_物理:physical] resist, [50_点_火焰:fire] resist, [50_点_闪电:lightning] resist, and cannot move.\\nEarth elementals have a melee attack which deals [{minion_damage}_点_物理:physical].The elemental vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Earthquake Totem": [
+        "Earthen Sentinel gains your Earthquake spell on a 3 turn cool down.",
+        "totem"
+      ],
+      "Stinging Totem": [
+        "Earthen Sentinel gains your Poison Sting spell.",
+        "totem"
+      ],
+      "Holy Totem": [
+        "Earthen Sentinel gains your Heavenly Blast spell on a 2 turn cool down.",
+        "totem"
+      ]
+    }
+  },
+  {
+    "name": "Ghostball",
+    "description": "Deal [{damage}_dark:dark] damage to enemy units in a [{radius}格:radius] radius.\\nSummon ghosts at empty tiles in the radius.\\nGhosts have [{minion_health}_点_HP:minion_health], fly, [100_点_物理:physical] resist, [50_dark:dark] resist, and passively blink.\\nGhosts have a melee attack which deals [{minion_damage}_dark:dark] damage.\\nThe ghosts vanish after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Ghost King": [
+        "A Ghost King is summoned at the center of the ghost ball.",
+        "center summon"
+      ],
+      "Ghost Mass": [
+        "A Ghostly Mass is summoned at the center of the ghost ball.",
+        "center summon"
+      ]
+    }
+  },
+  {
+    "name": "Mystic Memory",
+    "description": "Regain all charges of a random other spell which currently has no remaining charges.",
+    "upgrades": {}
+  },
+  {
+    "name": "Conjure Memories",
+    "description": "Regain a charge of each of your conjuration spells",
+    "upgrades": {}
+  },
+  {
+    "name": "Weave Sorcery",
+    "description": "Your sorcery and enchantment spells get +3 damage for each enchantment spell you know and +1 duration for each sorcery spell you know.  Lasts 20 turns.",
+    "upgrades": {}
+  },
+  {
+    "name": "Permanence",
+    "description": "Your spells and temporary summons last an extra [5_回合:duration].\\nThis effect lasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Death Gaze",
+    "description": "Each allied unit deals [{damage}_dark:dark] damage to a random enemy in its line of sight.",
+    "upgrades": {
+      "Vampiric Gaze": [
+        "Each allied unit heals for 100% of the damage it causes"
+      ]
+    }
+  },
+  {
+    "name": "Bone Barrage",
+    "description": "Your summoned allies in line of sight of the target take [physical] damage equal to half their health.\\nEach affected ally deals that much [physical] damage to the target.",
+    "upgrades": {
+      "Bone Spears": [
+        "Bone Barrage damages all targets in a beam from the minion to the target"
+      ],
+      "Cursed Bones": [
+        "Bone Barrage also deals dark damage"
+      ],
+      "Shambler Assembly": [
+        "Bone Barrage can target empty tiles.\\nIf it does, it creates a bone shambler at that tile with hp equal to the damage it would have dealt."
+      ]
+    }
+  },
+  {
+    "name": "Invoke Savagery",
+    "description": "Each living ally attacks a random enemy unit in melee range.\\nThe attack deals [{damage}_点_物理:physical] damage and inflicts [{duration}_回合:duration] of [stun].",
+    "upgrades": {}
+  },
+  {
+    "name": "Magic Missile",
+    "description": "Deal [{damage}_点_奥术:arcane] damage to the target.",
+    "upgrades": {
+      "Shield Burn": [
+        "Magic Missile removes up to 3 SH from the target before dealing damage."
+      ],
+      "Slaughter Bolt": [
+        "If Magic Missile targets a [living] unit, it deals [poison], [dark], and [physical] damage instead of [arcane].",
+        "bolt"
+      ],
+      "Holy Bolt": [
+        "If Magic Missile targets an [undead] unit, it deals [holy] damage in addition to [arcane] damage.",
+        "bolt"
+      ],
+      "Disruption Bolt": [
+        "If Magic Missile targets an [arcane] unit, it deals [dark] and [holy] damage instead of [arcane].",
+        "bolt"
+      ]
+    }
+  },
+  {
+    "name": "Devour Mind",
+    "description": "Deal [{damage}_点_奥术:arcane] to an enemy unit.\\nThen, if the target is under 50% HP, deal it an additional [{damage}_dark:dark] damage.\\nCan only target [living] units.",
+    "upgrades": {
+      "Spirit Eater": [
+        "Can target [demon] and [arcane] units"
+      ],
+      "Gluttony": [
+        "If Devour Mind kills the target, the charge cost is refunded"
+      ]
+    }
+  },
+  {
+    "name": "Death Shock",
+    "description": "Deal [{damage}_点_闪电:lightning] damage and [{damage}_dark:dark] damage to the target.\\nIf the target is slain, this effect bounces to a random enemy in line of sight up to [{cascade_range}_tiles:range] away.\\nCan hit up to [{num_targets}_targets:num_targets].",
+    "upgrades": {
+      "Infinite Cascades": [
+        "There is no limit to the number of targets Death Shock can cascade to"
+      ]
+    }
+  },
+  {
+    "name": "Melt",
+    "description": "Target unit takes [{damage}_点_火焰:fire] damage and loses [100_点_物理:physical] resist.",
+    "upgrades": {
+      "Ice Penetration": [
+        "Melt also reduces [ice] resist by 100"
+      ]
+    }
+  },
+  {
+    "name": "Dragon Roar",
+    "description": "All allied dragons gain [{hp_bonus}_max_HP:minion_health], [{damage}:damage] attack damage, and [{cooldown_reduction}_回合:duration] cooldown reduction.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Ironize",
+    "description": "All allied units gain [{resist}_点_物理:physical] resist, [{resist}_点_火焰:fire] resist, and [{resist}_点_闪电:lightning] resist and become metallic.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Arcane Insulation": []
+    }
+  },
+  {
+    "name": "Word of Undeath",
+    "description": "All undead units have their current and maximum HP doubled.\\nAll other units except the caster lose half their current and maximum HP.",
+    "upgrades": {}
+  },
+  {
+    "name": "Word of Chaos",
+    "description": "[Stun] each enemy for [{duration}_回合:duration] and teleport them to random tiles.\\nDeal [{damage}_点_闪电:lightning] damage to all [fire] enemies.\\nDeal [{damage}_点_火焰:fire] damage to all [lightning] enemies.\\nEach enemy construct loses all [physical] resist and takes [{damage}_点_物理:physical] damage.",
+    "upgrades": {}
+  },
+  {
+    "name": "Word of Beauty",
+    "description": "Heal yourself and all living units fully.\\nDeal [{damage}_点_闪电:lightning] damage to [demon] and [undead] units.\\n[Stun] all [arcane] units for [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Word of Madness",
+    "description": "[Berserk] all units except the caster for [{duration}_回合:duration].\\nDeal [dark] damage to all [construct] units equal to half their current HP.\\nFully heal all [demon] units.",
+    "upgrades": {}
+  },
+  {
+    "name": "Floating Eye",
+    "description": "Summon a floating eye.\\nFloating eyes have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], float in place, and passively blink.\\nFloating eyes have no attacks of their own, but will cast any other [eye] spells you know upon being summoned.\\nFloating eyes vanish after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Chimera Familiar",
+    "description": "",
+    "upgrades": {
+      "Nature Mimicry": [
+        "The Chimera will mimic nature sorcery spells as well"
+      ],
+      "Dark Mimicry": [
+        "The Chimera will mimic dark sorcery spells as well"
+      ],
+      "Arcane Mimicry": [
+        "The Chimera will mimic arcane sorcery spells as well"
+      ]
+    }
+  },
+  {
+    "name": "Arc Lightning",
+    "description": "Lightning arcs to [{num_targets}_enemies:num_targets] visible from the target tile.\\nEach arc deals [{damage}_点_闪电:lightning] damage to units in a beam.",
+    "upgrades": {
+      "Echo Flash": [
+        "Secondary flashes dealing half damage and stunning for half duration are triggered at each initial arc target."
+      ]
+    }
+  },
+  {
+    "name": "Poison Sting",
+    "description": "",
+    "upgrades": {
+      "Acidity": [
+        "Damaged targets lose all poison resist"
+      ]
+    }
+  },
+  {
+    "name": "Fan of Flames",
+    "description": "Deal [{damage}_点_火焰:fire] damage to all units in a cone.\\nThis spell can be channeled for up to [{max_channel}_回合:duration].  The effect is repeated each turn the spell is channeled.",
+    "upgrades": {
+      "Channeling": [
+        "Fan of Flames can be channeled for up to 10 turns"
+      ]
+    }
+  },
+  {
+    "name": "Blue Lion",
+    "description": "Summon a blue lion.\\nBlue lions have [{minion_health}_点_HP:minion_health], fly, have [50_点_奥术:arcane] resist and [50_点_物理:physical] resist.\\nBlue lions have a spell that grants [1_SH:shield] to themselves and allies in their line of sight, up to a maximum of [{shield_max}_SH:shield] with a cooldown of [{shield_cooldown}_回合:duration].\\nBlue lions also have a melee attack which deals [{minion_damage}_点_物理:physical] damage.",
+    "upgrades": {
+      "Holy Bolt": [
+        "The Blue Lion's melee attack is replaced by a range 6 holy bolt attack."
+      ]
+    }
+  },
+  {
+    "name": "Death Cleave",
+    "description": "Whenever a spell you cast kills its primary target, that spell is recast on a randomly selected nearby valid enemy target up to [{cascade_range}_tiles:cascade_range] away.\\nThis process repeats until the target survives the spell, or there are no nearby valid targets.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Cantrip Cascade",
+    "description": "Cast each of your level 1 sorcery spells on each enemy in a cone.",
+    "upgrades": {}
+  },
+  {
+    "name": "Multicast",
+    "description": "Whenever you cast a [sorcery] spell, copy it.\\nLasts [{duration}_回合:duration]",
+    "upgrades": {}
+  },
+  {
+    "name": "Fae Court",
+    "description": "Summons a group of [{num_summons}:num_summons] faeries near the caster.\\nThe faeries fly, and have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], [75_点_奥术:arcane] resistance, and a passive blink.\\nThe faeries can heal allies for [{heal}_HP:heal], with a range of [{minion_range}_tiles:minion_range].\\nThe faeries have a [{minion_damage}_点_奥术:arcane] damage attack, with a range of [{minion_range}_tiles:minion_range].\\nThe faeries vanish after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Summon Queen": [
+        "A fae queen is summoned as well"
+      ],
+      "Glass Faery": [
+        "Summon glass faeries instead of normal ones."
+      ]
+    }
+  },
+  {
+    "name": "Ring of Spiders",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Heavenly Blast",
+    "description": "Deal [{damage}_holy:holy] damage to enemies and heal allies for [{damage}_hp:heal] along a beam and in a [{radius}格:radius] burst.",
+    "upgrades": {
+      "Spirit Bind": [
+        "Slain enemies create temporary spirits.  Spirits are blinking holy undead with 4 hitpoints and a 2 damage ranged holy attack."
+      ],
+      "Shield": [
+        "Affected ally units gain 2 SH, to a maximum of 5."
+      ],
+      "Echo Heal": [
+        "Affected ally units are re-healed for half the initial amount each turn for 5 turns."
+      ]
+    }
+  },
+  {
+    "name": "Holy Fire",
+    "description": "Deal [{damage}_点_火焰:fire] damage in a vertical line and [{damage}_holy:holy] damage in a horizontal line.\\n[Stun] [demon] and [undead] units in the affected area.",
+    "upgrades": {}
+  },
+  {
+    "name": "Sing",
+    "description": "Living and holy units are healed, undead, demons, and dark units take holy and fire damage.",
+    "upgrades": {}
+  },
+  {
+    "name": "Choir of Angels",
+    "description": "Summons a choir of [{num_summons}:num_summons] angelic singers.\\nThe singers have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], 50% resistance to [fire] and [holy] damage, and 100% resistance to [dark] damage.\\nThe angels can sing, dealing [{minion_damage}_点_火焰:fire] and [{minion_damage}_holy:holy] damage to all [undead], [demon], and [dark] units in a [{radius}格:radius] radius. [Living] and [holy] units in the song's radius are healed for [{heal}_HP:heal].  The Wizard cannot be healed in this way.\\nThe angels vanish after [{minion_duration}:minion_duration] turns.",
+    "upgrades": {}
+  },
+  {
+    "name": "Heaven's Wrath",
+    "description": "Deal [{damage}_点_闪电:lightning] damage and [{damage}_holy:holy] damage to [{num_targets}_units:num_targets] with the highest current HP.\\nDoes not target friendly units or gates.",
+    "upgrades": {
+      "Culling": [
+        "Heaven's Wrath also damages the units with the lowest current HP."
+      ]
+    }
+  },
+  {
+    "name": "Suspend Mortality",
+    "description": "Target allied unit gains the ability to reincarnate on death for [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Soul Tax",
+    "description": "Deal damage to target unit equal to one third of its health as [holy] damage, and then one third of its remaining health as [dark] damage.\\nHeal the caster for the total amount of damage dealt.",
+    "upgrades": {
+      "Arcane Taxation": [
+        "Soul tax deals an additional third of the target's remaining HP as arcane damage."
+      ]
+    }
+  },
+  {
+    "name": "Holy Armor",
+    "description": "Gain [{resist}_点_物理:physical] resist.\\nGain [{resist}_点_火焰:fire] resist.\\nGain [{resist}_点_闪电:lightning] resist.\\nGain [{resist}_dark:dark] resist.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Blinding Light",
+    "description": "",
+    "upgrades": {
+      "Dark Units": [
+        "Dark units also take holy damage."
+      ]
+    }
+  },
+  {
+    "name": "Flock of Eagles",
+    "description": "Summons [{num_summons}_eagles:num_summons] near the caster.\\nEagles have [{minion_health}_点_HP:minion_health] and can fly.\\nEagles have a melee attack which deals [{minion_damage}_点_物理:physical] damage.",
+    "upgrades": {
+      "Dive Attack": [
+        "Grants the eagles a dive attack"
+      ]
+    }
+  },
+  {
+    "name": "Flaming Arc",
+    "description": "Swing your flaming sword",
+    "upgrades": {}
+  },
+  {
+    "name": "Flaming Sword",
+    "description": "Wield a flaming sword.  The sword can be swung at adjacent enemies dealing fire and holy damage.",
+    "upgrades": {}
+  },
+  {
+    "name": "Heavenly Idol",
+    "description": "Summon an Idol of Beauty.\\nThe idol has [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], and is stationary.\\nThe idol has a passive aura which affects all units in line of sight of the idol each turn.\\nAffected allies are healed for [{heal}_HP:heal]. The Wizard cannot be healed in this way.\\nAffected enemies take [1_holy:holy] damage.\\nAffected [undead] and [demon] units take an additional [1_点_闪电:lightning] damage.\\nThe idol vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Fire Gaze": [
+        "The Idol gains a fire beam attack"
+      ]
+    }
+  },
+  {
+    "name": "Gold Drake",
+    "description": "Summon a Gold Drake.\\nGold drakes have [{minion_health}_点_HP:minion_health], [100_holy:holy] resist, and can fly.\\nGold drakes have a breath weapon which deals [{breath_damage}_holy:holy] damage to enemies and heals allies for [{breath_damage}_HP:heal].\\nGold drakes have a melee attack which deals [{minion_damage}_点_物理:physical] damage",
+    "upgrades": {
+      "Dragon Mage": [
+        "Summoned Gold Drakes can cast Healing Light with a 8 turn cooldown.\\nThis Healing Light gains all of your upgrades and bonuses."
+      ]
+    }
+  },
+  {
+    "name": "Flaming Sword",
+    "description": "Deals damage in an arc\\nDeals fire and holy damage",
+    "upgrades": {}
+  },
+  {
+    "name": "Call Seraph",
+    "description": "Summon a seraph.\\nSeraphim have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], and can fly.\\nSeraphim have a cleaving melee attack which deals [{minion_damage}_点_火焰:fire] and [{minion_damage}_holy:holy] damage.\\nThe seraph vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Moonblade": [
+        "The Seraph deals arcane damage in addition to fire and holy damage with its cleave attack."
+      ],
+      "Essence Aura": [
+        "The Seraph increases the duration of all temporary allies within 5 tiles by 1 each turn.",
+        "aura"
+      ],
+      "Heal Aura": [
+        "The Seraph heals all your other minions allies within 5 tiles for 5 HP each turn.",
+        "aura"
+      ],
+      "Holy Fire Aura": [
+        "The Seraph gains a damage aura, randomly dealing either [2_点_火焰:fire] or [2_holy:holy] damage to enemies within 5 tiles each turn.",
+        "aura"
+      ]
+    }
+  },
+  {
+    "name": "Archon Lightning",
+    "description": "Beam attack\\nShields allies in the Aoe",
+    "upgrades": {}
+  },
+  {
+    "name": "Call Archon",
+    "description": "Summon an Archon.\\nArchons have [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], and can fly.\\nArchons have beam attacks which deal [{minion_damage}_点_闪电:lightning] damage to enemies and shield allies.\\nThe Archon vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Pain Mirror",
+    "description": "Whenever you take damage, deal that much [dark] damage to all enemies in line of sight.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Pyrostatic Pulse",
+    "description": "Deal [{damage}_点_火焰:fire] damage in a beam.\\nDeal [{damage}_点_闪电:lightning] damage to tiles adjacent to the beam.",
+    "upgrades": {}
+  },
+  {
+    "name": "Thunder Stones",
+    "description": "Create several thunderstones nearby on the ground.  When a unit step on a stone, lightning arcs to the farthest visible enemy, dealing damage to enemies in a beam.",
+    "upgrades": {}
+  },
+  {
+    "name": "Fire Stones",
+    "description": "Create several firestones nearby on the ground.  When a unit step on a stone, it bursts into flames, dealing damage to enemies in an area.",
+    "upgrades": {}
+  },
+  {
+    "name": "Aether Swap",
+    "description": "Swap places with target unit.\\nThat unit takes [{damage}_点_奥术:arcane] damage.\\nCannot target [arcane] immune units.",
+    "upgrades": {
+      "Blindcasting": [
+        "Aether Swap 施放无需视线。"
+      ]
+    }
+  },
+  {
+    "name": "Siphon Shields",
+    "description": "Steal up to [{shield_steal}_SH:shields] from all enemy units in line of sight.",
+    "upgrades": {
+      "Shield Burn": [
+        "Deal 5 fire damage per shield stolen"
+      ]
+    }
+  },
+  {
+    "name": "Hungry Maw",
+    "description": "Summons a hungry maw.\\nThe maw has [{minion_health}_点_HP:minion_health], [{shields}_SH:shields], floats, and is stationary.\\nThe maw has a [{minion_damage}_点_物理:physical] damage attack, which pulls enemies towards it, with a range of [{minion_range}_tiles:minion_range].\\nThe maw vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Hollow Flesh",
+    "description": "Curse a group of units with the essence of undeath.\\nAffected units become [undead] and lose [living].\\nAffected units lose [{max_health_loss}%:damage] of their max HP.\\nAffected units lose [100_holy:holy] resist.\\nAffected units gain [100_dark:dark] resist.\\nAffected units cannot be healed.",
+    "upgrades": {
+      "Fire Vulnerability": []
+    }
+  },
+  {
+    "name": "Conductance",
+    "description": "Curse an enemy with the essence of conductivity.\\nThat enemy loses [50_点_闪电:lightning] resist.\\nWhenever you cast a [lightning] spell targeting that enemy, copy that spell.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Multicopy": [
+        "Make 1 extra copy of lightning spells cast on the target"
+      ]
+    }
+  },
+  {
+    "name": "Shrapnel Blast",
+    "description": "Detonate target wall tile.\\nEnemies adjacent to the wall tile take [{damage}_点_火焰:fire] damage.\\nThe explosion fires [{num_targets}_shards:num_targets] at random tiles in a [{radius}格:radius] burst.\\nEach shard deals [{damage}_点_物理:physical] damage.",
+    "upgrades": {
+      "More Shrapnel": [
+        "12 more shrapnel shards are shot"
+      ],
+      "Puncturing Blast": [
+        "The shrapnel can penetrate or destroy walls"
+      ],
+      "Magnetized Shards": [
+        "The shrapnel shards always target enemies if possible."
+      ]
+    }
+  },
+  {
+    "name": "Plague of Filth",
+    "description": "Summon a group of [{num_summons}:num_summons] toads and fly swarms.\\nToads have [{minion_health}_点_HP:minion_health].\\nToads have a ranged tongue attack which deals [{minion_damage}_点_物理:physical] damage and pulls enemies towards it.\\nToads can hop up to [4_tiles:range] away.\\nFly swarms have [{fly_health}_点_HP:minion_health], [75_dark:dark] resist, [75_点_物理:physical] resist, [-50_ice:ice] resist, and can fly.\\nFly swarms have a melee attack which deals [{fly_damage}_点_物理:physical] damage.\\nThe summons vanish after [{minion_duration}_turns:minion_duration].\\nThis spell can be channeled for up to [{max_channel}_回合:duration].",
+    "upgrades": {
+      "Serpent Plague": [
+        "Plague of Filth has a 50% chance of summoning a snake instead of a fly swarm or frog.  Snakes have 3/4 the health of toads, deal 1 more damage.  Snakes apply 5 stacks of poison on hit."
+      ]
+    }
+  },
+  {
+    "name": "Fiery Tormentor",
+    "description": "Summon a fiery tormentor.\\nThe tormentor has [{minion_health}_点_HP:minion_health].\\nThe tormentor has a burst attack dealing [{minion_damage}_点_火焰:fire] damage with a [{radius}格:radius] radius.\\nThe tormentor has a lifesteal attack dealing [{minion_leech_damage}_dark:dark] damage with a [{minion_range}_tile:minion_range] range.\\nThe tormentor vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {
+      "Frostfire Tormentor": [
+        "Summons a frostfire tormentor instead.",
+        "variant"
+      ],
+      "Ghostfire Tormentor": [
+        "Summons a ghostfire tormentor instead.",
+        "variant"
+      ]
+    }
+  },
+  {
+    "name": "Dispersion Field",
+    "description": "Each turn, teleport [{num_targets}_enemies:num_targets] in a [{radius}格:radius] radius to random locations on the map.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Knightly Oath",
+    "description": "Summon a void knight, a chaos knight, and a storm knight.\\nEach knight has [{minion_health}_点_HP:minion_health], various resistances, and an arsenal of unique magical abilities.\\nThe caster takes [40_holy:holy] damage whenever a knight dies.",
+    "upgrades": {
+      "Void Court": [
+        "Summon only void knights.  Summon a void champion as well.",
+        "court"
+      ],
+      "Storm Court": [
+        "Summon only storm knights.  Summon a storm champion as well.",
+        "court"
+      ],
+      "Chaos Court": [
+        "Summon only chaos knights.  Summon a chaos champion as well.",
+        "court"
+      ]
+    }
+  },
+  {
+    "name": "Toxin Burst",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Toxic Spores",
+    "description": "Summons [{num_summons}:num_summons] Mushbooms.\\nMushbooms have [{minion_health}_点_HP:minion_health].\\nMushbooms have a ranged attack dealing [{minion_damage}_poison:poison] damage and inflicting [4_回合:duration] of [poison].\\nMushbooms inflict [12_回合:duration] of [poison] on units in melee range when they die.",
+    "upgrades": {
+      "Grey Mushbooms": [
+        "Summon grey mushbooms instead, which apply stun instead of poison.",
+        "color"
+      ],
+      "Red Mushbooms": [
+        "Summon red mushbooms instead, which do not apply poison but deal fire damage",
+        "color"
+      ],
+      "Glass Mushbooms": [
+        "Summon glass mushbooms instead, which apply glassify instead of poison",
+        "color"
+      ]
+    }
+  },
+  {
+    "name": "Amplify Venom",
+    "description": "All [poisoned] enemies lose [100_poison:poison] resist for [{duration}_回合:duration].",
+    "upgrades": {
+      "Spread Poison": [
+        "Amplify Poison spreads poison to nearby enemies (radius 2)"
+      ]
+    }
+  },
+  {
+    "name": "Combust Poison",
+    "description": "Consume all [poison] on enemy units.\\nDeal [fire] damage in an [{radius}格:radius] burst around each affected enemy equal to [{multiplier}x:damage] the amount of poison consumed.",
+    "upgrades": {}
+  },
+  {
+    "name": "Venom Beast",
+    "description": "Summon a venom best.\\nThe venom beast has [{minion_health}_点_HP:minion_health], and heals whenever any unit takes poison damage.\\nThe venom beast has a melee attack which deals [{minion_damage}_点_物理:physical] damage and inflicts [5_回合:duration] of [poison].",
+    "upgrades": {
+      "Poison Skin": [
+        "The venom beast's skin poison's melee attackers for 5 turns."
+      ],
+      "Resistances": [
+        "The venom beast gains resistance to fire and lightning damage."
+      ],
+      "Trample Attack": [
+        "The venom beast gains a trample attack on a 2 turn cooldown."
+      ]
+    }
+  },
+  {
+    "name": "Spider Queen",
+    "description": "Summon a spider queen.\\nThe spider queen has [{queen_hp}_点_HP:minion_health].\\nThe spider queen hatches [{num_summons}:num_summons] baby spiders every [12_回合:duration].\\nBaby spiders have [3_HP:minion_health] and prefer to flee than attack, but they mature into giant spiders after [8_回合:duration] which have [{spider_hp}_点_HP:minion_health].\\nGiant spiders and the spider queen have melee attacks which deal [{minion_damage}_点_物理:physical] physical damage and inflicts 10 turns of [poison].",
+    "upgrades": {}
+  },
+  {
+    "name": "Freeze",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Iceball",
+    "description": "Deals [{damage}_ice:ice] damage in a [{radius}格:radius] burst.\\nAffected units in the area are [frozen] for [{duration}_回合:duration].",
+    "upgrades": {
+      "Ice Crush": [
+        "Units inside of the area of effect which are already frozen take physical damage before being refrozen."
+      ]
+    }
+  },
+  {
+    "name": "Blizzard",
+    "description": "",
+    "upgrades": {
+      "Blindcasting": [
+        "Blizzard 施放无需视线。"
+      ]
+    }
+  },
+  {
+    "name": "Frostfire Hydra",
+    "description": "Summon a frostfire hydra.\\nThe hydra has [{minion_health}_点_HP:minion_health], and is stationary.\\nThe hydra has a beam attack which deals [{minion_damage}_点_火焰:fire] damage with a [{minion_range}_tile:minion_range] range.\\nThe hydra has a beam attack which deals [{minion_damage}_ice:ice] damage with a [{minion_range}_tile:minion_range] range.\\nThe hydra vanishes after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Storm Burst",
+    "description": "Unleashes a [{radius}格:radius] burst of storm energy.\\nEach tile in the burst takes either [{damage}_ice:ice] damage or [{damage}_点_闪电:lightning] damage.\\nUnits dealt ice damage are [frozen] for [{duration}_回合:duration].\\nUnits dealt lightning damage are [stunned] for [{duration}_回合:duration].",
+    "upgrades": {
+      "Cloud Nova": [
+        "The nova leaves storm clouds and blizzards behind"
+      ]
+    }
+  },
+  {
+    "name": "Death Chill",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Ice Phoenix",
+    "description": "",
+    "upgrades": {
+      "Reincarnations": [
+        "The phoenix will reincarnate 2 more times"
+      ]
+    }
+  },
+  {
+    "name": "Word of Ice",
+    "description": "All non [ice] immune enemies under 50 HP are [frozen] for [{duration}_回合:duration].\\nDeals [{damage}_ice:ice] damage to all fire units.",
+    "upgrades": {}
+  },
+  {
+    "name": "Ice Weave",
+    "description": "All [frozen] enemies are [frozen] for an additional [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Icicle",
+    "description": "Deal [{damage}_点_物理:physical] damage to the target.\\nThen, deal [{damage}_ice:ice] to the target and a [{radius}格:radius] area around it.",
+    "upgrades": {
+      "Freezing": [
+        "Freeze the main target for 2 turns"
+      ]
+    }
+  },
+  {
+    "name": "Chill Wind",
+    "description": "Deals [{damage}_ice:ice] damage and inflicts [{duration}_回合:duration] of [frozen] on units in a [3格:radius] wide line perpendicular to the caster.",
+    "upgrades": {}
+  },
+  {
+    "name": "Wall of Ice",
+    "description": "Summons a line of ice elementals with a length of [{width}_tiles:num_summons].\\nIce elementals have [{minion_health}_点_HP:minion_health], [50_点_物理:physical] resist, [100_ice:ice] resist, [-100_点_火焰:fire] resist, and cannot move.\\nIce elementals have a ranged attack which deals [{minion_damage}_ice:ice] damage at a range of up to [{minion_range}_tiles:minion_range].\\nThe elementals vanish after [{minion_duration}_turns:minion_duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Earthquake",
+    "description": "Invoke an earthquake with a [{radius}格:radius] radius.\\nEach tile in the area has a 50% chance to be affected.\\nUnits on affected tiles take [{damage}_点_物理:physical] physical damage.\\nWalls on affected tiles are destroyed.",
+    "upgrades": {
+      "Safety": [
+        "Earthquake will not damage friendly units"
+      ]
+    }
+  },
+  {
+    "name": "Searing Seal",
+    "description": "Gain Seal of Searing.\\nWhenever an enemy takes [fire] damage, the seal gains that many charges.\\nWhen the seal expires, it deals [1_点_火焰:fire] damage to all enemies in line of sight for every 4 charges it has.\\nThe seal lasts [{duration}_回合:duration].\\nRecasting the spell will expire the current seal and create a new one.",
+    "upgrades": {}
+  },
+  {
+    "name": "Purity",
+    "description": "Lose all debuffs.\\nYou cannot gain new debuffs.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {}
+  },
+  {
+    "name": "Twilight Gaze",
+    "description": "All enemies in line of sight lose [{resistance_debuff}_dark:dark] resist and [{resistance_debuff}_holy:holy] resist.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Arcane Gaze": [
+        "Twilight Gaze also reduces [arcane] resist."
+      ]
+    }
+  },
+  {
+    "name": "Slime Form",
+    "description": "Assume slime form for [{duration}_回合:duration].\\nGain [50_点_物理:physical] resist while in slime form.\\nGain [100_poison:poison] resist while in slime form.\\nSummon a friendly slime each turn while in slime form.\\nSlimes have [{minion_health}_点_HP:minion_health], have a 50% chance each turn to gain 1 max HP, and split into two slimes upon reaching twice their starting HP.\\nSlimes have a melee attack which deals [{minion_damage}_poison:poison] damage.",
+    "upgrades": {
+      "Fire Slime": [
+        "Gain an equal chance to summon fire slime."
+      ],
+      "Ice Slime": [
+        "Gain an equal chance to summon ice slime."
+      ],
+      "Void Slime": [
+        "Gain an equal chance to summon void slime."
+      ]
+    }
+  },
+  {
+    "name": "Blazerip",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Ice Vortex",
+    "description": "Must target a frozen unit.\\nAll enemy units in a [{radius}格:radius] radius are pulled towards that unit, [frozen] for [{duration}_回合:duration], and dealt [{damage}_点_奥术:arcane] and [{damage}_ice:ice] damage.",
+    "upgrades": {}
+  },
+  {
+    "name": "The Restless Dead",
+    "description": "Whenever a living enemy dies, raise it as a skeleton.\\nRaised skeletons have max HP equal to that of the slain unit, and deal [{minion_damage}_点_物理:physical] damage in melee.\\nSkeletons of flying units can fly.\\nThis effect lasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Junk Golems": [
+        "Whenever an enemy constructs dies, raise it as a junk golem."
+      ],
+      "Elemental Spirits": [
+        "Whenever an enemy fire, ice or lightning unit dies, a random summoned ally gains 100 resistance to that element and a ranged attack of that type.  Each ally can gain only 1 such buff."
+      ]
+    }
+  },
+  {
+    "name": "Gust of Wind",
+    "description": "Push back units in a cone [{force}:range] tiles.\\nIf a unit collides with a wall, chasm, or another unit, it is [stunned] for [{duration}_回合:duration] and takes [{damage}_点_物理:physical] damage.\\nStationary enemise are unaffected.\\nStormclouds and webs in the area are destroyed.\\n",
+    "upgrades": {
+      "Stun Duration": []
+    }
+  },
+  {
+    "name": "Pyrostatic Curse",
+    "description": "Curses targets in a [{radius}格:radius] radius for [{duration}_回合:duration].\\nWhenever a cursed target takes fire damage, 2 random enemy units in line of sight of that unit are dealt half that much [lightning] damage.\\n",
+    "upgrades": {
+      "Linear Conductance": [
+        "Redealt lightning damage is dealt along a beam instead of just to one target."
+      ]
+    }
+  },
+  {
+    "name": "Spikeball Factory",
+    "description": "Surrounds the caster with spikeball gates, which will spawn spikeballs.",
+    "upgrades": {
+      "Manufactory": [
+        "Surrounds the initially summoned gates with another layer of gates"
+      ],
+      "Copper Spikeballs": [
+        "Summons copper spikeballs instead of normal ones"
+      ]
+    }
+  },
+  {
+    "name": "Mercurize",
+    "description": "",
+    "upgrades": {
+      "Morbidity": [
+        "Mercurized targets also take dark damage"
+      ],
+      "Corrosion": [
+        "Mercurized targets lose 25 physical resist"
+      ],
+      "Toxic Fumes": [
+        "Quicksilver Geists have a noxious aura that deals 1 poison damage to enemy units within [2_tiles:radius] each turn."
+      ],
+      "Mercurial Vengeance": [
+        "When a Quicksilver Geist is killed, its killer is affliected with Mercurize."
+      ]
+    }
+  },
+  {
+    "name": "Magnetize",
+    "description": "Magnetize target metallic unit.\\nEnemy units within a [{radius}格:radius] radius of the magnetized unit are pulled [{pull_strength}_tiles:range] towards the unit each turn.\\nAfterwards, adjecent enemy units are stunned for 1 turn.\\nLasts [{duration}_回合:duration].",
+    "upgrades": {
+      "Pull Distance": [],
+      "Universal Magnetism": [
+        "Magnetize can target non [metallic] units"
+      ]
+    }
+  },
+  {
+    "name": "Silver Spear",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Siege Golems",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Zap",
+    "description": "",
+    "upgrades": {}
+  },
+  {
+    "name": "Lightning Spire",
+    "description": "Summon a Lightning Spire.\\nLightning Spires are stationary [metallic] constructs with [{minion_health}:minion_health] max hp.\\nEach turn, the spire will zap up to [{num_targets}:num_targets] enemy units up to [{radius}:minion_range] tiles away, dealing [{minion_damage}_点_闪电:lightning] damage.",
+    "upgrades": {
+      "Wall Penetration": [
+        "The spires can zap enemies through walls."
+      ],
+      "Resistance Penetration": [
+        "Zapped units permenantly lose 10 [lightning] resistance."
+      ]
+    }
+  },
+  {
+    "name": "Essence Flux",
+    "description": "Swap the polarity of the resistances of a group of units.\\n[Fire] resistance is swapped with [ice].\\n[Lightning] resistance is swapped with [physical].\\n[Dark] resistance is swapped with [holy].\\n[Poison] resistance is swapped with [arcane].\\n",
+    "upgrades": {}
+  }
+]

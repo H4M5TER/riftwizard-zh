@@ -6,7 +6,6 @@ const files = [
   'Monsters',
   'RareMonsters',
   'Shrines',
-  'Spells',
   'Upgrades',
   'Variants'
 ]
@@ -22,7 +21,6 @@ try {
     regex = false
     switch (file) {
       case 'Shrines':
-      case 'Spells':
       case 'Upgrades':
         regex = /^self\.name\s*=\s*("[^"]+"|'[^']+')$/
         break
