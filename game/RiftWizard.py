@@ -2192,8 +2192,7 @@ class PyGameView(object):
 
 		#Spells
 		for spell in self.game.p1.spells:
-			_name = loc.dic.get(spell.name) if spell.name in loc.dic else spell.name
-			self.draw_string(_name, self.middle_menu_display, cur_x, cur_y, mouse_content=spell, content_width=col_width)
+			self.draw_string(spell.name, self.middle_menu_display, cur_x, cur_y, mouse_content=spell, content_width=col_width)
 			cur_y += self.linesize
 
 			# Upgrades
@@ -2210,7 +2209,7 @@ class PyGameView(object):
 
 			available_upgrades = len([b for b in spell.spell_upgrades if not b.applied])
 			if available_upgrades:
-				self.draw_string('  %d 项可选升级' % available_upgrades, self.middle_menu_display, cur_x, cur_y)
+				self.draw_string(' %d 项可选升级' % available_upgrades, self.middle_menu_display, cur_x, cur_y)
 				cur_y += self.linesize
 
 
@@ -2232,8 +2231,7 @@ class PyGameView(object):
 		cur_y += self.linesize
 
 		for skill in self.game.p1.get_skills():
-			_name = loc.dic.get(skill.name) if skill.name in loc.dic else skill.name
-			self.draw_string(_name, self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
+			self.draw_string(skill.name, self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
 			cur_y += self.linesize
 		self.draw_string("学习能力 (K)", self.middle_menu_display, cur_x, cur_y, mouse_content=LEARN_SKILL_TARGET,  content_width=col_width)
 
@@ -2292,8 +2290,7 @@ class PyGameView(object):
 			self.confirm_text = "Use %s on %s?" % (self.game.cur_level.cur_shop.name, self.chosen_purchase.prereq.name)
 		else:
 			cost = self.game.get_upgrade_cost(self.chosen_purchase)
-			_name = loc.dic.get(self.chosen_purchase.name, self.chosen_purchase.name)
-			self.confirm_text = "支付 %s 点 SP，学习 %s，确定吗？" % (cost, _name)
+			self.confirm_text = "支付 %s 点 SP，学习 %s，确定吗？" % (cost, self.chosen_purchase)
 
 		# Default to no (?)
 		self.examine_target = False
@@ -2878,8 +2875,7 @@ class PyGameView(object):
 		if self.shop_type == SHOP_TYPE_UPGRADES:
 			self.draw_string("学习能力：", self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-			_name = loc.dic.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name)
-			self.draw_string("升级%s：" % _name, self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("升级%s：" % self.shop_upgrade_spell.name, self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SHOP:
 			self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 		if self.shop_type == SHOP_TYPE_BESTIARY:
@@ -2921,7 +2917,6 @@ class PyGameView(object):
 				else:
 					cur_color = (100, 100, 100)
 
-			fmt = loc.dic.get(fmt) if fmt in loc.dic else fmt
 			if self.shop_type == SHOP_TYPE_SHOP:
 				self.draw_string(fmt, self.middle_menu_display, 0, cur_y, cur_color, mouse_content=opt, content_width=self.middle_menu_display.get_width(), center=True)
 			else:
@@ -2955,16 +2950,15 @@ class PyGameView(object):
 			cur_y += 2*self.linesize
 
 			for tag in self.game.spell_tags:
-				_name = loc.tag_dic.get(tag.name, tag.name)
 
 				color = tag.color.to_tup() if tag in self.tag_filter else (150, 150, 150)
-				self.draw_string(_name, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
+				self.draw_string(tag.name, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
 
 				idx = 0
 
-				for c in _name:
+				for c in tag.name:
 					if self.tag_keys.get(c.lower(), None) == tag:
-						self.draw_string(c, self.middle_menu_display, cur_x + self.font.size(_name[:idx])[0], cur_y, tag.color.to_tup())
+						self.draw_string(c, self.middle_menu_display, cur_x + self.font.size(tag.name[:idx])[0], cur_y, tag.color.to_tup())
 						break
 					idx += 1
 
@@ -3786,56 +3780,66 @@ class PyGameView(object):
 		string_surface = font.render(string, True, color)
 		surface.blit(string_surface, (x, y))
 
-	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False):
-		lines = string.split('\n')
-
-		char_width = self.font.size(' ')[0]
-		cur_x = x
-		cur_y = y
-		linesize = self.linesize
-		num_lines = 0
-
-		for line in lines:
-			if line in loc.dic:
-				_name = loc.dic[line]
-				self.draw_string(_name, surface, cur_x, cur_y, color, content_width=width)
-			else:
-				cur_x = x + char_width
-				exp = '[\[\]:|\w\|\'|%|-]+|.| |,|，|、|。'
-				words = re.findall(exp, line)
-				words.reverse()
-				while words:
-					cur_color = color
-					word = words.pop()
-
-					if word != ' ':
-						if word and word[0] == '[' and word[-1] == ']':
-							tokens = word[1:-1].split(':')
-							if len(tokens) == 1:
-								word = tokens[0] # todo- fmt attribute?
-								cur_color = tooltip_colors[word.lower()].to_tup()
-							elif len(tokens) == 2:
-								word = tokens[0].replace('_', ' ')
-								cur_color = tooltip_colors[tokens[1].lower()].to_tup()
-						_name = loc.dic.get(word, word)
-						_width = self.font.size(word)[0]
-						if cur_x + _width > width + x:
-							cur_y += linesize
-							num_lines += 1
-							cur_x = x + char_width
-						self.draw_string(_name, surface, cur_x, cur_y, cur_color, content_width=width)
-						cur_x += self.font.size(_name)[0]
-					else:
-						cur_x += char_width
-
-			cur_y += linesize
-			num_lines += 1
-			if extra_space:
-				cur_y += linesize
-				num_lines += 1
-
-		return num_lines
-
+	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False): 
+		lines = string.split('\n') 
+ 
+		cur_x = x 
+		cur_y = y 
+		linesize = self.linesize 
+		num_lines = 0 
+ 
+		char_width = self.font.size('w')[0] 
+		chars_per_line = width // char_width 
+		for line in lines: 
+			#words = line.split(' ') 
+			# This regex separates periods, spaces, commas, and tokens 
+			exp = '[\[\]:|\w\|\'|%|-]+|.| |,' 
+			words = re.findall(exp, line) 
+			words.reverse() 
+			cur_line = ""  
+			chars_left = chars_per_line 
+ 
+			# Start each line all the way to the left 
+			cur_x = x 
+			assert(all(len(word) < chars_per_line) for word in words) 
+ 
+			while words: 
+				cur_color = color 
+ 
+				word = words.pop() 
+				if word != ' ': 
+ 
+					# Process complex tooltips- strip off the []s and look up the color 
+					if word and word[0] == '[' and word[-1] == ']': 
+						tokens = word[1:-1].split(':') 
+						if len(tokens) == 1: 
+							word = tokens[0] # todo- fmt attribute? 
+							cur_color = tooltip_colors[word.lower()].to_tup() 
+						elif len(tokens) == 2: 
+							word = tokens[0].replace('_', ' ') 
+							cur_color = tooltip_colors[tokens[1].lower()].to_tup() 
+ 
+					max_size = chars_left if word in [' ', '.', ','] else chars_left - 1 
+					if len(word) > max_size: 
+						cur_y += linesize 
+						num_lines += 1 
+						# Indent by one for next line 
+						cur_x = x + char_width 
+						chars_left = chars_per_line 
+ 
+					self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=width)                
+				 
+				cur_x += (len(word)) * char_width 
+				chars_left -= len(word) 
+ 
+			cur_y += linesize 
+			num_lines += 1 
+			if extra_space: 
+				cur_y += linesize 
+				num_lines += 1 
+ 
+		return num_lines 
+ 
 	def process_click_character(self, button, x, y):
 
 		target = None
@@ -3963,13 +3967,8 @@ class PyGameView(object):
 				cur_color = (255, 255, 255)
 			else:
 				cur_color = (128, 128, 128)
-			# 汉化 等宽字体需要加3个空格
-			if spell.name in loc.dic:
-				_name = loc.dic.get(spell.name)
-				_fill = f'{_name}{" "*(17-len(_name)*2)}'
-			else:
-				_fill = '%-17s' % spell.name
-			fmt = "%2s     %s%2d" % (hotkey_str, _fill, spell.cur_charges)
+
+			fmt = "%2s  %-17s%2d" % (hotkey_str, spell.name, spell.cur_charges) 
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=SpellCharacterWrapper(spell), char_panel=True)
 			self.draw_spell_icon(spell, self.character_display, cur_x + 38, cur_y)
@@ -3990,15 +3989,7 @@ class PyGameView(object):
 			cur_color = (255, 255, 255)
 			if item.spell == self.cur_spell:
 				cur_color = (0, 255, 0)
-			# 汉化 等宽字体需要加3个空格
-			# _name, _len = loc.dic.get(item.name, (item.name, len(item.name)))
-			# _fill = f'{_name}{" " * (17 - _len)}'
-			if item.name in loc.dic:
-				_name = loc.dic.get(item.name)
-				_fill = f'{_name}{" "*(17-len(_name)*2)}'
-			else:
-				_fill = '%-17s' % item.name
-			fmt = "%2s     %s%2d" % (hotkey_str, _fill, item.quantity)
+			fmt = "%2s  %-17s%2d" % (hotkey_str, item.name, item.quantity)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=item)
 			self.draw_spell_icon(item, self.character_display, cur_x + 38, cur_y)
@@ -4152,8 +4143,7 @@ class PyGameView(object):
 
 			for attr, val in useful_bonuses:
 				if attr in tooltip_colors:
-					_name = loc.attr_dic.get(attr, attr)
-					fmt = "%s 获得 [%s_点%s:%s]" % (spell_ex.name, val, _name, attr)
+					fmt = "%s 获得 [%s_点%s:%s]" % (spell_ex.name, val, attr, attr)
 				else:
 					fmt = "%s 获得 %d %s" % (spell_ex.name, val, format_attr(attr))
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
@@ -4243,8 +4233,7 @@ class PyGameView(object):
 		linesize = self.linesize
 
 		spell = self.examine_target
-		_name = loc.dic.get(spell.name, spell.name)
-		self.draw_string(_name, self.examine_display, cur_x, cur_y)
+		self.draw_string(spell.name, self.examine_display, cur_x, cur_y)
 		cur_y += linesize
 		cur_y += linesize
 		tag_x = cur_x
@@ -4252,8 +4241,7 @@ class PyGameView(object):
 			if tag not in spell.tags:
 				continue
 
-			_name = loc.dic.get(tag.name, tag.name)
-			self.draw_string(_name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
+			self.draw_string(tag.name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
 			cur_y += linesize
 		cur_y += linesize
 
@@ -4290,8 +4278,7 @@ class PyGameView(object):
 				if self.game.has_upgrade(upg):
 					cur_color = (0, 255, 0)
 
-				_name = loc.dic.get(upg.name, upg.name)
-				self.draw_string('%d - %s' % (upg.level, _name), self.examine_display, cur_x, cur_y, color=cur_color)
+				self.draw_string('%d - %s' % (upg.level, upg.name), self.examine_display, cur_x, cur_y, color=cur_color)
 				cur_y += linesize
 
 	def draw_examine_portal(self):
