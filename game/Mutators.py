@@ -313,14 +313,14 @@ all_trials = [Trial(n, m) for n, m in [
 	("即兴表演", [RandomSpellRestriction(.85), RandomSkillRestriction(.7)]),
 	("兽群求生", [ExtraElites(6)]),
 	("巨魔拦路", [NumPortals(1), EnemyBuff(TrollRegenBuff)]),
-	("咒术专精", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
+	("魔能专精", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
 	("节俭巫师", [StackLimit(1), RandomSpellRestriction(.9)]),
 	("巫师军阀", [SpawnWizards(), LairMultiplier(2)]),
 	("谦卑部族", [SpPerLevel(2), SpellTagRestriction(Tags.Conjuration)]),
 	("巨人杀手", [MonsterHPMult(3)]),
 	("临危旅团", [EnemyBuff(lambda: DamageAuraBuff(1, Tags.Poison, 4)), EnemyShields(2)]),
 	("火焰狂欢", [MonsterHPMult(2), SpellTagRestriction(Tags.Fire)]),
-	("与狼为伴", OnlySpell("Wolf")),
+	("与狼成行", OnlySpell("Wolf")),
 	("吸血猎人", [EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"), SpellTagRestriction(Tags.Holy)]),
 ]]
 

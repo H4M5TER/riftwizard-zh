@@ -1699,7 +1699,7 @@ class GlassReflection(Buff):
 		yield
 
 	def get_tooltip(self):
-		return "当这个单位被作咒术法术的目标时，这个单位对施法者施放一个一样的法术"
+		return "当这个单位被作魔能法术的目标时，这个单位对施法者施放一个一样的法术"
 
 class ShieldAllySpell(Spell):
 
