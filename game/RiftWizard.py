@@ -2,7 +2,10 @@ import os
 import sys
 import re
 import webbrowser
-import loc
+import dict_tags
+import dict_spells
+import dict_upgrades
+import dict_consumables
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -2191,9 +2194,10 @@ class PyGameView(object):
 
 		col_width = self.middle_menu_display.get_width() // 2 - 2*self.border_margin
 
-		#Spells
+		# Spells
+		# 可学习法术
 		for spell in self.game.p1.spells:
-			self.draw_string(spell.name, self.middle_menu_display, cur_x, cur_y, mouse_content=spell, content_width=col_width)
+			self.draw_string(dict_spells.names.get(spell.name, spell.name), self.middle_menu_display, cur_x, cur_y, mouse_content=spell, content_width=col_width)
 			cur_y += self.linesize
 
 			# Upgrades
@@ -2231,8 +2235,9 @@ class PyGameView(object):
 		cur_y += self.linesize
 		cur_y += self.linesize
 
+		# 可学习能力
 		for skill in self.game.p1.get_skills():
-			self.draw_string(skill.name, self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
+			self.draw_string(dict_upgrades.names.get(skill.name, skill.name), self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
 			cur_y += self.linesize
 		self.draw_string("学习能力 (K)", self.middle_menu_display, cur_x, cur_y, mouse_content=LEARN_SKILL_TARGET,  content_width=col_width)
 
@@ -2288,10 +2293,15 @@ class PyGameView(object):
 
 		if self.shop_type == SHOP_TYPE_SHOP:
 			attr = self.chosen_purchase.name.replace(self.chosen_purchase.shrine_name + ' ', '').lower()
-			self.confirm_text = "对 %s 使用 %s 吗?" % (self.chosen_purchase.prereq.name, self.game.cur_level.cur_shop.name)
+			print(self.chosen_purchase)
+			# 神龛确认
+			self.confirm_text = "对 %s 使用 %s 吗?" % (self.chosen_purchase.prereq.name, dict_shrines.names.get(
+				self.game.cur_level.cur_shop.name, self.game.cur_level.cur_shop.name))
 		else:
 			cost = self.game.get_upgrade_cost(self.chosen_purchase)
-			self.confirm_text = "支付 %s 点 SP, 学习 %s, 确定吗?" % (cost, self.chosen_purchase)
+			# 学习确认
+			self.confirm_text = "支付 %s 点 SP, 学习 %s, 确定吗?" % (cost, dict_spells.names.get(
+				self.chosen_purchase.name, dict_upgrades.names.get(self.chosen_purchase.name, self.chosen_purchase.name)))
 
 		# Default to no (?)
 		self.examine_target = False
@@ -2876,7 +2886,7 @@ class PyGameView(object):
 		if self.shop_type == SHOP_TYPE_UPGRADES:
 			self.draw_string("学习能力: ", self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-			self.draw_string("升级%s: " % self.shop_upgrade_spell.name, self.middle_menu_display, cur_x, cur_y)
+			self.draw_string("升级%s: " % dict_spells.names.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name), self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SHOP:
 			self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 		if self.shop_type == SHOP_TYPE_BESTIARY:
@@ -2918,6 +2928,8 @@ class PyGameView(object):
 				else:
 					cur_color = (100, 100, 100)
 
+			# 神龛升级
+			fmt = dict_spells.names.get(fmt, fmt)
 			if self.shop_type == SHOP_TYPE_SHOP:
 				self.draw_string(fmt, self.middle_menu_display, 0, cur_y, cur_color, mouse_content=opt, content_width=self.middle_menu_display.get_width(), center=True)
 			else:
@@ -2949,17 +2961,18 @@ class PyGameView(object):
 			tag_width = self.middle_menu_display.get_width() - cur_x - self.border_margin
 			self.draw_string("过滤: ", self.middle_menu_display, cur_x, cur_y)
 			cur_y += 2*self.linesize
-
+			
 			for tag in self.game.spell_tags:
 
+				filter = dict_tags.filter.get(tag.name, tag.name)
 				color = tag.color.to_tup() if tag in self.tag_filter else (150, 150, 150)
-				self.draw_string(tag.name, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
+				self.draw_string(filter, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
 
 				idx = 0
 
-				for c in tag.name:
+				for c in filter:
 					if self.tag_keys.get(c.lower(), None) == tag:
-						self.draw_string(c, self.middle_menu_display, cur_x + self.font.size(tag.name[:idx])[0], cur_y, tag.color.to_tup())
+						self.draw_string(c, self.middle_menu_display, cur_x + self.font.size(filter[:idx])[0], cur_y, tag.color.to_tup())
 						break
 					idx += 1
 
@@ -3781,11 +3794,11 @@ class PyGameView(object):
 		string_surface = font.render(string, True, color)
 		surface.blit(string_surface, (x, y))
 
-	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False): 
-		lines = string.split('\n') 
- 
+	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False):
+		lines = string.split('\n')
+
 		cur_y = y # start y pos
-		num_lines = 0 
+		num_lines = 0
 		linesize = self.linesize # font linesize +2
 		max_width = width
 
@@ -3796,25 +3809,24 @@ class PyGameView(object):
 			# 改动后优先匹配颜色块
 			exp = "\[[^]]+\]|[a-zA-Z]+| |."
 			words = re.findall(exp, line)
-			# print(words)
 			words.reverse()
 
-			while words: 
-				cur_color = color 
- 
-				word = words.pop() 
+			while words:
+				cur_color = color
 
-				if word != ' ': 
- 
-					# Process complex tooltips- strip off the []s and look up the color 
-					if word and word[0] == '[' and word[-1] == ']': 
-						tokens = word[1:-1].split(':') 
-						if len(tokens) == 1: 
-							word = tokens[0] # todo- fmt attribute? 
-							cur_color = tooltip_colors[word.lower()].to_tup() 
-						elif len(tokens) == 2: 
-							word = tokens[0].replace('_', ' ') 
-							cur_color = tooltip_colors[tokens[1].lower()].to_tup() 
+				word = words.pop()
+
+				if word != ' ':
+
+					# Process complex tooltips- strip off the []s and look up the color
+					if word and word[0] == '[' and word[-1] == ']':
+						tokens = word[1:-1].split(':')
+						if len(tokens) == 1:
+							word = tokens[0] # todo- fmt attribute?
+							cur_color = tooltip_colors[word.lower()].to_tup()
+						elif len(tokens) == 2:
+							word = tokens[0].replace('_', ' ')
+							cur_color = tooltip_colors[tokens[1].lower()].to_tup()
 
 					# check exceed max width
 					word_width = self.font.size(word)[0]
@@ -3831,15 +3843,15 @@ class PyGameView(object):
 
 				else:
 					cur_x += self.space_width
- 
-			cur_y += linesize 
-			num_lines += 1 
-			if extra_space: 
-				cur_y += linesize 
-				num_lines += 1 
- 
-		return num_lines 
- 
+
+			cur_y += linesize
+			num_lines += 1
+			if extra_space:
+				cur_y += linesize
+				num_lines += 1
+
+		return num_lines
+
 	def process_click_character(self, button, x, y):
 
 		target = None
@@ -3968,9 +3980,11 @@ class PyGameView(object):
 			else:
 				cur_color = (128, 128, 128)
 
+			# 针对字体自定义
 			fmt = "%3s    %-17s%2d" % (hotkey_str, spell.name, spell.cur_charges)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=SpellCharacterWrapper(spell), char_panel=True)
+			# 针对字体自定义
 			self.draw_spell_icon(spell, self.character_display, cur_x + self.space_width * 4, cur_y)
 
 			cur_y += linesize
@@ -3989,9 +4003,11 @@ class PyGameView(object):
 			cur_color = (255, 255, 255)
 			if item.spell == self.cur_spell:
 				cur_color = (0, 255, 0)
+			# 针对字体自定义
 			fmt = "%3s    %-17s%2d" % (hotkey_str, item.name, item.quantity)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=item)
+			# 针对字体自定义
 			self.draw_spell_icon(item, self.character_display, cur_x + self.space_width * 4, cur_y)
 
 			cur_y += linesize
@@ -4128,7 +4144,7 @@ class PyGameView(object):
 		for tag, bonuses in self.examine_target.tag_bonuses.items():
 			for attr, val in bonuses.items():
 				#cur_color = tag.color
-				fmt = "%s法术和能力获得 [%s_%s:%s]。" % (tag.name, val, attr, attr)
+				fmt = "%s法术和能力获得 [%s_%s:%s]。" % (dict_tags.color.get(tag.name, tag.name), val, dict_attr.names.get(attr, attr), attr)
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
 			cur_y += self.linesize
@@ -4143,7 +4159,7 @@ class PyGameView(object):
 
 			for attr, val in useful_bonuses:
 				if attr in tooltip_colors:
-					fmt = "%s 获得 [%s_点%s:%s]" % (spell_ex.name, val, attr, attr)
+					fmt = "%s 获得 [%s_点%s:%s]" % (spell_ex.name, val, dict_attr.names.get(attr, attr), attr)
 				else:
 					fmt = "%s 获得 %d %s" % (spell_ex.name, val, format_attr(attr))
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
@@ -4241,7 +4257,8 @@ class PyGameView(object):
 			if tag not in spell.tags:
 				continue
 
-			self.draw_string(tag.name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
+			self.draw_string(dict_tags.normal.get(tag.name, tag.name), self.examine_display,
+			                 tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
 			cur_y += linesize
 		cur_y += linesize
 
