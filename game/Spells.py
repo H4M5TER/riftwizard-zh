@@ -746,7 +746,7 @@ class DispersalSpell(Spell):
 		self.upgrades['max_charges'] = (10, 2)
 
 	def get_description(self):
-		return ("将 [{radius}格:radius] 范围内的所有单位随机传送到新的地块。\n"
+		return ("将[{radius}格:radius]范围内的所有单位随机传送到新的地块。\n"
 				"施法者不受影响。").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
@@ -803,7 +803,7 @@ class PetrifySpell(Spell):
 		yield
 
 	def get_description(self):
-		desc = "对目标施加 [petrify] , 持续 [{duration}_回合:duration]。\n"
+		desc = "对目标施加[石化:petrify], 持续[{duration}_回合:duration]。\n"
 		desc += text.petrify_desc
 		return desc.format(**self.fmt_dict())
 
@@ -815,7 +815,7 @@ class StoneAuraBuff(Buff):
 
 	def on_init(self):
 		self.name = "Petrification Aura"
-		self.description = "每回合石化相邻的敌人。"
+		self.description = "每回合[石化:petrify]周围的敌人。"
 	
 	def on_advance(self):
 		BuffClass = GlassPetrifyBuff if self.spell.get_stat('glassify') else PetrifyBuff
@@ -856,7 +856,7 @@ class StoneAuraSpell(Spell):
 		self.upgrades['glassify'] = (1, 6, "Glassify", "改为将敌人变为玻璃, 而非石头, 使其受到双倍的物理伤害, 而非四分之一。")
 
 	def get_description(self):
-		return ("每回合在 [{radius}格:radius] 范围内 [petrify] 至多 [{num_targets}:num_targets] 个未石化的敌方单位。\n" +
+		return ("每回合在[{radius}格:radius]半径内[石化:petrify]至多 [{num_targets}:num_targets] 个未石化的敌方单位。\n" +
 				text.petrify_desc + '\n'
 				"持续 [{duration}_回合:duration]。").format(**self.fmt_dict())
 
@@ -893,7 +893,7 @@ class SummonWolfSpell(Spell):
 		wolf.sprite.char = 'w'
 		wolf.sprite.color = Color(102, 77, 51)
 		wolf.name = "Wolf"
-		wolf.description = "A medium sized beast"
+		wolf.description = "一只中等大小的野兽"
 		wolf.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
 		wolf.tags = [Tags.Living, Tags.Nature]
 

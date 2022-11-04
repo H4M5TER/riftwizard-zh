@@ -1,6 +1,6 @@
 normal = {
   "Fire": "火焰",
-  "Lightning": "雷霆",
+  "Lightning": "闪电",
   "Ice": "冰霜",
   "Nature": "自然",
   "Arcane": "奥法",
@@ -19,7 +19,7 @@ normal = {
 }
 color = {
   "Fire": "[火焰:fire]",
-  "Lightning": "[雷霆:lightning]",
+  "Lightning": "[闪电:lightning]",
   "Ice": "[冰霜:ice]",
   "Nature": "[自然:nature]",
   "Arcane": "[奥法:arcane]",
@@ -38,7 +38,7 @@ color = {
 }
 filter = {
   "Fire": "火焰 (F)",
-  "Lightning": "雷霆 (L)",
+  "Lightning": "闪电 (L)",
   "Ice": "冰霜 (I)",
   "Nature": "自然 (N)",
   "Arcane": "奥法 (A)",
