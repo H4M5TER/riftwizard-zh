@@ -1097,6 +1097,7 @@ class PyGameView(object):
 		# 字体锚点
 		font_path = os.path.join("rl_data", "sarasa-mono-sc-bold.ttf")
 		self.font = pygame.font.Font(font_path, 16)
+		self.space_width = self.font.size(' ')[0]
 		self.ascii_idle_font = pygame.font.Font(font_path, 16)
 		self.ascii_attack_font = pygame.font.Font(font_path, 16)
 		self.ascii_flinch_font = pygame.font.Font(font_path, 16)
@@ -1135,7 +1136,7 @@ class PyGameView(object):
 		self.shop_upgrade_spell = None
 		self.shop_selection_index = 0
 		self.shop_page = 0
-		self.max_shop_objects = 35  # 汉化 每页上限 原始44
+		self.max_shop_objects = 35  # 每页上限 原始44 更纱黑体行高较高
 
 		self.tag_keys = {
 			'f': Tags.Fire,
@@ -3783,30 +3784,24 @@ class PyGameView(object):
 	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False): 
 		lines = string.split('\n') 
  
-		cur_x = x 
-		cur_y = y 
-		linesize = self.linesize 
+		cur_y = y # start y pos
 		num_lines = 0 
+		linesize = self.linesize # font linesize +2
+		max_width = width
  
-		char_width = self.font.size('w')[0] 
-		chars_per_line = width // char_width 
 		for line in lines: 
-			#words = line.split(' ') 
+			cur_x = x # start x pos
 			# This regex separates periods, spaces, commas, and tokens 
 			exp = '[\[\]:|\w\|\'|%|-]+|.| |,' 
 			words = re.findall(exp, line) 
+			# print(words)
 			words.reverse() 
-			cur_line = ""  
-			chars_left = chars_per_line 
- 
-			# Start each line all the way to the left 
-			cur_x = x 
-			assert(all(len(word) < chars_per_line) for word in words) 
- 
+
 			while words: 
 				cur_color = color 
  
 				word = words.pop() 
+
 				if word != ' ': 
  
 					# Process complex tooltips- strip off the []s and look up the color 
@@ -3818,19 +3813,20 @@ class PyGameView(object):
 						elif len(tokens) == 2: 
 							word = tokens[0].replace('_', ' ') 
 							cur_color = tooltip_colors[tokens[1].lower()].to_tup() 
- 
-					max_size = chars_left if word in [' ', '.', ','] else chars_left - 1 
-					if len(word) > max_size: 
+
+					# check exceed max width
+					word_width = self.font.size(word)[0]
+					if cur_x + word_width > x + max_width: 
 						cur_y += linesize 
 						num_lines += 1 
 						# Indent by one for next line 
-						cur_x = x + char_width 
-						chars_left = chars_per_line 
- 
-					self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=width)                
-				 
-				cur_x += (len(word)) * char_width 
-				chars_left -= len(word) 
+						cur_x = x
+
+					self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
+					cur_x += word_width
+
+				else:
+					cur_x += self.space_width
  
 			cur_y += linesize 
 			num_lines += 1 
@@ -3968,10 +3964,10 @@ class PyGameView(object):
 			else:
 				cur_color = (128, 128, 128)
 
-			fmt = "%2s  %-17s%2d" % (hotkey_str, spell.name, spell.cur_charges) 
+			fmt = "%3s    %-17s%2d" % (hotkey_str, spell.name, spell.cur_charges)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=SpellCharacterWrapper(spell), char_panel=True)
-			self.draw_spell_icon(spell, self.character_display, cur_x + 38, cur_y)
+			self.draw_spell_icon(spell, self.character_display, cur_x + self.space_width * 4, cur_y)
 
 			cur_y += linesize
 			index += 1
@@ -3989,10 +3985,10 @@ class PyGameView(object):
 			cur_color = (255, 255, 255)
 			if item.spell == self.cur_spell:
 				cur_color = (0, 255, 0)
-			fmt = "%2s  %-17s%2d" % (hotkey_str, item.name, item.quantity)
+			fmt = "%3s    %-17s%2d" % (hotkey_str, item.name, item.quantity)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=item)
-			self.draw_spell_icon(item, self.character_display, cur_x + 38, cur_y)
+			self.draw_spell_icon(item, self.character_display, cur_x + self.space_width * 4, cur_y)
 
 			cur_y += linesize
 			index += 1
