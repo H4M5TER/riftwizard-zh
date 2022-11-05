@@ -15,9 +15,8 @@ try {
     let regex = /\.name\s*=\s*['"]/
     const content = fs.readFileSync(`game/${file}.py`, 'utf-8').trim()
     const lines = content.split(/\r?\n/)
-    const matched = lines.filter(line => regex.test(line)).map(line => line.trim())
-    const result = matched.sort().join('\n')
-    fs.writeFileSync(`generated/${file}.py`, result, 'utf-8')
+    const matched = lines.filter(line => regex.test(line)).map(v => v.trim())
+    fs.writeFileSync(`generated/${file}.py`, matched.join('\n'), 'utf-8')
     regex = false
     switch (file) {
       case 'Shrines':
