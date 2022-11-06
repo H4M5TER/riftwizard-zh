@@ -6,7 +6,8 @@ import bisect
 import tcod as libtcod
 import time
 import os
-import loc
+import dict_spells
+import dict_attr
 
 logger = None
 
@@ -70,7 +71,8 @@ def are_hostile(unit1, unit2):
 	return False
 
 def format_attr(attr):
-
+	if attr in dict_attr.names:
+		return dict_attr.names[attr]
 	if is_stat_pct(attr):
 		attr = "% " + attr
 
@@ -1145,8 +1147,9 @@ class SpellUpgrade(Upgrade):
 		self.amount = amount
 		self.exc_class = exc_class
 		if exc_class:
-			_name = loc.dic.get(exc_class, exc_class)
-			self.description += "\n%s 只能选择一种 %s 升级" % (spell.name, _name)
+			spell_name = dict_spells.names.get(spell.name, spell.name)
+			except_class = dict_spells.except_class.get(exc_class, exc_class)
+			self.description += "\n%s只能选择一种%s升级" % (spell_name, except_class)
 
 class Immobilize(Buff):
 
