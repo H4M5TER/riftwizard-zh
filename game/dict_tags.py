@@ -1,4 +1,4 @@
-normal = {
+names = {
   "Fire": "火焰",
   "Lightning": "闪电",
   "Ice": "冰霜",
@@ -17,25 +17,9 @@ normal = {
   "Eye": "视线",
   "Chaos": "混沌",
 }
-color = {
-  "Fire": "[火焰:fire]",
-  "Lightning": "[闪电:lightning]",
-  "Ice": "[冰霜:ice]",
-  "Nature": "[自然:nature]",
-  "Arcane": "[奥法:arcane]",
-  "Dark": "[黑暗:dark]",
-  "Holy": "[神圣:holy]",
-  "Sorcery": "[魔能:sorcery]",
-  "Conjuration": "[召唤:conjuration]",
-  "Enchantment": "[附魔:enchantment]",
-  "Word": "[真言:word]",
-  "Orb": "[法球:orb]",
-  "Dragon": "[巨龙:dragon]",
-  "Translocation": "[移位:translocation]",
-  "Metallic": "[金属:metallic]",
-  "Eye": "[视线:eye]",
-  "Chaos": "[混沌:chaos]",
-}
+names.update([(k.lower(), v) for (k, v) in names.items()])
+color = [(k, f"[{v}:{k}]") for (k, v) in names.items()]
+
 filter = {
   "Fire": "火焰 (F)",
   "Lightning": "闪电 (L)",
