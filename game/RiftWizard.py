@@ -2209,9 +2209,9 @@ class PyGameView(object):
 			for upgrade in sorted((b for b in self.game.p1.buffs if isinstance(b, Upgrade) and b.prereq == spell), key=lambda b: b.shrine_name is None):
 
 				if upgrade.shrine_name:
-					print(upgrade.shrine_name, upgrade.name)
 					color = COLOR_XP
-					fmt = upgrade.name.replace('(%s)' % spell.name, '')
+					fmt = upgrade.name.replace('Attunement (%s)' % spell.name, '')
+					fmt = dict_shrines.names.get(fmt, fmt) + '调谐'
 				else:
 					color = (255, 255, 255)
 					fmt = dict_upgrades.names.get(upgrade.name, upgrade.name)
@@ -2838,8 +2838,12 @@ class PyGameView(object):
 
 	def get_shop_options(self):
 		if self.shop_type == SHOP_TYPE_SPELLS:
+			# with open("spells.json", "w") as outfile:
+			# 		json.dump(dict([s.name, s.name] for s in self.game.all_player_spells), outfile)
 			return [s for s in self.game.all_player_spells if all(t in s.tags for t in self.tag_filter)]
 		if self.shop_type == SHOP_TYPE_UPGRADES:
+			# with open("upgrades.json", "w") as outfile:
+   		# 	  json.dump(dict([s.name ,s.name] for s in self.game.all_player_skills), outfile)
 			return [u for u in self.game.all_player_skills if all(t in u.tags for t in self.tag_filter)]
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
 			return [u for u in self.shop_upgrade_spell.spell_upgrades]
@@ -2939,11 +2943,13 @@ class PyGameView(object):
 				else:
 					cur_color = (100, 100, 100)
 
-			# 神龛升级
-			fmt = dict_spells.names.get(fmt, fmt)
 			if self.shop_type == SHOP_TYPE_SHOP:
+				# 神龛升级
+				fmt = dict_spells.names.get(fmt, fmt)
 				self.draw_string(fmt, self.middle_menu_display, 0, cur_y, cur_color, mouse_content=opt, content_width=self.middle_menu_display.get_width(), center=True)
 			else:
+				if self.shop_type == SHOP_TYPE_BESTIARY:
+					fmt = dict_monsters.getLocale(fmt, fmt)
 				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, cur_color, mouse_content=opt, content_width=spell_column_width)
 
 			if hasattr(opt, 'level') and isinstance(opt.level, int) and opt.level > 0:
@@ -4466,7 +4472,7 @@ class PyGameView(object):
 		linesize = self.linesize
 		unit = self.examine_target
 
-		_name = dict_monsters.names.get(unit.name, unit.name)
+		_name = dict_monsters.getLocale(unit.name, unit.name)
 		lines = self.draw_wrapped_string(unit.name, self.examine_display, cur_x, cur_y, width=17*16)
 		cur_y += (lines+1) * linesize
 
@@ -4660,7 +4666,7 @@ class PyGameView(object):
 			opts.append((TITLE_SELECTION_NEW, "开始游戏"))
 
 		opts.extend([(TITLE_SELECTION_OPTIONS, "游戏设置"),
-					 (TITLE_SELECTION_INSTRUCTIONS, "如何游玩"),
+					 (TITLE_SELECTION_INSTRUCTIONS, "帮助"),
 					 (TITLE_SELECTION_BESTIARY, "怪物图鉴"),
 					 (TITLE_SELECTION_DISCORD, "DISCORD"),
 					 (TITLE_SELECTION_QQ, "QQ 群"),
@@ -4929,7 +4935,7 @@ class PyGameView(object):
 
 		rect_w = self.font.size("动画速度: 最快")[0]
 
-		self.draw_string("如何游玩", self.screen, cur_x, cur_y, mouse_content=OPTION_HELP, content_width=rect_w)
+		self.draw_string("帮助", self.screen, cur_x, cur_y, mouse_content=OPTION_HELP, content_width=rect_w)
 		cur_y += self.linesize
 
 		self.draw_string("音效大小: %3d" % self.options['sound_volume'], self.screen, cur_x, cur_y, mouse_content=OPTION_SOUND_VOLUME, content_width=rect_w)
