@@ -1,4 +1,53 @@
+import dict_school
+
 names = {
+# Level.py#L3424
+  "Physical": "物理",
+  # "Fire": "Fire",
+  # "Lightning": "Lightning",
+  # "Ice": "Ice",
+  # "Nature": "Nature",
+  # "Arcane": "Arcane",
+  # "Dark": "Dark",
+  # "Holy": "Holy",
+  # "Sorcery": "Sorcery",
+  # "Conjuration": "Conjuration",
+  # "Enchantment": "Enchantment",
+  # "Word": "Word",
+  # "Orb": "Orb",
+  # "Dragon": "Dragon",
+  # "Translocation": "Translocation",
+  "Undead": "不死",
+  "Elemental": "元素",
+  "Heal": "治疗",
+  "Acid": "酸性",
+  "Demon": "恶魔",
+  "Spider": "蜘蛛",
+  "Poison": "毒性",
+  "Living": "活物",
+  "Construct": "构装体",
+  # "Metallic": "金属",
+  # "Eye": "视线",
+  "Glass": "玻璃",
+  # "Chaos": "混沌",
+  "Tongue": "舌头",
+  "Slime": "史莱姆",
+  "Shield": "护盾",
+# no text
+  # "Buff_Apply": "Buff_Apply",
+  # "Debuff_Apply": "Debuff_Apply",
+  # "Shield_Apply": "Shield_Apply",
+  # "Shield_Expire": "Shield_Expire",
+  # "Sound_Effect": "Sound_Effect",
+  # "Leap": "Leap",
+  # "Arrow": "Arrow",
+  # "Petrification": "Petrification",
+  # "Glassification": "Glassification",
+}
+names.update([(k.lower(), v) for (k, v) in names.items()])
+names.update(dict_school.names)
+names.update({
+  # Level.py#L3483
   "damage": "伤害",
   "range": "射程",
   "minion_health": "随从血量",
@@ -15,9 +64,25 @@ names = {
   "shot_cooldown": "射击冷却",
   "strikechance": "几率",
   "cooldown": "冷却时间",
-  "cascade_range": "cascade_range",
-}
-color = [(k, f"[{v}:{k}]") for (k, v) in names.items()]
+  "cascade_range": "连锁范围",
+  # RiftWizard.py#L200
+  "petrify": "石化",
+  "petrified": "石化",
+  "petrifies": "石化",
+  "frozen": "冻结",
+  "freezes": "冻结",
+  "freeze": "冻结",
+  "stunned": "眩晕",
+  "stun": "眩晕",
+  "stuns": "眩晕",
+  "berserk": "疯狂",
+  "poisoned": "中毒",
+  "blind": "失明",
+  "blinded": "失明",
+  "glassify": "玻璃化",
+  "glassified": "玻璃化",
+})
+color = dict([(k, f"[{v}:{k.lower()}]") for (k, v) in names.items()])
 
 quantifiers = {
   "damage": "点",

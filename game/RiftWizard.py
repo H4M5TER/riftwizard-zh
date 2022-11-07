@@ -2,7 +2,7 @@ import os
 import sys
 import re
 import webbrowser
-import dict_tags
+import dict_school
 import dict_spells
 import dict_upgrades
 import dict_consumables
@@ -2974,7 +2974,7 @@ class PyGameView(object):
 
 			for tag in self.game.spell_tags:
 
-				filter = dict_tags.filter.get(tag.name, tag.name)
+				filter = dict_school.filter.get(tag.name, tag.name)
 				color = tag.color.to_tup() if tag in self.tag_filter else (150, 150, 150)
 				self.draw_string(filter, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
 
@@ -3817,7 +3817,7 @@ class PyGameView(object):
 			cur_x = x # start x pos
 			# 这个正则用来决定哪些文本被视为不会被切断的整块
 			# 对于中文来说似乎不是很需要
-			# 改动后优先匹配颜色块
+			# 改动后优先匹配颜色块和英文单词
 			exp = "\[[^]]+\]|[a-zA-Z]+| |."
 			words = re.findall(exp, line)
 			words.reverse()
@@ -3833,17 +3833,14 @@ class PyGameView(object):
 				else:
 					if word and word[0] == '[' and word[-1] == ']':
 						tokens = word[1:-1].rsplit(':', 1)
+						word = dict_attr.names.get(tokens[0], tokens[0])
 						if len(tokens) == 1:
 							tooltip = tokens[0].lower()
-							word = dict_tags.names.get(tokens[0], '')
-							if (not word):
-								word = dict_attr.names.get(tokens[0], tokens[0])
 						else:
 							tooltip = tokens[1].lower()
-							word = tokens[0]
 						word = word.replace('_', ' ')
 						if (tooltip in tooltip_colors):
-							cur_color = tooltip_colors[tokens[1].lower()].to_tup()
+							cur_color = tooltip_colors[tooltip].to_tup()
 
 					# check exceed max width
 					word_width = self.font.size(word)[0]
@@ -4159,7 +4156,7 @@ class PyGameView(object):
 		for tag, bonuses in self.examine_target.tag_bonuses.items():
 			for attr, val in bonuses.items():
 				#cur_color = tag.color
-				fmt = "%s法术和能力获得 [%s_%s:%s]。" % (dict_tags.color.get(tag.name, tag.name), val, dict_attr.names.get(attr, attr), attr)
+				fmt = "%s法术和能力获得 [%s_%s:%s]。" % (dict_school.color.get(tag.name, tag.name), val, dict_attr.names.get(attr, attr), attr)
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
 			cur_y += self.linesize
@@ -4197,7 +4194,7 @@ class PyGameView(object):
 		for tag in Tags:
 			if tag not in self.examine_target.resists:
 				continue
-			_name = dict_tags.names.get(tag.name, tag.name)
+			_name = dict_school.names.get(tag.name, tag.name)
 			self.draw_string('%d%% %s 抵抗' % (self.examine_target.resists[tag], _name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
 			has_resists = True
 			cur_y += self.linesize
@@ -4278,7 +4275,7 @@ class PyGameView(object):
 			if tag not in spell.tags:
 				continue
 
-			_name = dict_tags.names.get(tag.name, tag.name)
+			_name = dict_school.names.get(tag.name, tag.name)
 			self.draw_string(_name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
 			cur_y += linesize
 		cur_y += linesize
@@ -4505,7 +4502,7 @@ class PyGameView(object):
 
 		cur_y += linesize
 		for tag in unit.tags:
-			_name = dict_tags.names.get(tag.name, tag.name)
+			_name = dict_school.names.get(tag.name, tag.name)
 			self.draw_string(_name, self.examine_display, cur_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
 			cur_y += linesize
 
@@ -4579,7 +4576,7 @@ class PyGameView(object):
 				if not ((self.examine_target.resists[tag] < 0) == negative):
 					continue
 
-				_name = dict_tags.names.get(tag.name, tag.name)
+				_name = dict_school.names.get(tag.name, tag.name)
 				self.draw_string('%d%% %s抗性' % (self.examine_target.resists[tag], _name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
 				has_resists = True
 				cur_y += self.linesize
