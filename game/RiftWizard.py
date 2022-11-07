@@ -4227,7 +4227,10 @@ class PyGameView(object):
 			target = self.examine_target
 
 		if hasattr(target, "name"):
-			lines = self.draw_wrapped_string(target.name, self.examine_display, cur_x, cur_y, width=23*16)
+			_name = dict_consumables.names.get(target.name, '')
+			if not _name:
+				_name = dict_shrines.names.get(target.name, target.name)
+			lines = self.draw_wrapped_string(_name, self.examine_display, cur_x, cur_y, width=23*16)
 			cur_y += (lines + 1) * self.linesize
 		if hasattr(target, "get_description"):
 			self.draw_wrapped_string(target.get_description(), self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2 * self.border_margin, extra_space=True)
@@ -4542,7 +4545,7 @@ class PyGameView(object):
 				rem_cd = spell.caster.cool_downs.get(spell, 0)
 				fmt = ' 冷却时间 %d 回合' % spell.cool_down
 				if rem_cd:
-					fmt += ' (剩余 %d 回合)' % (spell.cool_down, rem_cd)
+					fmt += ' (剩余 %d 回合)' % (rem_cd)
 				self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 				cur_y += linesize
 				hasattrs = True

@@ -22,4 +22,7 @@ names = {
   "Troll Crown": "巨魔王冠",
   "Storm Troll Crown": "风暴巨魔王冠",
   "Earth Troll Crown": "大地巨魔王冠",
+# 非物品，可拾取
+  "Ruby Heart": "红宝石心",
+  "Memory Orb": "记忆球"
 }
