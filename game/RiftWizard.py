@@ -8,6 +8,7 @@ import dict_upgrades
 import dict_consumables
 import dict_shrines
 import dict_attr
+import dict_monsters
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
@@ -4212,7 +4213,7 @@ class PyGameView(object):
 			if existing:
 				if not desc:
 					desc = ""
-				desc += "\nWARNING: Will replace %s" % existing[0].name
+				desc += "\n警告: 将替代 %s" % existing[0].name
 
 		if desc:
 			self.draw_wrapped_string(desc, self.examine_display, cur_x, cur_y, width, extra_space=True)
@@ -4405,7 +4406,8 @@ class PyGameView(object):
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
 
-			self.draw_string(gen_params.shrine.name, self.examine_display, 64 + border_margin, cur_y + 24, content_width=width)
+			_name = dict_shrines.names.get(gen_params.shrine.name)
+			self.draw_string(_name, self.examine_display, 64 + border_margin, cur_y + 24, content_width=width)
 
 			cur_y += 64 + linesize
 
@@ -4444,7 +4446,6 @@ class PyGameView(object):
 		cur_x = border_margin
 
 
-
 	def draw_examine_unit(self):
 
 		# If a game is running, do not display dead monsters or the player
@@ -4465,6 +4466,7 @@ class PyGameView(object):
 		linesize = self.linesize
 		unit = self.examine_target
 
+		_name = dict_monsters.names.get(unit.name, unit.name)
 		lines = self.draw_wrapped_string(unit.name, self.examine_display, cur_x, cur_y, width=17*16)
 		cur_y += (lines+1) * linesize
 
@@ -4731,23 +4733,23 @@ class PyGameView(object):
 		if selection == TITLE_SELECTION_NEW:
 			self.state = STATE_PICK_MODE
 			self.examine_target = 0
-		if selection == TITLE_SELECTION_LOAD:
-			if can_continue_game():
-				self.load_game()
 		if selection == TITLE_SELECTION_ABANDON:
 			self.open_abandon_prompt()
 		if selection == TITLE_SELECTION_OPTIONS:
 			self.open_options()
-		if selection == TITLE_SELECTION_INSTRUCTIONS:
-			self.show_help()
-		if selection == TITLE_SELECTION_BESTIARY:
-			self.open_shop(SHOP_TYPE_BESTIARY)
+		if selection == TITLE_SELECTION_LOAD:
+			if can_continue_game():
+				self.load_game()
 		if selection == TITLE_SELECTION_DISCORD:
 			webbrowser.open("https://discord.gg/NngFZ7B")
 		if selection == TITLE_SELECTION_QQ:
 			webbrowser.open("https://jq.qq.com/?_wv=1027&k=C1ejcsdb")
+		if selection == TITLE_SELECTION_INSTRUCTIONS:
+			self.show_help()
 		if selection == TITLE_SELECTION_EXIT:
 			self.running = False
+		if selection == TITLE_SELECTION_BESTIARY:
+			self.open_shop(SHOP_TYPE_BESTIARY)
 
 	def draw_pick_mode(self):
 		opts = [("普通冒险", GAME_MODE_NORMAL),
@@ -5175,7 +5177,7 @@ class PyGameView(object):
 
 		log_fn = os.path.join('saves', str(self.game.run_number), 'log', str(level), 'combat_log.%d.txt' % turn)
 		if os.path.exists(log_fn):
-			with open(log_fn, 'r') as logfile:
+			with open(log_fn, 'r', encoding='utf8') as logfile:
 				self.combat_log_lines = [s.strip() for s in logfile.readlines()]
 
 	def draw_combat_log(self):
@@ -5324,7 +5326,7 @@ class PyGameView(object):
 			# Occurs when cheating in debug
 			return
 
-		with open(stats_filename, 'r') as statfile:
+		with open(stats_filename, 'r', encoding='utf8') as statfile:
 			lines = [s.strip() for s in statfile.readlines()]
 
 		border_margin = self.border_margin
@@ -5671,7 +5673,7 @@ except:
 		for mod in loaded_mods:
 			print(mod)
 
-	with open('crash.txt', 'w') as file:
+	with open('crash.txt', 'w', encoding='utf8') as file:
 		traceback.print_exc(file=file)
 		if loaded_mods:
 			file.write("Loaded mods:\n")

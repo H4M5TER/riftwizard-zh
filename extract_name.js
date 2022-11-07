@@ -25,6 +25,9 @@ try {
         break
       case 'Consumables':
         regex = /^item\.name\s*=\s*("[^"]+"|'[^']+')$/
+        break
+      case 'Monsters':
+        regex = /^unit\.name\s*=\s*("[^"]+"|'[^']+')$/
       default:
     }
     if (!regex)
