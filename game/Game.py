@@ -8,12 +8,17 @@ from Spells import make_player_spells
  
 from collections import OrderedDict, defaultdict 
  
-import dill as pickle 
-import random 
- 
-BUILD_NUM = 3 
- 
-def safe_int(f): 
+import dill as pickle
+import random
+
+import dict_spells
+import dict_monsters
+import dict_consumables
+import dict_upgrades
+
+BUILD_NUM = 3
+
+def safe_int(f):
 	if f.isdigit(): 
 		return int(f) 
 	return 0 
@@ -128,83 +133,88 @@ class Game():
 		self.finalize_level(victory) 
  
 		filename = os.path.join('saves', str(self.run_number), 'game.dat') 
-		if os.path.exists(filename): 
-			os.remove(filename) 
- 
- 
-	def finalize_level(self, victory): 
-		filename = os.path.join('saves', str(self.run_number), 'stats.level_%d.txt' % self.level_num) 
-		self.total_turns += self.cur_level.turn_no 
+    if os.path.exists(filename):
+      os.remove(filename)
+
+  def finalize_level(self, victory):
+    filename = os.path.join('saves', str(self.run_number), 'stats.level_%d.txt' % self.level_num) 
+    self.total_turns += self.cur_level.turn_no
  
 		dirname = os.path.dirname(filename) 
-		if not os.path.exists(dirname): 
-			os.makedirs(dirname) 
- 
-		with open(filename, 'w') as stats: 
-			stats.write("区域 %d\n" % self.level_num) 
-			if self.trial_name: 
-				stats.write(self.trial_name + "\n") 
-			stats.write("结果: %s\n" % ("胜利" if victory else "失败")) 
-			stats.write("\n经过回合:\n") 
-			stats.write("%d (当前)\n" % self.cur_level.turn_no) 
-			stats.write("%d (全部)\n" % self.total_turns) 
- 
-			counts = sorted(self.cur_level.spell_counts.items(), key=lambda t: -t[1]) 
- 
-			spell_counts = [(s, c) for (s, c) in counts if not s.item] 
-			if spell_counts: 
-				stats.write("\n施放法术:\n") 
-				for s, c in spell_counts: 
-					stats.write("%s: %d\n" % (s.name, c)) 
- 
-			dealers = sorted(self.cur_level.damage_dealt_sources.items(), key=lambda t: -t[1]) 
-			if dealers: 
-				stats.write("\n造成伤害:\n") 
-				for s, d in dealers[:5]: 
-					stats.write("%d %s\n" % (d, s)) 
-				if len(dealers) > 6: 
-					total_other = sum(d for s,d in dealers[5:]) 
-					stats.write("%d 其他\n" % total_other) 
- 
-			sources = sorted(self.cur_level.damage_taken_sources.items(), key=lambda t: -t[1]) 
-			if sources: 
-				stats.write("\n受到伤害:\n")				 
-				for s, d in sources[:5]: 
-					stats.write("%d %s\n" % (d, s)) 
-				if len(sources) > 6: 
-					total_other = sum(d for s,d in sources[5:]) 
-					stats.write("%d 其他\n" % total_other) 
- 
-			item_counts = [(s, c) for (s, c) in counts if s.item] 
-			if item_counts: 
-				stats.write("\n使用物品:\n") 
-				for s, c in item_counts: 
-					stats.write("%s: %d\n" % (s.name, c)) 
- 
-			if self.recent_upgrades: 
-				stats.write("\n花费技能点:\n") 
-				for u in self.recent_upgrades: 
-					fmt = u.name 
-					if getattr(u, 'prereq', None): 
-						fmt = "%s %s" % (u.prereq.name, u.name) 
-					stats.write("%s\n" % fmt) 
- 
-			self.recent_upgrades.clear() 
- 
-	# For the consumer of the Game object 
-	def __init__(self, generate_level=True, save_enabled=False, mutators=None, trial_name=None, seed=None): 
+    if not os.path.exists(dirname):
+      os.makedirs(dirname)
+
+    self.level_cache = ''
+
+    self.level_cache += "区域 %d \n" % self.level_num
+    if self.trial_name:
+      self.level_cache += self.trial_name + "\n"
+    self.level_cache += "结果: %s\n" % ("胜利" if victory else "失败")
+    self.level_cache += "\n经过回合:\n" 
+    self.level_cache += "%d (当前)\n" % self.cur_level.turn_no 
+    self.level_cache += "%d (全部)\n" % self.total_turns 
+
+    counts = sorted(self.cur_level.spell_counts.items(), key=lambda t: -t[1])
+
+    spell_counts = [(s, c) for (s, c) in counts if not s.item]
+    if spell_counts:
+      self.level_cache += "\n施放法术:\n" 
+      for s, c in spell_counts:
+        _name = dict_spells.names.get(s.name, s.name)
+        self.level_cache += "%s: %d\n" % (_name, c)
+
+    dealers = sorted(
+      self.cur_level.damage_dealt_sources.items(), key=lambda t: -t[1])
+    if dealers:
+      self.level_cache += "\n造成伤害:\n" 
+      for s, d in dealers[:5]:
+        _name = dict_spells.names.get(s, '')
+        if not _name:
+          _name = dict_monsters.getLocale(s)
+        self.level_cache += "%d %s\n" % (d, _name)
+      if len(dealers) > 6:
+        total_other = sum(d for _, d in dealers[5:])
+        self.level_cache += "%d 其他\n" % total_other
+
+    sources = sorted(
+      self.cur_level.damage_taken_sources.items(), key=lambda t: -t[1])
+    if sources:
+      self.level_cache += "\n受到伤害:\n"
+      for s, d in sources[:5]:
+        _name = dict_monsters.getLocale(s)
+        self.level_cache += "%d %s\n" % (d, _name)
+      if len(sources) > 6:
+        total_other = sum(d for _, d in sources[5:])
+        self.level_cache += "%d 其他\n" % total_other
+
+    item_counts = [(s, c) for (s, c) in counts if s.item]
+    if item_counts:
+      self.level_cache += "\n使用物品:\n" 
+      for s, c in item_counts:
+        _name = dict_consumables.names.get(s.name, s.name)
+        self.level_cache += "%s: %d\n" % (_name, c)
+
+    if self.recent_upgrades:
+      self.level_cache += "\n花费技能点:\n"
+      self.level_cache += '\n'.join(self.recent_upgrades)
+    self.recent_upgrades.clear()
+    with open(filename, 'w', encoding='utf8') as stats:
+      stats.write(self.level_cache)
+      self.level_cache = self.level_cache.split('\n')
+
+  # For the consumer of the Game object
+  def __init__(self, generate_level=True, save_enabled=False, mutators=None, trial_name=None, seed=None):
  
 		self.build_compat_num = BUILD_NUM 
 		self.seed = seed 
 		if self.seed: 
 			random.seed(self.seed) 
-		else: 
-			random.seed() 
- 
- 
-		self.level_seeds = {} 
-		for i in range(26): 
-			seeds_per_difficulty = 12 
+    else:
+      random.seed()
+
+    self.level_seeds = {}
+    for i in range(26):
+      seeds_per_difficulty = 12
 			self.level_seeds[i] = [random.random() for i in range(seeds_per_difficulty)] 
  
 		self.mutators = mutators 
@@ -363,17 +373,23 @@ class Game():
 			self.cur_level.act_shop(self.p1, item) 
  
 		elif isinstance(item, Upgrade) or isinstance(item, Spell): 
-			self.buy_upgrade(item) 
- 
-		if item: 
-			self.recent_upgrades.append(item) 
- 
-		return True 
- 
- 
-	def try_pass(self): 
-		self.cur_level.set_order_pass() 
- 
+      self.buy_upgrade(item)
+
+    if item:
+      if not getattr(item, 'prereq', False):
+        _line = dict_spells.names.get(item.name, '')
+        if not _line:
+          _line = dict_upgrades.names.get(item.name, item.name)
+      else:
+        _line = "%s: %s" % (dict_spells.names.get(item.prereq.name, item.prereq.name),
+                            dict_upgrades.names.get(item.name, item.name))
+      self.recent_upgrades.append(_line)
+
+    return True
+
+  def try_pass(self):
+    self.cur_level.set_order_pass()
+
 	def has_upgrade(self, upgrade): 
 		# Spells you can have only one of 
 		if any(s.name == upgrade.name for s in self.p1.spells): 
@@ -553,13 +569,14 @@ class Game():
 		gc.collect() 
  
 		self.subscribe_mutators() 
-		self.save_game() 
- 
-		if self.cur_level.gen_params: 
-			logging.getLogger("Level").debug("\nEntering level %d, id=%d" % (self.level_num, self.cur_level.gen_params.level_id)) 
- 
-		return True 
- 
+    self.save_game()
+
+    if self.cur_level.gen_params:
+      logging.getLogger("Level").debug("\n进入第 %d 关, id=%d" %
+                                   (self.level_num, self.cur_level.gen_params.level_id))
+
+    return True
+
 	def try_abort_deploy(self): 
 		self.deploying = False 
 		self.prev_next_level = self.next_level 
