@@ -37,8 +37,8 @@ try {
     })
   }
   fs.writeFileSync(`generated/Spells.json`, JSON.stringify(spells, null, 2))
-  fs.writeFileSync(`game/dict_spells.py`,
-    `names = {\n${names.map(v => `  "${v}": "${v}",`).join('\n')}\n}\n`, 'utf-8')
+  // fs.writeFileSync(`game/dict_spells.py`,
+  //   `names = {\n${names.map(v => `  "${v}": "${v}",`).join('\n')}\n}\n`, 'utf-8')
 } catch (error) {
   console.error(error)
 }

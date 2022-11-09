@@ -2943,14 +2943,16 @@ class PyGameView(object):
 				else:
 					cur_color = (100, 100, 100)
 
-			if self.shop_type == SHOP_TYPE_SHOP:
+			if self.shop_type != SHOP_TYPE_SHOP:
+				if self.shop_type == SHOP_TYPE_BESTIARY:
+					fmt = dict_monsters.getLocale(fmt, fmt)
+				elif self.shop_type == SHOP_TYPE_SPELLS:
+					fmt = dict_spells.names.get(fmt, fmt)
+				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, cur_color, mouse_content=opt, content_width=spell_column_width)
+			else:
 				# 神龛升级
 				fmt = dict_spells.names.get(fmt, fmt)
 				self.draw_string(fmt, self.middle_menu_display, 0, cur_y, cur_color, mouse_content=opt, content_width=self.middle_menu_display.get_width(), center=True)
-			else:
-				if self.shop_type == SHOP_TYPE_BESTIARY:
-					fmt = dict_monsters.getLocale(fmt, fmt)
-				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, cur_color, mouse_content=opt, content_width=spell_column_width)
 
 			if hasattr(opt, 'level') and isinstance(opt.level, int) and opt.level > 0:
 				fmt = str(cost)
@@ -4393,8 +4395,6 @@ class PyGameView(object):
 			scaledimage = pygame.transform.scale(sprite, (32, 32))
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
-			if len(name) > 20:
-				name = name[0:18] + '..'
 			self.draw_string(name, self.examine_display, cur_x + 36, cur_y + 10, color)
 			cur_y += 32 + 4
 
@@ -4412,7 +4412,7 @@ class PyGameView(object):
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
 
-			_name = dict_shrines.names.get(gen_params.shrine.name)
+			_name = dict_shrines.names.get(gen_params.shrine.name, gen_params.shrine.name)
 			self.draw_string(_name, self.examine_display, 64 + border_margin, cur_y + 24, content_width=width)
 
 			cur_y += 64 + linesize
