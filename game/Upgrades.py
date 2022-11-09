@@ -1,14 +1,16 @@
 from Spells import *
 from Monsters import *
 import text
+import loc
+
 
 class GlobalBonus(Upgrade):
 	def __init__(self, attribute, amount, level, tags, name=None):
 		Upgrade.__init__(self)
 		self.tags = tags
 		self.global_bonuses[attribute] = amount
-		self.name = name if name else "增加 %s" % format_attr(attribute)
-		self.description = "给所有法术增加 %d %s" % (amount, format_attr(attribute))
+		self.name = name if name else "Increased %s" % format_attr(attribute)
+		self.description = "提升所有法术 %d %s%s" % (amount, loc.attrc_dic(attribute, ''), format_attr(attribute))
 		self.level = level
 		self.attribute = attribute
 		self.amount = amount
@@ -19,7 +21,7 @@ class TagBonus(Upgrade):
 		Upgrade.__init__(self)
 		self.tag_bonuses[tag][attribute] = amount
 		self.name = name if name else "%s %s" % (tag.name, format_attr(attribute))
-		self.description = "给%s法术增加 %d %s" % (tag.name, amount, format_attr(attribute))
+		self.description = "提升 [%s] 法术 %d %s%s" % (tag.name, amount, loc.attrc_dic(attribute, ''), format_attr(attribute))
 		self.level = level
 		self.tags = [tag]
 		self.attribute = attribute
@@ -247,7 +249,7 @@ class PyrophiliaUpgrade(Upgrade):
 				unit.deal_damage(-heal, Tags.Heal, self)
 
 	def get_description(self):
-		return "当一个召唤物视野内的敌人受到 [火焰:fire] 伤害时, 该召唤物回复造成伤害的一半"
+		return "每当召唤的小兵目睹敌人受到 [fire] 伤害，该小兵治疗伤害一半生命。"
 
 class PyrostaticStack(Buff):
 
@@ -299,7 +301,7 @@ class PyrostaticsBuff(Upgrade):
 			yield
 
 	def get_description(self):
-		return "当你用 [闪电:lightning] 法术造成伤害时, 获得造成伤害层数的热静力学充能 (持续 10 回合)\n当敌人受到 [火焰:fire] 伤害时, 消耗热静力学充能对该敌人视野内至多充能数的单位造成充能数数量的 [闪电:lightning] 伤害"
+		return "每当你以 [lightning] 法术造成伤害时，获得等量的电焰充能 10 回合。\n每当敌人受到 [fire] 伤害时，消耗等量的电焰充能，对受伤单位视线内至多充能数个单位造成充能数的 [lightning] 伤害。"
 
 class SoulHarvest(Upgrade):
 
@@ -326,8 +328,8 @@ class SoulHarvest(Upgrade):
 				self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Dark)
 
 	def get_description(self):
-		return ("敌人死亡时, 每个你的 [黑暗:dark] 法术有 10% 几率获得 1 充能\n"
-				"如果敌人死于 [黑暗:dark] 伤害, 那个几率翻三倍")
+		return ("每当一个敌方单位死亡时，你的每个 [dark] 法术各有 10% 几率获得一点充能。\n"
+				"若该单位死于 [dark] 伤害，几率变为三倍。")
 
 class ArcaneCombustion(Upgrade):
 
@@ -350,7 +352,7 @@ class ArcaneCombustion(Upgrade):
 		yield
 
 	def get_description(self):
-		return ("单位被奥法伤害击杀时爆炸, 对 [3_格:radius] 的正方形造成 [%d_奥法:arcane] 伤害, 融化墙壁") % self.get_stat('damage')
+		return ("每当一个单位死于 [arcane] 伤害，该单位爆炸，对 [3_格:radius] 的方形内造成 [%d_点奥术:arcane] 伤害，熔化受影响地块上的墙。") % self.get_stat('damage')
 
 class SearingHeat(Upgrade):
 
@@ -372,7 +374,7 @@ class SearingHeat(Upgrade):
 				u.deal_damage(self.damage, Tags.Fire, self)
 
 	def get_description(self):
-		return "你释放 [火焰:fire] 法术时, 对目标视野范围内的所有敌人造成 [3_火焰:fire] 伤害\n伤害值固定, 不能被修正".format(**self.fmt_dict())
+		return "每当你施放 [fire] 法术时，对目标视线内的所有敌人造成 [3_点火焰:fire] 伤害。\n此伤害值固定，无法被修正。".format(**self.fmt_dict())
 
 class DevourerOfNations(Upgrade):
 
@@ -384,7 +386,7 @@ class DevourerOfNations(Upgrade):
 		self.heal = 25
 
 	def get_description(self):
-		return "Gain %d health whenever you destroy a lair" % self.heal
+		return "每当你摧毁一个巢穴时，获得 %d 点生命。" % self.heal
 
 	def on_death(self, evt):
 		if "lair" in evt.unit.name.lower():
@@ -399,7 +401,7 @@ class DevourerOfChampions(Upgrade):
 		self.global_triggers[EventOnDeath] = self.on_death
 
 	def get_description(self):
-		return "击杀 boss 给予随机 4 级法术一点充能"
+		return "每当你消灭一个头目时，随机一个 4 级法术获得一点充能。"
 
 	def on_death(self, evt):
 		if "boss" in evt.unit.name.lower():
@@ -415,7 +417,7 @@ class MinionRepair(Upgrade):
 		self.name = "Minion Regeneration"
 
 	def get_description(self):
-		return "每回合治疗你的随从 [2_点血量:heal]"
+		return "每回合治疗你的所有小兵 [2_点生命:heal]。"
 
 	def on_advance(self):
 		for unit in self.owner.level.units:
@@ -444,11 +446,11 @@ class Teleblink(Upgrade):
 		self.cast_last = False
 
 	def get_description(self):
-		return ("当你连续释放 3 个 [奥法:arcane] 法术时, 给予随机 [传送:translocation] 法术 1 点充能, 并召唤 [2_只仙灵:num_summons]\n"
-					"仙灵会飞, 有 [{minion_health}_点血量:minion_health], [{shields}_点护盾:shields], [75_奥法:arcane] 抗性, 以及被动闪烁.\n"
-			    "仙灵可以给 [{minion_range}_格:minion_range] 内的友方治疗 [{heal}_点生命值:heal]\n"
-			    "仙灵攻击造成 [{minion_damage}_点奥法伤害:arcane] , 有 [{minion_range}_格:minion_range] 攻击距离\n"
-			    "仙灵在 [{minion_duration}_回合:minion_duration] 后消失\n").format(**self.fmt_dict())
+		return ("当你连续施放三个 [arcane] 法术时，随机一个 [translocation] 法术获得一点充能，召唤 [2_个仙灵:num_summons]。\n"
+				"仙灵有 [{minion_health}_点生命:minion_health]、[{shields}_点护盾:shields] 和 [75_点奥术:arcane] 抗性，可飞行，可被动扑闪。\n"
+			    "仙灵可治疗友军 [{heal}_点生命:heal]，射程为 [{minion_range}_格:minion_range]。\n"
+			    "仙灵的攻击造成 [{minion_damage}_点奥术:arcane] 伤害，射程为 [{minion_range}_格:minion_range]。\n"
+			    "仙灵在 [{minion_duration}_回合:minion_duration] 后消失。\n").format(**self.fmt_dict())
 
 	def on_advance(self):
 		if not self.cast_last:
@@ -479,7 +481,7 @@ class Teleblink(Upgrade):
 					unit.sprite.char = 'f'
 					unit.sprite.color = Color(252, 141, 249)
 					unit.name = "Good Faery"
-					unit.description = "一个变化无常的生命, 很高兴能给巫师提供一些慰藉"
+					unit.description = "任性的生物，乐于慰藉巫师"
 					unit.max_hp = self.minion_health
 					unit.shields = self.get_stat('shields')
 					unit.buffs.append(TeleportyBuff(chance=.7))
@@ -496,7 +498,7 @@ class ArcaneCredit(Buff):
 		self.name = "Arcane Credit"
 		self.owner_triggers[EventOnSpellCast] = self.on_cast
 		self.color = Tags.Arcane.color
-		self.description = "下一个非 [奥法:arcane] 法术不消耗充能"
+		self.description = "下个非 [arcane] 法术的充能会得到返还。"
 
 	def on_cast(self, evt):
 		if Tags.Arcane not in evt.spell.tags:
@@ -513,7 +515,7 @@ class ArcaneAccountant(Upgrade):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def get_description(self):
-		return "耗尽一个 [奥法:arcane] 法术的充能时, 第二个回合施放非 [奥法:arcane] 法术不消耗充能】"
+		return "每当你施放最后一个充能的 [arcane] 法术时，你的下个非 [arcane] 法术可免费施放，持续 1 回合。"
 
 	def on_spell_cast(self, evt):
 		if Tags.Arcane in evt.spell.tags and evt.spell.cur_charges == 0:
@@ -528,7 +530,7 @@ class NaturalHealing(Upgrade):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def get_description(self):
-		return "每当你施放 [自然:nature] 法术时, 回复 [5_点血量:heal]"
+		return "每当你施放 [nature] 法术时，治疗 [5_点生命:heal]。"
 
 	def on_spell_cast(self, evt):
 		if Tags.Nature in evt.spell.tags:
@@ -555,7 +557,7 @@ class LightningFrenzy(Upgrade):
 		self.buff_duration = 6
 
 	def get_description(self):
-		return "每当你施放 [闪电:lightning] 法术时, 你的 [闪电:lightning] 法术与能力获得 [%d_点伤害:damage], 持续 [%d_回合:duration]" % (self.bonus, self.buff_duration)
+		return "每当你施放 [lightning] 法术时，你的 [lightning] 法术和被动获得 [%d_点伤害:damage]，持续 [%d_回合:duration]。" % (self.bonus, self.buff_duration)
 
 	def on_spell_cast(self, evt):
 		if Tags.Lightning in evt.spell.tags:
@@ -581,7 +583,7 @@ class ArmorMelter(Upgrade):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def get_description(self):
-		return "敌人受到 [火焰:fire] 伤害时损失 [10_点物理:physical] 抗性和 [10_点火焰抗性:fire] 抗性"
+		return "每当敌人受到 [fire] 伤害，它失去 [10_点物理:physical] 和 [10_点火焰:fire] 抗性。"
 
 	def on_damage(self, evt):
 		if Tags.Fire == evt.damage_type and self.owner.level.are_hostile(evt.unit, self.owner):
@@ -596,7 +598,7 @@ class NaturalVigor(Upgrade):
 		self.level = 4
 
 	def get_description(self):
-		return "你的召唤物获得 25 点 [物理:physical] [闪电:lightning] [寒冰:ice] [火焰:fire] 抗性."
+		return "你召唤的单位获得 [25_点物理:physical] 抗性、[25_点闪电:lightning] 抗性、[25_点寒冰:ice] 和 [25_点火焰:fire] 抗性。"
 
 	def on_unit_added(self, evt):
 		if evt.unit.is_player_controlled:
@@ -638,9 +640,9 @@ class Hunger(Upgrade):
 		self.minion_damage = 7
 
 	def get_description(self):
-		return ("你召唤的 [不死:undead] 单位获得 饥饿\n"
-			  	"Hunger deals [{minion_damage}_dark:dark] damage to a target up to [{minion_range}_tiles:range] away, "
-			  	"healing the caster for all damage dealt, and has a [3_turn:cooldown] cooldown.\n".format(**self.fmt_dict()))
+		return ("你召唤的 [undead] 单位获得饥饿。\n"
+			  	"饥饿对 [{minion_range}_格:range] 内的一个目标造成 [{minion_damage}_点黑暗:dark] 伤害。"
+			  	"治疗施法者等量的生命，[3_回合:cooldown] 冷却。\n".format(**self.fmt_dict()))
 
 	def should_grant(self, unit):
 		return not are_hostile(unit, self.owner) and Tags.Undead in unit.tags
@@ -668,7 +670,7 @@ class LightningWarp(Upgrade):
 		self.tags = [Tags.Lightning, Tags.Translocation]
 
 	def get_description(self):
-		return "Whenever you cast a [lightning] spell, all enemy units within [3_tiles:radius] of the target are teleported to random spaces [4_to_8_tiles:range] away and take [{damage}_lightning:lightning] damage.".format(**self.fmt_dict())
+		return "每当你施放 [lightning] 法术时，目标 [3_格:radius] 内的所有敌方单位随机传送到 [4_到_8_格:range] 远的地块，受到 [{damage}_点闪电:lightning] 伤害。".format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
 
@@ -699,7 +701,7 @@ class Starfire(Upgrade):
 		self.conversions[Tags.Fire][Tags.Arcane] = .5
 
 	def get_description(self):
-		return "Half of all [fire] damage you or your minions deal is redealt as [arcane] damage."
+		return "你和你小兵造成 [fire] 伤害时还造成一半的 [arcane] 伤害。"
 
 
 class ShockAndAwe(Upgrade):
@@ -712,7 +714,7 @@ class ShockAndAwe(Upgrade):
 		self.duration = 5
 
 	def get_description(self):
-		return ("Whenever an enemy dies to [lightning] damage, another random enemy in line of sight of that enemy goes [berserk] for [5_turns:duration].\n"
+		return ("每当敌人死于 [lightning] 伤害时，该敌人视线内随机一个敌人 [berserk] [5_回合:duration]。\n"
 				+ text.berserk_desc).format(**self.fmt_dict())
 
 	def on_death(self, evt):
@@ -741,7 +743,7 @@ class Horror(Upgrade):
 		self.name = "Horror"
 		self.tags = [Tags.Dark]
 		self.level = 5
-		self.description = "Whenever an enemy dies to [dark] damage, up to [3:num_targets] random enemies in line of sight of that enemy are [stunned] for [5_turns:duration]"
+		self.description = "每当敌人死于 [dark] 伤害时，该敌人视线内至多 [3:num_targets] 个敌人被 [stunned] [5_回合:duration]。"
 		self.global_triggers[EventOnDeath] = self.on_death
 		self.duration = 5
 
@@ -776,7 +778,7 @@ class WhiteFlame(Upgrade):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def get_description(self):
-		return "Whenever you cast a [fire] spell with range greater than zero, deal [%d_fire:fire] damage to the targeted point." % self.get_stat('damage')
+		return "每当你施放半径大于 0 的 [fire] 法术时，对目标点造成 [%d_点火焰:fire] 伤害。" % self.get_stat('damage')
 
 	def on_spell_cast(self, evt):
 		self.owner.level.queue_spell(self.effect(evt))
@@ -813,10 +815,10 @@ class ChaosBuddies(Upgrade):
 		self.damage_this_turn = set()
 
 	def get_description(self):
-		return ("Whenever an enemy takes [fire], [lightning], and [physical] damage in the same turn, summon an iron imp, a spark imp, and a fire imp near that enemy.\n"
-				"Imps have [{minion_health}_HP:minion_health] and can fly.\n"
-				"Imps have a ranged attack dealing [{minion_damage}_damage:minion_damage] with a [{minion_range}_tile:minion_range] range.\n"
-				"The imps each last [{minion_duration}_turns:minion_duration].\n").format(**self.fmt_dict())
+		return ("每当敌人在同一回合受到 [fire]、[lightning] 和 [physical] 伤害时，在该敌人旁召唤钢铁小鬼、电光小鬼和火焰小鬼个一个。\n"
+				"小鬼有 [{minion_health}_点生命:minion_health]，可飞行。\n"
+				"小鬼的远程攻击造成 [{minion_damage}_点伤害:minion_damage]，射程为 [{minion_range}_格:minion_range]。\n"
+				"小鬼各持续 [{minion_duration}_回合:minion_duration]。\n").format(**self.fmt_dict())
 
 	def on_damaged(self, evt):
 		if not self.owner.level.are_hostile(evt.unit, self.owner):
@@ -827,11 +829,7 @@ class ChaosBuddies(Upgrade):
 			return
 
 		self.damage_this_turn.add((evt.damage_type, evt.unit))
-		needed_tuples = set([
-			(Tags.Fire, evt.unit),
-			(Tags.Lightning, evt.unit),
-			(Tags.Physical, evt.unit)
-		])
+		needed_tuples = {(Tags.Fire, evt.unit), (Tags.Lightning, evt.unit), (Tags.Physical, evt.unit)}
 		if needed_tuples.issubset(self.damage_this_turn):
 			self.procs_this_turn.add(evt.unit)
 			self.owner.level.queue_spell(self.summon_imps(evt.unit.x, evt.unit.y))
@@ -853,7 +851,7 @@ class ArcaneShield(Upgrade):
 		self.name = "Arcane Shield"
 		self.tags = [Tags.Arcane]
 		self.level = 4
-		self.description = "Whenever you cast an [arcane] spell, if you have no shields, gain [1_SH:shields]."
+		self.description = "每当你施放 [arcane] 法术时，若你没有护盾，获得 [1_点护盾:shields]."
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 	
 	def on_spell_cast(self, evt):
@@ -868,7 +866,7 @@ class MinionShield(Upgrade):
 		self.name = "Shielded Minions"
 		self.tags = [Tags.Arcane]
 		self.level = 4
-		self.description = "Arcane minions you summon gain [3_SH:shields].  Other minions you summon gain [1_SH:shields]."
+		self.description = "你召唤的 [arcane] 小兵获得 [3_点护盾:shields]，其他小兵获得 [1_点护盾:shields]。"
 		self.global_triggers[EventOnUnitAdded] = self.on_unit_add
 
 	def on_unit_add(self, evt):
@@ -949,17 +947,17 @@ class GhostfireUpgrade(Upgrade):
 		yield
 
 	def get_description(self):
-		return ("Whenever an enemy takes [dark] damage and [fire] damage in the same turn, summon a burning ghost near that enemy.\n"
-				"Burning ghosts fly, have [100_fire:fire] resist and [100_dark:dark] resist, and passively blink.\n"
-				"Burning ghosts have a ranged attack which deals [{minion_damage}_fire:fire] damage with a [{minion_range}_tile:minion_range] range.\n"
-				"The ghosts vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
+		return ("每当敌人在同一回合受到 [dark] 和 [fire] 伤害时，在该敌人旁召唤一个燃烧的幽灵。\n"
+				"燃烧的幽灵有 [100_点火焰:fire] 抗性和 [100_点黑暗:dark] 抗性，可被动扑闪。\n"
+				"燃烧的幽灵的远程攻击造成 [{minion_damage}_点火焰:fire] 伤害，射程为 [{minion_range}_格:minion_range]。\n"
+				"燃烧的幽灵在 [{minion_duration}_回合:minion_duration] 后消失。").format(**self.fmt_dict())
 
 class LastWord(Upgrade):
 
 	def on_init(self):
 		self.name = "Last Word"
 
-		self.description = "Whenever you finish a level, gain a charge of each of your [word] spells."
+		self.description = "每当你通过一关时，你的每个 [word] 法术获得一点充能。"
 		self.tags = [Tags.Word]
 		self.level = 5
 
@@ -990,7 +988,7 @@ class PrinceOfRuin(Upgrade):
 		self.tags = [Tags.Chaos]
 
 	def get_description(self):
-		return "Whenever an enemy dies to [fire], [physical], or [lightning] damage, deal [{damage}_damage:damage] of that type to a random enemy in line of sight of the target up to [{radius}_tiles:radius] away.".format(**self.fmt_dict())
+		return "每当敌人死于 [fire]、[physical] 或 [lightning] 伤害时，随机对目标视线 [{radius}_格:radius] 内的一个敌人造成该类型的 [{damage}_点伤害:damage]。".format(**self.fmt_dict())
 
 	def on_death(self, evt):
 		if not are_hostile(evt.unit, self.owner):
@@ -1014,7 +1012,7 @@ class MarchOfTheRighteous(Upgrade):
 
 	def on_init(self):
 		self.name = "Righteous March"
-		self.description = "Whenever an enemy dies to [holy] damage, allies witnessing it gain [1_SH:shields] if they are not already shielded."
+		self.description = "每当敌人死于 [holy] 伤害时，目睹的友军若无护盾则获得 [1_点护盾:shields]。"
 		self.global_triggers[EventOnDeath] = self.on_death
 		self.tags = [Tags.Holy]
 
@@ -1044,7 +1042,7 @@ class FieryJudgement(Upgrade):
 		self.conversions[Tags.Fire][Tags.Holy] = .5
 
 	def get_description(self):
-		return "Half of all [fire] damage you or your minions deal is redealt as [holy] damage."
+		return "你和你小兵造成 [fire] 伤害时还造成一半的 [holy] 伤害。"
 
 
 class HolyThunder(Upgrade):
@@ -1056,13 +1054,13 @@ class HolyThunder(Upgrade):
 		self.conversions[Tags.Lightning][Tags.Holy] = .5
 
 	def get_description(self):
-		return "Half of all [lightning] damage you or your minions deal is redealt as [holy] damage."
+		return "你和你小兵造成 [lightning] 伤害时还造成一半的 [holy] 伤害。"
 
 class Chastisement(Upgrade):
 
 	def on_init(self):
 		self.name = "Chastisement"
-		self.description = "Whenever an enemy takes [holy] damage, it has a 50% chance to be [stunned] for [1_turn:duration]."
+		self.description = "每当敌人受到 [holy] 伤害时，它有 50% 几率被 [stunned] [1_回合:duration]。"
 		self.tags = [Tags.Holy]
 		self.level = 4
 		self.global_triggers[EventOnDamaged] = self.on_damage
@@ -1083,7 +1081,7 @@ class ChaosCasting(Upgrade):
 
 	def on_init(self):
 		self.name = "Chaos Casting"
-		self.description = "Whenever you cast a [chaos] spell, you have a 25% chance of regaining a charge of another random [chaos] spell"
+		self.description = "每当你施放 [chaos] 法术时，你有 25% 几率随机获得其他 [chaos] 法术的一点充能。"
 		self.level = 5
 		self.tags = [Tags.Chaos]
 		self.global_triggers[EventOnSpellCast] = self.on_cast
@@ -1104,8 +1102,8 @@ class UnholyAlliance(Upgrade):
 
 	def on_init(self):
 		self.name = "Unholy Alliance"
-		self.description = ("Whenever you summon an [undead] or [demon], if you control a holy unit, the newly summoned unit gains [7_damage:damage].\n"
-							"Whenever you summon a [holy] creature, if you control an [undead] or [demon], the newly summoned unit gains [7_damage:damage].\n")
+		self.description = ("每当你召唤 [undead] 或 [demon] 单位时，若你控制 [holy] 单位，该召唤的单位获得 [7_点伤害:damage]。\n"
+							"每当你召唤 [holy] 单位时，若你控制 [undead] 或 [demon] 单位，该召唤的单位获得 [7_点伤害:damage]。\n")
 
 		self.level = 4
 		self.tags = [Tags.Dark, Tags.Holy]
@@ -1145,10 +1143,10 @@ class FaeThorns(Upgrade):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def get_description(self):
-		return ("Whenever you cast an [arcane] or [nature] spell, summon [2:num_summons] fae thorns near the target.\n"
-		    	"Fae Thorns have [{minion_health}_HP:minion_health], and cannot move.\n"
-		    	"Fae Thorns have a melee attack which deals [{minion_damage}_physical:physical] damage.\n"
-		    	"The thorns vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
+		return ("每当你施放 [arcane] 或 [nature] 法术时，在目标旁召唤 [2:num_summons] 个仙灵荆棘。\n"
+		    	"仙灵荆棘有 [{minion_health}_点生命:minion_health]，不可移动。\n"
+		    	"仙灵荆棘的近战攻击造成 [{minion_damage}_点物理:physical]。\n"
+		    	"仙灵荆棘在 [{minion_duration}_回合:minion_duration] 后消失。").format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
 		if Tags.Arcane in evt.spell.tags or Tags.Nature in evt.spell.tags:
@@ -1175,7 +1173,7 @@ class HypocrisyStack(Buff):
 
 	def on_init(self):
 		self.name = "%s Hypocrisy %d" % (self.tag.name, self.level)
-		self.description = "If next spell cast is a %s spell of level %d or lower is free" % (self.tag.name, self.level)
+		self.description = "若你施放的下个法术是 %d 级或更低的 %s 法术，其为免费。" % (self.level, loc.dic.get(self.tag.name, self.tag.name))
 		self.color = self.tag.color
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 		self.stack_type = STACK_INTENSITY
@@ -1191,8 +1189,8 @@ class Hypocrisy(Upgrade):
 
 	def on_init(self):
 		self.name = "Hypocrisy"
-		self.description = ("Whenever you cast a [dark] spell, if your next spell is a [holy] spell of a lower level, that spell's cost is refunded.\n"
-							"Whenever you cast a [holy] spell, if your next spell is a [dark] spell of a lower level, that spell's cost is refunded.")
+		self.description = ("每当你施放 [dark] 法术时，若你施放的下个法术是更低等级的 [holy] 法术，后者的充能得到返还。\n"
+							"每当你施放 [holy] 法术时，若你施放的下个法术是更低等级的 [dark] 法术，后者的充能得到返还。")
 
 		self.tags = [Tags.Dark, Tags.Holy]
 		self.level = 5
@@ -1216,7 +1214,7 @@ class FaestoneBuff(Buff):
 
 	def on_init(self):
 		self.name = "Fae Stone Buff"
-		self.description = "Whenever its master casts a nature spell, gains 10 HP.\n\nWhenever its master casts an arcane spell, teleports near the target and gains 1 shield."
+		self.description = "每当主人施放 [nature] 法术时，仙灵石治疗 [10_点生命:heal]\n\n每当主人施放 [arcane] 法术时，仙灵石传送到目标旁，获得 [1_点护盾:shields]。"
 		self.global_triggers[EventOnSpellCast] = self.on_cast
 		self.master = None
 		self.damage = 7
@@ -1252,16 +1250,16 @@ class Faestone(Upgrade):
 		self.minion_damage = 20
 		self.minion_health = 120
 
-		self.description = (" each level with a friendly Fae Stone.  The Fae Stone is a sturdy immobile melee unit."
-						    "\n\nWhenever you cast an arcane spell, the Fae Stone teleports near the target and gains 1 shield."
-						    "\n\nWhenever you cast a nature spell, the Fae Stone heals 10 HP.")
+		self.description = ("每关开始时有一个友方的仙灵石。仙灵石是坚固而固定不动的近战单位。"
+						    "\n\n每当你施放 [arcane] 法术时，仙灵石传送到目标旁，获得 [1_点护盾:shields]。"
+						    "\n\n每当你施放 [nature] 法术时，仙灵石治疗 [10_点生命:heal]。")
 		self.global_triggers[EventOnUnitAdded] = self.on_unit_added
 
 	def get_description(self):
-		return ("Whenever you enter a new level, summon a Fae Stone nearby.\n"
-				"The Fae Stone has [{minion_health}_HP:minion_health], and is stationary.\n"
-				"Whenever you cast a [nature] spell, the Fae Stone heals for [10_HP:heal].\n"
-				"Whenever you cast an [arcane] spell, the Fae Stone teleports near the target and gains [1_SH:shields].").format(**self.fmt_dict())
+		return ("每当你进入新关卡时，在附近召唤一个仙灵石。\n"
+				"仙灵石有 [{minion_health}_点生命:minion_health]，固定不动。\n"
+				"每当你施放 [nature] 法术时，仙灵石治疗 [10_点生命:heal]。\n"
+				"每当你施放 [arcane] 法术时，仙灵石传送到目标旁，获得 [1_点护盾:shields]。").format(**self.fmt_dict())
 
 	def on_unit_added(self, evt):
 		if evt.unit != self.owner:
@@ -1295,7 +1293,7 @@ class Houndlord(Upgrade):
 		self.name = "Houndlord"
 		self.level = 5
 		self.tags = [Tags.Fire, Tags.Conjuration]
-		self.description = "Start each level surrounded by friendly hell hounds."
+		self.description = "每关开始时有被友方的地狱猎犬包围。"
 		self.minion_damage = 6
 		self.minion_health = 19
 		self.minion_range = 4
@@ -1303,11 +1301,11 @@ class Houndlord(Upgrade):
 		self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
 
 	def get_description(self):
-		return ("Begin each level surrounded by friendly hell hounds.\n"
-				"Hell hounds have [{minion_health}_HP:minion_health], [100_fire:fire] resist, [50_dark:dark] resist, and [-50_ice:ice] resist.\n"
-				"Hell hounds have fiery bodies which deal [4_fire:fire] damage to melee attackers.\n"
-				"Hell hounds a melee attack which deals [{minion_damage}_fire:fire] damage.\n"
-				"Hell hounds have a leap attack which deals [{minion_damage}_fire:fire] damage with a range of [{minion_range}_tiles:minion_range].\n").format(**self.fmt_dict())
+		return ("每关开始时有被友方的地狱猎犬包围。\n"
+				"地狱猎犬有 [{minion_health}_点生命:minion_health]、[100_点火焰:fire] 抗性、[50_点黑暗:dark] 抗性和 [-50_点寒冰:ice] 抗性。\n"
+				"地狱猎犬的火热身躯对近战攻击者造成 [4_点火焰:fire] 伤害。\n"
+				"地狱猎犬的近战攻击造成 [{minion_damage}_点火焰:fire] 伤害。\n"
+				"地狱猎犬的跳跃攻击造成 [{minion_damage}_点火焰:fire]，射程为 [{minion_range}_格:minion_range]。\n").format(**self.fmt_dict())
 
 	def on_unit_added(self, evt):
 
@@ -1336,7 +1334,7 @@ class Boneguard(Upgrade):
 		self.name = "Bone Guard"
 		self.level = 6
 		self.tags = [Tags.Dark, Tags.Conjuration]
-		self.description = "Start each level accompanied by 4 friendly bone guards"
+		self.description = "每关开始时有 4 个友方的白骨卫士陪伴。"
 
 		self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
 
@@ -1346,13 +1344,11 @@ class Boneguard(Upgrade):
 		self.num_summons = 4
 
 	def get_description(self):
-		return ("Begin each level accompanied by 4 bone knights.\n"
-				"Bone knights have [{minion_health}_HP:minion_health], [1_SH:shields], [100_dark:dark] resist, and [50_ice:ice] resist.\n"
-				"Bone knights have a melee attack which deals [{minion_damage}_dark:dark] damage and drains 2 max HP.\n").format(**self.fmt_dict())
+		return ("每关开始时有 4 个白骨卫士陪伴。\n"
+				"白骨卫士有 [{minion_health}_点生命:minion_health]、[1_点护盾:shields]、[100_点黑暗:dark] 抗性和 [50_点寒冰:ice] 抗性。\n"
+				"白骨卫士的近战攻击造成 [{minion_damage}_点黑暗:dark] 伤害，吸取 2 点生命上限。\n").format(**self.fmt_dict())
 
 	def on_unit_added(self, evt):
-
-
 		if evt.unit != self.owner:
 			return
 
@@ -1367,8 +1363,8 @@ class Boneguard(Upgrade):
 			
 			self.summon(unit, p)
 
-class Cracklevoid(Upgrade):
 
+class Cracklevoid(Upgrade):
 	def on_init(self):
 		self.name = "Cracklevoid"
 		self.level = 6
@@ -1381,7 +1377,7 @@ class Cracklevoid(Upgrade):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def get_description(self):
-		return ("Whenever an enemy takes [arcane] damage, deal that much [lightning] damage to up to [{num_targets}:num_targets] enemy units in a [{radius}_tile:radius] burst.").format(**self.fmt_dict())
+		return ("每当敌人受到 [arcane] 伤害时，对 [{radius}_格:radius] 半径内至多 [{num_targets}:num_targets] 个敌方单位造成等量的 [lightning] 伤害。").format(**self.fmt_dict())
 
 	def on_damage(self, evt):
 		if not are_hostile(evt.unit, self.owner):
@@ -1416,7 +1412,7 @@ class SpiderSpawning(Upgrade):
 		self.name = "Spider Spawning"
 		self.level = 4
 		self.tags = [Tags.Nature]
-		self.description = "Whenever an enemy dies to poison damage, summon a friendly spider nearby"
+		self.description = "每当敌人死于 [poison] 伤害时，在附近召唤一个友方的蜘蛛。"
 		self.global_triggers[EventOnDeath] = self.on_death
 
 		spider_default = GiantSpider()
@@ -1425,10 +1421,10 @@ class SpiderSpawning(Upgrade):
 		self.duration = spider_default.spells[0].buff_duration
 
 	def get_description(self):
-		return ("Whenever an enemy dies to [poison] damage, summon a friendly spider nearby.\n"
-				"Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
-			 	"Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [5_turns:duration] of [poison].\n"
-			 	"Webs [stun] non spider units which step on them for [1_turn:duration].\n"
+		return ("每当敌人死于 [poison] 伤害时，在附近召唤一个友方的巨型蜘蛛。\n"
+				"巨型蜘蛛有 [{minion_health}_点生命:minion_health]，可织蛛网。\n"
+			 	"巨型蜘蛛的近战攻击造成 [{minion_damage}_点物理:physical] 伤害，施加 [5_回合:duration] 的 [poison]。\n"
+			 	"蛛网 [stun] 步入的非 [spider] 单位 [1_回合:duration]。\n"
 			 	+ text.poison_desc + text.stun_desc).format(**self.fmt_dict())
 
 	def on_death(self, evt):
@@ -1450,7 +1446,7 @@ class ParalyzingVenom(Upgrade):
 
 	def on_init(self):
 		self.name = "Paralyzing Venom"
-		self.description = "Whenever an enemy takes [poison] damage, it has a 25% chance to be [stunned] for [1_turn:duration]."
+		self.description = "每当敌人受到 [poison] 伤害时，它有 25% 几率被 [stunned] [1_回合:duration]。"
 		self.tags = [Tags.Nature]
 		self.level = 4
 		self.global_triggers[EventOnDamaged] = self.on_damage
@@ -1473,7 +1469,7 @@ class VenomSpitSpell(SimpleRangedAttack):
 		def apply_poison(caster, target):
 			target.apply_buff(Poison(), 10)
 		SimpleRangedAttack.__init__(self, damage=4, damage_type=Tags.Poison, onhit=apply_poison, cool_down=4, range=6)
-		self.description = "Applies poison for 10 turns"
+		self.description = "施加 [poison] 10 回合。"
 		self.name = "Venom Spit"
 
 class VenomSpit(Upgrade):
@@ -1487,9 +1483,9 @@ class VenomSpit(Upgrade):
 
 
 	def get_description(self):
-		return ("Your summoned [living] and [nature] units gain Venom Spit.\n"
-				"Venom spit is a ranged attack which deals [{minion_damage}_poison:poison] damage and inflicts [poison] for [10_turns:duration].\n"
-				"Venom spit has a [{minion_range}_tile:range] range, and a [4_turn:cooldown] cooldown.").format(**self.fmt_dict())
+		return ("你召唤的 [living] 和 [nature] 单位可进行毒液喷吐。\n"
+				"毒液喷吐是远程攻击，造成 [{minion_damage}_点毒性:poison] 伤害，施加 [poison] [10_回合:duration]。\n"
+				"毒液喷吐射程为 [{minion_range}_格:range]，[4_回合:cooldown] 冷却。").format(**self.fmt_dict())
 
 	def should_grant(self, unit):
 		if unit.is_player_controlled:
@@ -1515,7 +1511,7 @@ class FrozenSouls(Upgrade):
 		self.name = "Icy Vengeance"
 		self.tags = [Tags.Ice, Tags.Dark]
 		self.level = 6
-		self.description = "Whenever one of your minions dies, up to [3:num_targets] random enemies in a [5_tile:radius] radius take [ice] damage equal to half the dead minion's max HP."
+		self.description = "每当你的小兵死亡时，[5_格:radius] 半径内随机至多 [3:num_targets] 个敌人受到 [ice] 伤害，数量为死亡小兵生命上限的一半。"
 		self.global_triggers[EventOnDeath] = self.on_death
 		self.radius = 5
 
@@ -1549,7 +1545,7 @@ class IceTap(Upgrade):
 		self.copying = False
 
 	def get_description(self):
-		return "Whenever you cast an [arcane] spell targeting a [frozen] unit, make a copy of that spell targeting each other frozen unit in line of sight.\nRemove [frozen] from all affected units.".format(**self.fmt_dict())
+		return "每当你以被 [frozen] 的单位为目标施放 [arcane] 法术时，对视线内所有其他被 [frozen] 的单位复制该法术并对其施放。\n移除所有受影响单位的 [frozen]。".format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
 		if self.copying:
@@ -1592,7 +1588,7 @@ class Frostbite(Upgrade):
 		self.damage = 7
 
 	def get_description(self):
-		return "Each turn all frozen enemies take [{damage}_dark:dark] damage.".format(**self.fmt_dict())
+		return "每回合所有被 [frozen] 的单位受到 [{damage}_点黑暗:dark] 伤害。".format(**self.fmt_dict())
 
 	def on_advance(self):
 		for u in self.owner.level.units:
@@ -1617,10 +1613,10 @@ class SteamAnima(Upgrade):
 		self.num_summons = 3
 
 	def get_description(self):
-		return ("Whenever a unit is unfrozen by fire damage, spawn [3:num_summons] steam elementals nearby.\n"
-				"Steam elementals have [{minion_health}_HP:minion_health], [100_physical:physical] resist, [100_ice:ice] resist, and [100_fire:fire] resist.\n"
-				"Steam elementals have a ranged attack which deals [{minion_damage}_fire:fire] damage, with a range of [{minion_range}_tiles:minion_range].\n"
-				"The elementals vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
+		return ("每当单位被 [fire] 伤害解冻时，在附近召唤 [3:num_summons] 个蒸汽元素。\n"
+				"蒸汽元素有 [{minion_health}_点生命:minion_health]、[100_点物理:physical] 抗性、[100_点寒冰:ice] 抗性和 [100_点火焰:fire] 抗性。\n"
+				"蒸汽元素的远程攻击造成 [{minion_damage}_点火焰:fire] 伤害，射程为 [{minion_range}_格:minion_range]。\n"
+				"蒸汽元素在 [{minion_duration}_回合:minion_duration] 后消失。").format(**self.fmt_dict())
 
 	def on_unfrozen(self, evt):
 		if evt.dtype != Tags.Fire:
@@ -1649,8 +1645,8 @@ class StormCaller(Upgrade):
 		self.duration = 5
 
 	def get_description(self):
-		return ("Whenever [ice] or [lightning] damage is dealt to an enemy unit, create a blizzard or thundercloud nearby.\n"
-				"The clouds last [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每当对敌方单位造成 [ice] 或 [lightning] 伤害时在附近生成暴风雪或风暴云。\n"
+				"风暴持续 [{duration}_回合:duration]。").format(**self.fmt_dict())
 
 	def on_damage(self, evt):
 		if not are_hostile(self.owner, evt.unit):
@@ -1683,7 +1679,7 @@ class HolyWater(Upgrade):
 
 	def on_init(self):
 		self.name = "Holy Water"
-		self.description = "Whenever a [frozen] enemy takes [holy] damage, you and all allies in line of sight gain [1_SH:shields], up to a max of [5:shields]."
+		self.description = "每当被 [frozen] 的敌人受到 [holy] 伤害时，视线内的你和所有友军获得 [1_点护盾:shields]，上限为 [5:shields]。"
 		self.level = 4
 		self.global_triggers[EventOnDamaged] = self.on_damage
 		self.tags = [Tags.Holy, Tags.Ice]
@@ -1723,9 +1719,9 @@ class Hibernation(Upgrade):
 
 	def on_init(self):
 		self.name = "Hibernation"
-		self.description = ("Your living minions gain [75_ice:ice] resist.\n"
-							"Your living minions freeze for [3_turns:duration] upon taking ice damage.\n"
-							"Your living minions heal for [15_HP:heal] each turn while [frozen].\n")
+		self.description = ("你的 [living] 小兵获得 [75_点寒冰:ice] 抗性。\n"
+							"你的 [living] 小兵受到 [ice] 伤害时 [freeze] [3_回合:duration]。\n"
+							"你的 [living] 小兵被 [frozen] 时每回合治疗 [15_点生命:heal]。\n")
 		self.global_triggers[EventOnUnitAdded] = self.on_unit_add
 		self.tags = [Tags.Ice, Tags.Nature]
 		self.level = 4
@@ -1757,7 +1753,7 @@ class Crystallographer(Upgrade):
 
 	def on_init(self):
 		self.name = "Crystal Power"
-		self.description = "Your [sorcery] spells gain [2_damage:damage] for each [frozen] or [glassified] enemy."
+		self.description = "每有一个被 [frozen] 或 [glassified] 的敌人，你的 [sorcery] 法术获得 [2_点伤害:damage]。"
 		self.tags = [Tags.Ice, Tags.Arcane, Tags.Sorcery]
 		self.level = 4
 
@@ -1781,7 +1777,7 @@ class RadiantCold(Upgrade):
 		self.tags = [Tags.Ice]
 
 	def get_description(self):
-		return "Whenever you cast an [ice] spell, [freeze] the nearest unfrozen enemy to that spell's target for [{duration}_turns:duration].".format(**self.fmt_dict())
+		return "每当你施放 [ice] 法术时，[freeze] 法术目标最近且未冻结的敌人 [{duration}_回合:duration]。".format(**self.fmt_dict())
 
 	def on_cast(self, evt):
 
@@ -1814,7 +1810,7 @@ class ShatterShards(Upgrade):
 		self.damage = 9
 
 	def get_description(self):
-		return "Whenever a unit is unfrozen or a [frozen] unit is killed, up to [3_enemies:num_targets] in a [6_tile:radius] burst take [{damage}_ice:ice] and [{damage}_physical:physical] damage.".format(**self.fmt_dict())	
+		return "每当单位解冻或被 [frozen] 的单位被消灭时，[6_格:radius] 半径内至多 [3_个敌人:num_targets] 受到 [{damage}_点寒冰:ice] 伤害和 [{damage}_点物理:physical] 伤害。".format(**self.fmt_dict())
 
 	def on_unfrozen(self, evt):
 		self.owner.level.queue_spell(self.do_shards(evt))
@@ -1868,7 +1864,7 @@ class FrozenFragility(Upgrade):
 		self.name = "Frozen Fragility"
 		self.level = 5
 		self.tags = [Tags.Ice]
-		self.description = "Whenever an enemy is [frozen], reduces that enemy's [physical] and [ice] resist by 100 until it is unfrozen."
+		self.description = "每当敌人被 [frozen] 时，解冻前降低该敌人的 [physical] 和 [ice] 抗性 100 点"
 		self.global_triggers[EventOnBuffApply] = self.on_frozen
 
 	def on_frozen(self, evt):
@@ -1896,7 +1892,7 @@ class DragonScalesSkill(Upgrade):
 		self.duration = 5
 
 	def get_description(self):
-		return "Whenever an allied [dragon] uses a breath weapon, all your summoned units gain 100 resist to that breath weapon's element for [{duration}_turns:duration]".format(**self.fmt_dict())
+		return "每当友方的 [dragon] 使用吐息武器时，所有你的召唤单位获得吐息武器类型的 100 点抗性 [{duration}_回合:duration]。".format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
 		if not isinstance(evt.spell, BreathWeapon):
@@ -1921,7 +1917,7 @@ class CollectedAgony(Upgrade):
 		self.charges = 0
 		self.tags = [Tags.Dark, Tags.Nature]
 		self.level = 5
-		self.description = "Each turn, deal 2x the sum total of all [poison] damage dealt to all units to the nearest enemy as [dark] damage."
+		self.description = "每回合对最近的敌人造成 [dark] 伤害，数量为对所有伤害造成的 [poison] 伤害的两倍。"
 
 	def on_damage(self, evt):
 		if evt.damage_type == Tags.Poison:
@@ -1957,7 +1953,7 @@ class Moonspeaker(Upgrade):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 		self.tags = [Tags.Arcane, Tags.Holy]
 		self.level = 6
-		self.description = "Whenever an enemy takes [arcane] damage, all [holy] minions in line of sight of that enemy redeal 50% of that damage as [holy] damage."
+		self.description = "每当敌人受到 [arcane] 伤害时，该敌人视线内的所有 [holy] 小兵再对其造成一半的 [holy] 伤害。"
 
 	def on_damage(self, evt):
 		if not are_hostile(self.owner, evt.unit):
@@ -1990,7 +1986,7 @@ class Voidthorns(Upgrade):
 		self.damage = 5
 
 	def get_description(self):
-		return "Whenever you or one of your [arcane] or [undead] allies take damage from an enemy, deal [{damage}_arcane:arcane] damage to the source of that damage.".format(**self.fmt_dict())
+		return "每当你、你的 [arcane] 或 [undead] 友军受到敌人的伤害时，对伤害来源造成 [{damage}_点奥术:arcane] 伤害。".format(**self.fmt_dict())
 
 	def on_damage(self, evt):
 		if are_hostile(self.owner, evt.unit):
@@ -2030,7 +2026,7 @@ class Necrostatics(Upgrade):
 		self.level = 5
 
 	def get_description(self):
-		return "You get +1 [lightning] damage for each undead ally you control."
+		return "你每控制一个 [undead] 友军便 +1 [lightning] 伤害。"
 
 	def on_pre_advance(self):
 		b = self.owner.get_buff(NecrostaticStack)
@@ -2050,7 +2046,7 @@ class Purestrike(Upgrade):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def get_description(self):
-		return "Whenever you or an allied unit deals physical damage to an enemy, if the source of that damage is shielded, redeal 50% of that damage as arcane and 50% of that damage as holy."
+		return "每当你或友军对敌人造成 [physical] 伤害时，若伤害被护盾抵挡，再对其造成 50% 的 [arcane] 伤害和 50% 的 [holy] 伤害。"
 
 	def on_damage(self, evt):
 		if evt.damage_type != Tags.Physical:
@@ -2086,9 +2082,9 @@ class SilkShifter(Upgrade):
 		self.owner.tags.remove(Tags.Spider)
 
 	def get_description(self):
-		return ("You are a spider.\n"
-				"Passively spawn a web each turn on a random adjacent tile.  Webs will not spawn on top of units or walls.\n"
-				"Whenever you cast a translocation spell targeting a web, refund 1 charge of that spell and consume the web.")
+		return ("你是蜘蛛。\n"
+				"每回合随机在一个无单位和墙的相邻地块上生成一个蛛网。\n"
+				"每当你以蛛网为目标施放 [translocation] 法术时，返还一点该法术的充能，消耗该蛛网。")
 
 	def on_advance(self):
 		if not any(are_hostile(self.owner, u) for u in self.owner.level.units):
@@ -2119,8 +2115,8 @@ class InfernoEngines(Upgrade):
 		self.duration = 10
 
 	def get_description(self):
-		return ("Whenever you cast a [fire] spell, all of your [metallic] allies gain [2_damage:damage] [fire] aura with radius equal to the level of the spell you cast for [{duration}_turns:duration].\n"
-			    "This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n").format(**self.fmt_dict())
+		return ("每当你施放 [fire] 法术时，你的所有 [metallic] 友军获得 [2_点伤害:damage] 的 [fire] 光环，半径为法术等级，持续 [{duration}_回合:duration]。\n"
+			    "此伤害值固定，无法用神龛、被动或增益提升。\n").format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
 		if evt.spell.level <= 0:
@@ -2152,7 +2148,7 @@ class Megavenom(Upgrade):
 		self.damage = 4
 
 	def get_description(self):
-		return ("Poisoned enemies take [{damage}:poison] additional [poison] damage each turn.").format(**self.fmt_dict())
+		return ("[Poisoned] 的敌人每回合额外受到 [{damage}:poison] 点 [poison] 伤害。").format(**self.fmt_dict())
 
 	def on_advance(self):
 		for u in self.owner.level.units:
@@ -2166,7 +2162,7 @@ class AcidFumes(Upgrade):
 	def on_init(self):
 		self.name = "Acid Fumes"
 		self.tags = [Tags.Nature, Tags.Dark]
-		self.description = "Each turn, a random unacidified enemy is acidified.\nAcidified units lose 100 [poison] resist."
+		self.description = "每回合随机酸化一个未被酸化的敌人。\n被酸化的敌人失去 100 点 [poison] 抗性。"
 		self.level = 5
 
 	def on_advance(self):
@@ -2213,13 +2209,12 @@ class PurpleFlameSorcery(Upgrade):
 		self.damage = 6
 
 	def get_description(self):
-		return ("Whenever you cast a [fire] or [arcane] spell, gain starcharged with duration equal to the spell's level.\n"
-			    "Starcharged deals [{damage}_fire:fire] damage to one random enemy in line of sight each turn, and [{damage}_arcane:arcane] damage to another.").format(**self.fmt_dict())
+		return ("每当你施放 [fire] 或 [arcane] 法术时，获得星光充能，持续回合为法术等级。\n"
+			    "星光充能每回合对视线内随机一个敌人造成 [{damage}_点火焰:fire] 伤害，对另一个造成 [{damage}_点奥术:arcane] 伤害。").format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
 		if Tags.Fire in evt.spell.tags or Tags.Arcane in evt.spell.tags:
 			self.owner.apply_buff(Starcharge(self), evt.spell.level)
-
 
 
 skill_constructors = [
@@ -2322,7 +2317,7 @@ class ResistUpgrade(Upgrade):
 		self.resists[tag] = amount
 
 	def get_description(self):
-		return "Increase resistance to %s damage by %d%%" % (self.tag.name, self.amount)
+		return "提升 %d%% %s抗性" % (self.amount, loc.dic.get(self.tag.name, self.tag.name))
 
 class MaxHPUpgrade(Upgrade):
 
@@ -2341,7 +2336,8 @@ class MaxHPUpgrade(Upgrade):
 		self.owner.cur_hp -= self.amount
 
 	def get_description(self):
-		return "Increase Max HP by %d" % self.amount
+		return "提升 %d 生命上限" % self.amount
+
 
 spell_tags = [Tags.Fire, Tags.Ice, Tags.Dark, Tags.Holy, Tags.Nature, Tags.Lightning, Tags.Arcane]
 if __name__ == "__main__":
