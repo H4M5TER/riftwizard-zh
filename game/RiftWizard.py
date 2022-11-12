@@ -64,9 +64,9 @@ HIT_FLASH_SUBFRAMES = 2
 
 STATUS_SUBFRAMES = 12
 
-CHAR_HEART = 'HP'#chr(3)
-CHAR_SHIELD = 'SH' #chr(4)
-CHAR_CLARITY = 'CL'
+CHAR_HEART = '血量'#chr(3)
+CHAR_SHIELD = '护盾' #chr(4)
+CHAR_CLARITY = '免疫'
 
 BORDER_COLOR = (100, 100, 100)
 
@@ -2345,11 +2345,11 @@ class PyGameView(object):
     cur_x = (self.middle_menu_display.get_width() - self.font.size(self.confirm_text)[0]) // 2
     self.draw_string(self.confirm_text, self.middle_menu_display, cur_x, cur_y)
 
-    cur_y += 2*self.linesize
+    cur_y += 2 * self.linesize
     cur_x = (self.middle_menu_display.get_width()) // 4
     self.draw_string("是", self.middle_menu_display, cur_x, cur_y, mouse_content=True)
 
-    cur_x = (self.middle_menu_display.get_width()) * 3 // 4 - self.font.size("No")[0]
+    cur_x = (self.middle_menu_display.get_width()) * 3 // 4 - self.space_width * 2
     self.draw_string("否", self.middle_menu_display, cur_x, cur_y, mouse_content=False)
 
     self.screen.blit(self.middle_menu_display, (self.h_margin, 0))
@@ -2401,9 +2401,9 @@ class PyGameView(object):
     col_xs = [100, 400, 700]
 
 
-    self.draw_string("FUNCTION", self.screen, col_xs[0], cur_y)
-    self.draw_string("MAIN KEY", self.screen, col_xs[1], cur_y)
-    self.draw_string("SECONDARY KEY", self.screen, col_xs[2], cur_y)
+    self.draw_string("功能", self.screen, col_xs[0], cur_y)
+    self.draw_string("键位 1", self.screen, col_xs[1], cur_y)
+    self.draw_string("键位 2", self.screen, col_xs[2], cur_y)
 
 
     cur_y += self.linesize * 3
@@ -2417,7 +2417,7 @@ class PyGameView(object):
       index = 0
       for k in [key1, key2]:
         cur_x = col_xs[index + 1]
-        fmt = pygame.key.name(k) if k else "Unbound"
+        fmt = pygame.key.name(k) if k else "未绑定"
         content = [bind, index] if not self.rebinding else None
         cur_color = (0, 255, 0) if (self.rebinding and self.examine_target == [bind, index]) else (255, 255, 255)
         self.draw_string(fmt, self.screen, cur_x, cur_y, color=cur_color, mouse_content=content, content_width=170)
@@ -2429,9 +2429,9 @@ class PyGameView(object):
     cur_y += self.linesize*2
 
 
-    self.draw_string("Reset to Default", self.screen, cur_x, cur_y, mouse_content=KEY_BIND_OPTION_RESET if not self.rebinding else None)
+    self.draw_string("重置", self.screen, cur_x, cur_y, mouse_content=KEY_BIND_OPTION_RESET if not self.rebinding else None)
     cur_y += self.linesize
-    self.draw_string("Done", self.screen, cur_x, cur_y, mouse_content=KEY_BIND_OPTION_ACCEPT if not self.rebinding else None)
+    self.draw_string("完成", self.screen, cur_x, cur_y, mouse_content=KEY_BIND_OPTION_ACCEPT if not self.rebinding else None)
 
 
   def process_key_rebind(self):
@@ -2900,16 +2900,17 @@ class PyGameView(object):
 
     if self.shop_type == SHOP_TYPE_SPELLS:
       self.draw_string("学习法术: ", self.middle_menu_display, cur_x, cur_y)
-      self.draw_string("SP", self.middle_menu_display, level_x - self.font.size('X')[0], cur_y, COLOR_XP)
+      self.draw_string("SP", self.middle_menu_display, level_x - self.space_width, cur_y, COLOR_XP)
       self.draw_string("类别", self.middle_menu_display, cur_x + tag_offset, cur_y)
     if self.shop_type == SHOP_TYPE_UPGRADES:
       self.draw_string("学习能力: ", self.middle_menu_display, cur_x, cur_y)
-      self.draw_string("SP", self.middle_menu_display, level_x - self.font.size('X')[0], cur_y, COLOR_XP)
+      self.draw_string("SP", self.middle_menu_display,
+                       level_x - self.space_width, cur_y, COLOR_XP)
       self.draw_string("类别", self.middle_menu_display, cur_x + tag_offset, cur_y)
     if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
       self.draw_string("升级%s" % self.shop_upgrade_spell.show_name, self.middle_menu_display, cur_x, cur_y)
-    if self.shop_type == SHOP_TYPE_SHOP:
-      self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
+    if self.shop_type == SHOP_TYPE_SHOP: # Shrines.py L2070
+      self.draw_string(self.get_display_level().cur_shop.show_name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
     if self.shop_type == SHOP_TYPE_BESTIARY:
       self.draw_string("怪物图鉴: 消灭过 %d/%d 种怪兽" % (SteamAdapter.get_num_slain(), len(all_monsters)), self.middle_menu_display, cur_x, cur_y)
 
@@ -2961,7 +2962,6 @@ class PyGameView(object):
           fmt += '*'
         self.draw_string(fmt, self.middle_menu_display, level_x, cur_y, cur_color)
 
-
       if self.shop_type != SHOP_TYPE_BESTIARY and hasattr(opt, 'tags'):
         tag_x = cur_x + tag_offset - 10
         for tag in Tags:
@@ -2969,7 +2969,6 @@ class PyGameView(object):
             continue
           self.draw_string(self.reverse_tag_keys[tag], self.middle_menu_display, tag_x, cur_y, tag.color.to_tup())
           tag_x += self.font.size(tag.name[0])[0]
-
 
       cur_y += self.linesize
 
@@ -4522,7 +4521,7 @@ class PyGameView(object):
 
     cur_y += linesize
     for tag in unit.tags:
-      _name = dict_school.names.get(tag.name, tag.name)
+      _name = dict_attr.names.get(tag.name, tag.name)
       self.draw_string(_name, self.examine_display, cur_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
       cur_y += linesize
 
@@ -4533,8 +4532,7 @@ class PyGameView(object):
       else:
         cur_color = (255, 255, 255)
       
-      # TODO 待汉化 单位技能
-      fmt = spell.name
+      fmt = spell.show_name
       self.draw_string(fmt, self.examine_display, cur_x, cur_y, cur_color)
       cur_y += linesize
       hasattrs = False
@@ -4573,8 +4571,8 @@ class PyGameView(object):
       desc = spell.description or spell.get_description()
       if desc:
         indent = 16
-        lines = self.draw_wrapped_string(desc, self.examine_display, cur_x+16, cur_y, self.examine_display.get_width() - (indent+2*border_margin))
-        cur_y += lines*linesize
+        lines = self.draw_wrapped_string(desc, self.examine_display, cur_x+16, cur_y, self.examine_display.get_width() - (indent + 2 * border_margin))
+        cur_y += lines * linesize
       cur_y += linesize
 
     if unit.flying:
@@ -4650,7 +4648,7 @@ class PyGameView(object):
           fmt += ' x%d' % stacks
 
         if duration:
-          fmt += ' (%d)' % duration
+          fmt += ' (剩余 %d 回合)' % duration
 
         self.draw_string(fmt, self.examine_display, cur_x, cur_y, color, mouse_content=buff)
         cur_y += linesize
@@ -4667,7 +4665,7 @@ class PyGameView(object):
     cur_x = 770
     cur_y = 560
 
-    rect_w = self.font.size("继续游戏")[0]
+    rect_w = self.space_width * 8
 
     opts = []
     if can_continue_game():
@@ -4773,8 +4771,8 @@ class PyGameView(object):
         ("魔导师的试炼", GAME_MODE_TRIALS),
         ("每周挑战", GAME_MODE_WEEKLY)]
 
-    rect_w = self.font.size("魔导师的试炼")[0]
-    cur_x = self.screen.get_width() // 2 - (self.font.size("魔导师的试炼")[0] // 2)
+    rect_w = self.space_width * 12
+    cur_x = self.screen.get_width() // 2 - self.space_width * 6
     cur_y = self.screen.get_height() // 2 - self.linesize * 4
 
     cur_color = (255, 255, 255)
@@ -4941,7 +4939,7 @@ class PyGameView(object):
 
   def draw_options_menu(self):
 
-    cur_x = self.screen.get_width() // 2 - self.font.size("Sound Volume")[0]
+    cur_x = self.screen.get_width() // 2 - self.space_width * 8
     cur_y = self.screen.get_height() // 2 - self.linesize * OPTION_MAX
 
     rect_w = self.font.size("动画速度: 最快")[0]
@@ -5204,9 +5202,9 @@ class PyGameView(object):
     self.middle_menu_display.fill((0, 0, 0))
     self.draw_panel(self.middle_menu_display)
 
-    self.draw_string("等级 %d" % self.combat_log_level, self.middle_menu_display, cur_x, cur_y)
+    self.draw_string("第 %d 关" % self.combat_log_level, self.middle_menu_display, cur_x, cur_y)
     cur_y += self.linesize
-    self.draw_string("回合 %d" % self.combat_log_turn, self.middle_menu_display, cur_x, cur_y)
+    self.draw_string("第 %d 回合" % self.combat_log_turn, self.middle_menu_display, cur_x, cur_y)
     cur_y += self.linesize
     cur_y += self.linesize
 
