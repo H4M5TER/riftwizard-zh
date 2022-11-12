@@ -311,10 +311,10 @@ class Game():
     player.num_upgrades = 0
     player.num_spells = 0
 
-    player.add_item(Consumables.wrapper(Consumables.heal_potion)())
-    player.add_item(Consumables.wrapper(Consumables.mana_potion)())
-    player.add_item(Consumables.wrapper(Consumables.teleporter)())
-    player.add_item(Consumables.wrapper(Consumables.portal_disruptor)())
+		player.add_item(Consumables.heal_potion())
+		player.add_item(Consumables.mana_potion())
+		player.add_item(Consumables.teleporter())
+		player.add_item(Consumables.portal_disruptor())
 
     player.gets_clarity = True
 

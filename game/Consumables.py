@@ -3,6 +3,7 @@ from Spells import *
 from Monsters import *
 from CommonContent import *
 
+import text
 import dict_consumables
 
 class HealPotSpell(Spell):
@@ -24,9 +25,6 @@ class TeleporterSpell(Teleport):
 		self.range = RANGE_GLOBAL
 		self.requires_los = False
 
-	def get_description(self):
-		return "Teleport to target tile"
-
 	def can_cast(self, x, y):
 		return self.caster.level.can_walk(x, y, check_unit=True) and Spell.can_cast(self, x, y)
 
@@ -36,13 +34,15 @@ class TeleporterSpell(Teleport):
 def heal_potion():
 	item = Item()
 	item.name = "Healing Potion"
-	item.description = "饮用此药水可使饮用者痊愈（HP 全满）。\n中毒时不能使用。"
+	item.show_name = "治疗药剂"
+	item.description = "饮用此药水回复你的所有血量。\n中毒时不能使用。"
 	item.set_spell(HealPotSpell())
 	return item
 
 def teleporter():
 	item = Item()
 	item.name = "Teleporter"
+	item.show_name = "传送器"
 	item.description = "传送到地图上的任一地块。"
 	item.set_spell(TeleporterSpell())
 	return item
@@ -67,7 +67,8 @@ class ChaosBellSpell(Spell):
 def chaos_bell():
 	item = Item()
 	item.name = "Chaos Bell"
-	item.description = "每个敌方单位各有 50% 几率[berserk], 可与其朋友互相攻击, 持续 10 回合。"
+	item.show_name = "混乱之铃"
+	item.description = "分别有 50% 几率给每个敌方单位施加 [10_回合:duration][berserk]。" + text.berserk_desc
 	item.set_spell(ChaosBellSpell())
 	return item
 
@@ -85,7 +86,8 @@ class TimeStopSpell(Spell):
 def golden_stopwatch():
 	item = Item()
 	item.name = "Golden Stopwatch"
-	item.description = "击晕所有敌方单位, 持续 10 回合。"
+	item.show_name = "金质怀表"
+	item.description = "[Stun]所有敌方单位 [10_回合:duration]。"
 	item.set_spell(TimeStopSpell())
 	return item
 
@@ -104,7 +106,8 @@ class DeathDiceSpell(Spell):
 def death_dice():
 	item = Item()
 	item.name = "Death Dice"
-	item.description = "掷骰以随机对6个敌人造成 666 点 [dark] 伤害。"
+	item.show_name = "死亡骰子"
+	item.description = "掷骰以对 6 个随机敌人造成 666 点 [dark] 伤害。"
 	item.set_spell(DeathDiceSpell())
 	return item
 
@@ -134,6 +137,7 @@ class EnergyShield(Buff):
 def energy_shield():
 	item = Item()
 	item.name = "Energy Shield"
+	item.show_name = "能量护盾"
 	item.description = "对 [arcane]、[dark]、[lightning] 和 [holy] 伤害免疫, 持续 30 回合。"
 	item.set_spell(PotionSpell(EnergyShield, 30))
 	return item
@@ -150,6 +154,7 @@ class StoneShield(Buff):
 def stone_shield():
 	item = Item()
 	item.name = "Stone Shield"
+	item.show_name = "坚石护盾"
 	item.description = "对 [physical]、[fire] 和 [ice] 伤害免疫, 持续 30 回合。"
 	item.set_spell(PotionSpell(StoneShield, 30))
 	return item
@@ -168,7 +173,7 @@ class SpellCouponSpell(Spell):
 def mana_potion():
 	item = Item()
 	item.name = "Mana Potion"
-	duration = 3
+	item.show_name = "法力药剂"
 	item.description = "补满所有法术的充能。"
 	item.set_spell(SpellCouponSpell())
 	return item
@@ -176,7 +181,6 @@ def mana_potion():
 class EarthquakeOrb(Spell):
 
 	def on_init(self):
-		self.description = "对 50% 的地块造成 25 点 [physical] 伤害并摧毁墙。"
 		self.range = 0
 
 	def cast_instant(self, x, y):
@@ -190,8 +194,9 @@ class EarthquakeOrb(Spell):
 
 def quake_orb():
 	item = Item()
-	item.name =  "Earthquake Orb"
-	item.description = "对 50% 的地块造成 25 点 [physical] 伤害并摧毁墙。"
+	item.name = "Earthquake Orb"
+	item.show_name = "地震法球"
+	item.description = "对地图上一半的地块造成 25 点[physical]伤害并摧毁墙。"
 	item.set_spell(EarthquakeOrb())
 	return item 
 
@@ -222,7 +227,8 @@ class DragonHornSpell(Spell):
 def dragon_horn():
 	item = Item()
 	item.name = "Dragon Horn"
-	item.description = "在每个空的相邻地块上召唤友方的巨龙。"
+	item.show_name = "巨龙号角"
+	item.description = "在每个空的相邻地块上召唤友方巨龙。"
 	item.set_spell(DragonHornSpell())
 	return item
 
@@ -243,6 +249,7 @@ class DisruptPortalsSpell(Spell):
 def portal_disruptor():
 	item = Item()
 	item.name = "Portal Disruptor"
+	item.show_name = "传送门扰动器"
 	item.description = "变更当前关卡中所有传送门的目的地。"
 	item.set_spell(DisruptPortalsSpell())
 	return item
@@ -267,7 +274,8 @@ class DisruptShrinesSpell(Spell):
 def shrine_disruptor():
 	item = Item()
 	item.name = "Shrine Disruptor"
-	item.description = "重制当前关卡中的所有祭祠。"
+	item.show_name = "神龛扰动器"
+	item.description = "重置当前关卡中的所有祭祠。"
 	item.set_spell(DisruptShrinesSpell())
 	return item
 
@@ -291,6 +299,7 @@ class PortalKeySpell(Spell):
 def portal_key():
 	item = Item()
 	item.name = "Portal Key"
+	item.show_name = "传送门钥匙"
 	item.description = "随机在当前关卡中的一个地块上创建 一个全新且解锁的裂隙。"
 	item.set_spell(PortalKeySpell())
 	return item
@@ -298,7 +307,8 @@ def portal_key():
 def corruption_orb():
 	item = Item()
 	item.name = "Orb of Corruption"
-	item.description = "一个能够破坏创造的邪恶和危险的人工制品。明智的巫师肯定只会在最严重的情况下使用它。"
+	item.show_name = "污染法球"
+	item.description = "邪恶和危险的人工制品, 能够腐化造物。明智的巫师肯定只会在最严重的情况下使用它。"
 	spell = MordredCorruption()
 	item.set_spell(spell)
 	spell.num_exits = 3
@@ -310,6 +320,7 @@ class YouthElixerBuff(Buff):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
 		self.description = "法术的充能得到返还。"
 		self.name = "Youth"
+		self.show_name = "青春"
 
 	def on_spell_cast(self, evt
 		):
@@ -319,6 +330,7 @@ class YouthElixerBuff(Buff):
 def youth_elixer():
 	item = Item()
 	item.name = "Elixir of Youth"
+	item.show_name = "青春合剂"
 	item.description = "所有法术消耗的充能立刻返还, 持续 7 回合。"
 	item.set_spell(PotionSpell(YouthElixerBuff, 7))
 	return item
@@ -350,7 +362,8 @@ class AetherDaggerSpell(Spell):
 def aether_knife():
 	item = Item()
 	item.name = "Aether Dagger"
-	item.description = "使用者视线内的敌方单位失去所有抗性和免疫。"
+	item.show_name = "以太匕首"
+	item.description = "当前视线内的敌方单位失去所有抗性和免疫。"
 	item.set_spell(AetherDaggerSpell())
 	return item
 
@@ -361,10 +374,12 @@ class OculusBuff(Buff):
 		self.global_bonuses['range'] = 15
 		#self.description = "May cast spells without line of sight"
 		self.name = "Oculus"
+		self.show_name = "天眼"
 
 def oculus():
 	item = Item()
 	item.name = "Oculus"
+	item.show_name = "天眼"
 	item.description = "你的所有法术获得 15 点射程且无需视线, 持续 10 回合。"
 	item.set_spell(PotionSpell(OculusBuff, 10))
 	return item
@@ -373,7 +388,8 @@ class MemoryEnhancement(Buff):
 
 	def on_init(self):
 		self.name = "Memory Enhancement"
-		self.description = "回忆法珠的效果翻倍。"
+		self.show_name = "记忆增强"
+		self.description = "记忆凝珠的效果翻倍。"
 		self.owner_triggers[EventOnItemPickup] = self.on_pickup
 
 	def on_pickup(self, evt):
@@ -383,23 +399,26 @@ class MemoryEnhancement(Buff):
 def memory_draught():
 	item = Item()
 	item.name = "Draught of Memories"
-	item.description = "你拾起的回忆法珠效果翻倍, 持续 10 回合。"
+	self.show_name = "记忆合剂"
+	item.description = "你拾起的记忆凝珠效果翻倍, 持续 10 回合。"
 	item.set_spell(PotionSpell(MemoryEnhancement, 10))
 	return item
 
 def bag_of_spikes():
 	item = Item()
 	item.name = "Bag of Spikes"
+	item.show_name = "一袋钉球"
 	item.description = "召唤 8 个友方的滚动钉球。"
 	summon_spell = SimpleSummon(SpikeBall, 8)
 	summon_spell.range = 0
 	item.set_spell(summon_spell)
 	return item
 
-def bag_of_bags():
+def bag_of_bugs():
 	item = Item()
-	item.name = "Bag of Bags"
-	item.description = "召唤 8 个友方的一袋虫子。"
+	item.name = "Bag of Bugs"
+	item.show_name = "一袋虫子"
+	item.description = "召唤 8 个友方的一群虫子。"
 	summon_spell = SimpleSummon(BagOfBugs, 8)
 	summon_spell.range = 0
 	item.set_spell(summon_spell)
@@ -408,7 +427,8 @@ def bag_of_bags():
 def troll_crown():
 	item = Item()
 	item.name = "Troll Crown"
-	item.description = "生成 4 个友方的巨魔大门。"
+	item.show_name = "巨魔王冠"
+	item.description = "生成 4 个友方的巨魔刷怪笼。"
 	summon_spell = SimpleSummon(lambda: MonsterSpawner(Troll), 4)
 	summon_spell.range = 0
 	item.set_spell(summon_spell)
@@ -417,7 +437,8 @@ def troll_crown():
 def storm_troll_crown():
 	item = Item()
 	item.name = "Storm Troll Crown"
-	item.description = "生成 4 个友方的风暴巨魔大门。"
+	item.show_name = "风暴巨魔王冠"
+	item.description = "生成 4 个友方的风暴巨魔刷怪笼。"
 	summon_spell = SimpleSummon(lambda: MonsterSpawner(StormTroll), 4)
 	summon_spell.range = 0
 	item.set_spell(summon_spell)
@@ -426,7 +447,8 @@ def storm_troll_crown():
 def earth_troll_crown():
 	item = Item()
 	item.name = "Earth Troll Crown"
-	item.description = "生成 4 个友方的大地巨魔大门。"
+	item.show_name = "大地巨魔王冠"
+	item.description = "生成 4 个友方的大地巨魔刷怪笼。"
 	summon_spell = SimpleSummon(lambda: MonsterSpawner(EarthTroll), 4)
 	summon_spell.range = 0
 	item.set_spell(summon_spell)
@@ -437,34 +459,27 @@ UNCOMMON = 6
 RARE = 3
 SUPER_RARE = 1
 
-def wrapper(item):
-	def new_item():
-		_item = item()
-		_item.show_name = dict_consumables.names.get(_item.name, _item.name)
-		return _item
-	return new_item
-
 all_consumables = [
-	(wrapper(teleporter),COMMON),
-	(wrapper(portal_disruptor),COMMON),
-	(wrapper(golden_stopwatch),UNCOMMON),
-	(wrapper(portal_key),UNCOMMON),
-	(wrapper(energy_shield),UNCOMMON),
-	(wrapper(stone_shield),UNCOMMON),
-	(wrapper(chaos_bell),UNCOMMON),
-	(wrapper(death_dice),UNCOMMON),
-	(wrapper(quake_orb),RARE),
-	(wrapper(dragon_horn),RARE),
-	(wrapper(youth_elixer),RARE),
-	(wrapper(oculus),RARE),
-	(wrapper(troll_crown),RARE),
-	(wrapper(aether_knife),RARE),
-	(wrapper(memory_draught),SUPER_RARE),
-	(wrapper(corruption_orb),SUPER_RARE),
-	(wrapper(bag_of_spikes),SUPER_RARE),
-	(wrapper(bag_of_bags),SUPER_RARE),
-	(wrapper(storm_troll_crown),SUPER_RARE),
-	(wrapper(earth_troll_crown),SUPER_RARE),
+	(teleporter, COMMON),
+	(portal_disruptor, COMMON),
+	(golden_stopwatch, UNCOMMON),
+	(portal_key, UNCOMMON),
+	(energy_shield, UNCOMMON),
+	(stone_shield, UNCOMMON),
+	(chaos_bell, UNCOMMON),
+	(death_dice, UNCOMMON),
+	(quake_orb, RARE),
+	(dragon_horn, RARE),
+	(youth_elixer, RARE),
+	(oculus, RARE),
+	(troll_crown, RARE),
+	(aether_knife, RARE),
+	(memory_draught, SUPER_RARE),
+	(corruption_orb, SUPER_RARE),
+	(bag_of_spikes, SUPER_RARE),
+	(bag_of_bugs, SUPER_RARE),
+	(storm_troll_crown, SUPER_RARE),
+	(earth_troll_crown, SUPER_RARE)
 ]
 
 for item, freq in all_consumables:
