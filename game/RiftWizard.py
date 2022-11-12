@@ -2,11 +2,8 @@ import os
 import sys
 import re
 import webbrowser
+
 import dict_school
-import dict_spells
-import dict_upgrades
-import dict_consumables
-import dict_shrines
 import dict_attr
 import dict_monsters
 
@@ -2205,8 +2202,7 @@ class PyGameView(object):
         cur_y = self.linesize * 3
         cur_x += 140
 
-      _name = dict_spells.names.get(spell.name, spell.name)
-      self.draw_string(_name, self.middle_menu_display, cur_x, cur_y, mouse_content=spell, content_width=col_width)
+      self.draw_string(spell.show_name, self.middle_menu_display, cur_x, cur_y, mouse_content=spell, content_width=col_width)
       cur_y += self.linesize
 
       # Upgrades
@@ -2214,11 +2210,10 @@ class PyGameView(object):
 
         if upgrade.shrine_name:
           color = COLOR_XP
-          fmt = upgrade.name.replace('Attunement (%s)' % spell.name, '')
-          fmt = dict_shrines.names.get(fmt, fmt) + '调谐'
+          fmt = upgrade.shrine_name + '调谐'
         else:
           color = (255, 255, 255)
-          fmt = dict_upgrades.names.get(upgrade.name, upgrade.name)
+          fmt = upgrade.show_name
         self.draw_string('  ' + fmt, self.middle_menu_display, cur_x, cur_y, mouse_content=upgrade, content_width=col_width, color=color)
 
         if cur_y > 820:
@@ -2263,8 +2258,7 @@ class PyGameView(object):
       if cur_y > 820:
         cur_y = self.linesize * 3
         cur_x += 140
-      _name = dict_upgrades.names.get(skill.name, skill.name)
-      self.draw_string(_name, self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
+      self.draw_string(skill.show_name, self.middle_menu_display, cur_x, cur_y, mouse_content=skill, content_width=col_width)
       cur_y += self.linesize
     self.draw_string("学习能力 (K)", self.middle_menu_display, cur_x, cur_y, mouse_content=LEARN_SKILL_TARGET,  content_width=col_width)
 
@@ -2319,15 +2313,10 @@ class PyGameView(object):
     self.chosen_purchase = item
 
     if self.shop_type == SHOP_TYPE_SHOP:
-      shrine_name = dict_shrines.names.get(self.game.cur_level.cur_shop.name, self.game.cur_level.cur_shop.name)
-      spell_name = dict_spells.names.get(self.chosen_purchase.prereq.name,self.chosen_purchase.prereq.name)
-      self.confirm_text = "对 %s 使用 %s 吗?" % (spell_name, shrine_name)
+      self.confirm_text = "对 %s 使用 %s 吗?" % (self.chosen_purchase.prereq.show_name, self.game.cur_level.cur_shop.show_name)
     else:
       cost = self.game.get_upgrade_cost(self.chosen_purchase)
-      _name = dict_spells.names.get(self.chosen_purchase.name, '')
-      if (not _name):
-        dict_upgrades.names.get(self.chosen_purchase.name, self.chosen_purchase.name)
-      self.confirm_text = "使用 %s 个技能点学习%s, 确定吗?" % (cost, _name)
+      self.confirm_text = "使用 %s 个技能点学习 %s, 确定吗?" % (cost, self.chosen_purchase.show_name)
 
     # Default to no (?)
     self.examine_target = False
@@ -2852,17 +2841,17 @@ class PyGameView(object):
         self.play_sound("menu_abort")
 
 
-	def get_shop_options(self):
-		if self.shop_type == SHOP_TYPE_SPELLS:
-			# with open("spells.json", "w") as outfile:
-			# 		json.dump(dict([s.name, s.name] for s in self.game.all_player_spells), outfile)
-			return [s for s in self.game.all_player_spells if all(t in s.tags for t in self.tag_filter)]
-		if self.shop_type == SHOP_TYPE_UPGRADES:
-			# with open("upgrades.json", "w") as outfile:
-   		# 	  json.dump(dict([s.name ,s.name] for s in self.game.all_player_skills), outfile)
-			return [u for u in self.game.all_player_skills if all(t in u.tags for t in self.tag_filter)]
-		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-			return [u for u in self.shop_upgrade_spell.spell_upgrades]
+  def get_shop_options(self):
+    if self.shop_type == SHOP_TYPE_SPELLS:
+      # with open("spells.json", "w") as outfile:
+      #     json.dump(dict([s.name, s.name] for s in self.game.all_player_spells), outfile)
+      return [s for s in self.game.all_player_spells if all(t in s.tags for t in self.tag_filter)]
+    if self.shop_type == SHOP_TYPE_UPGRADES:
+      # with open("upgrades.json", "w") as outfile:
+      #     json.dump(dict([s.name ,s.name] for s in self.game.all_player_skills), outfile)
+      return [u for u in self.game.all_player_skills if all(t in u.tags for t in self.tag_filter)]
+    if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
+      return [u for u in self.shop_upgrade_spell.spell_upgrades]
     if self.shop_type == SHOP_TYPE_SHOP:
       if self.game.cur_level.cur_shop:
         return self.game.cur_level.cur_shop.items
@@ -2918,8 +2907,7 @@ class PyGameView(object):
       self.draw_string("SP", self.middle_menu_display, level_x - self.font.size('X')[0], cur_y, COLOR_XP)
       self.draw_string("类别", self.middle_menu_display, cur_x + tag_offset, cur_y)
     if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-      _name = dict_spells.names.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name)
-      self.draw_string("升级%s" % _name, self.middle_menu_display, cur_x, cur_y)
+      self.draw_string("升级%s" % self.shop_upgrade_spell.show_name, self.middle_menu_display, cur_x, cur_y)
     if self.shop_type == SHOP_TYPE_SHOP:
       self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
     if self.shop_type == SHOP_TYPE_BESTIARY:
@@ -2945,7 +2933,7 @@ class PyGameView(object):
         self.draw_spell_icon(opt, self.middle_menu_display, cur_x, cur_y)
         cur_x += 20
 
-      fmt = opt.name
+      fmt = opt.show_name
       cur_color = (255, 255, 255)
 
       if self.shop_type == SHOP_TYPE_BESTIARY and not SteamAdapter.has_slain(opt.name):
@@ -2962,14 +2950,9 @@ class PyGameView(object):
           cur_color = (100, 100, 100)
 
       if self.shop_type != SHOP_TYPE_SHOP:
-        if self.shop_type == SHOP_TYPE_BESTIARY:
-          fmt = dict_monsters.getLocale(fmt, fmt)
-        elif self.shop_type == SHOP_TYPE_SPELLS:
-          fmt = dict_spells.names.get(fmt, fmt)
         self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, cur_color, mouse_content=opt, content_width=spell_column_width)
       else:
-        # 神龛升级
-        fmt = dict_spells.names.get(fmt, fmt)
+        # 神龛升级居中
         self.draw_string(fmt, self.middle_menu_display, 0, cur_y, cur_color, mouse_content=opt, content_width=self.middle_menu_display.get_width(), center=True)
 
       if hasattr(opt, 'level') and isinstance(opt.level, int) and opt.level > 0:
@@ -3877,7 +3860,7 @@ class PyGameView(object):
               cur_y += linesize
               num_lines += 1
               # Indent by one for next line
-              cur_x = x + self.space_width
+              cur_x = x + self.space_width * 2
 
           self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
           cur_x += word_width
@@ -4026,8 +4009,8 @@ class PyGameView(object):
         cur_color = (128, 128, 128)
 
       # 针对字体自定义
-      _name = dict_spells.names.get(spell.name, spell.name)
-      fmt = "%2s   %s%2d" % (hotkey_str, f'{_name}{" " * (12 - self.font.size(_name)[0] // self.space_width)}', spell.cur_charges)
+      fmt = "%2s   %s%2d" % (
+          hotkey_str, f'{spell.show_name}{" " * (12 - self.font.size(spell.show_name)[0] // self.space_width)}', spell.cur_charges)
 
       self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=SpellCharacterWrapper(spell), char_panel=True)
       # 针对字体自定义
@@ -4053,8 +4036,7 @@ class PyGameView(object):
       if item.spell == self.cur_spell:
         cur_color = (0, 255, 0)
       # 针对字体自定义
-      _name = dict_consumables.names.get(item.name, item.name)
-      fmt = "%3s    %s%2d" % (hotkey_str, f'{_name}{" " * (17 - self.font.size(_name)[0] // self.space_width)}', item.quantity)
+      fmt = "%3s    %s%2d" % (hotkey_str, f'{item.show_name}{" " * (17 - self.font.size(item.show_name)[0] // self.space_width)}', item.quantity)
 
       self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=item)
       # 针对字体自定义
@@ -4170,7 +4152,7 @@ class PyGameView(object):
     cur_y = border_margin
 
     width = self.examine_display.get_width() - 2 * border_margin
-    lines = self.draw_wrapped_string(self.examine_target.name, self.examine_display, cur_x, cur_y, width=width)
+    lines = self.draw_wrapped_string(self.examine_target.show_name, self.examine_display, cur_x, cur_y, width=width)
     cur_y += self.linesize * (lines+1)
 
     # Draw upgrade tags
@@ -4211,7 +4193,7 @@ class PyGameView(object):
         continue
 
       for attr, val in useful_bonuses:
-        spell_name = dict_spells.names.get(spell_ex.name, spell_ex.name)
+        spell_name = spell_ex.show_name
         attr_name = dict_attr.names.get(attr, attr)
       # 量词
         quantifier = dict_attr.quantifiers.get(attr, '')
@@ -4268,10 +4250,7 @@ class PyGameView(object):
       target = self.examine_target
 
     if hasattr(target, "name"):
-      _name = dict_consumables.names.get(target.name, '')
-      if not _name:
-        _name = dict_shrines.names.get(target.name, target.name)
-      lines = self.draw_wrapped_string(_name, self.examine_display, cur_x, cur_y, width=23*16)
+      lines = self.draw_wrapped_string(target.show_name, self.examine_display, cur_x, cur_y, width=23*16)
       cur_y += (lines + 1) * self.linesize
     if hasattr(target, "get_description"):
       self.draw_wrapped_string(target.get_description(), self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2 * self.border_margin, extra_space=True)
@@ -4310,8 +4289,7 @@ class PyGameView(object):
     linesize = self.linesize
 
     spell = self.examine_target
-    _name = dict_spells.names.get(spell.name, spell.name)
-    self.draw_string(_name, self.examine_display, cur_x, cur_y)
+    self.draw_string(spell.show_name, self.examine_display, cur_x, cur_y)
     cur_y += linesize
     cur_y += linesize
     tag_x = cur_x
@@ -4334,7 +4312,7 @@ class PyGameView(object):
     elif spell.range:
       fmt = "射程 %d" % spell.get_stat('range')
       if not spell.requires_los:
-        fmt += "（无需视线）"
+        fmt += "（无需直视）"
       self.draw_string(fmt, self.examine_display, cur_x, cur_y)
       cur_y += self.linesize
 
@@ -4344,7 +4322,7 @@ class PyGameView(object):
 
     cur_y += linesize
 
-    lines = self.draw_wrapped_string(spell.get_description(), self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2*self.border_margin, extra_space=True)
+    lines = self.draw_wrapped_string(spell.get_description(), self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2 * self.border_margin, extra_space=True)
     cur_y += linesize * lines
 
     if spell.spell_upgrades:
@@ -4357,8 +4335,7 @@ class PyGameView(object):
         if self.game.has_upgrade(upg):
           cur_color = (0, 255, 0)
 
-        _name = dict_upgrades.names.get(upg.name, upg.name)
-        self.draw_string(' %d - %s' % (upg.level, _name), self.examine_display, cur_x, cur_y, color=cur_color)
+        self.draw_string(' %d - %s' % (upg.level, upg.show_name), self.examine_display, cur_x, cur_y, color=cur_color)
         cur_y += linesize
 
   def draw_examine_portal(self):
@@ -4445,7 +4422,7 @@ class PyGameView(object):
 
       self.examine_display.blit(scaledimage, (cur_x, cur_y))
 
-      _name = dict_shrines.names.get(gen_params.shrine.name, gen_params.shrine.name)
+      _name = gen_params.shrine.name
       self.draw_string(_name, self.examine_display, 64 + border_margin, cur_y + 24, content_width=width)
 
       cur_y += 64 + linesize
@@ -4463,8 +4440,7 @@ class PyGameView(object):
       scaledimage = pygame.transform.scale(subimage, (32, 32))
 
       self.examine_display.blit(scaledimage, (cur_x, cur_y))
-      _name = dict_consumables.names.get(item.name, item.name)
-      self.draw_string(_name, self.examine_display, cur_x + 38, cur_y+8)
+      self.draw_string(item.show_name, self.examine_display, cur_x + 38, cur_y + 8)
 
       cur_y += 32
 
@@ -4556,8 +4532,9 @@ class PyGameView(object):
         cur_color = spell.damage_type.color.to_tup()
       else:
         cur_color = (255, 255, 255)
-
-      fmt = dict_spells.names.get(spell.name, spell.name)
+      
+      # TODO 待汉化 单位技能
+      fmt = spell.name
       self.draw_string(fmt, self.examine_display, cur_x, cur_y, cur_color)
       cur_y += linesize
       hasattrs = False

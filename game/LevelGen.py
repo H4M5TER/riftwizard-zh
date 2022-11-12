@@ -854,10 +854,10 @@ class LevelGenerator():
 			self.items.append(roll_consumable(prng=self.random))
 
 		for _ in range(self.num_heals):
-			self.items.append(heal_potion())
+			self.items.append(wrapper(heal_potion)())
 
 		for _ in range(self.num_recharges):
-			self.items.append(mana_potion())
+			self.items.append(wrapper(mana_potion)())
 
 		# For mouseover- spice up the ordering
 		self.random.shuffle(self.items)

@@ -32,6 +32,7 @@ class Shrine(object):
 
 	def __init__(self):
 		self.name = "Unnamed Shrine"
+		self.show_name = "无名神龛"
 		self.description = None
 		self.tags = []
 		self.conj_only = False
@@ -44,7 +45,7 @@ class Shrine(object):
 
 		def get_bonus_str(attr, amt):
 			if isinstance(amt, float):
-				return "+[%d%%_%s:%s]" % (amt*100, attr, attr)
+				return "+[%d%%_%s:%s]" % (amt * 100, attr, attr)
 			else:
 				return "+[%d_%s:%s]" % (amt, attr, attr)
 
@@ -52,16 +53,16 @@ class Shrine(object):
 		if self.description:
 			bonus_list = bonus_list + [self.description]
 
-		tags_str = " or ".join('[' + t.name.lower() + ']' for t in self.tags)
-		spell_str = "spell"
+		tags_str = "或".join('[' + t.name.lower() + ']' for t in self.tags)
+		spell_str = "法术"
 		if self.conj_only:
-			spell_str = "[conjuration] spell"
-		target_str = "%s %s" % (tags_str, spell_str) if tags_str else spell_str
-
-		fmt = "Enhances %s with:\n%s" % (target_str, '\n'.join(bonus_list))
-		fmt += "\nLimit 1 shrine per spell."
+			spell_str = "[conjuration]法术"
 		if self.no_conj:
-			fmt += "\nCan be applied only to [sorcery] and [enchantment] spells."
+			spell_str = "[sorcery]或[enchantment]法术"
+		target_str = "有%s词条的%s" % (tags_str, spell_str) if tags_str else spell_str
+
+		fmt = "增强%s:\n%s" % (target_str, '\n'.join(bonus_list))
+		fmt += "\n法术同时只能与一个神龛调谐。"
 
 		return fmt
 
@@ -105,9 +106,10 @@ class ShrineBuff(Upgrade):
 		
 		Upgrade.__init__(self)
 		
-		self.shrine_name = shrine.name
+		self.shrine_name = shrine.show_name # upg.shrine_name 仅供显示
 
-		self.name = "%s Attunement (%s)" % (shrine.name, spell.name)
+		self.name = "%s Attunement (%s)" % (shrine.name, spell.name) # 在神龛强化法术时作为 shop option 显示
+		self.show_name = "%s调谐 (%s)" % (shrine.show_name, spell.show_name)
 		self.description = self.description or shrine.description
 
 		self.prereq = spell
@@ -2065,6 +2067,7 @@ for s in new_shrines:
 def make_shrine(shrine, player):
 	shrine_prop = ShrineShop(lambda : list(shrine.get_buffs(player)))
 	shrine_prop.name = "%s Shrine" % shrine.name
+	shrine_prop.show_name = "%s神龛" % shrine.show_name
 	shrine_prop.description = shrine.get_description()
 
 	# Use custom asset if exists

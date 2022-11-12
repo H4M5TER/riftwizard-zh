@@ -142,22 +142,3 @@ names = {
   "Word of Madness": "疯狂真言",
   "Word of Undeath": "不死真言"
 }
-
-except_class = {
-  "damage type": "伤害类型",
-  "bolt": "bolt",
-  "damage": "damage",
-  "hound": "猎犬",
-  "species": "species",
-  "prison": "prison",
-  "dream": "dream",
-  "swarm": "swarm",
-  "flame": "flame",
-  "raising": "raising",
-  "totem": "图腾",
-  "center summon": "center summon",
-  "aura": "光环",
-  "variant": "变种",
-  "court": "court",
-  "color": "color",
-}

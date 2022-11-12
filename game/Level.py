@@ -6,8 +6,11 @@ import bisect
 import tcod as libtcod
 import time
 import os
+
 import dict_spells
+import dict_upgrades
 import dict_attr
+import dict_school
 
 logger = None
 
@@ -436,7 +439,8 @@ class Spell(object):
 
 		# attr, amount, max stacks, rarity
 		self.upgrades = OrderedDict()
-		self.on_init() # This must happen last or else defaults will be overwritten
+		self.on_init()  # This must happen last or else defaults will be overwritten
+		self.show_name = dict_spells.names.get(self.name, self.name)
 
 		if self.range == 0:
 			self.can_target_self = True
@@ -1054,6 +1058,7 @@ class Upgrade(Buff):
 		self.description = ""
 		self.prereq = None
 		self.on_init()
+		self.show_name = dict_upgrades.names.get(self.name, self.name)
 		self.keystone = False
 		self.stack_type = STACK_INTENSITY
 		self.max_stacks = 1
@@ -1140,6 +1145,7 @@ class SpellUpgrade(Upgrade):
 		self.attribute = attribute.replace('_', ' ')
 		self.spell_bonuses[type(spell)][attribute] = amount
 		self.name = name if name else format_attr(attribute)
+		self.show_name = self.name
 		self.tags = tags if tags else list(spell.tags)
 		self.description = desc
 		self.prereq = spell
@@ -1147,9 +1153,7 @@ class SpellUpgrade(Upgrade):
 		self.amount = amount
 		self.exc_class = exc_class
 		if exc_class:
-			spell_name = dict_spells.names.get(spell.name, spell.name)
-			except_class = dict_spells.except_class.get(exc_class, exc_class)
-			self.description += "\n%s只能选择一种%s升级" % (spell_name, except_class)
+			self.description += "\n%s只能选择一种%s升级" % (spell.show_name, exc_class)
 
 class Immobilize(Buff):
 
@@ -2025,7 +2029,7 @@ class Portal(Prop):
 	
 EventOnHealDotConsumed = namedtuple("EventOnHealDotConsumed", "consumer")
 class HealDot(Prop):
-
+	# 游戏里没有
 	def __init__(self):
 		self.sprite = Sprite(chr(7), color=Color(255, 100, 100))
 		self.name = "Heal Dot"
@@ -2041,8 +2045,9 @@ class HealDot(Prop):
 class ManaDot(Prop):
 	def __init__(self):
 		self.name = "Memory Orb"
+		self.show_name = "记忆凝珠"
 		self.sprite = Sprite(chr(249), color=COLOR_MANA)
-		self.description = "Grants 1 SP"
+		self.description = "获得 1 技能点"
 		self.asset = ['tiles', 'items', 'animated', 'mana_orb']
 
 	def on_player_enter(self, player):
@@ -2050,8 +2055,8 @@ class ManaDot(Prop):
 		self.level.remove_prop(self)
 		self.level.event_manager.raise_event(EventOnItemPickup(self), player)
 
-
 class ChargeDot(Prop):
+	# 游戏里没有
 	def __init__(self):
 		self.name = "Spell Recharge"
 		self.sprite = Sprite(chr(7), color=COLOR_MANA)
@@ -2064,11 +2069,11 @@ class ChargeDot(Prop):
 		self.level.remove_prop(self)
 
 class SpellScroll(Prop):
-
+  # 没实装 生成数 0
 	def __init__(self, spell):
 		self.spell = spell
 		self.name = 'Scroll: %s' % spell.name
-		self.description = 'Decrease the cost to learn %s by 1 SP' % spell.name
+		self.description = '减少 1 点学习 %s 的技能点消耗' % spell.name
 		self.asset = ['tiles', 'library', 'library_white']
 
 	def on_player_enter(self, player):
@@ -2081,8 +2086,9 @@ class SpellScroll(Prop):
 class HeartDot(Prop):
 	def __init__(self, bonus=10):
 		self.name = "Ruby Heart"
+		self.show_name = "健体红心"
 		self.bonus = bonus
-		self.description = "Increase max hp by %d" % self.bonus
+		self.description = "增加 %d 最大生命值" % self.bonus
 		self.sprite = Sprite(chr(3), Color(255, 0, 0))
 		self.asset = ['tiles', 'items', 'animated', 'ruby_heart']
 
@@ -2093,6 +2099,7 @@ class HeartDot(Prop):
 		self.level.event_manager.raise_event(EventOnItemPickup(self), player)
 
 class GoldDot(Prop):
+	# 游戏里没有
 	def __init__(self):
 		self.name = "Gold"
 		self.sprite = Sprite(chr(249), color=Color(252, 186, 3))
@@ -2114,8 +2121,9 @@ class PlaceOfPower(Prop):
 			tag = random.choice(Knowledges)
 		self.tag = tag
 		self.name = "%s Circle" % self.tag.name
+		self.show_name = "%s法阵" % dict_school.names.get(self.tag.name)
 		self.sprite = Sprite(chr(247), self.tag.color)
-		self.description = '%s spells, spell upgrades, and passive skills are 1SP cheaper here' % self.tag.name
+		self.description = '减少 1 点学习[%s]法术、法术升级以及被动能力需要的技能点' % self.tag.name.lower()
 		self.asset = ['tiles', 'circleofpower', 'circleofpower']
 
 	def on_player_enter(self, player):
@@ -2125,7 +2133,7 @@ class PlaceOfPower(Prop):
 		player.discount_tag = None
 
 class NPC(Prop):
-
+  # 游戏里没有
 	def __init__(self, name, description, dialogue, color):
 		self.name = name
 		self.description = description
@@ -2149,7 +2157,7 @@ class NPC(Prop):
 				return
 
 class Shop(Prop):
-
+	# 游戏里没有
 	def __init__(self):
 		self.sprite = Sprite('$')
 		self.items = []

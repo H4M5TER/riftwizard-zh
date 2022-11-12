@@ -3,7 +3,6 @@ from Monsters import *
 import text
 import loc
 
-
 class GlobalBonus(Upgrade):
 	def __init__(self, attribute, amount, level, tags, name=None):
 		Upgrade.__init__(self)

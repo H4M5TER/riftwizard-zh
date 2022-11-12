@@ -11,10 +11,7 @@ from collections import OrderedDict, defaultdict
 import dill as pickle
 import random
 
-import dict_spells
 import dict_monsters
-import dict_consumables
-import dict_upgrades
 
 BUILD_NUM = 3
 
@@ -160,17 +157,14 @@ class Game():
     if spell_counts:
       self.level_cache += "\n施放法术:\n" 
       for s, c in spell_counts:
-        _name = dict_spells.names.get(s.name, s.name)
-        self.level_cache += "%s: %d\n" % (_name, c)
+        self.level_cache += "%s: %d\n" % (s.show_name, c)
 
     dealers = sorted(
       self.cur_level.damage_dealt_sources.items(), key=lambda t: -t[1])
     if dealers:
       self.level_cache += "\n造成伤害:\n" 
       for s, d in dealers[:5]:
-        _name = dict_spells.names.get(s, '')
-        if not _name:
-          _name = dict_monsters.getLocale(s)
+        _name = dict_monsters.getLocale(s)
         self.level_cache += "%d %s\n" % (d, _name)
       if len(dealers) > 6:
         total_other = sum(d for _, d in dealers[5:])
@@ -191,8 +185,7 @@ class Game():
     if item_counts:
       self.level_cache += "\n使用物品:\n" 
       for s, c in item_counts:
-        _name = dict_consumables.names.get(s.name, s.name)
-        self.level_cache += "%s: %d\n" % (_name, c)
+        self.level_cache += "%s: %d\n" % (s.show_name, c)
 
     if self.recent_upgrades:
       self.level_cache += "\n花费技能点:\n"
@@ -315,16 +308,16 @@ class Game():
 		for knowledge in Knowledges: 
 			player.knowledges[knowledge] = 0 
 		player.num_knowledges = 0 
-		player.num_upgrades = 0 
-		player.num_spells = 0 
- 
-		player.add_item(Consumables.heal_potion()) 
-		player.add_item(Consumables.mana_potion()) 
-		player.add_item(Consumables.teleporter()) 
-		player.add_item(Consumables.portal_disruptor()) 
- 
-		player.gets_clarity = True 
- 
+    player.num_upgrades = 0
+    player.num_spells = 0
+
+    player.add_item(Consumables.wrapper(Consumables.heal_potion)())
+    player.add_item(Consumables.wrapper(Consumables.mana_potion)())
+    player.add_item(Consumables.wrapper(Consumables.teleporter)())
+    player.add_item(Consumables.wrapper(Consumables.portal_disruptor)())
+
+    player.gets_clarity = True
+
 		return player 
  
 	# Request to move the currently active controlled unit in the requested direction 
@@ -377,12 +370,9 @@ class Game():
 
     if item:
       if not getattr(item, 'prereq', False):
-        _line = dict_spells.names.get(item.name, '')
-        if not _line:
-          _line = dict_upgrades.names.get(item.name, item.name)
+        _line = item.show_name
       else:
-        _line = "%s: %s" % (dict_spells.names.get(item.prereq.name, item.prereq.name),
-                            dict_upgrades.names.get(item.name, item.name))
+        _line = "%s: %s" % (item.prereq.show_name, item.show_name)
       self.recent_upgrades.append(_line)
 
     return True

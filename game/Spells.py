@@ -605,7 +605,7 @@ class GiantStrengthBuff(Buff):
 		self.asset = ['status', 'giant_form']
 
 class GiantStrengthSpell(Spell):
-
+	# 没有出现在游戏内
 	def on_init(self):
 		self.name = "Stone Giant Form"
 		self.duration = 15
@@ -682,7 +682,7 @@ class ChaosBarrage(Spell):
 		return self.get_cone_burst(x, y)
 
 class InfernoCloud(Cloud):
-
+	# 没有出现在游戏内
 	def __init__(self, owner, damage):
 		Cloud.__init__(self)
 		self.damage = damage

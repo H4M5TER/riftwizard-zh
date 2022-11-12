@@ -3,6 +3,8 @@ from Spells import *
 from Monsters import *
 from CommonContent import *
 
+import dict_consumables
+
 class HealPotSpell(Spell):
 	def on_init(self):
 		self.range = 0
@@ -435,27 +437,34 @@ UNCOMMON = 6
 RARE = 3
 SUPER_RARE = 1
 
+def wrapper(item):
+	def new_item():
+		_item = item()
+		_item.show_name = dict_consumables.names.get(_item.name, _item.name)
+		return _item
+	return new_item
+
 all_consumables = [
-	(teleporter, COMMON),
-	(portal_disruptor, COMMON),
-	(golden_stopwatch, UNCOMMON),
-	(portal_key, UNCOMMON),
-	(energy_shield, UNCOMMON),
-	(stone_shield, UNCOMMON),
-	(chaos_bell, UNCOMMON),
-	(death_dice, UNCOMMON),
-	(quake_orb, RARE),
-	(dragon_horn, RARE),
-	(youth_elixer, RARE),
-	(oculus, RARE),
-	(troll_crown, RARE),
-	(aether_knife, RARE),
-	(memory_draught, SUPER_RARE),
-	(corruption_orb, SUPER_RARE),
-	(bag_of_spikes, SUPER_RARE),
-	(bag_of_bags, SUPER_RARE),
-	(storm_troll_crown, SUPER_RARE),
-	(earth_troll_crown, SUPER_RARE)
+	(wrapper(teleporter),COMMON),
+	(wrapper(portal_disruptor),COMMON),
+	(wrapper(golden_stopwatch),UNCOMMON),
+	(wrapper(portal_key),UNCOMMON),
+	(wrapper(energy_shield),UNCOMMON),
+	(wrapper(stone_shield),UNCOMMON),
+	(wrapper(chaos_bell),UNCOMMON),
+	(wrapper(death_dice),UNCOMMON),
+	(wrapper(quake_orb),RARE),
+	(wrapper(dragon_horn),RARE),
+	(wrapper(youth_elixer),RARE),
+	(wrapper(oculus),RARE),
+	(wrapper(troll_crown),RARE),
+	(wrapper(aether_knife),RARE),
+	(wrapper(memory_draught),SUPER_RARE),
+	(wrapper(corruption_orb),SUPER_RARE),
+	(wrapper(bag_of_spikes),SUPER_RARE),
+	(wrapper(bag_of_bags),SUPER_RARE),
+	(wrapper(storm_troll_crown),SUPER_RARE),
+	(wrapper(earth_troll_crown),SUPER_RARE),
 ]
 
 for item, freq in all_consumables:
