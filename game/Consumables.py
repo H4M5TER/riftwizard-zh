@@ -67,7 +67,7 @@ class ChaosBellSpell(Spell):
 def chaos_bell():
 	item = Item()
 	item.name = "Chaos Bell"
-	item.description = "每个敌方单位各有 50% 几率狂暴, 可与其朋友互相攻击, 持续 10 回合。"
+	item.description = "每个敌方单位各有 50% 几率[berserk], 可与其朋友互相攻击, 持续 10 回合。"
 	item.set_spell(ChaosBellSpell())
 	return item
 

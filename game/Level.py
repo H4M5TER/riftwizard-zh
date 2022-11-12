@@ -399,6 +399,7 @@ class Spell(object):
 		self.spell_upgrades = []
 
 		self.name = "Unnamed spell"
+		self.show_name = "无名法术"
 		self.mana_cost = 0
 		self.cool_down = 0
 		self.hp_cost = 0
@@ -754,6 +755,7 @@ class Item(object):
 		self.sprite = Sprite("!", Color(255, 255, 255))
 		self.buff = None
 		self.name = "Unnamed Item"
+		self.show_name = "物品"
 		self.description = "Undescribed Item"
 		self.cost = 1
 		self.visible = True
@@ -812,6 +814,7 @@ class Buff(object):
 
 		self.applied = False
 		self.name = "Unnamed buff"
+		self.show_name = "增益"
 
 		# self.spell_bonuses[spell][attr]
 		self.spell_bonuses = defaultdict(lambda : defaultdict(lambda: 0))
@@ -1087,6 +1090,7 @@ class ChannelBuff(Buff):
 		Buff.__init__(self)
 		self.spell = spell
 		self.name = "Channeling"
+		self.show_name = "引导法术"
 		self.spell_target = target
 		self.turns = 0
 		self.passed = True
@@ -1161,6 +1165,7 @@ class Immobilize(Buff):
 		self.buff_type = BUFF_TYPE_CURSE
 		self.stack_type = STACK_NONE
 		self.name = "Immobilized"
+		self.show_name = "固定"
 
 class SiegeWeaponBuff(Buff):
 
@@ -1173,17 +1178,20 @@ class SiegeWeaponBuff(Buff):
 
 	def on_init(self):
 		self.name = "Siege Machine"
+		self.show_name = "攻城器械"
 		self.buff_type = BUFF_TYPE_PASSIVE
-		self.description = "Must be operated by an adjacent %s." % self.operator_name
+		self.description = "需要由相邻的%s操作" % self.operator_name
 
 class BlindBuff(Buff):
 
 	def on_init(self):
 		self.name = "Blind"
+		self.show_name = "失明"
 		self.stack_type	= STACK_REPLACE
 		self.buff_type = BUFF_TYPE_CURSE
 		self.asset = ['status', 'blind']
 		self.description = "All spells reduced to melee range"
+		self.show_name = "所有法术只能在近战距离施放"
 
 
 class BerserkBuff(Buff):
@@ -1191,6 +1199,7 @@ class BerserkBuff(Buff):
 	def __init__(self):
 		Buff.__init__(self)
 		self.name = "Berserk"
+		self.show_name = "狂化"
 		self.buff_type = BUFF_TYPE_CURSE
 		self.stack_type	= STACK_NONE
 		self.asset = ['status', 'berserk']
@@ -1202,9 +1211,10 @@ class Stun(Buff):
 		self.buff_type = BUFF_TYPE_CURSE
 		self.stack_type	= STACK_NONE
 		self.name = "Stunned"
+		self.show_name = "眩晕"
 		self.color = Color(220, 220, 220)
 		self.asset = ['status', 'stun']
-		self.description = "Cannot move or cast spells."
+		self.description = "无法行动"
 
 	def on_attempt_advance(self):
 		return False
@@ -1228,14 +1238,16 @@ class StunImmune(Buff):
 		self.buff_type = BUFF_TYPE_NONE
 		self.stack_type = STACK_NONE
 		self.name = "Clarity"
+		self.show_name = "Clarity"
 
 	def get_tooltip(self):
-		return "Immune to disabling debuffs"
+		return "免疫导致无法行动的状态 ([stun][frozen][petrify][glassify])"
 
 class CowardBuff(Buff):
 
 	def on_init(self):
 		self.name = "Running Away"
+		self.show_name = "Running Away"
 
 	def on_applied(self, owner):
 		self.owner.is_coward = True
@@ -1255,6 +1267,7 @@ class Unit(object):
 		self.clarity = 0
 		self.spells = []
 		self.name = "Unnamed"
+		self.show_name = "单位"
 		self.description = "Undescribed"
 		self.mana = 0
 		self.resists = defaultdict(lambda : 0)
@@ -1811,6 +1824,7 @@ class Tile(object):
 		self.prop = None
 		self.cloud = None
 		self.name = "Tile"
+		self.show_name = "地块"
 		self.description = "Tile"
 		self.x = x
 		self.y = y
@@ -1997,6 +2011,7 @@ class Portal(Prop):
 	def __init__(self, level_gen_params, reroll=False):
 		self.sprite = Sprite(chr(25), Color(160, 160, 160))
 		self.name = "Rift"
+		self.show_name = "裂隙"
 		self.level_gen_params = level_gen_params
 		self.description = level_gen_params.get_description()
 		self.next_level = None
@@ -2246,6 +2261,7 @@ class ItemPickup(Prop):
 		self.sprite = Sprite(chr(5), Color(252, 186, 3))
 		self.item = item
 		self.name = item.name
+		self.show_name = item.show_name
 		self.description = item.description
 		self.cost = 1
 
@@ -3335,6 +3351,7 @@ class Level(object):
 		tile.can_fly = False
 		tile.is_chasm = False
 		tile.name = "Wall"
+		tile.show_name = "墙壁"
 		tile.description = "Solid rock"
 				
 		if calc_glyph:
@@ -3352,6 +3369,7 @@ class Level(object):
 		tile.can_fly = True
 		tile.is_chasm = False
 		tile.name = "Floor"
+		tile.show_name = "地板"
 		tile.description = "A rough rocky floor"
 
 		if calc_glyph:
@@ -3368,6 +3386,7 @@ class Level(object):
 		tile.can_fly = True
 		tile.is_chasm = True
 		tile.name = "The Abyss"
+		tile.show_name = "深渊"
 		tile.description = "Look closely and you might see the glimmer of distant worlds."
 
 		if calc_glyph:
@@ -3418,6 +3437,7 @@ Tag = namedtuple("Tag", "name color asset", defaults=(None,))
 class Tag():
 	def __init__(self, name, color, asset=None):
 		self.name = name
+		self.show_name = dict_attr.names.get(name, name)
 		self.color = color
 		self.asset = asset
 

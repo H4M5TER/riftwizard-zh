@@ -5,13 +5,14 @@ class SimpleMeleeAttack(Spell):
 	def __init__(self, damage=1, buff=None, buff_duration=0, damage_type=Tags.Physical, onhit=None, attacks=1, trample=False, drain=False):
 		Spell.__init__(self)
 		self.name = "Melee"
+		self.show_name = "近战攻击"
 		self.range = 1.5
 		self.melee = True
 		self.damage = damage
 		self.damage_type = damage_type
 		self.buff = buff
 		self.buff_duration = buff_duration
-		self.buff_name = buff().name if buff else None
+		self.buff_name = buff().show_name if buff else None
 		self.onhit = onhit
 		self.attacks = attacks
 		self.trample = trample
@@ -55,12 +56,12 @@ class SimpleMeleeAttack(Spell):
 			return self.description
 
 		desc = ""
-		if self.buff_name:
+		if self.buff:
 			desc += "施加 %d 回合的%s" % (self.buff_duration, self.buff_name)
 		if self.attacks > 1:
 			desc += "攻击 %d 次" % self.attacks
 		if self.trample:
-			desc += "Trample attack"
+			desc += "冲撞敌人并移动到敌人的位置 (如果可以)"
 		if self.drain:
 			desc += "根据造成的伤害治疗攻击者"
 
@@ -74,17 +75,21 @@ class SimpleRangedAttack(Spell):
 		Spell.__init__(self)
 
 		self.name = name
-
+		# if name:
+		# 	self.show_name = 
 		# Auto name bolt, ball if only one damage type.  Multiple damage types is harder.
 		if not self.name:
 			if isinstance(damage_type, Tag):
 				if radius:
 					self.name = "%s Ball" % damage_type.name
+					self.show_name = "%s球" % damage_type.show_name
 				else:
 					self.name = "%s Bolt" % damage_type.name
+					self.show_name = "%s箭" % damage_type.show_name
 
 		if not self.name:
-			name = "Ranged Attack"
+			self.name = "Ranged Attack"
+			self.show_name = "远程攻击"
 
 		self.damage = damage
 		self.damage_type = damage_type
@@ -107,7 +112,7 @@ class SimpleRangedAttack(Spell):
 		self.effect = effect
 
 		self.buff = buff
-		self.buff_name = buff().name if buff else None
+		self.buff_name = buff().show_name if buff else None
 		self.buff_duration = buff_duration
 
 		self.cast_after_channel = cast_after_channel
@@ -262,7 +267,7 @@ class SimpleCurse(Spell):
 		Spell.__init__(self)
 		if buff().buff_type == BUFF_TYPE_BLESS:
 			self.target_allies = True
-		self.description = "施加 %d 回合的%s" % (buff_duration, buff().name)
+		self.description = "施加 %d 回合的%s" % (buff_duration, buff().show_name)
 		
 
 	def can_cast(self, x, y):
@@ -291,30 +296,33 @@ class SimpleSummon(Spell):
 		
 		self.duration = duration
 
-		spawn_name = spawn_func().name
-		self.name = "Summon %s" % spawn_name
+		unit = spawn_func()
+		spawn_name = unit.show_name
+		self.name = "Summon " + unit.name
+		self.show_name = "召唤" + unit.show_name
 		self.num_summons = num_summons
 		if num_summons > 1:
-			self.name += '群'
+			self.name += "s"
+			self.show_name += "群"
 
 		self.cool_down = cool_down
 
 		if self.duration:
-			spawn_name = "temporary " + spawn_name
+			spawn_name = "临时" + spawn_name
 
 		if num_summons == 1:
-			self.description = "召唤 1 个%s" % spawn_name
+			self.description = "召唤 1 个" + spawn_name
 		else:
 			self.description = "召唤 %d 个%s" % (self.num_summons, spawn_name)
 
 		self.global_summon = global_summon
 		if self.global_summon:
-			self.description = " 于地图上的随机位置"
+			self.description = "于地图上的随机位置" + self.description
 
 		self.spawn_func = spawn_func
 		self.max_channel = max_channel
 		if self.max_channel:
-			self.description = "最多可以维持 %d 回合" % self.max_channel
+			self.description += "\n可以维持 %d 回合" % self.max_channel
 
 		# How close to an enemy the ai needs to get the target
 		self.ai_cast_radius = 2
@@ -365,6 +373,7 @@ class PullAttack(Spell):
 		self.range = range
 		self.pull_squares = pull_squares
 		self.name = "Pull Attack"
+		self.show_name = "拉动攻击"
 		self.color = color or Color(255, 255, 255)
 
 	def get_description(self):
@@ -416,13 +425,15 @@ class HealAlly(Spell):
 	def __init__(self, heal, range, tag=None):
 		Spell.__init__(self)
 		self.name = "Heal Ally"
+		self.show_name = "治疗盟友"
 		self.heal = heal
 		self.range = range
 		self.tag = tag
 
 		self.description = "治疗友方 %d 点血量" % self.heal
 		if self.tag:
-			self.description = "治疗友方的%s %d 点血量" % (self.tag.name, self.heal)
+			self.show_name = "治疗%s盟友" % self.tag.show_name
+			self.description = "治疗[%s]友方 %d 点血量" % (self.tag.name, self.heal)
 
 		# For tooltips
 		self.damage = heal
@@ -462,11 +473,12 @@ class StormCloud(Cloud):
 		self.color = Color(100, 100, 100)
 		self.strikechance = .5
 		self.name = "Storm Cloud"
+		self.show_name = "雷暴"
 		self.source = None
 		self.asset_name = 'thunder_cloud'
 
 	def get_description(self):
-		return "每回合有 %d%% 的几率对其中的单位造成 [%d_lightning:lightning] 点伤害\n%d 回合后消散" % (int(self.strikechance*100), self.damage, self.duration)
+		return "每回合有 %d%% 的几率对其中的单位造成 [%d_点闪电伤害:lightning]\n%d 回合后消散" % (int(self.strikechance*100), self.damage, self.duration)
 
 	def on_advance(self):
 		if random.random() <= self.strikechance:
@@ -481,11 +493,12 @@ class BlizzardCloud(Cloud):
 		self.damage = damage
 		self.color = Color(100, 100, 100)
 		self.name = "Blizzard"
+		self.show_name = "暴雪"
 		self.asset_name = 'ice_cloud'
 		self.source = None
 
 	def get_description(self):
-		return "每回合对其中的单位造成 [%d_ice:ice] 点伤害并有 50%% 的几率冻结\n%d 回合后消散" % (self.damage, self.duration)
+		return "每回合对其中的单位造成 [%d_点冰霜伤害:ice] 并有 50%% 的几率施加[frozen]\n%d 回合后消散" % (self.damage, self.duration)
 
 	def on_advance(self):
 		self.level.deal_damage(self.x, self.y, self.damage, Tags.Ice, self.source or self)
@@ -504,7 +517,8 @@ class FireCloud(Cloud):
 		self.color = Tags.Fire.color
 		self.strikechance = .5
 		self.name = "Firestorm"
-		self.description = "每回合对其中的生物造成 %d 火焰伤害" % self.damage
+		self.show_name = "火焰风暴"
+		self.description = "每回合对其中的生物造成 [%d_点火焰伤害:fire]" % self.damage
 		self.asset_name = 'fire_cloud'
 
 	def on_advance(self):
@@ -518,7 +532,7 @@ class CloudGeneratorBuff(Buff):
 		self.radius = radius
 		self.chance = chance
 
-		self.description = "在 %d 格的范围内召唤 %s" % (radius, cloud_func(None).name)
+		self.description = "在 %d 格的范围内召唤 %s" % (radius, cloud_func(None).show_name)
 
 	def on_advance(self):
 		for point in self.owner.level.get_points_in_ball(self.owner.x, self.owner.y, self.radius):
@@ -535,6 +549,7 @@ class SpiderWeb(Cloud):
 	def __init__(self):
 		Cloud.__init__(self)
 		self.name = "Spider Web"
+		self.show_name = "蛛网"
 		self.color = Color(210, 210, 210)
 		self.description = "被踩踏时将非蜘蛛的单位眩晕 1 回合, 之后消散\n\n火焰伤害会摧毁蛛网"
 		self.duration = 12
@@ -555,6 +570,7 @@ class PetrifyBuff(Stun):
 	def __init__(self):
 		Stun.__init__(self)
 		self.name = "Petrified"
+		self.show_name = "石化"
 		self.color = Color(180, 180, 180)
 		self.resists[Tags.Physical] = 75
 		self.resists[Tags.Fire] = 75
@@ -572,6 +588,7 @@ class GlassPetrifyBuff(PetrifyBuff):
 		PetrifyBuff.__init__(self)
 		self.resists[Tags.Physical] = -100
 		self.name = "Glassed"
+		self.show_name = "玻璃化"
 		self.asset = ['status', 'glassed']
 		self.color = Tags.Glass.color
 
@@ -584,6 +601,7 @@ class ResistIce(Buff):
 
 	def on_init(self):
 		self.name = "Ice Protection"
+		self.show_name = Tags.Ice.show_name + "防护"
 		self.resists[Tags.Ice] = 50
 		self.color = Tags.Ice.color
 		self.asset = ['status', 'resist_ice']
@@ -592,6 +610,7 @@ class ResistFire(Buff):
 
 	def on_init(self):
 		self.name = "Fire Protection"
+		self.show_name = Tags.Fire.show_name + "防护"
 		self.resists[Tags.Fire] = 50
 		self.color = Tags.Fire.color
 		self.asset = ['status', 'resist_fire']
@@ -600,6 +619,7 @@ class ResistLightning(Buff):
 
 	def on_init(self):
 		self.name = "Lightning Protection"
+		self.show_name = Tags.Lightning.show_name + "防护"
 		self.resists[Tags.Lightning] = 50
 		self.color = Tags.Lightning.color
 		self.asset = ['status', 'resist_lightning']
@@ -608,6 +628,7 @@ class ResistDark(Buff):
 
 	def on_init(self):
 		self.name = "Holy Protection"
+		self.show_name = Tags.Holy.show_name + "防护"
 		self.resists[Tags.Holy] = 50
 		self.color = Tags.Holy.color
 		self.asset = ['status', 'resist_holy']
@@ -616,6 +637,7 @@ class ResistHoly(Buff):
 
 	def on_init(self):
 		self.name = "Dark Protection"
+		self.show_name = Tags.Dark.show_name + "防护"
 		self.resists[Tags.Dark] = 50
 		self.color = Tags.Dark.color
 		self.asset = ['status', 'resist_dark']
@@ -625,6 +647,7 @@ class Stoneskin(Buff):
 
 	def on_init(self):
 		self.name = "Stoneskin"
+		self.show_name = "石肤"
 		self.resists[Tags.Physical] = 50
 		self.color = Tags.Physical.color
 		self.asset = ['status', 'stoneskin']
@@ -637,6 +660,7 @@ class FrozenBuff(Stun):
 		Stun.__init__(self)
 		self.shatter_chance = 0
 		self.name = "Frozen"
+		self.show_name = "冰封"
 		self.color = Tags.Ice.color
 
 		self.owner_triggers[EventOnDamaged] = self.on_damage
@@ -665,6 +689,7 @@ class TrollRegenBuff(Buff):
 
 	def on_init(self):
 		self.name = "Troll Regeneration"
+		self.show_name = "巨魔再生"
 
 	def on_applied(self, owner):
 		self.recently_burned = False
@@ -697,8 +722,10 @@ class DamageAuraBuff(Buff):
 		self.source = None
 		if isinstance(self.damage_type, Tag):
 			self.name = "%s Aura" % self.damage_type.name
+			self.show_name = self.damage_type.show_name + "光环"
 		else:
 			self.name = "Damage Aura" 
+			self.show_name = "伤害光环"
 
 		# Not used in base class, used in inherited classes
 		self.damage_dealt = 0
@@ -754,6 +781,7 @@ class HealAuraBuff(Buff):
 	def __init__(self, heal, radius, whole_map=False, can_heal_player=False):
 		Buff.__init__(self)
 		self.name = "Healing Aura"
+		self.show_name = "治疗光环"
 		self.color = Tags.Heal.color
 		self.heal = heal
 		self.radius = radius
@@ -812,6 +840,12 @@ class LeapAttack(Spell):
 		self.charge_bonus = charge_bonus
 		self.is_ghost = is_ghost
 		self.name = "Pounce" if self.is_leap else "Charge"
+		if self.is_leap:
+			self.show_name = "扑击" # 跃击?
+		elif self.is_ghost:
+			self.show_name = "作祟"
+		else:
+			self.show_name = "冲锋"
 		self.requires_los = not self.is_ghost
 
 	def get_leap_dest(self, x, y):
@@ -869,7 +903,7 @@ class LeapAttack(Spell):
 
 
 class ElementalEyeBuff(Buff):
-
+	# 游戏里没有
 	def __init__(self, damage_type, damage, freq):
 		Buff.__init__(self)
 		self.damage_type = damage_type
@@ -910,6 +944,7 @@ class cockatriceScaleArmorBuff(Buff):
 
 	def on_init(self):
 		self.name = "Petrify Armor"
+		self.show_name = "石化蜥甲"
 
 	def on_applied(self, owner):
 		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -924,7 +959,7 @@ class cockatriceScaleArmorBuff(Buff):
 		evt.caster.apply_buff(PetrifyBuff(), 2)
 
 class ElementalReincarnationBuff(Buff):
-
+	# 游戏里没有
 	def on_applied(self, owner):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 		self.buff_type = BUFF_TYPE_BLESS
@@ -986,7 +1021,8 @@ class MonsterTeleport(Spell):
 
 	def on_init(self):
 		self.name = "Teleport"
-		self.description = "传送到随机的格子"
+		self.show_name = "传送"
+		self.description = "传送到随机地块"
 		self.range = 10
 		self.can_target_self = True
 		self.cool_down = 4
@@ -1033,6 +1069,7 @@ class RegenBuff(Buff):
 		self.heal = heal
 		self.stack_type = STACK_INTENSITY
 		self.name = "Regeneration %d" % heal
+		self.show_name = "再生 %d" % heal
 		self.description = "每回合回复 %d 点血量" % self.heal
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'heal']
@@ -1070,6 +1107,7 @@ class ReincarnationBuff(Buff):
 		self.lives = lives
 		self.owner_triggers[EventOnDeath] = self.on_death
 		self.name = "Reincarnation %d" % self.lives
+		self.show_name = "重生 %d" % self.lives
 		self.buff_type = BUFF_TYPE_BLESS
 		self.duration = 0
 		self.turns_to_death = None
@@ -1108,6 +1146,7 @@ class ReincarnationBuff(Buff):
 			self.lives -= 1
 			self.owner.level.queue_spell(self.respawn())
 			self.name = "Reincarnation %d" % self.lives
+			self.show_name = "重生 %d" % self.lives
 
 	def respawn(self):
 		self.owner.killed = False
@@ -1142,6 +1181,7 @@ class ShieldSightSpell(Spell):
 		Spell.__init__(self)
 		self.shields = shields
 		self.name = "Shield Allies"
+		self.show_name = "群体保护盟友"
 		self.description = "给予视线里的友方 1 点护盾, 最多 %d 点" % self.shields
 		self.cool_down = cool_down
 		self.buff_type = BUFF_TYPE_BLESS
@@ -1162,6 +1202,7 @@ class Poison(Buff):
 		self.damage = 1
 		self.color = Tags.Poison.color
 		self.name = "Poison"
+		self.show_name = "中毒"
 		self.buff_type = BUFF_TYPE_CURSE
 		self.asset = ['status', 'poison']
 		self.description = "每回合受到 1 点毒素伤害, 无法回复血量"
@@ -1190,6 +1231,7 @@ class Soulbound(Buff):
 		self.global_triggers[EventOnDeath] = self.on_death
 		self.guardian = guardian
 		self.name = "Soul Jarred"
+		self.show_name = "Soul Jarred"
 		self.asset = ['status', 'soulbound']
 		self.color = Tags.Dark.color
 
@@ -1222,6 +1264,7 @@ class PainMirror(Buff):
 
 	def on_init(self):
 		self.name = "Pain Mirror"
+		self.name = "伤害反射"
 		self.owner_triggers[EventOnDamaged] = self.on_damage
 		self.color = Tags.Dark.color
 
@@ -1241,7 +1284,8 @@ class BloodrageBuff(Buff):
 		Buff.__init__(self)
 
 	def on_init(self):
-		self.name = 'Bloodrage'
+		self.name = "Bloodrage"
+		self.show_name = "血怒"
 		self.color = Tags.Demon.color
 		self.asset = ['status', 'bloodlust']
 		self.global_bonuses['damage'] = self.bonus
@@ -1290,6 +1334,7 @@ class Thorns(Buff):
 		self.dtype = dtype
 		Buff.__init__(self)
 		self.name = "Thorns"
+		self.show_name = "荆棘"
 		self.description = "受到近战攻击时反弹 %d 点%s伤害" % (self.damage, self.dtype.name)
 		self.color = dtype.color
 
@@ -1327,10 +1372,9 @@ class MatureInto(Buff):
 			if p:
 				self.owner.level.add_obj(new_unit, p.x, p.y)
 
-
 	def get_tooltip(self):
 		if not self.spawn_name:
-			self.spawn_name = self.spawner().name
+			self.spawn_name = self.spawner().show_name
 		return "%d 回合后成长为 %s" % (self.mature_duration, self.spawn_name)
 
 class SpawnOnDeath(Buff):
@@ -1339,7 +1383,7 @@ class SpawnOnDeath(Buff):
 		Buff.__init__(self)
 		self.spawner = spawner
 		self.num_spawns = num_spawns
-		self.description = "死亡时生成 %d 个%s" % (self.num_spawns, self.spawner().name)
+		self.description = "死亡时生成 %d 个%s" % (self.num_spawns, self.spawner().show_name)
 		self.owner_triggers[EventOnDeath] = self.on_death
 		self.apply_bonuses = True
 
@@ -1353,13 +1397,14 @@ class SpawnOnDeath(Buff):
 			self.summon(unit)
 
 class RespawnAs(Buff):
-
+	# 蛋孵化、变蝙蝠、死掉变树丛都用这个
 	def __init__(self, spawner):
 		Buff.__init__(self)
 		self.spawner = spawner
-		self.spawn_name = None
+		self.spawn_name = None # 这里执行 spawner 会导致吸血鬼和吸血蝙蝠无限嵌套
 		self.get_tooltip() # populate name
-		self.name = "Respawn As %s" % self.spawn_name
+		self.name = "Respawn As %s" % self.unit_name
+		self.show_name = "重生为%s" % self.unit_show_name
 
 	def on_init(self):
 		self.owner_triggers[EventOnDamaged] = self.on_damage
@@ -1379,10 +1424,11 @@ class RespawnAs(Buff):
 		if p:
 			self.owner.level.add_obj(new_unit, p.x, p.y)
 		
-
 	def get_tooltip(self):
-		if not self.spawn_name:
-			self.spawn_name = self.spawner().name
+		if not self.spawn_name: # 这里就不会嵌套，为什么
+			unit = self.spawner()
+			self.unit_name = unit.name
+			self.unit_show_name = unit.show_name
 		return "血量降低到 0 时变换为 %s" % self.spawn_name
 
 class SimpleBurst(Spell):
@@ -1392,6 +1438,7 @@ class SimpleBurst(Spell):
 		self.damage = damage
 		self.damage_type = damage_type
 		self.name = "%s Burst" % self.damage_type.name
+		self.show_name = self.damage_type.show_name + "爆破"
 		self.cool_down = cool_down
 		self.radius = radius
 		self.friendly_fire = True
@@ -1465,6 +1512,7 @@ def raise_skeleton(owner, unit, source=None):
 
 	skeleton = Unit()
 	skeleton.name = "Skeletal %s" % unit.name
+	skeleton.show_name = "骷髅" + unit.show_name
 	skeleton.sprite.char = 's'
 	if unit.max_hp >= 40:
 		skeleton.sprite.char = 'S'
@@ -1488,11 +1536,12 @@ class DeathExplosion(Buff):
 
 	def __init__(self, damage, radius, damage_type):
 		Buff.__init__(self)
-		self.description = "死亡时自爆, 在 %d 格范围内造成 %d 点%s伤害" % (radius, damage, damage_type.name)
+		self.description = "死亡时自爆, 在 %d 格范围内造成 %d 点[%s]伤害" % (radius, damage, damage_type.name)
 		self.damage = damage
 		self.damage_type = damage_type
 		self.radius = radius
 		self.name = "Death Explosion"
+		self.show_name = "死亡爆破"
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnDeath] = self.on_death
@@ -1514,6 +1563,7 @@ class KingSpell(Spell):
 
 	def on_init(self):
 		self.name = "Call Kingdom"
+		self.show_name = "呼唤王国"
 		self.range = 0
 		self.cool_down = 10
 		self.max_charges = 0
@@ -1562,7 +1612,7 @@ class Generator2Buff(Buff):
 			self.turns = random.randint(self.min_turns, self.max_turns)
 
 	def get_tooltip(self):
-		return "每 %d to %d 回合生成 1 个%s\n\n距离下次: %d 回合" % (self.min_turns, self.max_turns, self.example_monster.name, self.turns)
+		return "每 %d-%d 回合生成 1 个%s\n\n距离下次生成 %d 回合" % (self.min_turns, self.max_turns, self.example_monster.name, self.turns)
 
 def MonsterSpawner(spawn_func):
 	unit = Unit()
@@ -1570,6 +1620,7 @@ def MonsterSpawner(spawn_func):
 	unit.sprite = example_monster.sprite
 	unit.sprite.color = Color(0, 0, 0)
 	unit.name = "%s Gate" % example_monster.name
+	unit.show_name = example_monster.show_name + "刷怪笼"
 	unit.max_hp = 20
 	unit.sprite.bg_color = Color(255, 255, 255)
 	unit.buffs.append(Generator2Buff(spawn_func))
@@ -1587,11 +1638,12 @@ class WizardNightmare(Spell):
 
 	def on_init(self):
 		self.name = "Nightmare Aura"
+		self.show_name = "梦魇光环"
 		self.cool_down = 16
 		self.duration = 8
 		self.radius = 7
 		self.range = 0
-		dtype_str = self.damage_type.name if isinstance(self.damage_type, str) else '或'.join([t.name for t in self.damage_type])
+		dtype_str = self.damage_type.name if isinstance(self.damage_type, str) else '或'.join([f"[{t.name}]" for t in self.damage_type])
 		self.description = "每回合对范围内的敌人造成 2 点%s伤害" % dtype_str
 
 	def get_ai_target(self):
@@ -1603,6 +1655,7 @@ class WizardNightmare(Spell):
 
 	def cast_instant(self, x, y):
 		buff = DamageAuraBuff(damage=2, damage_type=self.damage_type, radius=self.get_stat('radius'))
+		# DamageAuraBuff 似乎一定会存在 name，单属性xx光环，多属性伤害光环
 		buff.name = buff.name or "Nightmare Aura"
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
@@ -1613,11 +1666,13 @@ class WizardSelfBuff(Spell):
 		self.duration = duration
 		Spell.__init__(self)
 		self.cool_down = cool_down
-		self.description = "施加 %d 回合的%s\n" % (duration, self.buff().name)
+		self.description = "施加 %d 回合的%s\n" % (duration, self.show_name)
 		
 	def on_init(self):
 		self.range = 0
-		self.name = self.buff().name
+		buff = self.buff()
+		self.name = buff.name
+		self.show_name = buff.show_name
 
 	def get_ai_target(self):
 		if not self.caster.has_buff(self.buff):
@@ -1635,9 +1690,8 @@ class WizardHealAura(Spell):
 		self.duration = duration
 		self.cool_down = 16
 		self.radius = radius
-		self.description = "每回合治疗 [%d_tile:radius] 格半径内的友方 [%d_HP:heal] 点血量, 持续 [%d_turns:duration] 回合" % (self.radius, self.heal, self.duration)
+		self.description = "每回合治疗[半径_%d_格:radius]内的友方 [%d_点血量:heal], 持续 [%d_回合:duration]" % (self.radius, self.heal, self.duration)
 		
-
 	def get_ai_target(self):
 		for u in self.caster.level.get_units_in_ball(self.caster, radius=self.radius):
 			if not are_hostile(u, self.caster) and u.cur_hp < u.max_hp:
@@ -1646,6 +1700,7 @@ class WizardHealAura(Spell):
 
 	def on_init(self):
 		self.name = "Heal Aura"
+		self.show_name = "治疗光环"
 		self.range = 0
 
 	def cast_instant(self, x, y):
@@ -1655,6 +1710,7 @@ class WizardBloodlust(Spell):
 
 	def on_init(self):
 		self.name = "Bloodlust"
+		self.show_name = "渴血光环"
 		self.bonus = 3
 		self.radius = 5
 		self.range = 0
@@ -1663,7 +1719,7 @@ class WizardBloodlust(Spell):
 		self.damage_type = Tags.Fire
 
 	def get_description(self):
-		return "给 [%d_tile:radius] 格范围内的友方增加 %d 点伤害, 持续 [%d_turns:duration] 回合" % (self.bonus, self.radius, self.duration)
+		return "给[半径_%d_格:radius]内的友方增加 [%d_点伤害:damage], 持续 [%d_回合:duration]" % (self.bonus, self.radius, self.duration)
 
 	def cast_instant(self, x, y):
 		for p in self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, self.radius):
@@ -1680,6 +1736,7 @@ class GlassReflection(Buff):
 
 	def on_init(self):
 		self.name = "Sorcery Mirror"
+		self.show_name = Tags.Sorcery.show_name + "反射"
 		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
 
 	def on_spell_cast(self, evt):
@@ -1699,7 +1756,7 @@ class GlassReflection(Buff):
 		yield
 
 	def get_tooltip(self):
-		return "当这个单位被作魔能法术的目标时, 这个单位对施法者施放一个一样的法术"
+		return "当这个单位被作[sorcery]法术的目标时, 这个单位对施法者施放一个一样的法术"
 
 class ShieldAllySpell(Spell):
 
@@ -1711,6 +1768,7 @@ class ShieldAllySpell(Spell):
 
 	def on_init(self):
 		self.name = "Shield Ally"
+		self.show_name = "保护盟友"
 		self.description = "给予单体友方 %d 点护盾, 最多 %d 点" % (self.shields, self.shields)
 		self.target_allies = True
 
@@ -1730,6 +1788,7 @@ class WizardBlizzard(Spell):
 
 	def on_init(self):
 		self.name = "Blizzard"
+		self.show_name = "暴雪"
 		self.description = "生成一个半径 3 格的暴风雪"
 		self.radius = 4
 		self.cool_down = 10
@@ -1751,6 +1810,7 @@ class WizardQuakeport(Spell):
 
 	def on_init(self):
 		self.name = "Quakeport"
+		self.show_name = "地震传送"
 		self.description = "传送到目标点并制造地震"
 		self.range = 12
 		self.cool_down = 19
@@ -1796,8 +1856,9 @@ class FireProtection(Spell):
 	
 	def on_init(self):
 		self.name = "Fire Protection"
+		self.show_name = "防护火焰"
 		self.duration = 8
-		self.description = "给予施法者与盟友 50%% 的火焰抗性, 持续 %d 回合" % self.duration
+		self.description = "给予施法者与盟友 50%% 的[fire]抗性, 持续 %d 回合" % self.duration
 		self.cool_down = 12
 		self.range = 0
 
@@ -1817,6 +1878,7 @@ class TeleportyBuff(Buff):
 		self.hop = hop
 		self.buff_type = BUFF_TYPE_PASSIVE
 		self.name = "Passive Teleportation"
+		self.show_name = "被动传送"
 
 	def on_advance(self):
 		if random.random() > self.chance:
@@ -1832,7 +1894,7 @@ class TeleportyBuff(Buff):
 		randomly_teleport(self.owner, self.radius, requires_los=self.hop)
 
 	def get_tooltip(self):
-		moveword = "hop" if self.hop else "blink"
+		moveword = "跳跃" if self.hop else "闪烁"
 		return "每回合有 %d%% 的几率%s到距离 %d 格的随机位置" % (int(self.chance * 100), moveword, self.radius)
 
 	def get_tooltip_color(self):
@@ -1865,15 +1927,18 @@ class TouchedBySorcery(Buff):
 	def on_init(self):
 		self.resists[self.element] = 100
 		self.name = "Touched by %s" % self.element.name
+		self.show_name = "受[%s]祝福" % self.element.name
 		self.color = self.element.color
 		spell = SimpleRangedAttack(damage=5, range=7, damage_type=self.element)
-		spell.name = "Sorcery"
+		spell.name = "Sorcery" # self.element.name
+		spell.show_name = self.element.show_name
 		self.spells = [spell]
 		self.asset = ['status', '%s_eye' % self.element.name.lower()]
 
 def Champion(unit):
 	unit.asset_name = unit.get_asset_name() + "_champion"
 	unit.name = unit.name.replace('Knight', 'Champion')
+	unit.show_name = unit.show_name.replace("骑士", "冠军")
 	unit.max_hp *= 4
 	for s in unit.spells:
 		s.damage += s.damage // 2
@@ -1884,6 +1949,7 @@ class Acidified(Buff):
 
 	def on_init(self):
 		self.name = "Acidified"
+		self.show_name = "酸化"
 		self.resists[Tags.Poison] = -100
 		self.buff_type = BUFF_TYPE_CURSE
 		self.asset = ['status', 'amplified_poison']
@@ -1893,6 +1959,7 @@ class Electrified(Buff):
 
 	def on_init(self):
 		self.name = "Electrified"
+		self.show_name = "电气化"
 		self.resists[Tags.Lightning] = -10
 		self.buff_type = BUFF_TYPE_CURSE
 		self.stack_type	= STACK_INTENSITY
