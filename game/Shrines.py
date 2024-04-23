@@ -7,19 +7,20 @@ from collections import OrderedDict
 from Monsters import *
 from Variants import *
 from RareMonsters import *
+from Equipment import *
 
 import os
 
 def random_spell_tag():
 	roll = random.random()
-	if roll < .6:
+	if roll < .50:
 		return random.choice([Tags.Fire, Tags.Lightning, Tags.Dark, Tags.Arcane, Tags.Nature, Tags.Holy, Tags.Ice])
-	if roll < .97:
+	if roll < .85:
 		return random.choice([Tags.Sorcery, Tags.Enchantment, Tags.Conjuration])
 	else:
-		return random.choice([Tags.Word, Tags.Dragon, Tags.Translocation, Tags.Eye, Tags.Chaos, Tags.Orb, Tags.Metallic])	
+		return random.choice([Tags.Word, Tags.Dragon, Tags.Translocation, Tags.Eye, Tags.Chaos, Tags.Orb, Tags.Metallic, Tags.Blood])
 
-def hp_shrine(player):
+def hp_shrine(difficulty, prng):
 	shrine = HeartDot(25)
 	return shrine
 
@@ -239,7 +240,7 @@ class DamageCounterShrineBuff(ShrineBuff):
 class StormCloudShrineBuff(ShrineBuff):
 
 	def on_init(self):
-		self.global_triggers[EventOnPreDamaged] = self.on_damage
+		self.global_triggers[EventOnDamaged] = self.on_damage
 
 
 	def on_damage(self, evt):
@@ -729,7 +730,7 @@ class CharredBoneShrine(Shrine):
 class RedStarShrineBuff(ShrineBuff):
 
 	def on_init(self):
-		self.global_triggers[EventOnPreDamaged] = self.on_damage
+		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def on_damage(self, evt):
 		if not evt.source:
@@ -1463,7 +1464,7 @@ class SphereShrine(Shrine):
 class ElementalClawBuff(ShrineBuff):
 
 	def on_init(self):
-		self.global_triggers[EventOnPreDamaged] = self.on_damage
+		self.global_triggers[EventOnDamaged] = self.on_damage
 		self.dtype = None
 
 	def on_damage(self, evt):
@@ -1864,7 +1865,7 @@ class DeathchillChimeraShrine(Shrine):
 
 	def on_init(self):
 		self.tags = [Tags.Ice, Tags.Dark]
-		self.name = "Deathchill Chimera"
+		self.name = "Deathchill Gate"
 		self.buff_class = DeathchillChimeraShrineBuff
 		self.description = "For each 80 damage dealt by this spell or a minion it summons, summon a deathchill chimera near a unit it dealt damage to."
 
@@ -2082,28 +2083,95 @@ def shrine(player):
 	shrine = random.choices([s[0] for s in new_shrines], [s[1] for s in new_shrines])[0]()
 	return make_shrine(shrine, player)
 
-def roll_shrine(level, prng=None):
+def skill_scroll(level, player):
+	skill_opts = [s for s in player.game.all_player_skills if not player.game.has_upgrade(s)]
+	random.shuffle(skill_opts)
+	skill_opts = skill_opts[:CHEST_SIZE]
 
+	shop = Shop()
+	shop.name = "Scroll of Skills"
+	shop.description = "One skill may be learned for free from this text"
+	shop.asset =  ['tiles', 'library', 'library_gold']
+	shop.items = skill_opts
+
+	return shop
+
+def scroll(level, player):
+	max_spell_level = 2
+	if level >= 5:
+		max_spell_level = 3
+	if level >= 10:
+		max_spell_level = 4
+	if level >= 15:
+		max_spell_level = 5
+
+	min_spell_level = 1
+	if level >= 4:
+		min_spell_level = 2
+	if level >= 14:
+		min_spell_level = 3
+	if level >= 20:
+		min_spell_level = 4
+
+	if player:
+		spell_opts = [s for s in player.game.all_player_spells if min_spell_level <= s.level <= max_spell_level and s not in player.spells]
+	else:
+		spell_opts = make_player_spells()
+	random.shuffle(spell_opts)
+	spell_opts = spell_opts[:CHEST_SIZE+1]
+
+	shop = Shop()
+	shop.name = "Scroll of Spells"
+	shop.description = "One spell may be learned for free from this text"
+	shop.asset =  ['tiles', 'library', 'library_white']
+	shop.items = spell_opts
+
+	return shop
+
+
+def roll_chest(level, prng=random):
 	opts = [
-		(hp_shrine, .3),
-		(library, .40),
+		(treasure_chest, .5),
+		(crown_chest, .08),
+		(damage_hat_chest, .04),
+		(hat_chest, .05),
+		(ring_chest, .5),
+		(staff_chest, .1),
+		(shoe_chest, .05),
+		(armor_chest, .05),
+		(trinket_chest, .15),
+		#(mini_treasure_chest, .08)
 	]
 
-	if level > 2:
-		opts.append((shrine, .3))
+	return prng.choices([o[0] for o in opts], weights=[o[1] for o in opts])[0](level, prng)
+
+def roll_shrine(level, prng=None, player=None):
+
+	# Level 2 always a circle or an item- something that directs the player towards some specific build ideas
+	opts = [
+		(roll_chest, 1.3),
+		(hp_shrine, 1),
+		(exotic_pet_chest, .25),
+		(lambda level, prng : scroll(level, player), .2)
+		# Miniaturization Shrine
+		# Refund Shrine
+		# Circle Replacement
+		# Item bonanza?  (9 portal disruptors baby!)
+		# other weird shit ect. (maybe put below too)
+	]
+
+	if level > 13:
+		opts.append((lambda level, prng: skill_scroll(level, player), .3))
 
 	if not prng:
 		prng = random
 
-	return prng.choices([o[0] for o in opts], weights=[o[1] for o in opts])[0]
+	return prng.choices([o[0] for o in opts], weights=[o[1] for o in opts])[0](level, prng)
 
 def roll_circle():
 	return 
 
-# Print number of shrines per tag
 if __name__ == "__main__":
-	for tag in Tags:
-		num_shrines = sum([s[1] for s in new_shrines if tag in s[0]().tags])
-		if num_shrines:
-			print("%s: %d" % (tag.name, num_shrines))
-	print(sum(s[1] for s in new_shrines))
+	for i in range(200):
+		roll_shrine(2)
+	#Print loot odds

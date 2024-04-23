@@ -61,7 +61,7 @@ class NumPortals(Mutator):
 		self.description = "All levels contain %d rifts" % self.num
 
 	def on_levelgen_pre(self, levelgen):
-		levelgen.num_exits = self.num
+		levelgen.num_exits = 1
 
 
 class MonsterHPMult(Mutator):

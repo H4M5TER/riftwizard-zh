@@ -53,22 +53,6 @@ class DampenSpell(Spell):
 			u.apply_buff(self.get_buff(), self.get_stat('duration'))
 			self.caster.level.show_path_effect(self.caster, u, Tags.Holy, minor=True)
 
-def Idol():
-	idol = Unit()
-	idol.sprite.char = 'I'
-	idol.sprite.color = Tags.Construct.color
-	idol.asset_name = "idol"
-
-	idol.max_hp = 35
-	idol.shields = 2
-	idol.stationary = True
-
-	idol.tags = [Tags.Construct]
-	idol.resists[Tags.Fire] = 50
-	idol.resists[Tags.Lightning] = 50
-	idol.resists[Tags.Physical] = 50
-	return idol
-
 def DampenerIdol(label, attr, amt):
 
 	idol = Idol()
@@ -83,8 +67,19 @@ class UndeathIdolBuff(Buff):
 
 	def on_init(self):
 		self.name = "Aura of Undeath"
-		self.description = "Each turn all friendly undead units heal for 1 and all enemy living units take 1 dark damage"
+		self.description = ("Each turn all friendly undead units heal for 1 and all enemy living units take 1 dark damage.  "
+						    "[Living] units are raised as skeletons if they are not already [undead].")
 		self.color = Tags.Undead.color
+
+		self.global_triggers[EventOnDeath] = self.on_death
+
+	def on_death(self, evt):
+		if Tags.Living in evt.unit.tags and Tags.Undead not in evt.unit.tags:
+			self.owner.level.queue_spell(self.try_raise(evt))
+
+	def try_raise(self, evt):
+		raise_skeleton(self.owner, evt.unit)
+		yield
 
 	def on_advance(self):
 		for u in self.owner.level.units:
@@ -102,10 +97,12 @@ class UndeathIdolBuff(Buff):
 
 
 def IdolOfUndeath():
-	idol = Idol()
+	idol = BigIdol()
 	idol.sprite.color = Tags.Undead.color
 	idol.name = "Idol of Undeath"
-	idol.asset_name = "undeath_idol"
+	idol.radius = 1
+	idol.max_hp *= 9
+	idol.asset_name = "3x3_idol_of_undeath"
 	idol.buffs.append(UndeathIdolBuff())
 	return idol
 
@@ -113,7 +110,7 @@ class LifeIdolBuff(Buff):
 
 	def on_init(self):
 		self.name = "Aura of Life"
-		self.description = "Each turn all friendly living units are healed for 3"
+		self.description = "Each turn all friendly living units are healed for 5"
 
 	def on_advance(self):
 		for u in self.owner.level.units:
@@ -131,13 +128,43 @@ class LifeIdolBuff(Buff):
 		return self.description
 
 def IdolOfLife():
-	idol = Idol()
+	idol = BigIdol()
 	idol.sprite.color = Tags.Living.color
-	idol.name = "Idol of Life"
+	idol.name = "Fountain of Blood"
 	idol.buffs.append(LifeIdolBuff())
-	idol.asset_name = "life_idol"
+	idol.asset_name = "3x3_idol_of_vitality"
 
 	return idol
+
+class IdolOfPoisonBuff(Buff):
+
+	def on_init(self):
+		self.name = "Aura of Venom"
+		self.color = Tags.Poison.color
+		self.description = "Each turn, extend poison duration by 1 on each poisoned enemy, and poison each other enemy."
+
+	def on_advance(self):
+		for u in self.owner.level.units:
+			
+			if u.resists[Tags.Poison] >= 100:
+				continue
+			if not are_hostile(self.owner, u):
+				continue
+
+			existing = u.get_buff(Poison)
+			if existing:
+				existing.turns_left += 1
+			if not existing:
+				u.apply_buff(Poison(), 2)
+
+def IdolOfPoison():
+	idol = BigIdol()
+	idol.name = "Fountain of Venom"
+	idol.asset_name = "fountain_of_poison"
+	idol.buffs.append(IdolOfPoisonBuff())
+	return idol
+
+
 
 class ClarityIdolBuff(Buff):
 
@@ -177,6 +204,9 @@ class GrantSorcery(Spell):
 		self.name = "Grant Sorcery"
 		self.range = 0
 
+	def can_threaten(self, x, y):
+		return False
+
 	def get_description(self):
 		return "Grants a ranged Fire or Lightning attack to a random ally, along with immunity to that element."
 
@@ -204,9 +234,13 @@ class GrantSorcery(Spell):
 
 def IdolOfSorcery():
 	idol = Idol()
+
+	idol.radius = 1
+	idol.max_hp *= 9
+	idol.asset_name = '3x3_idol_of_sorcery'
+
 	idol.sprite.color = Tags.Sorcery.color
 	idol.name = "Idol of Sorcery"
-	idol.asset_name = "sorcery_idol"
 
 	idol.spells.append(GrantSorcery())
 
@@ -320,123 +354,6 @@ def VoidWatcher():
 	unit.tags = [Tags.Construct, Tags.Arcane]
 	return unit
 
-# Ally bat- if an ally is in melee range of self and closer to target than self, can cast.
-# Deals physical damage to target and to the ally, teleports the ally to a summon point near the player
-# Does leap attack anim of ally
-class CyclopsAllyBat(Spell):
-
-	def on_init(self):
-		self.name = "Swat Ally"
-		self.description = "Bats an adjacent unit towards an enemy"
-		self.damage = 13
-		self.range = 15
-		self.damage_type = Tags.Physical
-
-	def get_chump(self, x, y):
-		target = Point(x, y)
-		adj_points = self.caster.level.get_adjacent_points(self.caster, filter_walkable=False)
-		possible_chumps = []
-		for p in adj_points:
-			unit = self.caster.level.get_unit_at(p.x, p.y)
-			if unit == self.caster:
-				continue
-			if not unit:
-				continue
-			if not self.caster.level.can_see(target.x, target.y, p.x, p.y):
-				continue
-			possible_chumps.append(unit)
-		if possible_chumps:
-			return random.choice(possible_chumps)
-		else:
-			return None
-
-	def can_cast(self, x, y):
-		if self.get_chump(x, y) is None:
-			return False
-		if not self.caster.level.get_summon_point(x, y, radius_limit=1, diag=True):
-			return False
-		return self.get_chump(x, y) is not None and Spell.can_cast(self, x, y)
-
-	def cast(self, x, y):
-		
-		target = self.caster.level.get_unit_at(x, y)
-		if not target:
-			return
-
-		chump = self.get_chump(target.x, target.y)
-		if not chump:
-			return
-
-		dest = self.caster.level.get_summon_point(x, y, radius_limit=1, diag=True)
-		if not dest:
-			return
-
-		for p in self.caster.level.get_points_in_line(chump, dest, find_clear=True):
-			self.caster.level.leap_effect(p.x, p.y, Tags.Physical.color, chump)
-			yield
-
-		self.caster.level.act_move(chump, dest.x, dest.y, teleport=True)
-		
-		target.deal_damage(self.get_stat('damage'), Tags.Physical, self)
-		chump.deal_damage(self.get_stat('damage'), Tags.Physical, self)
-
-
-# Enemy bat- if an enemy is in melee range, teleport the enemy to a random point in LOS (again with leap anim).
-# The random point must be one such that the distance from the point to the enemy is less than point to the cyclops
-class CyclopsEnemyBat(Spell):
-
-	def on_init(self):
-		self.name = "Swat Enemy"
-		self.description = "Bats an enemy away"
-		self.damage = 13
-		self.range = 1
-		self.melee = True
-		self.damage_type = Tags.Physical
-
-	def get_destination(self, target):
-		possibles = list(self.caster.level.get_points_in_los(self.caster))
-		def is_valid_dest(dest):
-			if self.caster.level.get_unit_at(dest.x, dest.y):
-				return False
-			if distance(dest, target) >= distance(dest, self.caster):
-				return False
-			if not self.caster.level.can_stand(dest.x, dest.y, target):
-				return False
-			return True
-
-		possibles = [p for p in possibles if is_valid_dest(p)]
-		if possibles:
-			return random.choice(possibles)
-		else:
-			return None
-
-	def cast(self, x, y):
-		unit = self.caster.level.get_unit_at(x, y)
-		if not unit:
-			return
-		# If the level is totally full, just whack the guy and call it a day
-		unit.deal_damage(self.get_stat('damage'), Tags.Physical, self)
-		target = self.get_destination(unit)
-		if not target:
-			return
-
-		for p in self.caster.level.get_points_in_line(unit, target, find_clear=True):
-			self.caster.level.leap_effect(p.x, p.y, Tags.Physical.color, unit)
-			yield
-
-		self.caster.level.act_move(unit, target.x, target.y, teleport=True)
-
-
-def RedCyclops():
-	unit = Unit()
-	unit.sprite.char = 'C'
-	unit.sprite.color = Color(180, 180, 185)
-	unit.name = "Red Cyclops"
-	unit.max_hp = 126
-	unit.spells.append(CyclopsEnemyBat())
-	unit.spells.append(CyclopsAllyBat())
-	unit.tags = [Tags.Living]
-	return unit
 
 class DreamerBuff(Buff):
 
@@ -476,6 +393,13 @@ def Dreamer():
 	dreamer.flying = True
 	return dreamer
 
+def IdolOfInsanity():
+	idol = BigIdol()
+	idol.name = "Idol of Insanity"
+	idol.asset_name = 'idol_of_insanity'
+	idol.buffs.append(DreamerBuff())
+	return idol
+
 class WailOfPain(Spell):
 
 	def on_init(self):
@@ -486,6 +410,9 @@ class WailOfPain(Spell):
 		self.cool_down = 7
 		self.description = "Deals %d damage to all enemies within %d tiles" % (self.damage, self.radius)
 		self.damage_type = Tags.Dark
+
+	def can_threaten(self, x, y):
+		return distance(self.caster, Point(x, y)) <= self.radius
 
 	def cast_instant(self, x, y):
 		for p in self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, self.radius):
@@ -510,7 +437,7 @@ def FallenAngel():
 	angel.sprite.color = Tags.Demon.color
 
 	shield_spell = ShieldSightSpell(4, 2)
-	fire = SimpleRangedAttack(damage=12, damage_type=Tags.Fire, range=4)
+	fire = SimpleRangedAttack(damage=14, damage_type=[Tags.Dark, Tags.Fire], range=4, radius=2)
 	fire.name = "Hellfire"
 
 	angel.spells.append(WailOfPain())
@@ -522,6 +449,8 @@ def FallenAngel():
 	angel.resists[Tags.Holy] = 100
 
 	angel.tags = [Tags.Demon, Tags.Holy]
+
+	angel.buffs.append(ReincarnationBuff(2))
 
 	return angel
 
@@ -551,6 +480,9 @@ class TombstoneSummon(Spell):
 
 	def can_cast(self, x, y):
 		return True
+
+	def can_threaten(self, x, y):
+		return False
 
 	def cast_instant(self, x, y):
 
@@ -598,21 +530,23 @@ class TreeHealAura(Buff):
 		self.name = "Twisted Healing"
 
 	def get_tooltip(self):
-		return "Fully heal most damaged ally each turn"
+		return "Heals a random damaged ally for 30 HP each turn"
 
 	def on_advance(self):
-		allies = sorted((u for u in self.owner.level.units if u != self.owner and not are_hostile(u, self.owner)), key=lambda u: u.max_hp - u.cur_hp)
+		allies = [u for u in self.owner.level.units if u != self.owner and not are_hostile(u, self.owner)]
 		if not allies:
 			return
 
-		target = allies[0]
-		if target.cur_hp < target.max_hp:
-			target.deal_damage(-target.max_hp, Tags.Heal, self)
+		target = random.choice(allies)
+		target.deal_damage(-30, Tags.Heal, self)
 
 def TwistedTree():
 	tree = Unit()
 	tree.name = "Yggdrasil"
 	tree.tags = [Tags.Nature, Tags.Demon]
+
+	tree.radius = 1
+	tree.asset_name = '3x3_yggdrasil'
 
 	tree.sprite.char = 'Y'
 	tree.sprite.color = Tags.Demon.color
@@ -622,8 +556,8 @@ def TwistedTree():
 	tree.resists[Tags.Dark] = 50
 	tree.resists[Tags.Fire] = -100
 
-	#tree.buffs.append(TreeHealAura())
-	aura = DamageAuraBuff(damage=1, damage_type=[Tags.Arcane, Tags.Dark], radius=30)
+	tree.buffs.append(TreeHealAura())
+	aura = DamageAuraBuff(damage=1, damage_type=[Tags.Arcane, Tags.Dark], radius=50)
 	aura.name = "Nightmare Aura"
 	tree.buffs.append(aura)
 	tree.spells.append(TreeThornSummon())
@@ -631,7 +565,7 @@ def TwistedTree():
 
 	tree.stationary = True
 
-	tree.max_hp = 550
+	tree.max_hp = 3550
 
 	return tree
 
@@ -815,7 +749,7 @@ def Medusa():
 
 	unit.name = "Medusa"
 
-	unit.max_hp = 57
+	unit.max_hp = 570
 
 	unit.spells.append(MedusaGaze())
 	melee = SimpleMeleeAttack(damage=4, attacks=5, buff=Poison, buff_duration=3)
@@ -846,38 +780,32 @@ def FlyTrap():
 
 	return unit
 
-class WriteChaosScrolls(Spell):
-
-	def on_init(self):
-		self.name = "Scribe Chaos Scrolls"
-		self.description = "Summon 2-4 living fireball or lightning scrolls"
-		self.range = 0
-		self.cool_down = 6
-
-	def cast(self, x, y):
-
-		for i in range(random.randint(2, 4)):
-			unit = random.choice([LivingFireballScroll(), LivingLightningScroll()])
-			self.summon(unit, sort_dist=False)
-			yield
-
-def ChaosQuill():
+def SwampQueen():
 	unit = Unit()
-	unit.name = "Chaos Quill"
+	unit.name = "Swamp Queen"
+	unit.max_hp = 59
+	unit.shields = 2
 
-	unit.max_hp = 15
-	unit.shields = 6
+	def mushboom():
+		return random.choice([GreyMushboom(), GreenMushboom()])
 
-	unit.spells.append(WriteChaosScrolls())
+	mushbooms = SimpleSummon(mushboom, num_summons=5, cool_down=12)
+	mushbooms.name = "Mushbloom"
+	mushbooms.description = "Summons 5 grey or green mushbooms"
 
-	unit.resists[Tags.Fire] = 75
-	unit.resists[Tags.Lightning] = 75
-	unit.resists[Tags.Arcane] = 100
+	flytraps = SimpleSummon(FlyTrap, num_summons=2, global_summon=True, cool_down=9)
+	flytraps.name = "Grow Fly Traps"
 
-	unit.stationary = True
-	unit.flying = True
-	unit.tags = [Tags.Chaos, Tags.Arcane, Tags.Construct]
-	unit.buffs.append(TeleportyBuff(chance=.1, radius=5))
+	heal = HealAlly(heal=18, range=9)
+	heal.cool_down = 5
+	gaze = SimpleRangedAttack(damage=1, damage_type=Tags.Poison, buff=Poison, buff_duration=10, range=14, cool_down=3)
+	gaze.name = "Toxic Gaze"
+
+	healaura = WizardHealAura(heal=1, duration=7, cool_down=12, radius=10)
+
+	unit.spells = [mushbooms, flytraps, healaura, gaze]
+
+	unit.tags = [Tags.Poison, Tags.Living, Tags.Nature]
 	return unit
 
 class BoxOfWoeBuff(Buff):
@@ -927,7 +855,7 @@ def BoxOfWoe():
 	unit.shields = 2
 
 	unit.stationary = True
-	aura = DamageAuraBuff(damage=2, radius=9, damage_type=[Tags.Ice, Tags.Dark, Tags.Lightning])
+	aura = DamageAuraBuff(damage=2, radius=12, damage_type=[Tags.Ice, Tags.Dark, Tags.Lightning])
 	aura.name = "Aura of Woe"
 	unit.buffs.append(aura)
 	unit.buffs.append(BoxOfWoeBuff())
@@ -981,6 +909,8 @@ def AvianWizard():
 
 	unit = Unit()
 	unit.name = "Avian Wizard"
+
+	unit.flying = True
 
 	unit.max_hp = 44
 	unit.shields = 3
@@ -1206,6 +1136,49 @@ class WizardEarthEle(Spell):
 		self.summon(ele, Point(x, y))
 
 
+
+class WizardEarthquake(Spell):
+
+	def on_init(self):
+		self.name = "Earthquake"
+		self.radius = 10
+		self.cool_down = 16
+		self.range = 0
+		self.damage = 14
+
+	def get_ai_target(self):
+		if any(are_hostile(self.caster, u) for u in self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius'))):
+			return self.caster
+		return None
+
+	def get_description(self):
+		return ("Invoke an earthquake with a [{radius}_tile:radius] radius.\n"
+				"Enemies on affected tiles take [{damage}_physical:physical] physical damage.\n"
+				"50% of Walls on affected tiles are destroyed.").format(**self.fmt_dict())
+
+	def cast(self, x, y):
+		points = list(self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, radius=self.get_stat('radius')))
+		random.shuffle(points)
+		for p in points:
+
+			# Animate
+			if random.random() < .1:
+				yield
+
+			unit = self.caster.level.get_unit_at(p.x, p.y)
+			if unit == self.caster:
+				continue
+
+			if unit and are_hostile(self.caster, unit):
+				unit.deal_damage(self.get_stat('damage'), Tags.Physical, self)
+
+			tile = self.caster.level.tiles[p.x][p.y]
+			if random.random() > .5:
+				self.caster.level.show_effect(p.x, p.y, Tags.Physical)
+				# Turn walls into floors (but not chasms into floors, and nothing into chasms)
+				if not tile.can_see:
+					self.caster.level.make_floor(p.x, p.y)
+
 def MountainWizard():
 	unit = Unit()
 	unit.name = "Mountain Mage"
@@ -1213,7 +1186,7 @@ def MountainWizard():
 	unit.max_hp = 86
 
 	stoneskin = WizardStoneSkin()
-	quakeport = WizardQuakeport()
+	quake = WizardEarthquake()
 	earthele = WizardEarthEle()
 
 	def wolf():
@@ -1229,7 +1202,7 @@ def MountainWizard():
 	wolves.name = "Summon Wolf"
 	spikes = SimpleRangedAttack(damage=3, range=5)
 
-	unit.spells = [stoneskin, earthele, wolves, quakeport, spikes]
+	unit.spells = [stoneskin, earthele, wolves, quake, spikes]
 
 	unit.tags = [Tags.Living, Tags.Nature]
 	return unit
@@ -1299,29 +1272,6 @@ def ArachnidWizard():
 
 	return unit
 
-
-class BeckonDragons(Spell):
-
-	def on_init(self):
-		self.name = "Beckon Dragons"
-		self.description = "Calls 2 random dragons up from the chasms"
-		self.cool_down = 22
-		self.range = 0
-
-	def cast(self, x, y):
-		for i in range(2):
-			
-			tiles = [t for t in self.caster.level.iter_tiles() if t.is_chasm]
-			
-			if not tiles:
-				tiles = [t for t in self.caster.level.iter_tiles()]
-
-			tile = random.choice(tiles)
-
-			dragon = random.choice([FireDrake, StormDrake, FireDrake, StormDrake, FireDrake, GoldDrake, VoidDrake, IceDrake])()
-			self.summon(dragon, tile)
-			yield
-
 class StormBall(Spell):
 
 	def on_init(self):
@@ -1366,26 +1316,103 @@ class DarkBall(Spell):
 					self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Dark, self)
 			yield
 
+def random_drake():
+	return random.choice([FireDrake, StormDrake, FireDrake, StormDrake, FireDrake, GoldDrake, VoidDrake, IceDrake])()
+
+class ScaleWoven(Buff):
+
+	def __init__(self, tag):
+		self.immunity_tag = tag
+		Buff.__init__(self)
+
+	def on_init(self):
+		self.resists[self.immunity_tag] = 100
+		self.name = '%s Woven' % self.immunity_tag.name
+		self.color = self.immunity_tag.color
+		self.buff_type = BUFF_TYPE_BLESS
+
+
+class ScaleWeave(Spell):
+
+	def on_init(self):
+		self.name = "Scale Weave"
+		self.description = "Allies within 4 tiles of target allied dragon gain immunity to damage of that dragons type for 20 turns"
+		self.range = 7
+		self.radius = 4
+		self.duration = 20
+		self.cool_down = 6
+
+	def get_ai_target(self):
+		# Return an allied dragon in range with non immune allies in the aoe
+		potentials = [u for u in self.caster.level.get_units_in_ball(self.caster, self.get_stat('range'))]
+		potentials = [u for u in potentials if Tags.Dragon in u.tags and u != self.caster]
+
+		random.shuffle(potentials)
+
+		for p in potentials:
+			dtypes = [Tags.Dark, Tags.Holy, Tags.Fire, Tags.Lightning, Tags.Ice, Tags.Arcane]
+			dtypes = [t for t in dtypes if t in p.tags]
+
+			nearby = [v for v in self.caster.level.get_units_in_ball(p, self.get_stat('radius')) if not are_hostile(v, self.caster) and any(v.resists[t] < 100 for t in dtypes)]
+			if nearby:
+				return p
+
+		return None
+
+	def can_cast(self, x, y):
+		unit = self.caster.level.get_unit_at(x, y)
+
+		if unit and Tags.Dragon in unit.tags:
+			return True
+		else:
+			return False
+
+	def cast_instant(self, x, y):
+		dragon = self.caster.level.get_unit_at(x, y)
+
+		dtypes = [Tags.Dark, Tags.Holy, Tags.Fire, Tags.Lightning, Tags.Ice, Tags.Arcane]
+		dtypes = [t for t in dtypes if t in dragon.tags]
+
+		self.caster.level.show_path_effect(self.caster, dragon, dtypes[0], minor=True)
+
+		for u in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
+			if are_hostile(self.caster, u):
+				continue
+
+			if u == dragon:
+				continue
+
+			for t in dtypes:
+				if u.resists[t] >= 100:
+					continue
+				self.caster.level.show_path_effect(u, dragon, dtypes[0], minor=True)
+				u.apply_buff(ScaleWoven(t), self.get_stat('duration'))
+
+
 def DragonWizard():
 	unit = Unit()
 	unit.name = "Dragon Mage"
 	unit.asset_name = "dragon_wizard"
 	unit.max_hp = 160
 
-	beckon = BeckonDragons()
-	
+	beckon = SimpleSummon(random_drake, num_summons=2, cool_down=22, global_summon=True)
+	beckon.name = "Summon Drakes"
+
 	ball_range = 8
 	chaosball = SimpleRangedAttack(damage=7, radius=2, range=ball_range, cool_down=3,
 								   damage_type=[Tags.Fire, Tags.Lightning, Tags.Physical])
 	chaosball.name = "Chaos Ball"
 	stormball = StormBall()
 	stormball.range = ball_range
-	darkball = DarkBall()
-	darkball.range = ball_range
 
 	bite = SimpleMeleeAttack(8)
 
-	unit.spells = [beckon, chaosball, stormball, darkball, bite]
+	fly = MonsterLeap()
+
+	fly.range = 7
+	fly.cool_down = 6
+
+	unit.spells = [ScaleWeave(), beckon, fly, bite]
 
 	unit.resists[Tags.Fire] = 50
 	unit.resists[Tags.Lightning] = 50
@@ -1425,11 +1452,11 @@ def EarthTrollWizard():
 	unit.asset_name = "troll_wizard"
 
 	def onhit(caster, target):
-		target.apply_buff(PetrifyBuff(), 3)
+		target.apply_buff(PetrifyBuff(), 4)
 
-	petrify = SimpleRangedAttack(damage=0, damage_type=Tags.Physical, range=5, cool_down=15)
+	petrify = SimpleRangedAttack(damage=0, damage_type=Tags.Physical, range=4, cool_down=15)
 	petrify.name = "Petrify"
-	petrify.description = "Petrifies the target for 3 turns"
+	petrify.description = "Petrifies the target for 4 turns"
 
 	def wolf():
 		wolf = Unit()
@@ -1735,7 +1762,6 @@ class WizardIcicle(Spell):
 
 	def on_init(self):
 		self.name = "Icicle"
-		self.description = "Deals ice and physical damage"
 		self.damage = 4
 		self.range = 6
 		self.damage_type = [Tags.Physical, Tags.Ice]
@@ -2020,10 +2046,10 @@ class WizardStarfireBeam(Spell):
 				self.caster.level.make_floor(p.x, p.y)
 
 		for p in center_beam:
-			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Fire, self)
+			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Arcane, self)
 
 		for p in side_beam:
-			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Lightning, self)
+			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Fire, self)
 
 class StarfireOrb(Spells.OrbSpell):
 
@@ -2270,28 +2296,35 @@ def PaleRider():
 def TheFurnace():
 	unit = Unit()
 	unit.name = "The Furnace"
-	unit.asset_name = "walking_furnace"
+	unit.asset_name = "3x3_furnace"
 
-	unit.max_hp = 451
+	unit.radius = 1
+
+	unit.max_hp = 4096
 
 	unit.tags = [Tags.Fire, Tags.Construct, Tags.Metallic]
 	unit.resists[Tags.Ice] = -100
 
-	fire = SimpleRangedAttack(damage=6, range=4, beam=True, damage_type=Tags.Fire)
+
+	fire = FireBreath()
+	fire.cool_down = 3
+	fire.range = 4
+	fire.angle = math.pi / 3.0
+	fire.damage = 13
 	unit.spells.append(fire)
 
 	unit.buffs.append(DamageAuraBuff(damage=1, damage_type=Tags.Fire, radius=12))
-
-	unit.buffs.append(GeneratorBuff(FurnaceHound, .1))
-	unit.buffs.append(GeneratorBuff(FurnaceImp, .1))
 
 	return unit
 
 def PillarOfBone():
 	unit = Unit()
-	unit.max_hp = 400
+	unit.max_hp = 2400
 
 	unit.name = "Pillar of Bones"
+	unit.asset_name = "3x3_pillar_of_bones"
+	unit.radius = 1
+
 	unit.stationary = True
 
 	summon_shambler = SimpleSummon(lambda: BoneShambler(32), cool_down=17, global_summon=True, max_channel=4, path_effect=Tags.Dark)
@@ -2313,9 +2346,11 @@ def PillarOfBone():
 
 def PillarOfWorms():
 	unit = Unit()
-	unit.max_hp = 300
+	unit.max_hp = 2700
 
 	unit.name = "Pillar of Worms"
+	unit.asset_name = '3x3_pillar_of_worms'
+	unit.radius = 1
 	unit.stationary = True
 
 	summon_shambler = SimpleSummon(WormShambler, cool_down=15, global_summon=True, max_channel=3, path_effect=Tags.Poison)
@@ -2379,64 +2414,7 @@ def ImpCollector():
 	unit.tags = [Tags.Living, Tags.Dark]
 	return unit
 
-class CoatlBreath(BreathWeapon):
 
-	def __init__(self):
-		BreathWeapon.__init__(self)
-		self.name = "Emerald Breath"
-		self.duration = 15
-		self.damage_type = Tags.Poison
-		self.cool_down = 6
-		self.range = 7
-		self.angle = math.pi / 6.0
-
-	def get_description(self):
-		return "Breath weapon, poisons living enemies and shields allies"
-
-	def per_square_effect(self, x, y):
-		unit = self.caster.level.get_unit_at(x, y)
-		if unit and are_hostile(self.caster, unit) and Tags.Living in unit.tags:
-			self.caster.level.deal_damage(x, y, 0, self.damage_type, self)
-			unit.apply_buff(Poison(), self.get_stat('duration'))
-		elif unit and not are_hostile(self.caster, unit):
-			unit.add_shields(1)
-		else:
-			self.caster.level.deal_damage(x, y, 0, self.damage_type, self)
-
-def FeatheredSerpent():
-	unit = Unit()
-	unit.max_hp = 97
-	unit.shields = 1
-
-	unit.flying = True
-
-	unit.name = "Feathered Serpent"
-	unit.asset_name = "coatl"
-
-	teleport = MonsterTeleport()
-	teleport.cool_down = 18
-	teleport.range = RANGE_GLOBAL
-
-	heal = HealAlly(25, range=10, tag=Tags.Living)
-	heal.cool_down = 9
-
-	abolt = SimpleRangedAttack(damage=3, damage_type=Tags.Arcane, range=16)
-	abolt.cool_down = 2
-	pbreath = CoatlBreath()
-
-	melee = SimpleMeleeAttack(7)
-
-	unit.spells = [teleport, heal, pbreath, abolt, melee]
-
-	unit.resists[Tags.Poison] = 100
-	unit.resists[Tags.Arcane] = 100
-	unit.resists[Tags.Holy] = 100
-	unit.resists[Tags.Dark] = -100
-
-	unit.tags = [Tags.Living, Tags.Holy, Tags.Arcane]
-
-	unit.buffs.append(ReincarnationBuff(2))
-	return unit
 
 def TwilightSeer():
 
@@ -2644,7 +2622,7 @@ class GeminiCloneSpell(Spell):
 
 	def can_cast(self, x, y):
 		num_geminis = len(list(u for u in self.caster.level.units if u.name == self.caster.name))
-		return num_geminis < 2
+		return num_geminis < 2 and Spell.can_cast(self, x, y)
 
 	def cast_instant(self, x, y):
 		clone = Gemini()
@@ -2691,6 +2669,7 @@ def Thornface():
 	unit.shields = 33
 
 	unit.stationary = True
+	unit.flying = True
 
 	phasebolt = SimpleRangedAttack(damage=2, range=15, damage_type=Tags.Arcane)
 	phasebolt.onhit = ThornTrouble
@@ -2804,12 +2783,13 @@ class IdolOfSlimeBuff(Buff):
 		yield
 
 def IdolOfSlime():
-	unit = Idol()
+	unit = BigIdol()
 	unit.name = "Slimesoul Idol"
+	unit.asset_name = 'idol_of_slime'
 	unit.buffs.append(IdolOfSlimeBuff())
 	return unit
 
-class CrucibleOfPainBuff(Buff):
+class CrucibleOfPainEnemyBuff(Buff):
 
 	def on_init(self):
 
@@ -2828,7 +2808,8 @@ class CrucibleOfPainBuff(Buff):
 def CrucibleOfPain():
 	unit = Idol()
 	unit.name = "Crucible of Pain"
-	unit.buffs.append(CrucibleOfPainBuff())
+	unit.asset_name = "crucible_of_pain_idol"
+	unit.buffs.append(CrucibleOfPainEnemyBuff())
 	return unit
 
 class FieryVengeanceBuff(Buff):
@@ -2865,8 +2846,9 @@ class FieryVengeanceBuff(Buff):
 		return False
 
 def IdolOfFieryVengeance():
-	unit = Idol()
+	unit = BigIdol()
 	unit.name = "Idol of Fiery Vengeance"
+	unit.asset_name = "idol_of_vengeance"
 	unit.buffs.append(FieryVengeanceBuff())
 	return unit
 
@@ -2886,6 +2868,7 @@ class ConcussiveIdolBuff(Buff):
 def ConcussiveIdol():
 	unit = Idol()
 	unit.name = "Concussive Idol"
+	unit.asset_name = "concussive_idol"
 	unit.buffs.append(ConcussiveIdolBuff())
 	return unit
 
@@ -2913,9 +2896,776 @@ class VampirismIdolBuff(Buff):
 		evt.source.owner.deal_damage(-heal, Tags.Heal, self)
 
 def VampirismIdol():
-	unit = Idol()
+	unit = BigIdol()
 	unit.buffs.append(VampirismIdolBuff())
 	unit.name = "Idol of Vampirism"
+	unit.asset_name = "idol_of_vampirism"
+	return unit
+
+class IdolOfAgonyBuff(Buff):
+
+	def on_init(self):
+		self.name = "Aura of Agony"
+		self.description = "Redeal all non [poison] damage dealt to enemies as [poison] damage."
+		self.global_triggers[EventOnDamaged] = self.on_damage
+
+	def on_damage(self, evt):
+		if not are_hostile(self.owner, evt.unit):
+			return
+		if evt.damage_type == Tags.Poison:
+			return
+		self.owner.level.queue_spell(self.do_damage(evt))
+
+	def do_damage(self, evt):
+		evt.unit.deal_damage(evt.damage, Tags.Poison, self)
+		self.owner.level.show_path_effect(self.owner, evt.unit, Tags.Poison, minor=True)
+		yield
+
+def IdolOfAgony():
+	unit = BigIdol()
+	unit.buffs.append(IdolOfAgonyBuff())
+	unit.name = "Idol of Agony"
+	unit.asset_name = 'idol_of_agony'
+	return unit
+
+# Idol of Weakness: each turn, each enemy gets -25 resist to a random element for 20 turns
+class IdolOfWeaknessDebuff(Buff):
+	
+	def __init__(self, tag):
+		self.tag = tag
+		Buff.__init__(self)
+
+	def on_init(self):
+		self.name = "%s Weakness" % self.tag.name
+		self.stack_type = STACK_INTENSITY
+		self.buff_type = BUFF_TYPE_CURSE
+		self.color = self.tag.color
+		self.resists[self.tag] = -25
+
+class IdolOfWeaknessSpell(Spell):
+
+	def on_init(self):
+		self.name = "Weaken"
+		self.description = "Enemy units lose 25 resistance to a random damage type for 8 turns"
+		self.range = 0
+
+	def cast_instant(self, x, y):
+		for u in self.owner.level.units:
+			if not are_hostile(self.owner, u):
+				continue
+
+			tag = random.choice(damage_tags)
+
+			self.owner.level.show_path_effect(self.caster, u, [Tags.Dark, tag], minor=True)
+
+			u.apply_buff(IdolOfWeaknessDebuff(tag), 8)
+
+def IdolOfWeakness():
+	unit = BigIdol()
+	unit.spells.append(IdolOfWeaknessSpell())
+	unit.name = "Idol of Frailty"
+	unit.asset_name = 'idol_of_weakness'
+	return unit
+
+class IdolOfNightmaresBuff(DamageAuraBuff):
+
+	def __init__(self):
+		DamageAuraBuff.__init__(self, 1, [Tags.Dark, Tags.Arcane], 6)
+
+	def on_init(self):
+		self.name = "Nightmare Touched"
+		self.color = Tags.Dark.color
+		self.buff_type = BUFF_TYPE_BLESS
+		self.resists[Tags.Arcane] = 75
+		self.resists[Tags.Dark] = 75
+		self.asset = ['status', 'nightmared']
+
+class IdolOfNightmaresSpell(Spell):
+
+	def on_init(self):
+		self.requires_los = False
+		self.range = 99
+		self.radius = 6
+		self.damage = 1
+		self.duration = 10
+		self.name = "Bestow Nightmare"
+		self.description = "Grant an allied unit 75 arcane and dark resist and a dark and arcane damage aura."
+
+	def get_ai_target(self):
+		candidates = [u for u in self.owner.level.units if not are_hostile(u, self.owner) and not u.has_buff(IdolOfNightmaresBuff)]
+		if candidates:
+			return random.choice(candidates)
+		return None
+
+	def cast_instant(self, x, y):
+		unit = self.owner.level.get_unit_at(x, y)
+		if not unit:
+			return
+		unit.apply_buff(IdolOfNightmaresBuff(), self.get_stat('duration'))
+		self.owner.level.show_path_effect(self.caster, unit, [Tags.Dark, Tags.Arcane], minor=True)
+
+def IdolOfNightmares():
+	unit = BigIdol()
+	unit.spells.append(IdolOfNightmaresSpell())
+	unit.name = "Idol of Nightmares"
+	unit.asset_name = 'the_tree_of_pain_and_nightmares'
+	return unit
+
+class IdolOfShieldingSpell(Spell):
+
+	def on_init(self):
+		self.name = "Mass Protection"
+		self.description = "All allies gain 1 SH up to a max of 3"
+		self.range = 0
+		self.cool_down = 2
+
+	def cast_instant(self, x, y):
+		for u in self.owner.level.units:
+			if are_hostile(self.owner, u):
+				continue
+			if u.shields >= 3:
+				continue
+			u.add_shields(1)
+
+def IdolOfShielding():
+	unit = BigIdol()
+	unit.spells.append(IdolOfShieldingSpell())
+	unit.name = "Idol of Invincibiity"
+	unit.asset_name = 'idol_of_shielding'
+	return unit
+
+
+# Idol of Fiends - for every 100 damage dealt (ally or enemy), summons a tormentor.  
+#                  additionally, for every 666, summon a fiend
+
+class IdolOfFiendsBuff(Buff):
+
+	def on_init(self):
+		self.description = "For every 100 damage dealt, summon a tormentor.  For every 666, summon a fiend"
+		self.global_triggers[EventOnDamaged] = self.on_damage
+		
+		self.tormentor_counter = 0
+		self.fiend_counter = 0
+		self.tormentor_counter_max = 100
+		self.fiend_counter_max = 666
+
+		self.color = Tags.Chaos.color
+
+	def on_damage(self, evt):
+
+		self.tormentor_counter += evt.damage
+		self.fiend_counter += evt.damage
+
+		while self.tormentor_counter > self.tormentor_counter_max:
+			unit = random.choice([FieryTormentor, DarkTormentor, IcyTormentor])()
+			if self.summon(unit, radius=60, sort_dist=False):
+				self.tormentor_counter -= self.tormentor_counter_max
+				self.owner.level.show_path_effect(self.owner, unit, Tags.Dark, minor=True)
+		
+		while self.fiend_counter > self.fiend_counter_max:
+			unit = random.choice([RedFiend, IronFiend, YellowFiend])()
+			if self.summon(unit, radius=60, sort_dist=False):
+				self.fiend_counter -= self.fiend_counter_max
+				self.owner.level.show_path_effect(self.owner, unit, Tags.Chaos, minor=True)
+
+def IdolOfFiends():
+	unit = BigIdol()
+	unit.buffs.append(IdolOfFiendsBuff())
+	unit.name = "Idol of Fiends"
+	unit.asset_name = 'idol_of_nightmares'
+	return unit
+
+def GiantFleshFiend():
+	unit = FleshFiend()
+	unit.max_hp = 9006
+	unit.radius = 1
+	unit.asset_name = "3x3_fleshfiend"
+	unit.name = "Flesh Colossus"
+	return unit
+
+def GiantBoneShambler():
+	unit = BoneShambler()
+	unit.max_hp = 2304
+
+	unit.buffs = []
+	unit.buffs.append(SpawnOnDeath(lambda : BoneShambler(256), 9))
+
+	unit.radius = 1
+	unit.asset_name = "3x3_bone_shambler"
+	unit.name = "Bone Colossus"
+
+	return unit
+
+def GiantMindMaggotQueen():
+	unit = Unit()
+	unit.name = "Mind Maggot Queen"
+	unit.asset_name = "3x3_maggot_queen"
+	unit.max_hp = 1210
+	unit.radius = 1
+
+	melee = SimpleMeleeAttack(74, onhit=drain_spell_charges)
+	melee.name = "Brain Bite"
+	melee.description = "On hit, drains a charge of a random spell"
+	unit.spells.append(melee)
+
+	summon = SimpleSummon(MindMaggot, num_summons=6, cool_down=10)
+	unit.spells.append(summon)
+
+	unit.flying = True
+	unit.tags = [Tags.Living, Tags.Arcane]
+	return unit
+
+def GiantMassOfEyes():
+	unit = FloatingEye()
+	unit.max_hp = 1009
+	unit.shields = 8
+	unit.radius = 1
+
+	unit.name = "Giant Mass of Eyes"
+	unit.asset_name = "3x3_mass_of_eyes"
+
+	unit.spells[0].radius = 3
+	unit.spells[0].damage = 9
+
+	unit.buffs.append(SpawnOnDeath(FloatingEyeMass, 9))
+	return unit
+
+def GiantNightmareTurtle():
+	unit = Unit()
+	unit.radius = 1
+	unit.asset_name = '3x3_nightmare_turtle'
+	unit.name = "Giant Nightmare Turtle"
+	unit.max_hp = 2491
+
+	unit.resists[Tags.Dark] = 75
+	unit.resists[Tags.Arcane] = 50
+	unit.resists[Tags.Physical] = 25
+
+	aura = DamageAuraBuff(damage=1, damage_type=[Tags.Arcane, Tags.Dark], radius=8)
+	aura.name = "Nightmare Aura"
+	unit.buffs.append(aura)
+
+	unit.spells.append(SimpleMeleeAttack(damage=20))
+	unit.tags = [Tags.Dark, Tags.Nature, Tags.Arcane, Tags.Demon]
+	return unit
+
+def GiantGorgon():
+	unit = GreyGorgon()
+	unit.radius = 1
+	unit.asset_name = "3x3_gorgon"
+	unit.name = "Giant Gorgon"
+
+	unit.max_hp = 2972
+
+	unit.spells[0].range = 9
+	unit.spells[0].angle = math.pi / 8.0
+	unit.spells[0].duration = 3
+	unit.spells[1].damage = 38
+
+	return unit
+
+def InfernoKing():
+	unit = Unit()
+
+	unit.radius = 1
+	unit.asset_name = "3x3_inferno_king"
+	unit.name = "Beastking of Inferno"
+
+	unit.max_hp = 2666
+
+	unit.resists[Tags.Fire] = 100
+	unit.resists[Tags.Dark] = 100
+	unit.resists[Tags.Ice] = -50
+
+	fiendsummon = SimpleSummon(spawn_func=RedFiend, num_summons=3, cool_down=13)
+	fiendsummon.name = "Infernal Court"
+
+	deathgaze = SimpleRangedAttack(damage=7, range=16, beam=True, damage_type=Tags.Dark)
+	deathgaze.cool_down = 2
+
+	breath = FireBreath()
+	breath.cool_down = 2
+	breath.damage = 13
+	breath.range = 10
+
+	unit.spells = [fiendsummon, deathgaze, breath]
+
+	unit.tags = [Tags.Fire, Tags.Demon]
+
+	return unit
+
+def giant_mind_devo_proc(caster, target):
+	caster.add_shields(1)
+	possible_spells = [s for s in target.spells if s.cur_charges > 0]
+	if possible_spells:
+		spell = random.choice(possible_spells)
+		spell.cur_charges = spell.cur_charges - 1
+
+class MultiTentacle(Spell):
+
+	def on_init(self):
+		self.name = "Tentacles"
+		self.description = "Pulls in up to 4 enemies"
+		self.damage = 4
+		self.num_targets = 4
+		self.range = 9
+		self.damage_type = Tags.Physical
+		self.pull_squares = 1
+
+	def cast(self, x, y):
+
+		targets = [u for u in self.caster.level.get_units_in_los(self.caster) if are_hostile(self.caster, u) and distance(u, self.caster) <= (self.get_stat('range') + self.caster.radius)]
+		print(targets)
+		random.shuffle(targets)
+
+		for t in targets[:self.get_stat('num_targets')]:
+			print(t)
+			path = self.caster.level.get_points_in_line(self.caster, t)
+
+			for p in path[1:-1]:
+				self.caster.level.flash(p.x, p.y, Tags.Tongue.color)
+
+			pull(t, self.caster, self.pull_squares)
+			t.deal_damage(self.damage, self.damage_type, self)
+			yield
+
+class InsanityAura(DamageAuraBuff):
+
+	def __init__(self):
+		DamageAuraBuff.__init__(self, damage=1, radius=1, damage_type=Tags.Arcane)
+		self.name = "Insanity Aura"
+		self.radius = 5
+		self.damage_type = Tags.Arcane
+
+	def get_tooltip(self):
+		return "Enemies within 5 tiles take 1 arcane damage and lose 1 random spell charge each turn."
+
+	def on_hit(self, unit):
+		drain_spell_charges(self.owner, unit)
+
+def GiantMindDevourer():
+	unit = Unit()
+	unit.name = "Ultimate Mind Devourer"
+	unit.asset_name = "3x3_mind_devourer"
+	unit.radius = 1
+
+	unit.shields = 6
+	unit.max_hp = 3475
+
+	pull = MultiTentacle()
+
+	unit.spells.append(pull)
+
+	unit.buffs.append(InsanityAura())
+
+	unit.tags = [Tags.Arcane, Tags.Living]
+	unit.resists[Tags.Arcane] = 100
+
+	return unit
+
+def GiantSackOfFilth():
+	unit = Unit()
+	unit.name = "Giant Sack of Filth"
+	unit.asset_name = "3x3_sack_of_filth"
+	unit.radius = 1
+
+	unit.max_hp = 1987
+
+	unit.spells.append(SimpleSummon(FlyCloud, num_summons=6, cool_down=9))
+	unit.spells.append(SimpleRangedAttack(damage=9, range=5, damage_type=Tags.Poison, radius=2, buff=Poison, buff_duration=4, cool_down=5))
+	unit.spells.append(SimpleRangedAttack(damage=4, range=12, damage_type=Tags.Dark))
+
+	unit.buffs.append(SpawnOnDeath(BagOfBugs, 9))
+	unit.buffs.append(GeneratorBuff(FlyCloud, .5))
+
+	unit.tags = [Tags.Dark, Tags.Construct]
+
+	unit.resists[Tags.Dark] = 50
+	unit.resists[Tags.Physical] = 25
+	unit.resists[Tags.Fire] = -100
+
+	return unit
+
+def GreaterLamasu():
+	unit = Unit()
+	unit.name = "True Lamasu"
+
+	unit.radius = 1
+	unit.asset_name = '3x3_lamasu'
+
+	unit.max_hp = 3044
+	unit.shields = 6
+
+	unit.resists[Tags.Physical] = 50
+	unit.resists[Tags.Arcane] = 50
+	unit.resists[Tags.Dark] = 50
+	unit.resists[Tags.Holy] = 75
+
+	unit.sprite.char = 'L'
+	unit.sprite.color = Color(255, 220, 100)
+
+	unit.flying = True
+
+
+	unit.spells.append(SimpleRangedAttack(damage=13, range=9, damage_type=Tags.Holy, cool_down=2))
+	unit.spells.append(SimpleMeleeAttack(damage=17))
+	unit.buffs.append(HealAuraBuff(heal=11, radius=13))
+
+	unit.tags = [Tags.Nature, Tags.Living, Tags.Holy]
+
+	return unit
+
+def GreaterDragon():
+	unit = Unit()
+	unit.name = "Winterbringer"
+	
+	unit.asset_name = '3x3_dragon'
+	unit.radius = 1
+
+	unit.max_hp = 2676
+	unit.flying = True
+	breath = IceBreath()
+	breath.range = 18
+	breath.damage = 14
+	unit.spells.append(breath)
+	breath.cool_down = 4
+	unit.spells.append(SimpleMeleeAttack(17))
+
+	# Todo- winter brood, summon 5 ice lizards 2 ice drakes 1 ice wyrm egg eacg 13 turns
+
+	unit.resists[Tags.Ice] = 100
+	unit.resists[Tags.Fire] = -50
+	unit.tags = [Tags.Dragon, Tags.Living, Tags.Ice]
+
+	return unit
+
+class MoonCrownBuff(DamageAuraBuff):
+
+	def __init__(self):
+		DamageAuraBuff.__init__(self, damage=2, damage_type=[Tags.Holy, Tags.Arcane], radius=5)
+
+	def on_init(self):
+		self.name = "Moon Crown"
+		self.resists[Tags.Holy] = 100
+		self.resists[Tags.Arcane] = 100
+
+
+def MoonMage():
+	unit = Unit()
+	unit.name = "Moon Mage"
+	unit.asset_name = 'moon_mage'
+
+	unit.tags = [Tags.Holy, Tags.Arcane]
+
+	unit.max_hp = 55
+	unit.shields = 5
+
+	unit.resists[Tags.Physical] = 75
+	unit.resists[Tags.Arcane] = 100
+	unit.resists[Tags.Holy] = 100
+
+	# Spells:
+
+	# Moon Beam - Low dmg holy/arcane beam, no cd
+	# Moon Crown - arcane holy damage aura buff on random ally
+	# Call Lamasu - 1 lamasu for 10 turns every 10 turns
+	# Dispersion - pbaoe disperse
+	# CANCELLED: Moon glaive.  kind of cool but not that cool, complex.
+
+	moon_beam = SimpleRangedAttack(damage=6, range=7, damage_type=[Tags.Holy, Tags.Arcane], beam=True)
+	moon_beam.name = "Moon Beam"
+
+	moon_crown = SimpleCurse(MoonCrownBuff, 30)
+	moon_crown.name = "Moon Crown"
+	moon_crown.description = "Grants an ally a [holy] and [arcane] damage aura and immunity for 30 turns"
+	moon_crown.cool_down = 8
+
+	lamasu_pet = SimpleSummon(Lamasu, cool_down=10, duration=5)
+	lamasu_pet.name = "Lunar Steed"
+
+	tele = lambda x, y: randomly_teleport(y, 99)
+
+	dispersion = SimpleBurst(damage=8, radius=9, damage_type=Tags.Arcane, onhit=tele)
+	dispersion.cool_down = 30
+	dispersion.description = "Teleports units in radius to random locations"
+
+	unit.spells = [dispersion, lamasu_pet, moon_crown, moon_beam]
+	return unit
+
+class MassBloodrageSpell(Spell):
+
+	def on_init(self):
+		self.name = "Mass Bloodrage"
+		self.cool_down = 15
+		self.duration = 5
+		self.description = "Increase damage of all allied units by 7"
+		self.range = 0
+
+	def cast(self, x, y):
+		units = list(self.owner.level.units)
+		random.shuffle(units)
+		for u in units:
+			if not are_hostile(self.caster, u):
+				u.apply_buff(BloodrageBuff(7), self.get_stat('duration'))
+				yield
+
+def BloodWizard():
+
+	unit = Unit()
+	unit.max_hp = 350
+	unit.name = "Blood Magus"
+	unit.asset_name = "blood_wizard"
+
+	unit.resists[Tags.Dark] = 50
+
+	unit.tags = [Tags.Blood, Tags.Dark]
+
+	# Spells:
+	# Bone Spear (Pay hp, shoot big spear)
+	# Bloodshift (as player- heal ally units, harm enemies)
+	# Lifedrain (3 hp per turn, 12 turns, 3 turn CD- so it gets a bit more vs summons but not that much more)
+	# Summon 3x Bloodhounds on 9 turn cd
+	# Mass Bloodrage - all allies get +11 damage for 1 turns, 16 turn CD
+
+	bone_spear = SimpleRangedAttack(damage=8, range=6, damage_type=Tags.Physical, beam=True, proj_name="silver_spear")
+	bone_spear.name = "Bone Spear"
+
+	life_drain = Spells.BloodTapSpell()
+	life_drain.max_charges = 0
+	life_drain.cool_down = 5
+	life_drain.radius = 0
+	life_drain.duration = 9
+	life_drain.hp_cost = 0
+	life_drain.range = 8
+
+	hounds = SimpleSummon(Bloodhound, num_summons=2, cool_down=13)	
+
+	mass_bloodrage = MassBloodrageSpell()
+
+	unit.spells = [hounds, mass_bloodrage, life_drain, bone_spear]
+	return unit
+
+class WizardIcyVengeance(Buff):
+	def on_init(self):
+		self.name = "Icy Vengeance"
+		self.description = "Whenever an ally dies, deal [6_ice:ice] damage to up to [3:num_targets] random enemies in a [5_tile_radius:radius]."
+		self.global_triggers[EventOnDeath] = self.on_death
+
+	def on_death(self, evt):
+		if are_hostile(evt.unit, self.owner):
+			return
+		self.owner.level.queue_spell(self.do_damage(evt))
+
+	def do_damage(self, evt):
+
+		# Show path from wizard to dead unit to indicate the wizard is the one doing this
+		self.owner.level.show_path_effect(self.owner, evt.unit, Tags.Dark, minor=True)
+
+		units = self.owner.level.get_units_in_ball(evt.unit, 6)
+		units = [u for u in units if are_hostile(self.owner, u)]
+		random.shuffle(units)
+		for unit in units[:3]:
+			for p in self.owner.level.get_points_in_line(evt.unit, unit)[1:-1]:
+				self.owner.level.show_effect(p.x, p.y, Tags.Ice, minor=True)
+			unit.deal_damage(6, Tags.Ice, self)
+			yield
+
+def DeathchillWizard():
+	unit = Unit()
+	unit.name = "Deathchiller"
+	unit.asset_name = "deathchill_wizard"
+
+	unit.max_hp = 90
+	unit.shields = 2
+	unit.resists[Tags.Dark] = 100
+	unit.resists[Tags.Ice] = 100
+	unit.resists[Tags.Holy] = -50
+	unit.resists[Tags.Fire] = -50
+
+	unit.tags = [Tags.Dark, Tags.Ice]
+
+	# Spells:
+	# Deathbolt (as player spell- deal damage and raise)
+	# Iceball (as player spell- aoe ice and freeze)
+	# Deathchill Chimera Summoning
+	# Icy Vengeance - but for fixed flat 5 damage?  Max hp damage from enemy to player is maybe excessive?
+
+	def make_skeleton(caster, target):
+		raise_skeleton(caster, target)
+		yield
+
+	def try_raise(caster, target):
+		if not target.is_alive():
+			caster.level.queue_spell(make_skeleton(caster, target))
+
+	dbolt = SimpleRangedAttack(damage=7, range=6, damage_type=Tags.Dark, onhit=try_raise)
+	dbolt.name = "Death Bolt"
+	dbolt.description = "Raises slain targets as skeletons"
+
+	iceball = SimpleRangedAttack(damage=12, range=6, radius=2, damage_type=Tags.Ice, buff=FrozenBuff, buff_duration=2)
+	iceball.cool_down = 6	
+
+	deathchill_calling = SimpleSummon(DeathchillChimera, num_summons=1, cool_down=9)
+
+	unit.spells = [deathchill_calling, iceball, dbolt]
+	unit.buffs.append(WizardIcyVengeance())
+	return unit
+
+class WizardImpPrison(Spell):
+
+	def on_init(self):
+		self.name = "Prison of Imps"
+		self.description = "Surrounds a group of enemies with imps"
+		self.cool_down = 5
+		self.range = 11
+
+	# Do not allow casting if it would result in 0 imps
+	def can_cast(self, x, y):
+		if not self.caster.level.get_adjacent_points(Point(x, y), filter_walkable=False, check_unit=True):
+			return False
+		return Spell.can_cast(self, x, y)
+
+	def get_impacted_tiles(self, x, y):
+
+		candidates = set([Point(x, y)])
+		unit_group = set()
+
+		while candidates:
+			candidate = candidates.pop()
+			unit = self.caster.level.get_unit_at(candidate.x, candidate.y)
+			if unit and unit not in unit_group and are_hostile(unit, self.caster):
+				unit_group.add(unit)
+
+				for p in self.caster.level.get_adjacent_points(Point(unit.x, unit.y), filter_walkable=False):
+					candidates.add(p)
+
+		outline = set()
+		for unit in unit_group:
+			for p in self.caster.level.get_adjacent_points(Point(unit.x, unit.y)):
+				if not self.caster.level.get_unit_at(p.x, p.y):
+					outline.add(p)
+
+		return list(outline)
+
+	def cast(self, x, y):
+		target_points = self.get_impacted_tiles(x, y)
+
+		random.shuffle(target_points)
+
+		for p in target_points:
+			
+			unit = random.choice([FireImp, SparkImp, IronImp])()
+			self.summon(unit, p, radius=0)
+			yield
+
+class WizardDemonicPromotion(Spell):
+
+	def on_init(self):
+		self.name = "Demonic Promotion"
+		self.description = "Transforms an imp into a fiend"
+		self.range = 10
+		self.cool_down = 30
+		self.target_allies = True
+
+	def can_cast(self, x, y):
+		unit = self.owner.level.get_unit_at(x, y)
+		if not unit:
+			return False
+		if not unit.name.endswith('Imp'):
+			return False
+		return Spell.can_cast(self, x, y)
+
+	def cast_instant(self, x, y):
+		unit = self.owner.level.get_unit_at(x, y)
+		if not unit:
+			return
+		if not unit.name.endswith('Imp'):
+			return
+
+		unit.kill(trigger_death_event=False)
+
+		fiend = None
+		if unit.name == 'Spark Imp':
+			fiend = YellowFiend()
+		if unit.name == 'Fire Imp':
+			fiend = RedFiend()
+		if unit.name == 'Iron Imp':
+			fiend = IronFiend()
+
+		if fiend:
+			self.summon(fiend, target=Point(unit.x, unit.y))
+		
+
+def ChaosWizard():
+	unit = Unit()
+	unit.name = "Grand Warlock"
+
+	unit.asset_name = "chaos_wizard"
+
+	unit.max_hp = 133
+	unit.shields = 1
+
+	unit.resists[Tags.Fire] = 75
+	unit.resists[Tags.Lightning] = 75
+	unit.resists[Tags.Physical] = 50
+
+	unit.tags = [Tags.Chaos]
+
+	# Spells
+	# Annihilate
+	# Imp Prison
+	# Demonic Promotion
+
+	wizard_annihilate = Spells.AnnihilateSpell()
+	wizard_annihilate.max_charges = 0
+	wizard_annihilate.damage = 7
+	wizard_annihilate.cascade_range = 4
+	wizard_annihilate.range = 4
+
+	imp_prison = WizardImpPrison()
+
+	demonic_promotion = WizardDemonicPromotion()
+
+	unit.spells = [imp_prison, demonic_promotion, wizard_annihilate]
+	return unit
+
+
+def RotSapling():
+	unit = Unit()
+	unit.name = "Rot Sprouts"
+	unit.asset_name = "rot_tree_saplings"
+	unit.max_hp = 12
+
+	unit.resists[Tags.Dark] = 100
+	unit.resists[Tags.Physical] = 50
+	unit.resists[Tags.Fire] = -100
+	unit.resists[Tags.Ice] = -50
+
+	unit.tags = [Tags.Arcane, Tags.Nature]
+
+
+	unit.spells.append(SimpleMeleeAttack(1, damage_type=Tags.Dark))
+	unit.buffs.append(ChanceToBecome(RotBush, .02, name="Rot Bush"))
+	unit.buffs.append(ChanceToBecome(Zombie, .02))
+
+	unit.stationary = True
+	return unit
+
+def RotBush():
+	unit = Unit()
+	unit.name = "Rot Tree"
+	unit.max_hp = 65
+
+	unit.resists[Tags.Dark] = 100
+	unit.resists[Tags.Physical] = 50
+	unit.resists[Tags.Fire] = -100
+	unit.resists[Tags.Ice] = -50
+
+	unit.buffs.append(GeneratorBuff(RotSapling, .2))
+
+	unit.tags = [Tags.Dark, Tags.Nature]
+
+	unit.stationary = True
 	return unit
 
 
@@ -2925,41 +3675,48 @@ DIFF_HARD = 3
 
 # Spawner, Level, Rarity, Min, Max, (Req Tag)
 rare_monsters = [
-	(lambda : DampenerIdol('Weak', 'damage', 4), DIFF_EASY, 1, 4, None),
-	(lambda: DampenerIdol('Foolish', 'range', 1), DIFF_EASY, 1, 4, None),
-	(lambda: DampenerIdol('Fickle', 'duration', 3), DIFF_EASY, 1, 4, None),
-	(Necromancer, DIFF_MED, 2, 3, Tags.Living),
-	(WarBanner, DIFF_EASY, 1, 3, None),
+	#(lambda : DampenerIdol('Weak', 'damage', 4), DIFF_EASY, 1, 4, None),
+	#(lambda: DampenerIdol('Foolish', 'range', 1), DIFF_EASY, 1, 4, None),
+	#(lambda: DampenerIdol('Fickle', 'duration', 3), DIFF_EASY, 1, 4, None),
+	#(WarBanner, DIFF_EASY, 1, 3, None),
 	(Watcher, DIFF_EASY, 3, 7, None),
-	(VoidWatcher, DIFF_MED, 2, 4, None),
-	(FlyTrap, DIFF_EASY, 7, 13, None),
-	(IdolOfUndeath, DIFF_MED, 2, 3, Tags.Undead),
-	(IdolOfLife, DIFF_MED, 3, 5, Tags.Living),
-	(DarkPriests, DIFF_MED, 2, 4, None),
-	(OrcKing, DIFF_EASY, 1, 1, None),
-	(OgreKing, DIFF_MED, 1, 1, None),
-	(TrollKing, DIFF_MED, 1, 1, None),
-	(GnomeKing, DIFF_MED, 1, 1, None),
-	(MinotaurKing, DIFF_MED, 1, 1, None),
-	(Dreamer, DIFF_HARD, 1, 1, None),
-	(ChaosSpirit, DIFF_MED, 2, 4, None),
-	(FallenAngel, DIFF_HARD, 1, 1, None),
-	(SporeAncient, DIFF_HARD, 1, 1, None),
+	(VoidWatcher, DIFF_MED, 3, 7, None),
+	
+	(IdolOfUndeath, DIFF_MED, 1, 1, Tags.Living),
+	(IdolOfLife, DIFF_MED, 2, 4, Tags.Living),
+	(IdolOfPoison, DIFF_MED, 1, 1, None),
+	(IdolOfInsanity, DIFF_MED, 1, 1, None),
+	(IdolOfSlime, DIFF_MED, 1, 1, None),
+	(IdolOfAgony, DIFF_MED, 1, 1, None),
+	(IdolOfWeakness, DIFF_MED, 1, 1, None),
+	(IdolOfNightmares, DIFF_MED, 1, 1, None),
+	(IdolOfShielding, DIFF_MED, 1, 1, None),
+	(IdolOfFiends, DIFF_MED, 1, 1, None),
+
+	(Medusa, DIFF_HARD, 1, 1, None),
+	(BatDragon, DIFF_EASY, 3, 4, None),
+	#(DarkPriests, DIFF_MED, 2, 4, None),
+	#(FallenAngel, DIFF_HARD, 1, 1, None),
+	#(SporeAncient, DIFF_HARD, 1, 1, None),
+	#(Necromancer, DIFF_MED, 2, 3, Tags.Living),
+	#(ImpCollector, DIFF_MED, 1, 1, None),
+	
+	#(Dreamer, DIFF_HARD, 1, 1, None),
 	(Tombstone, DIFF_MED, 2, 4, None),
 	(TwistedTree, DIFF_HARD, 1, 1, None),
 	(IdolOfSorcery, DIFF_MED, 2, 4, None),
-	(IdolOfClarity, DIFF_EASY, 2, 4, None),
+	#(IdolOfClarity, DIFF_EASY, 2, 4, None),
 	(TimeKeeper, DIFF_HARD, 1, 1, None),
-	(GiantSoulJar, DIFF_HARD, 3, 3, None),
-	(Medusa, DIFF_HARD, 1, 1, None),
-	(BatDragon, DIFF_EASY, 3, 4, None),
-	(RedCyclops, DIFF_EASY, 2, 4, None),
+	(GiantSoulJar, DIFF_HARD, 3, 5, None),
+	
+
+	#(RedCyclops, DIFF_EASY, 2, 4, None),
 	(SwampQueen, DIFF_EASY, 1, 1, None),
 	(ChaosQuill, DIFF_EASY, 2, 3, None),
-	(FireWyrmEgg, DIFF_MED, 6, 9, Tags.Fire),
-	(IceWyrmEgg, DIFF_MED, 6, 9, Tags.Ice),
-	(BoxOfWoe, DIFF_EASY, 1, 1, None),
-	(Jackolantern, DIFF_EASY, 1, 1, Tags.Dark),
+	(FireWyrmEgg, DIFF_MED, 7, 9, Tags.Fire),
+	(IceWyrmEgg, DIFF_MED, 7, 9, Tags.Ice),
+	(BoxOfWoe, DIFF_EASY, 1, 2, None),
+	#(Jackolantern, DIFF_EASY, 1, 1, Tags.Dark),
 	(BoneWizard, DIFF_EASY, 1, 1, None),
 	(AvianWizard, DIFF_EASY, 1, 1, None),
 	(RavenMage, DIFF_EASY, 1, 1, None),
@@ -2981,10 +3738,10 @@ rare_monsters = [
 	(StarfireWizard, DIFF_EASY, 1, 1, None),
 	(FireWizard, DIFF_EASY, 1, 1, None),
 	(Enchanter, DIFF_EASY, 1, 1, None),
-	(TroublerMass, DIFF_MED, 2, 3, None),
-	(TroublerBig, DIFF_EASY, 2, 3, None),
-	(VampireNecromancer, DIFF_MED, 1, 1, None),
-	(VampireCount, DIFF_EASY, 2, 3, Tags.Dark),
+	(TroublerMass, DIFF_MED, 6, 8, None),
+	#(TroublerBig, DIFF_EASY, 2, 3, None),
+	#(VampireNecromancer, DIFF_MED, 1, 1, None),
+	(VampireCount, DIFF_MED, 2, 3, Tags.Dark),
 	(BlackRider, DIFF_HARD, 1, 1, None),
 	(WhiteRider, DIFF_HARD, 1, 1, None),
 	(RedRider, DIFF_HARD, 1, 1, None),
@@ -2992,22 +3749,41 @@ rare_monsters = [
 	(TheFurnace, DIFF_HARD, 1, 1, None),
 	(PillarOfBone, DIFF_MED, 1, 1, Tags.Undead),
 	(PillarOfWorms, DIFF_MED, 1, 1, Tags.Living),
-	(ImpCollector, DIFF_MED, 1, 1, None),
-	(FeatheredSerpent, DIFF_MED, 1, 1, Tags.Living),
+	#(FeatheredSerpent, DIFF_MED, 1, 1, Tags.Living),
 	(Translocator, DIFF_EASY, 1, 1, None),
 	(Mechanomancer, DIFF_EASY, 1, 1, Tags.Construct),
 	(GoldenBull, DIFF_HARD, 1, 1, None),
 	(TitanLord, DIFF_HARD, 1, 1, None),
 	(AesirLord, DIFF_HARD, 1, 1, None),
 	(Gemini, DIFF_HARD, 1, 1, None),
-	(Thornface, DIFF_HARD, 1, 1, None),
-	(SlimeDrake, DIFF_HARD, 1, 1, None),
-	(VoidPhoenix, DIFF_HARD, 1, 1, None),
-	(IdolOfSlime, DIFF_MED, 1, 1, None),
+	(Thornface, DIFF_MED, 1, 1, None),
+	(SlimeDrake, DIFF_MED, 1, 1, None),
+	(VoidPhoenix, DIFF_MED, 1, 1, None),
 	(CrucibleOfPain, DIFF_MED, 1, 1, None),
 	(IdolOfFieryVengeance, DIFF_MED, 1, 1, None),
 	(ConcussiveIdol, DIFF_MED, 1, 3, None),
 	(VampirismIdol, DIFF_MED, 1, 1, None),
+
+	(GiantBoneShambler, DIFF_HARD, 1, 1, None),
+	(GiantFleshFiend, DIFF_HARD, 1, 1, None),
+	(GiantMindMaggotQueen, DIFF_MED, 1, 1, None),
+	(GiantNightmareTurtle, DIFF_HARD, 1, 1, None),
+	(GiantMassOfEyes, DIFF_HARD, 1, 1, None),
+	(GiantGorgon, DIFF_HARD, 1, 1, None),
+	(InfernoKing, DIFF_HARD, 1, 1, None),
+	(GiantMindDevourer, DIFF_MED, 1, 1, None),
+	(GiantSackOfFilth, DIFF_MED, 1, 1, None),
+	(GreaterLamasu, DIFF_MED, 1, 1, None),
+	(GreaterDragon, DIFF_MED, 1, 1, None),
+
+	(MoonMage, DIFF_MED, 1, 1, None),
+	(BloodWizard, DIFF_MED, 1, 1, None),
+	(DeathchillWizard, DIFF_MED, 1, 1, None),
+	(ChaosWizard, DIFF_MED, 1, 1, None),
+
+	(BrainBush, DIFF_MED, 5, 9, None),
+	(RotBush, DIFF_MED, 5, 9, None),
+
 ]
 
 all_wizards = [
@@ -3037,10 +3813,13 @@ all_wizards = [
 	(Mechanomancer, DIFF_EASY, 1, 1, Tags.Construct)
 ]
 
+
+big_monsters = [s for s, _, _, _, _ in rare_monsters if s().radius]
+
 for o in rare_monsters:
 	assert(isinstance(o[0](), Unit))
 
-def roll_rare_spawn(difficulty, tags, min_level=None, max_level=None, prng=None):
+def roll_rare_spawn(difficulty,min_level=None, max_level=None, prng=None):
 
 	if not prng:
 		prng = random
@@ -3057,8 +3836,6 @@ def roll_rare_spawn(difficulty, tags, min_level=None, max_level=None, prng=None)
 		if min_level is not None and opt[1] < min_level:
 			return False
 		if opt[1] > max_level:
-			return False
-		if opt[4] and opt[4] not in tags:
 			return False
 		return True
 

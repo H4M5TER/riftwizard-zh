@@ -2,12 +2,23 @@ from Level import *
 from Monsters import *
 from Spells import *
 from Consumables import *
+from Equipment import *
 from Shrines import *
 from RareMonsters import *
 from Variants import roll_variant
+from Equipment import roll_equipment
 import random
 from collections import namedtuple
-LEVEL_SIZE = 28
+from BossSpawns import *
+from LevelGenHelpers import *
+from Vaults import roll_vault, vault_table
+from FinalBosses import *
+
+LEVEL_SIZE = 33
+
+def set_level_size(new_size):
+	global LEVEL_SIZE
+	LEVEL_SIZE = new_size
 
 USE_VARIANTS = True
 
@@ -21,7 +32,7 @@ level_logger.addHandler(logging.FileHandler('level_log.txt', mode='w'))
 
 class Biome():
 
-	def __init__(self, tileset, tags=None, waters=None, stars=None, limit_walls=False, needs_chasms=True, min_level=0):
+	def __init__(self, tileset, tags=None, waters=None, stars=None, limit_walls=False, needs_chasms=False, min_level=0):
 		self.tileset = tileset
 		self.tags = tags
 		self.waters = waters if waters is not None else default_water_table
@@ -31,32 +42,13 @@ class Biome():
 		self.min_level = min_level
 
 	def can_spawn(self, levelgen):
-		if not self.tags:
-			return True
-
 		if levelgen.difficulty < self.min_level:
 			return False
 
-		if self.limit_walls:
-			wall_count = len([t for t in levelgen.level.iter_tiles() if t.is_wall()])
-			if wall_count > 150:
-				return False
-
-		if self.needs_chasms:
-			chasm_count = len([t for t in levelgen.level.iter_tiles() if t.is_chasm])
-			if chasm_count < 50:
-				return False
-
+		# If the biome has tag reqs, insist that the primary spawn has those tags
 		if self.tags:
-			has_tags = False
-			monsters = [s[0]() for s in levelgen.spawn_options]
-			for tag in self.tags:
-				for m in monsters:
-					if tag in m.tags:
-						has_tags = True
-			# DIsable tags?
-			#if not has_tags:
-			#	return False
+			if not any(t for t in self.tags if t in levelgen.primary_spawn().tags):
+				return False
 
 		return True
 
@@ -115,56 +107,18 @@ all_biomes = [
 	Biome('mossy hills', tags=[Tags.Nature], needs_chasms=True, limit_walls=True),
 	Biome('green mystery', tags=[Tags.Nature, Tags.Arcane, Tags.Construct]),
 	Biome('blue mystery', tags=[Tags.Arcane, Tags.Holy, Tags.Construct]),
-	Biome('brown crater', tags=[Tags.Living], limit_walls=True)
-
+	Biome('brown crater', tags=[Tags.Living], limit_walls=True),
+	Biome('castle gray'),
+	Biome('city gray'),
+	#Biome('dragon fire', tags=[Tags.Fire]),
+	#Biome('dragon ice', tags=[Tags.Ice]),
+	Biome('flesh purple', tags=[Tags.Undead]),
+	Biome('lab purple', tags=[Tags.Arcane, Tags.Dark]),
+	Biome('library brown')
 ]
 
 def random_point(levelgen):
 	return Point(levelgen.random.randint(0, LEVEL_SIZE - 1), levelgen.random.randint(0, LEVEL_SIZE - 1))
-
-def get_spawn_min_max(difficulty):
-
-	spawn_levels = [
-		(1, 1), # 1
-		(1, 1), # 2
-		(1, 2), # 3 
-		(1, 3), # 4
-		(2, 3), # 5 
-		(2, 4), # 6
-		(2, 4), # 7
-		(2, 4), # 8
-		(2, 4), # 9
-		(3, 4), # 10
-		(3, 5), # 11
-		(3, 5), # 12
-		(3, 5), # 13
-		(4, 5), # 14
-		(4, 5), # 15
-		(4, 6), # 16
-		(5, 6), # 17
-		(5, 6), # 18
-		(5, 6), # 19
-		(5, 7), # 20
-		(5, 7), # 21
-		(5, 7), # 22
-		(6, 8), # 23
-		(7, 8), # 24
-	]
-
-
-	# This formula is weird and appears to do very strange things but im not going to change it now because balance is good
-	index = min(difficulty - 1, len(spawn_levels) - 1)
-
-	min_level, max_level = spawn_levels[index]
-	return min_level, max_level 
-
-
-
-def make_consumable_pickup(item):
-	prop = ItemPickup(item)
-	prop.sprite.char = chr(6)
-	prop.sprite.color = COLOR_CONSUMABLE
-	return prop
 
 def make_scroll_shop():
 	shop = Shop()
@@ -182,530 +136,13 @@ def make_scroll_shop():
 	
 	return shop
 
-LevelParams = namedtuple("LevelParams", "monsters generators spells artifacts num_hearts")
-
-
-def expand_floor(levelgen):
-
-	level = levelgen.level
-
-	floor_tiles = [t for t in level.iter_tiles() if t.can_walk]
-	blocked_tiles = [t for t in level.iter_tiles() if not t.can_walk]
-
-	invert = len(floor_tiles) > len(blocked_tiles) 
-
-	chasm = False
-	if invert:
-		chasm = levelgen.random.choice([True, False])
-
-
-	chance = levelgen.random.choice([.05, .1, .3, .5])
-
-	level_logger.debug("Floor Exp: %.1f" % chance)
-
-	tiles = blocked_tiles if invert else floor_tiles
-	for t in tiles:
-		for p in level.get_points_in_ball(t.x, t.y, 1, diag=True):
-			if levelgen.random.random() < chance:
-				if invert:
-					level.make_wall(p.x, p.y)
-				else:
-					if chasm:
-						level.make_chasm(p.x, p.y)
-					else:
-						level.make_floor(p.x, p.y)
-
-# Randomly convert some number of walls to chasms
-def walls_to_chasms(levelgen):
-	level = levelgen.level
-	num_chasms = levelgen.random.choice([1, 1, 1, 2, 3, 4, 6, 7, 10, 15, 40, 40, 40, 40])
-	level_logger.debug("Wallchasms: %d" % num_chasms)
-
-	for i in range(num_chasms):
-		choices = [t for t in level.iter_tiles() if not t.can_see]
-		if not choices:
-			break
-
-		start_point = levelgen.random.choice(choices)
-		choices = [start_point]
-		for i in range(levelgen.random.randint(10, 100)):
-
-			if not choices:
-				break
-
-			current = levelgen.random.choice(choices)
-			choices.remove(current)
-
-			level.make_chasm(current.x, current.y)
-
-			for p in level.get_points_in_ball(current.x, current.y, 1):
-				if not level.tiles[p.x][p.y].can_see:
-					choices.append(p)
-
-# Turns all tiles surrounded by floors into chasms
-def chasmify(levelgen):
-	level = levelgen.level
-	level_logger.debug("Chasmify")
-	# A tile can be a chasm if all adjacent tiles are pathable without this tile
-	chasms = []
-	for i in range(1, LEVEL_SIZE - 1):
-		for j in range(1, LEVEL_SIZE - 1):
-			neighbors = level.get_points_in_rect(i-1, j-1, i+1, j+1)
-			if all(level.can_walk(p.x, p.y) for p in neighbors):
-				chasms.append(Point(i, j))
-
-	for p in chasms:
-		level.make_chasm(p.x, p.y)
-
-# Turns all tiles surrounded by visible tiles into walls
-def wallify(levelgen):
-	level = levelgen.level
-	level_logger.debug("Wallify")
-	# A tile can be a chasm if all adjacent tiles are pathable without this tile
-	chasms = []
-	for i in range(1, LEVEL_SIZE - 1):
-		for j in range(1, LEVEL_SIZE - 1):
-			neighbors = level.get_points_in_rect(i-1, j-1, i+1, j+1)
-			if all(level.tiles[p.x][p.y].can_see for p in neighbors):
-				chasms.append(Point(i, j))
-
-	for p in chasms:
-		level.make_wall(p.x, p.y)
-
-def grid(levelgen):
-	level = levelgen.level
-	stagger = levelgen.random.choice([2, 3, 4, 7])
-	chance = levelgen.random.choice([.1, .5, 1, 1])
-
-	floor_tiles = [t for t in level.iter_tiles() if t.can_walk]
-	blocked_tiles = [t for t in level.iter_tiles() if not t.can_walk]
-
-	invert = len(floor_tiles) > len(blocked_tiles) 
-
-	chasm = False
-	if invert:
-		chasm = levelgen.random.choice([True, False])
-
-	modestr = 'floor' if not invert else 'chasm' if chasm else 'wall'
-	level_logger.debug("Grid: %d, %.2f, (%s)" % (stagger, chance, modestr))
-
-	for i in range(LEVEL_SIZE):
-		for j in range(LEVEL_SIZE):
-			p = Point(i, j)
-			if levelgen.random.random() > chance:
-				continue
-			if (i % stagger) == (j % stagger) == 0:
-				if invert:
-					level.make_wall(p.x, p.y)
-				else:
-					if chasm:
-						level.make_chasm(p.x, p.y)
-					else:
-						level.make_floor(p.x, p.y)
-
-
-def is_in_square(i, j, size):
-	if i < size:
-		return False
-	if LEVEL_SIZE - i - 1 < size:
-		return False
-	if j < size:
-		return False
-	if LEVEL_SIZE - j - 1 < size:
-		return False
-	return True
-
-def is_in_circle(i, j, size):
-	center = Point(LEVEL_SIZE // 2 - .5, LEVEL_SIZE // 2 - .5)
-	radius = LEVEL_SIZE // 2 - size
-	return distance(Point(i, j), center) < radius
-
-def is_in_diamond(i, j, size):
-	halfsize = LEVEL_SIZE // 2
-	dist = abs(i - halfsize + .5) + abs(j - halfsize + .5)
-	radius = halfsize - size + 4
-	return dist < radius
-
-def border(levelgen):
-	level = levelgen.level
-	size = levelgen.random.randint(1, 6)
-
-	chasm = levelgen.random.choice([True, False, False, False])
-
-	test = levelgen.random.choice([is_in_square, is_in_circle, is_in_diamond])
-
-	level_logger.debug("Border: %d (%s)" % (size, 'c' if chasm else 'w'))
-
-	for i in range(LEVEL_SIZE):
-		for j in range(LEVEL_SIZE):
-
-			do = not test(i, j, size)
-			if do:
-				if not chasm:
-					level.make_wall(i, j)
-				else:
-					level.make_chasm(i, j)
-
-
-def white_noise(levelgen):
-	level = levelgen.level
-	chance = levelgen.random.choice([.05, .1, .2, .3])
-
-	floor_tiles = [t for t in level.iter_tiles() if t.can_walk]
-	blocked_tiles = [t for t in level.iter_tiles() if not t.can_walk]
-
-	if len(floor_tiles) > len(blocked_tiles):
-		if levelgen.random.choice([True, False]):
-			mode = 'chasm'
-		else:
-			mode = 'wall'
-	else:
-		mode = 'floor'
-
-	level_logger.debug("White Noise: %.2f (%s)" % (chance, mode))
-
-	for t in level.iter_tiles():
-		if levelgen.random.random() < chance:
-			if mode == 'wall':
-				level.make_wall(t.x, t.y)
-			elif mode == 'chasm':
-				level.make_chasm(t.x, t.y)
-			elif mode == 'floor':
-				level.make_floor(t.x, t.y)
-			else:
-				assert(False)
-
-def squares(levelgen):
-	# TODO-
-	# Borders not always walls
-
-	level = levelgen.level
-	max_size = levelgen.random.randint(6, 10)
-	min_size = max_size // 2
-	num = levelgen.random.randint(4, 10)
-	floor_tiles = [t for t in level.iter_tiles() if t.can_walk]
-	blocked_tiles = [t for t in level.iter_tiles() if not t.can_walk]
-
-	if len(floor_tiles) > len(blocked_tiles):
-		if levelgen.random.choice([True, False]):
-			mode = 'chasm'
-		else:
-			mode = 'wall'
-	else:
-		mode = 'floor'
-
-	level_logger.debug("Squares: s%d n%d (%s)" % (max_size, num, mode))
-
-	border = True
-	for i in range(num):
-
-		x = levelgen.random.randint(0, LEVEL_SIZE - max_size)
-		y = levelgen.random.randint(0, LEVEL_SIZE - max_size)
-		w = levelgen.random.randint(min_size, max_size)
-		h = levelgen.random.randint(min_size, max_size)
-		for i in range(w):
-			for j in range(h):
-				cur_x = x + i
-				cur_y = y + j
-				if mode == 'wall':
-					level.make_wall(cur_x, cur_y)
-				elif mode == 'chasm':
-					level.make_chasm(cur_x, cur_y)
-				elif mode == 'floor':
-					level.make_floor(cur_x, cur_y)
-				else:
-					assert(False)
-
-		if border:
-			for i in range(w):
-				level.make_wall(x + i, y)
-				level.make_wall(x + i, y + h - 1)
-			for j in range(h):
-				level.make_wall(x, y + j)
-				level.make_wall(x + w - 1,  y + j)
-
-
-def bisymmetry(levelgen):
-	level = levelgen.level
-
-	# Which axis does the symmetry come from
-	axis = levelgen.random.choice(['x', 'y'])
-
-	ideal_floors = LEVEL_SIZE*LEVEL_SIZE // 4
-
-	mirror = levelgen.random.choice([True, False])
-
-	level_logger.debug("Bisymmetry (%s, %s)" % (axis, 'mirror' if mirror else 'flip'))
-
-	def get_src(i, j):
-		if axis == 'y':
-			return Point(i, j)
-		elif axis == 'x':
-			return Point(j, i)
-
-	# Returns the tile we will be copying x, y to
-	def get_tgt(x, y):
-		if mirror:
-			return Point(LEVEL_SIZE-x-1, LEVEL_SIZE-y-1)
-		if axis == 'y':
-			return Point(LEVEL_SIZE-x-1, y)
-		if axis == 'x' and not mirror:
-			return Point(x, LEVEL_SIZE-y-1)
-
-	for i in range((LEVEL_SIZE // 2)):
-		for j in range(LEVEL_SIZE):
-			
-			src_x, src_y = get_src(i, j)
-			cur_tile = level.tiles[src_x][src_y]
-			tgt_x, tgt_y = get_tgt(src_x, src_y)
-
-			if cur_tile.is_wall():
-				level.make_wall(tgt_x, tgt_y)
-			if cur_tile.is_floor():		
-				level.make_floor(tgt_x, tgt_y)
-			if cur_tile.is_chasm:
-				level.make_chasm(tgt_x, tgt_y)
-
-def lumps(levelgen, num_lumps=None, space_size=None):
-	if num_lumps is None:
-		num_lumps = levelgen.random.randint(1, 12)
-	if space_size is None:
-		space_size = levelgen.random.randint(10, 100)
-
-	level = levelgen.level
-
-	options = []
-	max_existing = 550
-	if len([t for t in level.iter_tiles() if not t.can_walk]) < max_existing:
-		options.append('wall')
-		options.append('chasm')
-	if len([t for t in level.iter_tiles() if t.is_floor()]) < max_existing:
-		options.append('floor')
-
-	mode = levelgen.random.choice(options)
-
-	level_logger.debug("Lumps: %d %d (%s)" % (num_lumps, space_size, mode))
-
-	for i in range(num_lumps):
-
-		start_point = Point(levelgen.random.randint(0, LEVEL_SIZE-1), levelgen.random.randint(0, LEVEL_SIZE-1))
-		candidates = [start_point]
-		chosen = set()
-
-		for j in range(space_size):
-			cur_point = levelgen.random.choice(candidates)
-			candidates.remove(cur_point)
-
-			chosen.add(cur_point)
-
-			for point in level.get_points_in_ball(cur_point.x, cur_point.y, 1):
-				if point not in candidates and point not in chosen:
-					candidates.append(point)
-
-	for p in chosen:
-		if mode == 'wall':
-			level.make_wall(p.x, p.y)
-		if mode == 'floor':
-			level.make_floor(p.x, p.y)
-		if mode == 'chasm':
-			level.make_chasm(p.x, p.y)
-
-def quads(levelgen):
-	level = levelgen.level
-	level_logger.debug("Quadrants")
-	for i in range(LEVEL_SIZE // 2):
-		for j in range(LEVEL_SIZE // 2):
-
-			cur_tile = level.tiles[i][j]
-
-			tgts = [
-				Point(i, j + LEVEL_SIZE // 2),
-				Point(i + LEVEL_SIZE // 2, j),
-				Point(i + LEVEL_SIZE // 2, j + LEVEL_SIZE // 2)
-			]
-			for tgt_x, tgt_y in tgts:
-				if cur_tile.is_wall():
-					level.make_wall(tgt_x, tgt_y)
-				if cur_tile.is_floor():		
-					level.make_floor(tgt_x, tgt_y)
-				if cur_tile.is_chasm:
-					level.make_chasm(tgt_x, tgt_y)
-
-def radialquads(levelgen):
-	level = levelgen.level
-	level_logger.debug("Radial Quadrants")
-	for i in range(LEVEL_SIZE // 2):
-		for j in range(LEVEL_SIZE // 2):
-
-			cur_tile = level.tiles[i][j]
-
-			tgts = [
-				Point(i, LEVEL_SIZE - j - 1),
-				Point(LEVEL_SIZE - i - 1, j),
-				Point(LEVEL_SIZE - i - 1, LEVEL_SIZE - j - 1)
-			]
-
-			for tgt_x, tgt_y in tgts:
-				if cur_tile.is_wall():
-					level.make_wall(tgt_x, tgt_y)
-				if cur_tile.is_floor():		
-					level.make_floor(tgt_x, tgt_y)
-				if cur_tile.is_chasm:
-					level.make_chasm(tgt_x, tgt_y)
-
-def paths(levelgen, num_points=None):
-	level = levelgen.level
-	if num_points is None:
-		num_points = levelgen.random.choice([5, 8, 10, 15, 20, 30, 40, 50, 60, 75])
-	all_points = [Point(i, j) for i in range(LEVEL_SIZE) for j in range(LEVEL_SIZE)]
-	levelgen.random.shuffle(all_points)
-
-	start_points = []
-	for i in range(num_points):
-		start_points.append(all_points.pop())
-
-	options = []
-	max_existing = 550
-	if len([t for t in level.iter_tiles() if not t.can_walk]) < max_existing:
-		options.append('wall')
-		options.append('chasm')
-	if len([t for t in level.iter_tiles() if t.is_floor()]) < max_existing:
-		options.append('floor')
-
-	reconnect_chance = levelgen.random.choice([0, 0, .2, .2, .5, .5])
-	mode = levelgen.random.choice(options)
-	level_logger.debug("Paths: %d, %.2f, %s" % (num_points, reconnect_chance, mode))
-
-
-	# Make start points a list and use PRNG to pick paths so that levelgen is reproducable
-	levelgen.random.shuffle(start_points)
-	end_points = [start_points.pop()]
-
-	# for each start point, connect it to the graph
-	while start_points:
-
-		cur_start_point = levelgen.random.choice(start_points)
-		start_points.remove(cur_start_point)
-
-		possible_end_points = sorted(end_points, key=lambda p: distance(p, cur_start_point))[:4]
-		cur_end_point = levelgen.random.choice(possible_end_points)
-
-		end_points.append(cur_start_point)
-
-		cur_point = cur_start_point
-		while (cur_point != cur_end_point):
-			
-			if mode == 'floor':
-				level.make_floor(cur_point.x, cur_point.y)
-			if mode == 'wall':
-				level.make_wall(cur_point.x, cur_point.y)
-			if mode == 'chasm':
-				level.make_chasm(cur_point.x, cur_point.y)
-
-			trydir = levelgen.random.randint(0, 3)
-			if trydir == 0 and cur_point.x < cur_end_point.x:
-				cur_point = Point(cur_point.x + 1, cur_point.y)
-			if trydir == 1 and  cur_point.x > cur_end_point.x:
-				cur_point = Point(cur_point.x - 1, cur_point.y)
-			if trydir == 2 and cur_point.y < cur_end_point.y:
-				cur_point = Point(cur_point.x, cur_point.y + 1)
-			if trydir == 3 and cur_point.y > cur_end_point.y:
-				cur_point = Point(cur_point.x, cur_point.y - 1)
-
-		# 20% of the time re-add it- this way there are more paths
-		if levelgen.random.random() < reconnect_chance:
-			start_points.append(cur_start_point)
-
-def conway(levelgen):
-	n = levelgen.random.choice([1, 3, 10])
-	level_logger.debug("Game of life: %d" % n)
-	level = levelgen.level
-	def populated(x, y):
-		return level.tiles[x][y].is_wall()
-
-	def populate(x, y):
-		level.make_wall(x, y)
-
-	def depopulate(x, y):
-		level.make_floor(x, y)
-
-	for i in range(n):
-		grid = {}
-
-		for x in range(LEVEL_SIZE):
-			for y in range(LEVEL_SIZE):
-				num_adj = len(list(p for p in level.get_points_in_ball(x, y, 1, diag=True) if populated(p.x, p.y)))
-				if populated(x, y):
-					if num_adj <= 2:
-						grid[x, y] = False
-					elif num_adj >= 5:
-						grid[x, y] = False
-					else:
-						grid[x, y] = True
-				else:
-					if num_adj >= 3:
-						grid[x, y] = True
-					else:
-						grid[x, y] = False
-
-		for (x, y), v in grid.items():
-			if v:
-				populate(x, y)
-			else:
-				depopulate(x, y)
-
-def section(levelgen):
-	level = levelgen.level
-	method = levelgen.random.choice([level.make_wall, level.make_floor, level.make_chasm])
-	start = levelgen.random.randint(6, LEVEL_SIZE-6)
-	axis = levelgen.random.choice(['x', 'y'])
-	flip = levelgen.random.choice([True, False])
-
-	level_logger.debug("Section: %s, %s, %s, %s" % (method, start, axis, flip))
-
-	for i in range(LEVEL_SIZE):
-		for j in range(LEVEL_SIZE):
-
-			do = False
-			to_check = i if axis == 'x' else j
-			
-			if flip:
-				do = to_check < start
-			else:
-				do = to_check > start
-			
-			if do:
-				method(i, j) 
-
-seed_mutators = [
-	paths,
-	white_noise,
-	lumps,
-	squares,
-	grid
-]
-
-mutator_table = [
-	expand_floor,	
-	walls_to_chasms,
-	chasmify,
-	white_noise,
-	squares,
-	bisymmetry,
-	wallify,
-	grid,
-	border,
-	quads,
-	paths,
-	conway,
-	radialquads,
-	section
-]
-
 class LevelGenerator():
 
-	def __init__(self, difficulty, game=None, seed=None):
+	def __init__(self, difficulty, game=None, seed=None, corrupted=False):
 		
+		self.difficulty = difficulty
+
+
 		self.next_level_seeds = None			
 		self.random = random.Random()
 
@@ -715,112 +152,73 @@ class LevelGenerator():
 			if game:
 				self.next_level_seeds = game.get_seeds(difficulty)
 				self.random.shuffle(self.next_level_seeds)
+		
 
-		self.difficulty = difficulty
-		self.num_xp = 3
+		self.num_xp = 2
+
+		if difficulty >= 5:
+			self.num_xp = 3
+
+		if difficulty >= 10:
+			self.num_xp = 4
+
+		if difficulty >= 15:
+			self.num_xp = 5
+
 		self.level_id = self.random.randint(0, 1000000)
-		self.is_town = False
-		self.num_hearts = 0
+
 		self.num_start_points = self.random.choice([5, 8, 10, 15, 20, 30, 40, 50, 60, 75])
 		self.reconnect_chance = self.random.choice([0, 0, .2, .2, .5, .5])
 		self.game = game
 		self.num_open_spaces = self.random.choice([0, 0, 0, 2, 3, 5, 7, 12])
-		self.num_exits = self.random.choice([2, 2, 3, 3, 3, 3, 4])
+		self.num_exits = 3
 
-		self.spawn_options = self.get_spawn_options(difficulty)
-		self.num_monsters = self.random.randint(5, 20)
-		self.num_elites = 0
-		self.elite_spawn = None
+		self.primary_spawn, self.secondary_spawn = self.get_spawns()
+
+		if difficulty <= 3:
+			self.biome = all_biomes[0]
+		else:
+			choices = [b for b in all_biomes if b.can_spawn(self)]
+			self.biome = self.random.choice([b for b in all_biomes if b.can_spawn(self)])
+
+		self.corrupted = corrupted
+		self.corrupted_tiles = []
+
+
+		if difficulty < 5:
+			self.num_monsters = self.random.randint(6, 12)
+		else:
+			self.num_monsters = self.random.randint(12, 20)
 
 		max_generators = 3 if difficulty < 5 else 5 if difficulty < 10 else 7 if difficulty < 20 else 9
 		min_generators = 3 if difficulty < 10 else 4 if difficulty < 20 else 5
-		self.num_generators = 3 if difficulty == 2 else self.random.randint(min_generators, max_generators)
+		self.num_generators = 2 if difficulty == 2 else self.random.randint(min_generators, max_generators)
 
-		self.num_hp_upgrades = 0 #self.random.choice([0, 0, 0, 0, 0, 0, 1, 1, 2])
-		self.num_places_of_power = 0
-		self.num_recharges = self.random.choice([0, 0, 0, 1, 1, 2])
-		if self.difficulty < 5:
-			self.num_recharges = 1
-		
-		self.num_heals = self.random.choice([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2])
-
-		self.num_libraries = 0
-		
 		self.shrine = None
 		if self.game:
-			self.shrine = None if difficulty in [1, LAST_LEVEL] else roll_shrine(self.difficulty, self.random)(self.game.p1)
+			self.shrine = None if difficulty in [1, LAST_LEVEL] else roll_shrine(self.difficulty, self.random, self.game.p1)
 
-		self.extra_circle = None
-		#if difficulty > 10:
-		#	self.extra_circle = self.random.choice([None, None, None, library()])
-
-		num_consumables = self.random.choice([0, 0, 0, 0, 1, 1, 2, 3]) # For now its 2
-		if self.difficulty == 2:
-			num_consumables = 1
+		num_consumables = self.random.choice([0, 0, 0, 1, 1, 1, 2, 2, 2])
 		if self.difficulty == 1:
 			num_consumables = 0
 
-		num_scrolls = 0
-		#if num_consumables < 2 and difficulty > 1:
-		#	num_scrolls = self.random.choice([0, 0, 0, 1, 1, 1, 2, 3])
+		self.bosses = []
 
-		self.scroll_spells = []
-		for _ in range(num_scrolls):
-			eligible = [s for s in all_player_spells if s.level > 1 and s.name not in [t.name for t in player.spells]]
-			spell = self.random.choice(eligible)
-			self.scroll_spells.append(spell)
+		# Add extras non spawned high level monsters
+		if self.difficulty >= 2:
+			self.add_elites()
 
-		self.bosses = [] 
+		# As we go up in diff, add more stuff to the board
+		# Add difficulty modifiers
+		num_challenge_mods = 0 if difficulty <= 4 else 1 if difficulty < 8 else 2
+		for i in range(num_challenge_mods):
+			self.add_challenge_mod()
 
-		num_boss_spawns = (0 if difficulty <= 1 else
-						   1 if difficulty <= 3 else
-						   2 if difficulty <= 8 else
-						   3)
+		if difficulty >= 14:
+			self.add_super_challenge()
 
-		# for debugging
-		if 'forcevariant' in sys.argv:
-			num_boss_spawns = 1
-
-		for i in range(num_boss_spawns):
-
-			spawn_type = self.random.choice(self.spawn_options)
-			roll_result = roll_variant(spawn_type[0], self.random)
-
-			# 50% chance to make a variant if we can, otherwise make an elite
-			# Should be- 50% first time, 30% subsequent times
-
-			chance = .5 if i == 0 else .3
-			if 'forcevariant' in sys.argv:
-				self.bosses.extend(roll_result)
-			else:			
-				if USE_VARIANTS and roll_result and self.random.random() < chance:
-					self.bosses.extend(roll_result)
-				else:
-					self.bosses.extend(self.get_elites(difficulty))
-
-
-		num_uniques = 0
-		if 6 <= difficulty <= 10:
-			num_uniques = self.random.choice([0, 0, 1])
-		if 11 <= difficulty <= 19:
-			num_uniques = self.random.choice([1, 1, 2])
-		if 19 <= difficulty <= 22:
-			num_uniques = self.random.choice([2, 3])
-		if 23 <= difficulty < LAST_LEVEL:
-			num_uniques = 3
-
-		if 'forcerare' in sys.argv:
-			num_uniques = 1
-
-		for i in range(num_uniques):
-			tags = set()
-			
-			for o in self.spawn_options:
-				for t in o[0]().tags:
-					tags.add(t)
-
-			spawns = roll_rare_spawn(difficulty, tags, prng=self.random)
-			self.bosses.extend(spawns)
+		if difficulty >= 19:
+			self.add_super_challenge()
 
 		if difficulty == 1:
 			self.num_generators = 1
@@ -832,31 +230,31 @@ class LevelGenerator():
 			self.num_elites = 0
 			self.num_open_spaces = 5
 			self.num_shrines = 0
-			self.num_heals = 0
-			self.num_recharges = 0
-			self.num_exits = 3
 			self.num_scrolls = 0
 
+		if difficulty == LAST_LEVEL - 2:
+			self.num_exits = 2
+
 		if difficulty == LAST_LEVEL - 1:
-			self.num_exits = 1
+			self.bosses.append(roll_final_boss())
+			self.num_exits = 1 # We will generate one later
 
 		if difficulty == LAST_LEVEL:
 			self.bosses = [Mordred()]
 			self.num_libraries = 0
 			self.num_shrines = 0
-			self.num_recharges = 0
-			self.num_heals = 0
 			self.num_generators = 0
 			self.num_exits = 0
+
+		if difficulty == 1 and 'forcerare' in sys.argv:
+			self.num_monsters = 0
+			self.num_generators = 0
 
 		self.items = []
 		for _ in range(num_consumables):
 			self.items.append(roll_consumable(prng=self.random))
 
-		for _ in range(self.num_heals):
-			self.items.append(heal_potion())
-
-		for _ in range(self.num_recharges):
+		if self.difficulty == 2:
 			self.items.append(mana_potion())
 
 		# For mouseover- spice up the ordering
@@ -868,10 +266,10 @@ class LevelGenerator():
 
 		self.description = self.get_description()
 
-	def get_elites(self, difficulty):
-		_, level = get_spawn_min_max(difficulty)
+	def get_elites(self):
+		_, level = get_spawn_min_max(self.difficulty)
 
-		if difficulty < 5:
+		if self.difficulty < 5:
 			modifier = 1
 		else:
 			modifier = self.random.choice([1, 1, 1, 1, 2, 2])
@@ -879,11 +277,14 @@ class LevelGenerator():
 		level = min(level + modifier, 9)
 
 		if modifier == 1:
-			num_elites = self.random.choice([5, 6, 7])
+			num_elites = self.random.choice([7, 8, 9])
 		if modifier == 2:
-			num_elites = self.random.choice([3, 4, 5])
+			num_elites = self.random.choice([4, 5, 6])
 		if modifier == 3:
 			num_elites = self.random.choice([2, 3])
+
+		if self.difficulty == 1:
+			num_elites = self.random.choice([3, 4])
 
 		options = [(s, l) for s, l in spawn_options if l == level]
 		spawner = self.random.choice(options)[0]
@@ -891,25 +292,93 @@ class LevelGenerator():
 		units = [spawner() for i in range(num_elites)] 
 		return units
 
-	def get_spawn_options(self, difficulty, num_spawns=None):
+	def add_variant(self):
+		spawner = self.get_spawns()[1]
 
 		if 'forcespawn' in sys.argv:
 			forcedspawn_name = sys.argv[sys.argv.index('forcespawn') + 1]
 			forced_spawn_options = [(spawn, cost) for (spawn, cost) in spawn_options if forcedspawn_name.lower() in spawn.__name__.lower()]
 			assert(len(forced_spawn_options) > 0)
-			return forced_spawn_options
+			spawner = random.choice(forced_spawn_options)[0]
+		
+		self.bosses.extend(roll_bosses(self.difficulty, spawner))
+
+	def add_boss(self):
+		spawns = roll_rare_spawn(self.difficulty, prng=self.random)
+		self.bosses.extend(spawns)
+
+	def add_elites(self):
+		elites = self.get_elites()
+		self.bosses.extend(elites)
+
+	def add_challenge_mod(self):
+		challenges = [self.add_boss, self.add_variant]
+		random.choice(challenges)()
+
+	def add_boss_wizard(self):
+		wizard = random.choice(all_wizards)[0]()
+		boss_mod = random.choice(modifiers)[0]
+		apply_modifier(boss_mod, wizard, apply_hp_bonus=True)
+		self.bosses.append(wizard)
+
+	def add_boss_spawner(self):
+		monster, _ = self.get_spawns(-1)
+		
+		boss_mod = random.choice(modifiers)[0]
+		spawn_fn = lambda: BossSpawns.apply_modifier(boss_mod, monster(), apply_hp_bonus=True)
+		
+		spawner = MonsterSpawner(spawn_fn)
+		spawner.max_hp = 200
+
+		self.bosses.append(spawner)
+
+	def add_giant_monster(self):
+		monster = random.choice(big_monsters)()
+		self.bosses.append(monster)
+
+	def add_super_challenge(self):
+		challenges = [self.add_boss_wizard, self.add_boss_spawner, self.add_giant_monster]
+		random.choice(challenges)()
+
+	def get_spawns(self, level_mod=0):
+		min_level, max_level = get_spawn_min_max(self.difficulty)
+
+		primary = random.choice([m for m, l, in spawn_options if l == max_level])
+
+		if 'forcespawn' in sys.argv:
+			forcedspawn_name = sys.argv[sys.argv.index('forcespawn') + 1]
+			forced_spawn_options = [(spawn, cost) for (spawn, cost) in spawn_options if forcedspawn_name.lower() in spawn.__name__.lower()]
+			assert(len(forced_spawn_options) > 0)
+			primary = random.choice(forced_spawn_options)[0]
+
+		if self.difficulty > 2:
+			secondary = random.choice([m for m, l in spawn_options if l == min_level])
+		else:
+			secondary = None
+
+		return primary, secondary
+
+	def get_spawn_options(self, difficulty, num_spawns=None, tags=None):
+		if tags:
+			tags = set(tags)
+
+
 
 		min_level, max_level = get_spawn_min_max(difficulty)
 		if not num_spawns:
 			num_spawns = self.random.choice([1, 2, 2, 2, 3, 3, 3])
 
+		choices = spawn_options
+		if tags:
+			choices = [(s, l) for s, l in spawn_options if tags.intersection(s().tags)]
+
 		spawns = []
 		# force 1 higher level spawn
-		max_level_options = [(s, l) for s, l in spawn_options if (l == max_level) or (l == max_level - 1)]
+		max_level_options = [(s, l) for s, l in choices if (l == max_level) or (l == max_level - 1)]
 		spawns.append(self.random.choice(max_level_options))
 
 		# generate the rest randomly
-		other_spawn_options = [(s, l) for s, l, in spawn_options if l >= min_level and l <= max_level and (s, l) not in spawns]
+		other_spawn_options = [(s, l) for s, l, in choices if l >= min_level and l <= max_level and (s, l) not in spawns]
 		for i in range(num_spawns - 2):
 			if not other_spawn_options:
 				break
@@ -940,7 +409,7 @@ class LevelGenerator():
 
 		return LevelGenerator(difficulty, self.game, seed)
 
-	def make_level(self):
+	def make_level(self, check_terrain=True):
 
 		level_logger.debug("\nGenerating level for %d" % self.difficulty)
 		level_logger.debug("Level id: %d" % self.level_id)
@@ -948,22 +417,35 @@ class LevelGenerator():
 		level_logger.debug("reconnect chance: %.2f" % self.reconnect_chance)
 		level_logger.debug("num open spaces: %d" % self.num_open_spaces)
 
+
 		self.level = Level(LEVEL_SIZE, LEVEL_SIZE)
-		self.make_terrain()
-		
+
+
+		self.level.set_tileset(self.biome.tileset)
+
+		can_accept_terrain = False
+		attempt = 0
+		if check_terrain:
+			while (not can_accept_terrain and attempt < 15):
+				self.make_terrain()
+				can_accept_terrain = self.check_terrain()
+				attempt += 1
+				if attempt >= 15:
+					self.log_level()
+					raise Exception("Failed 15 times to generate an acceptable level")
+		else:
+			self.make_terrain()
+
+		level_logger.debug("Level generated in %d tries" % attempt)
+
+		level_logger.debug("Final layout:")
+		self.log_level()
+
 		self.populate_level()
 
 		self.level.gen_params = self
 		self.level.calc_glyphs()
 
-		if self.difficulty == 1:
-			self.level.biome = all_biomes[0]
-		else:
-			self.level.biome = self.random.choice([b for b in all_biomes if b.can_spawn(self)]) 
-
-		self.level.tileset = self.level.biome.tileset
-		
-		self.level.water = self.random.choice(self.level.biome.waters + [None])
 		# Always start with blue water so people understand what a chasm is
 		if self.difficulty == 1:
 			self.level.water = WATER_BLUE
@@ -971,20 +453,16 @@ class LevelGenerator():
 		# Game looks better without water
 		self.level.water = None
 
-		# Record info per tile so that mordred corruption works
-		for tile in self.level.iter_tiles():
-			tile.tileset = self.level.tileset
-			tile.water = self.level.water
-
 		if self.game:
 			for m in self.game.mutators:
 				m.on_levelgen(self)
 				
-		self.log_level()
+
 
 		return self.level
 
 	def log_level(self):
+		level_logger.debug('---')
 		#Print ascii art of level
 		for i in range(LEVEL_SIZE):
 			row = ''
@@ -998,7 +476,64 @@ class LevelGenerator():
 				row = row + c
 			level_logger.debug(row)
 
+		level_logger.debug('---')
+
+	def get_standable_tiles(self, radius=1, flying=False):
+		# Return the list of tiles that a n x n monster could stand on
+		test_unit = Unit()
+		test_unit.radius = radius
+		test_unit.can_fly = flying
+
+		results = []
+
+		for t in self.level.iter_tiles():
+			if self.level.can_stand(t.x, t.y, test_unit):
+				results.append(t)
+
+		return results
+
+	def expand_to_radius(self, radius, flying=False):
+		# Put a pathable tile next to each pathable tile so monsters of
+		#  the given radius can traverse the level
+		
+		standable = set(Point(t.x, t.y) for t in self.get_standable_tiles(radius=radius, flying=flying))
+
+		to_enlarge = []
+		for i in range(radius, LEVEL_SIZE - radius):
+			for j in range(radius, LEVEL_SIZE - radius):
+
+				# Dont enlarge tiles that can already be stood on, no point in doing this
+				if Point(i, j) in standable:
+					continue
+
+				t = self.level.tiles[i][j]
+				if flying:
+					if t.can_see:
+						to_enlarge.append(t)
+				else:
+					if t.can_walk:
+						to_enlarge.append(t)
+
+		for t in to_enlarge:
+			for i in range(-radius, radius+1):
+				for j in range(-radius, radius+1):
+					cur_point = Point(t.x + i, t.y + j)
+					if flying:
+						cur_tile = self.level.tiles[cur_point.x][cur_point.y]
+						
+						# Dont mess with existing floors for the sake of big fliers
+						if cur_tile.can_walk:
+							continue
+						# Otherwise, expand floors into floors, expand chasms into chasms
+						elif t.can_walk:
+							self.level.make_floor(cur_point.x, cur_point.y)	
+						else:
+							self.level.make_chasm(cur_point.x, cur_point.y)
+					else:
+						self.level.make_floor(cur_point.x, cur_point.y)
+
 	def ensure_connectivity(self, chasm=False):
+
 		# For each tile
 		# If it is 
 
@@ -1030,7 +565,7 @@ class LevelGenerator():
 			while to_visit:
 				cur = to_visit.pop()
 
-				for p in self.level.get_points_in_ball(cur.x, cur.y, 1, diag=True):
+				for p in self.level.get_points_in_ball(cur.x, cur.y, 1, diag=False):
 					t = self.level.tiles[p.x][p.y]
 					
 					if t in visited:
@@ -1086,10 +621,93 @@ class LevelGenerator():
 						best_inner = cur_inner
 						best_outer = cur_outer
 
-			for p in self.level.get_points_in_line(best_inner, best_outer):
-				make_path(p.x, p.y)					
+			for p in self.level.get_points_in_line(best_inner, best_outer, no_diag=True):
+				make_path(p.x, p.y)
+
+	def corrupt(self):
+		subgen = LevelGenerator(difficulty=self.difficulty, corrupted=False)
+		
+		# No shrine on new level ofc
+		subgen.shrine = None
+
+		subgen.make_level()
+
+		chance = .5
+		# List of tiles to corrupt- white noise for now
+		self.corrupted_tiles = []
+
+
+		cor_type = random.choice([2, 5])
+
+		# White Noise
+		if cor_type == 1:
+			for i in range(LEVEL_SIZE):
+				for j in range(LEVEL_SIZE):
+					if random.random() > chance:
+						self.corrupted_tiles.append((i, j))
+
+		# Border
+		elif cor_type == 2:
+			border_width = random.randint(2, 6)
+			self.corrupted_tiles = [(t.x, t.y) for t in self.level.iter_tiles() if not is_in_rect(t.x, t.y, border_width, subgen.level)]
+
+		# Circle
+		elif cor_type == 3:
+			border_width = random.randint(0, 5)
+			self.corrupted_tiles = [(t.x, t.y) for t in self.level.iter_tiles() if not is_in_circle(t.x, t.y, border_width, subgen.level)]
+
+		# Diamond
+		elif cor_type == 4:
+			border_width = random.randint(2, 6)
+			self.corrupted_tiles = [(t.x, t.y) for t in self.level.iter_tiles() if not is_in_diamond(t.x, t.y, border_width, subgen.level)]		
+
+		# Lump
+		elif cor_type == 5:
+			lump_size = random.randint(50, 500)
+			self.corrupted_tiles.extend(self.level.get_random_lump(lump_size, self.random))
+
+
+		# todo- 2 rounds of white noise on the edges?
+
+		for x, y in self.corrupted_tiles:
+			t = subgen.level.tiles[x][y]
+
+			# Copy tile type
+			if t.is_wall():
+				self.level.make_wall(x, y)
+			elif t.is_floor():
+				self.level.make_floor(x, y)
+			elif t.is_chasm:
+				self.level.make_chasm(x, y)
+			# Copy tile tileset
+			self.level.tiles[x][y].tileset = t.tileset
+
+			# Copy unit
+			if t.unit and not t.unit.radius:
+				unit = t.unit
+				subgen.level.remove_obj(unit)
+				self.level.add_obj(unit, t.x, t.y)
+
+	# Check that terrain has enough walls and floors
+	def check_terrain(self):
+		min_floors = 50
+		min_walls = 120
+		num_floors = len([t for t in self.level.iter_tiles() if t.can_walk])
+		num_walls = len([t for t in self.level.iter_tiles() if not t.can_walk])
+		return (num_floors > min_floors) and (num_walls > min_walls)
+
 
 	def make_terrain(self):
+
+		brush_shift_chance = 0
+		if self.difficulty > 5:
+			brush_shift_chance = .05
+		if self.difficulty > 10:
+			brush_shift_chance = .1
+		if self.difficulty > 15:
+			brush_shift_chance = .15
+		if self.difficulty > 20:
+			brush_shift_chance = .35
 
 		chasm = self.random.choice([True, False])
 		level_logger.debug("Filling with %s" % 'chams' if chasm else 'walls')
@@ -1101,19 +719,27 @@ class LevelGenerator():
 					self.level.make_chasm(x, y)
 
 		if self.difficulty > 1:
-			num_seeds = self.random.randint(0, 5)
+			num_seeds = self.random.randint(1, 3)
 			level_logger.debug("Seed mutators:")
 			for i in range(num_seeds):
 				mutator = self.random.choice(seed_mutators)
 				mutator(self)
 
+				if random.random() < brush_shift_chance:
+					new_tileset = random.choice(all_biomes).tileset
+					self.level.set_brush_tileset(new_tileset)
+
 			# Mutate
 			level_logger.debug("Extra mutators:")
-			num_mutators = self.random.choice([0, 0, 1, 3, 5, 6, 9, 13])
+			num_mutators = self.random.choice([0, 0, 1, 3, 4, ])
 
 			for i in range(num_mutators):
 				mutator = self.random.choice(mutator_table)
 				mutator(self)
+
+				if random.random() < brush_shift_chance:
+					new_tileset = random.choice(all_biomes).tileset
+					self.level.set_brush_tileset(new_tileset)
 
 		else:
 			paths(self)
@@ -1124,57 +750,74 @@ class LevelGenerator():
 		#	points = self.random.randint(2, 10)
 		#	paths(self, num_points=points)
 
-		# Do border
 		self.tidy_border()
 
 		# Ensure atleast 20 walls and 20 floors
 		fix_attempts = 10
-		min_floors = 100
-		min_walls = 100
+		min_floors = 50
+		min_walls = 150
 		for i in range(fix_attempts):
 			num_floors = len([t for t in self.level.iter_tiles() if t.can_walk])
 			num_walls = len([t for t in self.level.iter_tiles() if not t.can_walk])
 			level_logger.debug("%d floors, %d walls)" % (num_floors, num_walls))
+			self.log_level()
 
 			if min_floors > num_floors or min_walls > num_walls:
 				level_logger.debug("Trying to fix boring level:")
 				mutator = self.random.choice(seed_mutators)
 				mutator(self)
+				if random.random() < brush_shift_chance:
+					new_tileset = random.choice(all_biomes).tileset
+					self.level.set_brush_tileset(new_tileset)
+				self.log_level()
 			else:
 				break
+
+		self.level.set_brush_tileset(None)
+
+		max_fly_radius = 0
+		for b in self.bosses:
+			if b.stationary:
+				continue
+			if not b.flying:
+				continue
+			max_fly_radius = max(max_fly_radius, b.radius)
+
+		max_walk_radius = 0
+		for b in self.bosses:
+			if b.stationary:
+				continue
+			if b.flying:
+				continue
+			max_walk_radius = max(max_walk_radius, b.radius)
 
 		# Ensure connectivity
 		self.ensure_connectivity(chasm=False)
 		self.ensure_connectivity(chasm=True)
-	
-		# make start point
-		choices = [t for t in self.level.iter_tiles() if t.can_walk]
-		if choices:
-			self.level.start_pos = self.random.choice(choices)
-		if not choices:
-			self.level.make_floor(0, 0,)
-			self.level.start_pos = Point(0, 0)
 
+		# Make sure the level is navigable for big monsters
+		if max_fly_radius:
+			level_logger.debug("Expanding flyable corridors to %d" % max_walk_radius)
+			self.expand_to_radius(max_fly_radius, flying=True)
+			self.log_level()
+		elif max_walk_radius:
+			level_logger.debug("Expanding walkable corridors to %d" % max_walk_radius)
+			self.expand_to_radius(max_walk_radius, flying=False)
+			self.log_level()
+
+		# Uniformize floors and chasms
+		floor_tiles = [t for t in self.level.iter_tiles() if t.is_floor()]
+		if floor_tiles:
+			first = floor_tiles[0]
+			for t in floor_tiles:
+				t.tileset = first.tileset
 		
-		# Find points to put stuff
-		self.empty_spawn_points = []
-		self.wall_spawn_points = []
-		for i in range(LEVEL_SIZE):
-			for j in range(LEVEL_SIZE):
-				cur_point = Point(i, j)
-				if self.difficulty == 1:
-					if distance(cur_point, self.level.start_pos) < 8:
-						continue
+		chasm_tiles = [t for t in self.level.iter_tiles() if t.is_chasm]
+		if chasm_tiles:
+			first = chasm_tiles[0]
+			for t in chasm_tiles:
+				t.tileset = first.tileset
 
-				if self.level.can_walk(i, j):
-					self.empty_spawn_points.append(cur_point)
-				else:
-					if len([p for p in self.level.get_adjacent_points(cur_point)]) > 1:
-						self.wall_spawn_points.append(cur_point)
-
-		self.random.shuffle(self.empty_spawn_points)
-		self.random.shuffle(self.wall_spawn_points)
-		
 	def tidy_border(self):
 		# Count walls and edges on edge.
 		# Make all edge floor tiles into most common type.
@@ -1198,8 +841,6 @@ class LevelGenerator():
 					 level.tiles[i][LEVEL_SIZE-1], level.tiles[LEVEL_SIZE-1][i]]
 
 			for tile in tiles:
-				if not tile.is_floor():
-					continue
 				if walls < chasms:
 					level.make_chasm(tile.x, tile.y)
 				else:
@@ -1208,63 +849,81 @@ class LevelGenerator():
 
 	def populate_level(self):
 
+		# Find points to put stuff
+		self.empty_spawn_points = []
+		self.wall_spawn_points = []
+		for i in range(LEVEL_SIZE):
+			for j in range(LEVEL_SIZE):
+				cur_point = Point(i, j)
+
+				if cur_point in self.corrupted_tiles:
+					continue
+
+				if self.level.get_unit_at(i, j):
+					continue
+
+				if self.level.can_walk(i, j):
+					self.empty_spawn_points.append(cur_point)
+				else:
+					if len([p for p in self.level.get_adjacent_points(cur_point)]) > 1:
+						self.wall_spawn_points.append(cur_point)
+
+		self.random.shuffle(self.empty_spawn_points)
+		self.random.shuffle(self.wall_spawn_points)
+
+		self.level.start_pos = self.empty_spawn_points.pop()
+
 		for i in range(self.num_exits):
-			if self.wall_spawn_points:
-				exit_loc = self.wall_spawn_points.pop()
-			else:
-				exit_loc = self.empty_spawn_points.pop()
+			exit_loc = self.wall_spawn_points.pop()
 			exit = Portal(self.make_child_generator())
 			self.level.make_floor(exit_loc.x, exit_loc.y)
 			self.level.add_prop(exit, exit_loc.x, exit_loc.y)
 
-		for i in range(self.num_monsters):
-			spawner, cost = self.random.choice(self.spawn_options)
+		sorted_bosses = sorted(self.bosses, key=lambda boss: boss.radius, reverse=True)
+		for boss in sorted_bosses:
+			if not self.empty_spawn_points:
+				break
 
-			spawn_point = self.empty_spawn_points.pop()
+			possible_spawn_points = self.empty_spawn_points
 
-			obj = spawner()
+			# Do extra checks for multitile monsters
+			if boss.radius:
 
-			unit = self.level.get_unit_at(*spawn_point)
-			if unit:
-				print(unit.name)
-			self.level.add_obj(obj, spawn_point.x, spawn_point.y)
+				min_bound = boss.radius
+				max_bound = LEVEL_SIZE - 1 - boss.radius
 
-		for i in range(self.num_elites):
-			spawner = self.elite_spawn
+				possible_spawn_points = [p for p in self.empty_spawn_points if p.x >= min_bound and p.x <= max_bound and p.y >= min_bound and p.y <= max_bound]
+				possible_spawn_points = [p for p in possible_spawn_points if all(self.level.get_unit_at(q.x, q.y) is None for q in self.level.get_points_in_ball(p.x, p.y, boss.radius, diag=True))]
 
-			obj = spawner()
-			spawn_point = self.empty_spawn_points.pop()
-			self.level.add_obj(obj, spawn_point.x, spawn_point.y)
+			assert(possible_spawn_points)
+			spawn_point = random.choice(possible_spawn_points)
 
-		for i in range(self.num_generators):
-			spawn_point = self.wall_spawn_points.pop()
-			self.level.make_floor(spawn_point.x, spawn_point.y)
+			self.empty_spawn_points.remove(spawn_point)
+			self.level.add_obj(boss, spawn_point.x, spawn_point.y)
 
-			spawner, cost = self.random.choice(self.spawn_options)
+			if boss.radius:
+				for p in boss.iter_occupied_points():
 
-			obj = MonsterSpawner(spawner)
-			obj.max_hp = 19 + cost * 8
-			self.level.add_obj(obj, spawn_point.x, spawn_point.y)
+					if p == spawn_point:
+						continue
 
-		
+					self.level.make_floor(p.x, p.y)
+					if p in self.empty_spawn_points:
+						self.empty_spawn_points.remove(p)
+					if p in self.wall_spawn_points:
+						self.wall_spawn_points.remove(p)
+
 		for item in self.items:
-			p = self.wall_spawn_points.pop()
+			p = self.empty_spawn_points.pop()
+			
 			self.level.make_floor(p.x, p.y)
 
-			prop = make_consumable_pickup(item)
+			prop = ItemPickup(item)
 			self.level.add_prop(prop, p.x, p.y)
-
-		for i in range(self.num_hp_upgrades):
-			p = self.empty_spawn_points.pop()
-			self.level.add_prop(HeartDot(), p.x, p.y)
 
 		if self.shrine:
 			p = self.empty_spawn_points.pop()
 			self.level.add_prop(self.shrine, p.x, p.y)
-
-		if self.extra_circle:
-			p = self.empty_spawn_points.pop()
-			self.level.add_prop(self.extra_circle, p.x, p.y)
 
 		for i in range(self.num_xp):
 			
@@ -1277,21 +936,38 @@ class LevelGenerator():
 
 			self.level.add_prop(pickup, spawn_point.x, spawn_point.y)
 
-		for s in self.scroll_spells:
+		for i in range(self.num_generators):
+			if not self.empty_spawn_points and not self.wall_spawn_points:
+				break
 
+			if self.wall_spawn_points:
+				spawn_point = self.wall_spawn_points.pop()
+			else:
+				spawn_point = self.empty_spawn_points.pop()
+
+			self.level.make_floor(spawn_point.x, spawn_point.y)
+
+			if self.secondary_spawn:
+				spawner = self.random.choice([self.primary_spawn, self.secondary_spawn])
+			else:
+				spawner = self.primary_spawn
+
+			obj = MonsterSpawner(spawner)
+			self.level.add_obj(obj, spawn_point.x, spawn_point.y)
+
+		for i in range(self.num_monsters):
 			if not self.empty_spawn_points:
 				break
 
+			if self.secondary_spawn:
+				spawner = self.random.choice([self.primary_spawn, self.secondary_spawn])
+			else:
+				spawner = self.primary_spawn
 			spawn_point = self.empty_spawn_points.pop()
-			self.level.add_prop(SpellScroll(s), spawn_point.x, spawn_point.y)
 
-		for boss in self.bosses:
-			if not self.empty_spawn_points:
-				break
-
-			spawn_point = self.empty_spawn_points.pop()
-			
-			self.level.add_obj(boss, spawn_point.x, spawn_point.y)
+			obj = spawner()
+ 
+			self.level.add_obj(obj, spawn_point.x, spawn_point.y)
 
 
 def blue_starry_sky(level):
@@ -1389,19 +1065,37 @@ def make_bestiary():
 	for s, l in spawn_options:
 		record(s())
 
-		for v in variants.get(s, []):
-			record(v[0]())
-
 	for r in rare_monsters:
 		record(r[0]())
 
+
+	all_monsters.append(Apep())
+	all_monsters.append(Ophan())
+	all_monsters.append(FrogPope())
+	all_monsters.append(ApocalypseBeatle())
+
 	all_monsters.append(Mordred())
 
-	test_level = Level(1, len(all_monsters))
+	test_level = Level(5, len(all_monsters)*5)
 	i = 0
 	for m in all_monsters:
-		test_level.add_obj(m, 0, i)
-		i += 1
+		test_level.add_obj(m, 1, i)
+		i += 5
 
 	for m in all_monsters:
 		all_monster_names.append(m.name)
+
+
+if __name__ == "__main__":
+	for i in range(1000):
+		print('Generating level %d' % i)
+		gen = LevelGenerator(difficulty=random.randint(1, 21))
+		test_boss = Unit()
+		test_boss.radius = 1
+		test_boss.flying = True
+
+		test_boss2 = Unit()
+		test_boss2.radius = 1
+		test_boss2.flying = False
+
+		gen.make_level()

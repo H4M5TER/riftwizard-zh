@@ -276,28 +276,42 @@ class PortalKeySpell(Spell):
 
 	def cast_instant(self, x, y):
 
-		candidates = [t for t in self.caster.level.iter_tiles() if t.unit != self.caster and t.can_walk and not t.prop]
-		if not candidates:
-			return
+		for i in range(3):
+			candidates = [t for t in self.caster.level.iter_tiles() if t.unit != self.caster and t.can_walk and not t.prop]
+			if not candidates:
+				return
 
-		tile = random.choice(candidates)
+			tile = random.choice(candidates)
 
-		portal = Portal(self.caster.level.gen_params.make_child_generator())
-		portal.unlock()
-		self.caster.level.add_prop(portal, tile.x, tile.y)
+			portal = Portal(self.caster.level.gen_params.make_child_generator())
+			self.caster.level.add_prop(portal, tile.x, tile.y)
 
 def portal_key():
 	item = Item()
 	item.name = "Portal Key"
-	item.description = "Create a new unlocked rift at a random location in the current level"
+	item.description = "Create 3 new portals at random locations in the current level"
 	item.set_spell(PortalKeySpell())
 	return item
+
+class OrbCorruption(MordredCorruption):
+
+	def cast(self, x, y):
+		self.owner.cur_hp = random.randint(1, self.owner.max_hp+1)
+		for s in self.owner.spells:
+			s.cur_charges = random.randint(0, s.get_stat('max_charges')+1)
+		
+		yield
+
+		self.kill_enemies = True
+		for _ in MordredCorruption.cast(self, x, y):
+			yield
+
 
 def corruption_orb():
 	item = Item()
 	item.name = "Orb of Corruption"
 	item.description = "An evil and dangerous artifact capable of corrupting creation.  A wise Wizard would surely only use it in the most dire of circumstances."
-	spell = MordredCorruption()
+	spell = OrbCorruption()
 	item.set_spell(spell)
 	spell.num_exits = 3
 	return item
@@ -430,32 +444,24 @@ def earth_troll_crown():
 	item.set_spell(summon_spell)
 	return item
 
-COMMON = 12
-UNCOMMON = 6
+COMMON = 13
+UNCOMMON = 7
 RARE = 3
 SUPER_RARE = 1
 
 all_consumables = [
+	(heal_potion, COMMON),
+	(mana_potion, COMMON),
 	(teleporter, COMMON),
-	(portal_disruptor, COMMON),
 	(golden_stopwatch, UNCOMMON),
-	(portal_key, UNCOMMON),
-	(energy_shield, UNCOMMON),
-	(stone_shield, UNCOMMON),
 	(chaos_bell, UNCOMMON),
 	(death_dice, UNCOMMON),
+	(portal_key, UNCOMMON),
 	(quake_orb, RARE),
-	(dragon_horn, RARE),
-	(youth_elixer, RARE),
 	(oculus, RARE),
-	(troll_crown, RARE),
 	(aether_knife, RARE),
-	(memory_draught, SUPER_RARE),
+	(bag_of_spikes, RARE),
 	(corruption_orb, SUPER_RARE),
-	(bag_of_spikes, SUPER_RARE),
-	(bag_of_bags, SUPER_RARE),
-	(storm_troll_crown, SUPER_RARE),
-	(earth_troll_crown, SUPER_RARE)
 ]
 
 for item, freq in all_consumables:

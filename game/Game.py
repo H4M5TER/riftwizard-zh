@@ -5,7 +5,7 @@ import math
 import Consumables
 import os
 from Spells import make_player_spells
-
+from Equipment import get_forced_equip
 from collections import OrderedDict, defaultdict
 
 import dill as pickle
@@ -140,6 +140,8 @@ class Game():
 		if not os.path.exists(dirname):
 			os.makedirs(dirname)
 
+		self.rift_rerolls = 1
+		
 		with open(filename, 'w') as stats:
 			stats.write("Realm %d\n" % self.level_num)
 			if self.trial_name:
@@ -149,13 +151,11 @@ class Game():
 			stats.write("%d (L)\n" % self.cur_level.turn_no)
 			stats.write("%d (G)\n" % self.total_turns)
 
-			counts = sorted(self.cur_level.spell_counts.items(), key=lambda t: -t[1])
-
-			spell_counts = [(s, c) for (s, c) in counts if not s.item]
+			spell_counts = sorted(self.cur_level.spell_counts.items(), key=lambda t: -t[1])
 			if spell_counts:
 				stats.write("\nSpell Casts:\n")
 				for s, c in spell_counts:
-					stats.write("%s: %d\n" % (s.name, c))
+					stats.write("%3d %s\n" % (c, s))
 
 			dealers = sorted(self.cur_level.damage_dealt_sources.items(), key=lambda t: -t[1])
 			if dealers:
@@ -175,11 +175,11 @@ class Game():
 					total_other = sum(d for s,d in sources[5:])
 					stats.write("%d Other\n" % total_other)
 
-			item_counts = [(s, c) for (s, c) in counts if s.item]
+			item_counts = sorted(self.cur_level.item_counts.items(), key=lambda t: -t[1])
 			if item_counts:
 				stats.write("\nItems Used:\n")
 				for s, c in item_counts:
-					stats.write("%s: %d\n" % (s.name, c))
+					stats.write("%d %s\n" % (c, s))
 
 			if self.recent_upgrades:
 				stats.write("\nPurchases:\n")
@@ -220,6 +220,15 @@ class Game():
 
 		self.run_number = self.get_run_number()
 
+
+		self.all_player_spells = make_player_spells()
+		self.all_player_skills = make_player_skills()
+
+		for mutator in self.mutators:
+			mutator.on_generate_spells(self.all_player_spells)
+			mutator.on_generate_skills(self.all_player_skills)
+			mutator.on_game_begin(self)
+
 		self.generate_level = generate_level
 		if generate_level:
 			self.cur_level = LevelGenerator(1, self, self.seed).make_level()
@@ -228,6 +237,9 @@ class Game():
 			self.cur_level.start_pos = Point(0, 0)
 
 		self.cur_level.spawn_player(self.p1)
+
+		if 'forceequip' in sys.argv:
+			self.p1.equip(get_forced_equip())
 
 		self.gameover = False
 		self.level_num = 1
@@ -246,13 +258,6 @@ class Game():
 
 		self.total_turns = 0
 
-		self.all_player_spells = make_player_spells()
-		self.all_player_skills = make_player_skills()
-
-		for mutator in self.mutators:
-			mutator.on_generate_spells(self.all_player_spells)
-			mutator.on_generate_skills(self.all_player_skills)
-			mutator.on_game_begin(self)
 
 		# Gather all spell tags for UI and other consumers
 		self.spell_tags = []
@@ -269,6 +274,8 @@ class Game():
 			self.logdir = None
 
 		self.cur_level.setup_logging(logdir=self.logdir, level_num=self.level_num)
+
+		self.rift_rerolls = 0
 
 	# Take a levelseed, return the list of seeds that level leads to
 	def get_seeds(self, difficuty):
@@ -291,7 +298,8 @@ class Game():
 		player.sprite.color = Color(128, 255, 0)
 		player.is_player_controlled = True
 		player.mana = 250
-		player.name = "Player"
+		player.name = "The Wizard"
+		player.asset_name = 'player'
 		player.team = TEAM_PLAYER
 
 		player.tags = [Tags.Living]
@@ -311,9 +319,9 @@ class Game():
 		player.add_item(Consumables.heal_potion())
 		player.add_item(Consumables.mana_potion())
 		player.add_item(Consumables.teleporter())
-		player.add_item(Consumables.portal_disruptor())
 
 		player.gets_clarity = True
+		player.game = self
 
 		return player
 
@@ -321,10 +329,19 @@ class Game():
 	def try_move(self, xdir, ydir):
 		if not self.cur_level.is_awaiting_input:
 			return False
+
+		if self.p1.is_stunned():
+			return False
 		
 		new_x = self.p1.x + xdir
 		new_y = self.p1.y + ydir
 
+		# Use melee spell if one is set and the way is blocked by a hostile unit
+		blocker = self.cur_level.get_unit_at(new_x, new_y)
+		if blocker and are_hostile(self.p1, blocker) and self.p1.melee_spell:
+			return self.try_cast(self.p1.melee_spell, new_x, new_y)
+
+		# Otherwise just move
 		if self.cur_level.can_move(self.p1, new_x, new_y):
 			self.cur_level.set_order_move(new_x, new_y)
 			#self.advance()
@@ -370,6 +387,32 @@ class Game():
 
 		return True
 
+	def try_reroll_rifts(self):
+
+		if self.rift_rerolls:
+			self.rift_rerolls -= 1
+		else:
+			return
+
+		# Delete existing portals
+		num_gates = 0
+		for tile in self.cur_level.iter_tiles():
+			if isinstance(tile.prop, Portal):
+				tile.prop = None
+				num_gates += 1
+				self.cur_level.show_effect(tile.x, tile.y, Tags.Translocation)
+
+		# Always roll atleast one gate- for instance if corruption destroyed all the portals
+		num_gates = max(num_gates, 1)
+
+		candidate_tiles = [t for t in self.cur_level.iter_tiles() if not t.prop and t.can_walk]
+		random.shuffle(candidate_tiles)
+
+		for t in candidate_tiles[:num_gates]:
+			gate = Portal(self.cur_level.gen_params.make_child_generator())
+			gate.unlock()
+			self.cur_level.add_obj(gate, t.x, t.y)
+			self.cur_level.show_effect(t.x, t.y, Tags.Translocation)
 
 	def try_pass(self):
 		self.cur_level.set_order_pass()
@@ -404,8 +447,9 @@ class Game():
 		level = max(level, 1)
 		return level		
 
-	def buy_upgrade(self, upgrade):
-		self.p1.xp -= self.get_upgrade_cost(upgrade)
+	def buy_upgrade(self, upgrade, free=False):
+		if not free:
+			self.p1.xp -= self.get_upgrade_cost(upgrade)
 		if isinstance(upgrade, Upgrade):
 			self.p1.apply_buff(upgrade)
 		elif isinstance(upgrade, Spell):
@@ -426,6 +470,9 @@ class Game():
 				level_posessed += 1
 		return max(0, level_needed - level_posessed)
 
+	def spell_is_upgraded(self, spell):
+		return any(b for b in self.p1.buffs if getattr(b, 'prereq', None) == spell)
+
 	def can_buy_upgrade(self, upgrade):
 
 		# Limit 20 spells
@@ -436,7 +483,13 @@ class Game():
 			return False
 
 		if isinstance(upgrade, Upgrade) and upgrade.prereq:
+			
+			# Must have prereq
 			if not self.has_upgrade(upgrade.prereq):
+				return False
+
+			# One spell upgrade per spell
+			if self.spell_is_upgraded(upgrade.prereq):
 				return False
 
 		if self.p1.xp < self.get_upgrade_cost(upgrade):
@@ -488,19 +541,22 @@ class Game():
 		if self.cur_level.cur_portal and not self.deploying:
 			self.enter_portal()
 		
-		if all([u.team == TEAM_PLAYER for u in self.cur_level.units]):
+		# Level victory
+		# You win if every unit is friendly and you have hitpoints
+		if all([u.team == TEAM_PLAYER for u in self.cur_level.units]) and self.p1.cur_hp > 0:
 				
 			if not self.has_granted_xp:
 				#self.p1.xp += 3
 				self.has_granted_xp = True
 				self.victory_evt = True
 				self.finalize_level(victory=True)
+				self.p1.refresh()
 
 		if self.p1.cur_hp <= 0:
 			self.gameover = True
 			self.finalize_save(victory=False)
 
-		if self.level_num == LAST_LEVEL and not any(u.name == "Mordred" for u in self.cur_level.units):
+		if self.level_num == LAST_LEVEL and not any(u for u in self.cur_level.units if u.name == "Mordred"):
 			self.victory = True
 			self.victory_evt = True
 			self.finalize_save(victory=True)
@@ -534,6 +590,9 @@ class Game():
 		if not self.next_level.can_stand(x, y, self.p1):
 			return False
 
+		# Clear all buffs heal to max ect
+		self.p1.refresh()
+
 		self.p1.Anim = None
 
 		self.cur_level.remove_obj(self.p1)
@@ -546,7 +605,9 @@ class Game():
 
 		self.level_num += 1
 		self.has_granted_xp = False
-		
+
+		self.rift_rerolls = 0
+
 		self.cur_level.setup_logging(logdir=self.logdir, level_num=self.level_num)
 
 		import gc

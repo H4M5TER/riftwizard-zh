@@ -1,13 +1,14 @@
 import os
+
 import sys
 import re
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-
 # Make all the relative file accesses work
 cheats_enabled = False
 can_enable_cheats = False
 if getattr(sys, 'frozen', False):
+	
 	dname = os.path.dirname(sys.executable)
 	can_enable_cheats = 'cheatmode' in sys.argv
 elif __file__:
@@ -26,7 +27,9 @@ import gc
 import time
 
 import dill as pickle
+
 import text
+
 
 import SteamAdapter
 from Variants import *
@@ -58,6 +61,8 @@ HIT_FLASH_FLASHES = 3
 HIT_FLASH_SUBFRAMES = 2
 
 STATUS_SUBFRAMES = 12
+
+SOUND_COOLDOWN_MAX = 2
 
 CHAR_HEART = 'HP'#chr(3)
 CHAR_SHIELD = 'SH' #chr(4)
@@ -100,8 +105,46 @@ MAX_PATH_DELAY = 1
 
 STAR_SPAWN_CHANCE = 0.0001
 
-RENDER_WIDTH = 1600
-RENDER_HEIGHT = 900
+# Default vals, should get overriden later
+RENDER_WIDTH = 1920
+RENDER_HEIGHT = 1080
+LEVEL_SIZE = 33
+
+SIZE_SMALL = 1
+SIZE_MED = 2
+SIZE_LARGE = 3
+
+SIZE = SIZE_SMALL if 'size_small' in sys.argv else SIZE_MED if 'size_med' in sys.argv else SIZE_LARGE if 'size_large' in sys.argv else None
+
+def set_size(new_size):
+	global SIZE
+	global RENDER_WIDTH
+	global RENDER_HEIGHT
+	global LEVEL_SIZE
+
+	if new_size == SIZE_LARGE:
+		RENDER_WIDTH = 1920
+		RENDER_HEIGHT = 1080
+		LEVEL_SIZE = 33
+		set_level_size(33)
+		SIZE = SIZE_LARGE
+
+	if new_size == SIZE_MED:
+		RENDER_WIDTH = 1600
+		RENDER_HEIGHT = 900
+		LEVEL_SIZE = 28
+		set_level_size(28)
+		SIZE = SIZE_MED
+
+	if new_size == SIZE_SMALL:
+		RENDER_WIDTH = 1366
+		RENDER_HEIGHT = 768
+		LEVEL_SIZE = 24
+		set_level_size(24)
+		SIZE = SIZE_SMALL
+
+if SIZE:
+	set_size(SIZE)
 
 SPELL_FAIL_LOCKOUT_FRAMES = 12
 
@@ -137,9 +180,13 @@ LEARN_SKILL_TARGET = TooltipExamineTarget("Learn a new skill")
 CHAR_SHEET_TARGET = TooltipExamineTarget("Learn new spells and abilities")
 INSTRUCTIONS_TARGET = TooltipExamineTarget("Learn how to play")
 OPTIONS_TARGET = TooltipExamineTarget("Adjust options")
+STUNNED_TARGET = TooltipExamineTarget("You cannot move or cast this turn.\nYou must pass the turn.\n(Click on yourself or press numpad 5).")
+REROLL_PORTALS_TARGET = TooltipExamineTarget("Reroll the destinations of all rifts.  Limit one use per level.")
 
 WELCOME_TARGET = TooltipExamineTarget(text.welcome_text)
 DEPLOY_TARGET = TooltipExamineTarget(text.deploy_text)
+
+UNPURCHASED_TARGET = TooltipExamineTarget("Only show options that have never been purchased.")
 
 TOOLTIP_PREV = 0
 TOOLTIP_NEXT = 1
@@ -203,9 +250,30 @@ tooltip_colors['blind'] = Tags.Holy.color
 tooltip_colors['blinded'] = tooltip_colors['blind']
 tooltip_colors['glassify'] = Tags.Glass.color
 tooltip_colors['glassified'] = Tags.Glass.color
+tooltip_colors['quick_cast'] = Color(255, 255, 255)
+
+tt_attrs = [
+	'damage',
+	'minion_health',
+	'minion_damage',
+	'breath_damage',
+	'minion_duration',
+	'minion_range',
+	'duration',
+	'radius',
+	'num_summons',
+	'num_targets',
+	'shields',
+	'shot_cooldown',
+	'strikechance',
+	'cooldown',
+	'cascade_range',
+]
 
 REPEAT_INTERVAL = .05
 REPEAT_DELAY = .2
+
+MUSIC_OVER_EVENT = pygame.USEREVENT + 1
 
 import logging
 mem_log = logging.getLogger("memory")
@@ -216,14 +284,14 @@ mem_log.addHandler(logging.FileHandler('mem_log.txt', mode='w'))
 Channel = namedtuple('Channel', 'name channel base_volume')
 
 image_cache = {}
-def get_image(asset, fill_color=None, alphafy=False):
+def get_image(asset, fill_color=None, alphafy=False, recolor_primary=None, recolor_secondary=None):
 	assert(asset)
 	assert(isinstance(asset, list))
 	assert(isinstance(asset[0], str))
 
 	# First check 
 	path = os.path.join('rl_data', *asset) + '.png'
-	key = (path, fill_color, alphafy) if fill_color else path
+	key = (path, fill_color, alphafy, recolor_primary, recolor_secondary)
 	if key in image_cache:
 		return image_cache[key]
 
@@ -245,10 +313,51 @@ def get_image(asset, fill_color=None, alphafy=False):
 	if fill_color:
 		image.fill(fill_color, special_flags=pygame.BLEND_RGBA_MIN)
 		image_cache[(path, fill_color)] = image
-	
+
+	if recolor_primary:
+		do_recolor_primary(image, recolor_primary.to_tup())
+
+	if recolor_secondary:
+		do_recolor_secondary(image, recolor_secondary.to_tup())
+
 	image_cache[key] = image
 
 	return image_cache[key]
+
+def do_recolor_primary(image, new_color):
+	return recolor_nth_color(image, new_color, n=0)
+
+def do_recolor_secondary(image, new_color):
+	return recolor_nth_color(image, new_color, n=1)
+
+def recolor_nth_color(image, new_color, n):
+	color_counts = {}
+	for i in range(image.get_width()):
+		for j in range(image.get_height()):
+			cur_color = image.get_at((i, j))
+			if cur_color.a == 0:
+				continue
+			if cur_color.r == cur_color.g == cur_color.b == 0:
+				continue
+			if not tuple(cur_color) in color_counts:
+				color_counts[tuple(cur_color)] = 0
+			color_counts[tuple(cur_color)] += 1
+
+	colors = [color for color, freq in sorted(color_counts.items(), key=lambda t: t[1], reverse=True)]
+	# If n > number of colors, return original image
+
+	if n > len(colors):
+		return image
+
+	nth_color = colors[n]
+
+	for i in range(image.get_width()):
+		for j in range(image.get_height()):
+			cur_color = image.get_at((i, j))
+			if cur_color == nth_color:
+				image.set_at((i, j), new_color)
+
+	return image
 
 def get_spell_asset(spell):
 	if spell.asset:
@@ -290,28 +399,29 @@ def pixel_is_empty(p):
 		return True
 	return False
 
-def get_glow(surface, color, outline=False):
+def get_glow(surface, color, outline=False, radius=0):
 
-	glow_frame = pygame.Surface((SPRITE_SIZE, SPRITE_SIZE), flags=pygame.SRCALPHA)
+	frame_size = SPRITE_SIZE + (2*radius*SPRITE_SIZE)
+	glow_frame = pygame.Surface((frame_size+2, frame_size+2), flags=pygame.SRCALPHA)
 
-	for i in range(0, SPRITE_SIZE):
-		for j in range(0, SPRITE_SIZE):
+	for i in range(0, frame_size):
+		for j in range(0, frame_size):
 			c = surface.get_at((i, j))
 			
 			if pixel_is_empty(c):
 				continue
 
 			if outline:
+				for src_p in [(i-1, j), (i+1, j), (i, j-1), (i, j+1)]:
+					dst_p = (src_p[0] + 1, src_p[1] + 1)
 
-				# If an edge pixel is non empty, color it
-				if i == 0 or j == 0 or i == SPRITE_SIZE - 1 or j == SPRITE_SIZE - 1:
-					glow_frame.set_at((i, j), color.to_tup())
+					# Out of bounds of original sprite- consider empty, colorize
+					if src_p[0] < 0 or src_p[0] >= surface.get_width() or src_p[1] < 0 or src_p[1] >= surface.get_height():
+						glow_frame.set_at(dst_p, color.to_tup())
 
-				# If a non edge pixel is non empty, color empty neighbors
-				else:
-					for p in [(i-1, j), (i+1, j), (i, j-1), (i, j+1)]:
-						if pixel_is_empty(surface.get_at(p)):
-							glow_frame.set_at(p, color.to_tup())
+					# In bounds- colorize if empty
+					elif pixel_is_empty(surface.get_at(src_p)):
+						glow_frame.set_at(dst_p, color.to_tup())
 			else:
 				glow_frame.set_at((i, j), color.to_tup())
 
@@ -361,20 +471,24 @@ COLOR_LAIR_SECONDARY = (0, 255, 0, 255)
 
 class SpriteSheet(object):
 
-	def __init__(self, param, color=None, lair_colors=None):
+	def __init__(self, param, color=None, lair_colors=None, radius=0, recolor_primary=None):
 		self.color = color
 		self.param = param
+		self.radius = radius
+		self.recolor_primary = recolor_primary
+
 		assert(param)       
 
 		if isinstance(param, Sprite):
 			self.image = self.make_ascii_sprite(param)
 		elif isinstance(param, list):
-			self.image = get_image(param)
+			self.image = get_image(param, recolor_primary=recolor_primary)
 		else:
 			# Unsupported sprite sheet param type
 			assert(False)
 
-		assert(self.image.get_width() % SPRITE_SIZE == 0)
+		frame_size = SPRITE_SIZE * (1 + (radius*2))
+		assert(self.image.get_width() % frame_size == 0)
 
 		if self.color:
 			self.image.fill(color, special_flags=pygame.BLEND_RGBA_MIN)
@@ -401,15 +515,15 @@ class SpriteSheet(object):
 
 		self.anim_lengths = {}
 
-		image_anims = self.image.get_height() // SPRITE_SIZE
+		image_anims = self.image.get_height() // frame_size
 
 		for anim in [ANIM_ATTACK, ANIM_FLINCH, ANIM_IDLE]:
 
 			frames = 0
-			for i in range(self.image.get_width() // SPRITE_SIZE):
-				subimage_y = min(anim, image_anims - 1) * SPRITE_SIZE   
-				subimage = self.image.subsurface(pygame.Rect(SPRITE_SIZE * frames, subimage_y, SPRITE_SIZE, SPRITE_SIZE))
-				pixels = [subimage.get_at((i, j)) for i in range(0, SPRITE_SIZE) for j in range(0, SPRITE_SIZE)]
+			for i in range(self.image.get_width() // frame_size):
+				subimage_y = min(anim, image_anims - 1) * frame_size   
+				subimage = self.image.subsurface(pygame.Rect(frame_size * frames, subimage_y, frame_size, frame_size))
+				pixels = [subimage.get_at((i, j)) for i in range(0, frame_size) for j in range(0, frame_size)]
 				if all(p.a == 0 for p in pixels):
 					break
 				frames += 1
@@ -435,7 +549,7 @@ class SpriteSheet(object):
 		else:
 			frame = frame_dict[anim][frame]
 
-		glow_frame = get_glow(frame, color, outline)
+		glow_frame = get_glow(frame, color, outline, radius=self.radius)
 		self.glow_cache[key] = glow_frame
 
 		return glow_frame
@@ -458,15 +572,22 @@ class SpriteSheet(object):
 		return image
 
 	def get_lair_colors(self):
-		if not hasattr(self, 'common_color'):
-			pixels = [self.anim_frames[ANIM_IDLE][0].get_at((i, j)) for i in range(SPRITE_SIZE) for j in range(SPRITE_SIZE)]
-			pixels = [p for p in pixels if p[3]]
-			first = max(pixels, key = pixels.count)
-			other_colors = [p for p in pixels if p != first]
-			if other_colors:
-				second = max([p for p in pixels if p != first], key = pixels.count)
-			else:
-				second = first
+
+		pixels = []
+		image = self.anim_frames[ANIM_IDLE][0]
+		for i in range(image.get_width()):
+			for j in range(image.get_height()):
+				pixel = image.get_at((i, j))
+				if pixel[3]:
+					pixels.append(pixel)
+
+
+		first = max(pixels, key = pixels.count)
+		other_colors = [p for p in pixels if p != first]
+		if other_colors:
+			second = max([p for p in pixels if p != first], key = pixels.count)
+		else:
+			second = first
 
 		return tuple(first), tuple(second)
 
@@ -546,11 +667,13 @@ class UnitSprite(object):
 		self.anim_subframe = 0
 		self.unit = unit
 
-		self.unit.level.event_manager.register_entity_trigger(EventOnSpellCast, unit, self.on_attack)
-		self.unit.level.event_manager.register_entity_trigger(EventOnDamaged, unit, self.on_damaged)
-		self.unit.level.event_manager.register_entity_trigger(EventOnMoved, unit, self.on_moved)
-		self.unit.level.event_manager.register_entity_trigger(EventOnDeath, unit, self.on_death)
-		self.unit.level.event_manager.register_entity_trigger(EventOnItemPickup, unit, self.on_item)
+		# Register for events if the unit is on a level otherwise do not
+		if hasattr(unit, "level"):
+			self.unit.level.event_manager.register_entity_trigger(EventOnSpellCast, unit, self.on_attack)
+			self.unit.level.event_manager.register_entity_trigger(EventOnDamaged, unit, self.on_damaged)
+			self.unit.level.event_manager.register_entity_trigger(EventOnMoved, unit, self.on_moved)
+			self.unit.level.event_manager.register_entity_trigger(EventOnDeath, unit, self.on_death)
+			self.unit.level.event_manager.register_entity_trigger(EventOnItemPickup, unit, self.on_item)
 
 		self.sheet = sprite_sheet
 		self.slide_frames = 0
@@ -586,14 +709,16 @@ class UnitSprite(object):
 
 		# Synchronize idle anims
 		if self.anim == ANIM_IDLE:
-			self.anim_frame = idle_frame % self.sheet.anim_lengths[self.anim]
+			self.anim_frame = idle_frame  % self.sheet.anim_lengths[self.anim]
 			# Prevent flashing of placeholders
 			if self.anim_frame >= self.sheet.anim_lengths[self.anim]:
 				self.anim_frame = 0
 			# freeze stunned creature
 			if self.unit.is_stunned():
 				self.anim_frame = 0
-		self.last_position = Point(self.unit.x, self.unit.y)
+
+		if hasattr(self.unit, 'level'):
+			self.last_position = Point(self.unit.x, self.unit.y)
 		if self.slide_frames:
 			self.slide_frames -= 1
 
@@ -675,7 +800,7 @@ class UnitSprite(object):
 			# 1 more loss
 			losses = SteamAdapter.get_stat('l')
 			SteamAdapter.set_stat('l', losses + 1)
-			main_view.play_music('lose')
+			main_view.play_music('lose_theme')
 			main_view.play_sound("death_player")
 
 		else:
@@ -696,26 +821,16 @@ class UnitSprite(object):
 		self.advance()
 
 		if not no_pos:
-			x = SPRITE_SIZE * self.unit.x
-			y = SPRITE_SIZE * self.unit.y
+			x = SPRITE_SIZE * (self.unit.x-self.unit.radius)
+			y = SPRITE_SIZE * (self.unit.y-self.unit.radius)
 		elif no_pos:
 			x = 0
-			
 			y = 0
-
-		if self.slide_frames:
-			oldx = SPRITE_SIZE * self.old_pos.x
-			oldy = SPRITE_SIZE * self.old_pos.y
-			tween = self.slide_frames / float(SLIDE_FRAMES)
-			xdiff = oldx - x
-			ydiff = oldy - y
-			x += tween * xdiff
-			y += tween * ydiff
 
 		if self.hit_flash_colors and self.hit_flash_sub_frame < HIT_FLASH_SUBFRAMES:
 			flash_image = self.sheet.get_glow_frame(self.anim, self.anim_frame, self.hit_flash_colors[0], self.unit.sprite.face_left)
 			surface.blit(flash_image, (x, y))
-		elif self.unit.is_alive():
+		elif not self.unit.killed:
 			frame_dict = self.sheet.anim_frames_flipped if self.unit.sprite.face_left else self.sheet.anim_frames
 
 			frame = frame_dict[self.anim]
@@ -724,10 +839,9 @@ class UnitSprite(object):
 			to_draw = frame[self.anim_frame]
 			surface.blit(to_draw, (x, y))
 		
-		if self.boss_glow:
-			glow_image = self.sheet.get_glow_frame(self.anim, self.anim_frame, Color(255, 80, 0), self.unit.sprite.face_left, outline=True)
-			surface.blit(glow_image, (x, y))
-		
+		if self.unit.outline_color:
+			glow_image = self.sheet.get_glow_frame(self.anim, self.anim_frame, self.unit.outline_color, self.unit.sprite.face_left, outline=True)
+			surface.blit(glow_image, (x-1, y-1))
 			
 		if self.hit_flash_colors:
 			self.hit_flash_sub_frame += 1
@@ -861,7 +975,6 @@ KEY_BIND_SPELL_10 = 20
 KEY_BIND_MODIFIER_1 = 21
 KEY_BIND_MODIFIER_2 = 22
 KEY_BIND_TAB = 23
-KEY_BIND_CTRL = 24
 KEY_BIND_VIEW = 25
 KEY_BIND_WALK = 26
 KEY_BIND_AUTOPICKUP = 27
@@ -876,7 +989,8 @@ KEY_BIND_LOS = 35
 KEY_BIND_NEXT_EXAMINE_TARGET = 36
 KEY_BIND_PREV_EXAMINE_TARGET = 37
 KEY_BIND_FF = 38
-KEY_BIND_MAX = KEY_BIND_FF
+KEY_BIND_REROLL = 39
+KEY_BIND_MAX = KEY_BIND_REROLL
 
 KEY_BIND_OPTION_ACCEPT = KEY_BIND_MAX + 1
 KEY_BIND_OPTION_ABORT = KEY_BIND_MAX + 2
@@ -908,7 +1022,6 @@ default_key_binds = {
 	KEY_BIND_MODIFIER_1 : [pygame.K_LSHIFT, pygame.K_RSHIFT], 
 	KEY_BIND_MODIFIER_2 : [pygame.K_LALT, pygame.K_RALT],
 	KEY_BIND_TAB : [pygame.K_TAB, None], 
-	KEY_BIND_CTRL : [pygame.K_LCTRL, pygame.K_RCTRL], 
 	KEY_BIND_VIEW : [pygame.K_v, None], 
 	KEY_BIND_WALK : [pygame.K_w, None], 
 	KEY_BIND_AUTOPICKUP : [pygame.K_a, None], 
@@ -922,7 +1035,8 @@ default_key_binds = {
 	KEY_BIND_LOS: [pygame.K_l, None],
 	KEY_BIND_PREV_EXAMINE_TARGET: [pygame.K_PAGEUP, None],
 	KEY_BIND_NEXT_EXAMINE_TARGET: [pygame.K_PAGEDOWN, None],
-	KEY_BIND_FF: [pygame.K_BACKSPACE, None]
+	KEY_BIND_FF: [pygame.K_BACKSPACE, None],
+	KEY_BIND_REROLL: [pygame.K_r, None]
 }
 
 key_names = {
@@ -950,7 +1064,6 @@ key_names = {
 	KEY_BIND_MODIFIER_1 : "Spell Modifier Key",
 	KEY_BIND_MODIFIER_2 : "Item Modifier Key",
 	KEY_BIND_TAB : "Next Target",
-	KEY_BIND_CTRL : "Show Line of Sight",
 	KEY_BIND_VIEW : "Look",
 	KEY_BIND_WALK : "Walk",
 	KEY_BIND_AUTOPICKUP : "Autopickup",
@@ -965,6 +1078,7 @@ key_names = {
 	KEY_BIND_PREV_EXAMINE_TARGET : "Next tooltip",
 	KEY_BIND_NEXT_EXAMINE_TARGET : "Prev tooltip",
 	KEY_BIND_FF: "Fast Forward",
+	KEY_BIND_REROLL: "Reroll Rifts"
 }
 
 class PyGameView(object):
@@ -997,19 +1111,54 @@ class PyGameView(object):
 
 		pygame.display.set_caption("Rift Wizard")
 
+		self.windowed = 'windowed' in sys.argv
+		self.native_res = 'current_res' not in sys.argv
+		modes = pygame.display.list_modes()
+		info = pygame.display.Info()
+
+		# Calc level size if no size arg passed in
+		if not SIZE:
+			max_res = modes[0]
+
+			if self.windowed:
+				cur_res = (info.current_w, info.current_h)
+				# Windowed: Use maximum size where there is extra headroom
+				if cur_res[0] > 1920 and cur_res[1] > 1080:
+					set_size(SIZE_LARGE)
+				elif cur_res[0] > 1600 and cur_res[1] > 900:
+					set_size(SIZE_MED)
+				else:
+					set_size(SIZE_SMALL)
+
+			else:
+				# Fullscreen: Use maximum size supported by display adapter
+				if (1920, 1080) in modes:
+					set_size(SIZE_LARGE)
+				elif (1600, 900) in modes:
+					set_size(SIZE_MED)
+				elif (1366, 768) in modes:
+					set_size(SIZE_SMALL)
+				else:
+					# Display does not support desired resolution
+					print("Fatal Error: display does not support 1920x1080, 1600x900, or 1366x768 resolutions")
+					assert(False)
+
 		level_width = LEVEL_SIZE * SPRITE_SIZE
 
-		self.h_margin = (1600 - (2 * level_width)) // 2 
-
+		self.h_margin = (RENDER_WIDTH - (2 * level_width)) // 2 
+		
 		# Weird trick to do a fast 2x blit, probably unnecceary
-		self.whole_level_display = pygame.Surface((800, 450))
-		self.level_display = self.whole_level_display.subsurface(pygame.Rect(self.h_margin // 2, 0, SPRITE_SIZE * LEVEL_SIZE, SPRITE_SIZE * LEVEL_SIZE))
+		self.whole_level_display = pygame.Surface((RENDER_WIDTH // 2, RENDER_HEIGHT // 2))
+
+		self.v_margin = (RENDER_HEIGHT - (LEVEL_SIZE * 2 * SPRITE_SIZE)) // 4
+		
+		self.level_display = self.whole_level_display.subsurface(pygame.Rect(self.h_margin // 2, self.v_margin, SPRITE_SIZE * LEVEL_SIZE, SPRITE_SIZE * LEVEL_SIZE))
 		self.targeting_display = pygame.Surface((self.level_display.get_width(), self.level_display.get_height()))
 
-		self.character_display = pygame.Surface((self.h_margin, 900))
-		self.examine_display = pygame.Surface((self.h_margin, 900))
+		self.character_display = pygame.Surface((self.h_margin, RENDER_HEIGHT))
+		self.examine_display = pygame.Surface((self.h_margin, RENDER_HEIGHT))
 
-		self.middle_menu_display = pygame.Surface((1600 - 2 * self.h_margin, 900))\
+		self.middle_menu_display = pygame.Surface((RENDER_WIDTH - 2 * self.h_margin, RENDER_HEIGHT))\
 
 		self.real_display = None
 
@@ -1017,34 +1166,38 @@ class PyGameView(object):
 		self.outer_y_margin = 0
 		self.tiny_mode = False
 
-		modes = pygame.display.list_modes()
+		self.screen = pygame.Surface((RENDER_WIDTH, RENDER_HEIGHT))
 
-		self.screen = pygame.Surface((1600, 900))
-
-		self.windowed = 'windowed' in sys.argv
-		self.native_res = 'native_res' in sys.argv
-
-		# Windowed
-		info = pygame.display.Info()
 		self.display_res = (info.current_w, info.current_h)
 		if self.display_res not in modes:
 			self.display_res = modes[0]
 
 		if self.windowed:
-			# For windowed- try 1600 x 900(1x), but for smaller displays do 1/2 scale
+			# For windowed- try RENDER_WIDTH x RENDER_HEIGHT(1x), but for smaller displays do 1/2 scale
 			# For now 4K users will have to maximize or resize, and thats ok.
-			if info.current_w > 1600:
-				self.display_res = (1600, 900)
+			if info.current_w > RENDER_WIDTH:
+				self.display_res = (RENDER_WIDTH, RENDER_HEIGHT)
 			else:
-				self.display_res = (800, 450)
+				self.display_res = (RENDER_WIDTH // 2, RENDER_HEIGHT // 2)
 			pygame.display.set_mode(self.display_res, pygame.RESIZABLE)
 		elif self.native_res:
-			# If no res opts are given just use the current desktop res
-			assert((1600, 900) in modes)
-			self.display_res = (1600, 900)
-			pygame.display.set_mode(self.display_res, pygame.FULLSCREEN)
+			# For fullscreen native res- just use the appropriate res as determined by game size
+			assert((RENDER_WIDTH, RENDER_HEIGHT) in modes)
+			self.display_res = (RENDER_WIDTH, RENDER_HEIGHT)
+
+			# If we are the same resolution as desktop resolution we can pass in the scaled flag, which is nice cause it enables teh steam overla
+			# Weird that this flag, which seemingly does something totally unrelated, is crucial to make steam overlay work
+			# It is important NOT to pass it in if we want to resize the display though, as doing so makes the game blurry
+			# This means that users whos desktop resolution isnt equal to the games resolution wont get steam overlay functionality...
+			# Oh well
+
+			flags = pygame.FULLSCREEN
+			if self.display_res == (info.current_w, info.current_h):
+				flags = flags | pygame.SCALED
+
+			pygame.display.set_mode(self.display_res, flags)
 		else:
-			# If no res opts are given just use the current desktop res
+			# If current_res is requested use the current desktop res (and hope the game fits- on the user if it doesnt, they passed in the flag)
 			pygame.display.set_mode(self.display_res, pygame.FULLSCREEN | pygame.SCALED)
 
 
@@ -1091,11 +1244,18 @@ class PyGameView(object):
 
 		pygame.font.init()
 		#self.font = pygame.font.SysFont("sylfaen", 20)
-		font_path = os.path.join("rl_data", "PrintChar21.ttf")
-		self.font = pygame.font.Font(font_path, 16)
-		self.ascii_idle_font = pygame.font.Font(font_path, 16)
-		self.ascii_attack_font = pygame.font.Font(font_path, 16)
-		self.ascii_flinch_font = pygame.font.Font(font_path, 16)
+		# font_path = os.path.join("rl_data", "PrintChar21.ttf")
+		font_path = os.path.join("rl_data", "sarasa-mono-sc-bold.ttf")
+		
+		font_size = 16
+		if SIZE == SIZE_SMALL:
+			font_size = 16
+
+		self.font = pygame.font.Font(font_path, font_size)
+		
+		self.ascii_idle_font = pygame.font.Font(font_path, font_size)
+		self.ascii_attack_font = pygame.font.Font(font_path, font_size)
+		self.ascii_flinch_font = pygame.font.Font(font_path, font_size)
 
 		self.frameno = 0
 
@@ -1113,7 +1273,10 @@ class PyGameView(object):
 		self.cur_spell = None
 		self.cur_spell_target = None
 		self.targetable_tiles = None
-		self.examine_target = None
+		
+		self._examine_target = None
+		self._examine_index = 0
+		self._examine_extras = []
 
 		prop_path = os.path.join("rl_data", "tiles", "shrine", "shrine_white.png")
 		self.prop_sprite = pygame.image.load(prop_path)
@@ -1131,7 +1294,9 @@ class PyGameView(object):
 		self.shop_upgrade_spell = None
 		self.shop_selection_index = 0
 		self.shop_page = 0
-		self.max_shop_objects = 44
+
+		shop_extra_lines = 4
+		self.max_shop_objects = (RENDER_HEIGHT - 4*self.linesize - 2*self.border_margin) // self.linesize
 
 		self.tag_keys = {
 			'f': Tags.Fire,
@@ -1142,6 +1307,7 @@ class PyGameView(object):
 			'd': Tags.Dark,
 			'h': Tags.Holy,
 			'm': Tags.Metallic,
+			'b': Tags.Blood,
 
 			's': Tags.Sorcery,
 			'e': Tags.Enchantment,
@@ -1149,15 +1315,32 @@ class PyGameView(object):
 
 			'y': Tags.Eye,
 			'r': Tags.Dragon,
-			'b': Tags.Orb,
-			'o': Tags.Chaos,
+			'o': Tags.Orb,
+			'k': Tags.Chaos,
 			'w': Tags.Word,
 			't': Tags.Translocation
 		}
 
+		self.attr_keys = {
+				'd': 'damage',
+				'r': 'radius',
+				'u': 'duration',
+				't': 'num_targets',
+				's': 'num_summons',
+				'h': 'minion_health',
+				'a': 'minion_damage',
+				'i': 'minion_duration',
+				'n': 'minion_range',
+			}
+ 
+
 		self.reverse_tag_keys = {v: k.upper() for k, v in self.tag_keys.items()}
 
 		self.tag_filter = set()
+		self.attr_filter = set()
+
+		self.filter_unused = False
+
 
 		self.path = []
 
@@ -1179,16 +1362,22 @@ class PyGameView(object):
 
 		self.message = None
 
+
 		self.gameover_frames = 0
 		self.gameover_tiles = None
 
 		self.deploy_anim_frames = 0
 
-		self.title_image = get_image(['title'])
-		self.title_frame = 0
+		if SIZE == SIZE_SMALL:
+			self.title_image = get_image(['rw2_title_screen_small'])
+		else:
+			self.title_image = get_image(['rw2_title_screen'])
+
+
+		self.victory_image = get_image(['victory'])
+		self.defeat_image = get_image(['defeat'])
 
 		self.los_image = get_image(['UI', 'los'])
-		self.hostile_los_image = get_image(['UI', 'hostile_los'])
 
 		self.shop_scroll_frame = 0
 
@@ -1202,7 +1391,7 @@ class PyGameView(object):
 
 		self.repeat_keys = {}
 
-		fill_color = (255, 255, 255, 150)
+		fill_color = (255, 255, 255, 100)
 		self.tile_targetable_image = get_image(['UI', 'square_valid_animated'])
 		self.tile_targetable_image.fill(fill_color, special_flags=pygame.BLEND_RGBA_MIN)
 		self.tile_impacted_image = get_image(['UI', 'square_impacted_animated'])
@@ -1212,7 +1401,11 @@ class PyGameView(object):
 		self.tile_invalid_target_image = get_image(['UI', 'square_invalid_target_animated'])
 		self.tile_invalid_target_image.fill(fill_color, special_flags=pygame.BLEND_RGBA_MIN)
 		self.tile_invalid_target_in_range_image = get_image(['UI', 'square_invalid_target_animated']).copy()
-		self.tile_invalid_target_in_range_image.fill((255, 255, 255, 45), special_flags=pygame.BLEND_RGBA_MIN)
+		self.tile_invalid_target_in_range_image.fill((255, 255, 255, 90), special_flags=pygame.BLEND_RGBA_MIN)
+		self.hostile_los_image = get_image(['UI', 'hostile_los'])
+		self.hostile_los_image.fill(fill_color, special_flags=pygame.BLEND_RGBA_MIN)
+		self.tile_visible_image = get_image(['UI', 'los'], )
+		self.tile_visible_image.fill(fill_color, special_flags=pygame.BLEND_RGBA_MIN)
 
 		self.reminisce_folder = None
 		self.reminisce_index = 0
@@ -1236,6 +1429,16 @@ class PyGameView(object):
 
 		self.next_message = None
 		self.fast_forward = False
+
+		self.bg_test = get_image(['tiles', 'bg_test'])
+
+		self.sound_cooldowns = {}
+
+		self.enemy_bg = get_image(['UI', 'enemy_bg'])
+		self.friendly_bg = get_image(['UI', 'friendly_bg'])
+
+		self.track_queue = None
+		pygame.mixer.music.set_endevent(MUSIC_OVER_EVENT)
 
 	def resize_window(self, evt):
 		if not self.windowed:
@@ -1348,6 +1551,11 @@ class PyGameView(object):
 		if not self.can_play_sound:
 			return
 
+		if sound_name in self.sound_cooldowns:
+			return
+
+		self.sound_cooldowns[sound_name] = SOUND_COOLDOWN_MAX
+
 		if sound_name not in self.sound_effects:
 			filename = os.path.join("rl_data", "soundFX", sound_name) + '.wav'
 			self.sound_effects[sound_name] = pygame.mixer.Sound(filename)
@@ -1368,15 +1576,29 @@ class PyGameView(object):
 		else:
 			self.misc_sound_channel.play(sound)
 
-	def play_music(self, track_name):
+	def play_music(self, track_name, fade_ms=0):
 		if not self.can_play_sound:
 			return
 
 		music_path = os.path.join('rl_data', 'music', track_name + '.wav')
 		pygame.mixer.music.load(music_path)
 		self.adjust_volume(0, 'music')
-		pygame.mixer.music.play(-1)
+		pygame.mixer.music.play()
 		
+	def on_music_end(self):
+		# If we are in a level play another level song
+		if self.game and not self.game.gameover:
+			if self.game.level_num < LAST_LEVEL:
+				self.play_battle_music()
+
+			# If we are at the mordred fight restart the mordred song
+			else:
+				self.play_music("boss_theme")
+
+		# Otherwise restart the title music
+		else:
+			self.play_music("title_theme")
+
 
 	def deploy(self, p):
 
@@ -1392,7 +1614,7 @@ class PyGameView(object):
 				self.play_sound("victory_new")
 			else:
 				self.play_sound("victory_bell")
-				self.play_music("mordred_theme")
+				self.play_music("boss_theme")
 
 			self.deploy_target = None
 			
@@ -1407,6 +1629,7 @@ class PyGameView(object):
 		else:
 			self.play_sound("menu_abort")
 
+
 	def on_level_finish(self):
 
 		# Log obj graph
@@ -1415,6 +1638,9 @@ class PyGameView(object):
 		for t, c in objgraph.most_common_types():
 			mem_log.debug("%s: %d" % (t, c))
 		mem_log.debug('\n')
+
+		# Prevent one levels garbage from slowing down the next levels heap allocs
+		gc.collect()
 
 		# Clear examine target to show summary
 		self.examine_target = None
@@ -1437,7 +1663,6 @@ class PyGameView(object):
 
 		self.play_sound("learn_spell_or_skill")
 
-
 	def choose_spell(self, spell):
 		if spell.show_tt:
 			self.examine_target = spell
@@ -1446,7 +1671,7 @@ class PyGameView(object):
 			self.play_sound("menu_abort")
 			return
 
-		if spell.max_charges and not spell.cur_charges:
+		if not spell.can_pay_costs():
 			self.play_sound("menu_abort")
 			self.cast_fail_frames = SPELL_FAIL_LOCKOUT_FRAMES
 			return
@@ -1493,17 +1718,18 @@ class PyGameView(object):
 	def abort_cur_spell(self):
 		self.cur_spell = None
 		self.play_sound("menu_abort")
+		self.examine_target = None
 
 	def cast_cur_spell(self):
 		success = self.game.try_cast(self.cur_spell, self.cur_spell_target.x, self.cur_spell_target.y)
 		if not success:
 			self.play_sound('menu_abort')
-		#if self.examine_target == self.cur_spell:
-			#self.examine_target = None
 		self.cur_spell = None
 		unit = self.game.cur_level.get_unit_at(self.cur_spell_target.x, self.cur_spell_target.y)
 		if unit:
 			self.cur_spell_target = unit
+
+		self.examine_target = None
 
 
 	def cycle_tab_targets(self):
@@ -1614,6 +1840,7 @@ class PyGameView(object):
 				cur_filename = "%d.png" % i
 				path = os.path.join("rl_data", "tiles", "stars", stars_name, cur_filename)
 
+
 				if not os.path.exists(path):
 					break
 				else:
@@ -1653,11 +1880,11 @@ class PyGameView(object):
 	def make_ascii_sprite_sheet(self, ascii_sprite):
 		return SpriteSheet(ascii_sprite)        
 
-	def get_sprite_sheet(self, asset, fill_color=None, lair_colors=None):
-		key = (tuple(asset), fill_color, lair_colors)
+	def get_sprite_sheet(self, asset, fill_color=None, lair_colors=None, radius=0, recolor_primary=None):
+		key = (tuple(asset), fill_color, lair_colors, recolor_primary)
 
 		if key not in self.sprite_sheets:
-			self.sprite_sheets[key] = SpriteSheet(asset, fill_color, lair_colors)
+			self.sprite_sheets[key] = SpriteSheet(asset, fill_color, lair_colors, radius, recolor_primary)
 
 		return self.sprite_sheets[key]
 
@@ -1669,12 +1896,13 @@ class PyGameView(object):
 		# Determine lair colors for lairs
 		lair_colors = None
 		if unit.is_lair:
-			example_monster = unit.buffs[0].example_monster
+			lair_spell = unit.get_spell(SimpleSummon)
+			example_monster = lair_spell.example_monster
 			example_sprite_name = example_monster.get_asset_name()
-			example_sprite = self.get_sprite_sheet(get_unit_asset(example_monster))
+			example_sprite = self.get_sprite_sheet(get_unit_asset(example_monster), radius=example_monster.radius, recolor_primary=example_monster.recolor_primary)
 			lair_colors = example_sprite.get_lair_colors()
 
-		sprite = self.get_sprite_sheet(asset, lair_colors=lair_colors)
+		sprite = self.get_sprite_sheet(asset, lair_colors=lair_colors, radius=unit.radius, recolor_primary=unit.recolor_primary)
 
 		return UnitSprite(unit, sprite, view=self)
 
@@ -1744,7 +1972,7 @@ class PyGameView(object):
 					image = self.minor_effect_images[effect.color.to_tup()]
 				else:
 					image = self.effect_images[effect.color.to_tup()]
-			return SimpleSprite(effect.x, effect.y, image, speed=1)
+			return SimpleSprite(effect.x, effect.y, image, speed=effect.speed)
 		print("No effect found for %s" % effect.color)
 		return EffectRect(effect.x, effect.y, effect.color, effect.frames)
 
@@ -1769,7 +1997,9 @@ class PyGameView(object):
 	def get_mouse_level_point(self):
 		# Get the integer coordinates of the mouse on the battlefield if it is on the battlefield
 		x, y = self.get_mouse_pos()
+
 		x -= self.h_margin
+		y -= 2*self.v_margin
 
 		x //= 2*SPRITE_SIZE
 		y //= 2*SPRITE_SIZE
@@ -1782,6 +2012,10 @@ class PyGameView(object):
 		return Point(x, y)
 
 	def try_move(self, movedir):
+		if self.game.p1.is_stunned():
+			self.cast_fail_frames = SPELL_FAIL_LOCKOUT_FRAMES
+			return False
+
 		result = self.game.try_move(*movedir)
 		if result:
 			self.play_sound("step_player")
@@ -1793,42 +2027,75 @@ class PyGameView(object):
 			tile = self.get_display_level().tiles[point.x][point.y]
 			self.examine_target = (tile.unit if tile.unit != self.game.p1 else None) or tile.cloud or tile.prop
 
+			if self.examine_target == tile.prop and isinstance(tile.prop, EquipPickup):
+				self.examine_target = tile.prop.item
+
 	def is_animating_deploy(self):
 		return self.deploy_anim_frames not in (0, self.get_max_deploy_frames())
 
 	def can_execute_inputs(self):
 		return self.cast_fail_frames <= 0 and self.game.is_awaiting_input() and not self.is_animating_deploy()
 
+	# Use private _examine_target and _examine_index to present a virtual view of self.examine_target which rotates btw related tooltips
+	@property
+	def examine_target(self):
+		if self._examine_index:
+			return self._examine_extras[self._examine_index - 1]
+		else:
+			return self._examine_target
+
+	@examine_target.setter
+	def examine_target(self, e):
+		if e == self._examine_target:
+			return
+
+		self._examine_target = e
+		self._examine_index = 0
+		self._examine_extras = self.get_extra_examine_targets()
+
+	def get_extra_examine_targets(self):
+		# TODO- add summon tooltip stuff here
+		if getattr(self._examine_target, "get_extra_examine_tooltips", None) and self._examine_target.get_extra_examine_tooltips():
+			extras = self._examine_target.get_extra_examine_tooltips()
+			
+			# Kind of hacky- set default resistances for units since they exist outside of a level
+			for e in extras:
+				if isinstance(e, Unit):
+					self.game.cur_level.set_default_resitances(e)
+
+			return extras
+		elif isinstance(self._examine_target, Shop):
+			tooltips = []
+			for i in self._examine_target.items:
+				tooltips.append(i)
+				if i.get_extra_examine_tooltips():
+					for t in i.get_extra_examine_tooltips():
+						tooltips.append(t)
+			return tooltips
+		return []
+
 	def move_examine_target(self, movedir):
-		# if is spell
-		if isinstance(self.examine_target, Spell):
-			if movedir == 1:
-				self.examine_target = self.examine_target.spell_upgrades[0]
-			else:
-				self.examine_target = self.examine_target.spell_upgrades[-1]
-		# if it is a spell upgrade
-		elif hasattr(self.examine_target, 'prereq') and isinstance(self.examine_target.prereq, Spell):
-			# We assume the spell upgrade is in the spells list of spell upgrades
-			assert(self.examine_target in self.examine_target.prereq.spell_upgrades)
+		num_extra_targets = len(self._examine_extras)
+		
+		if not num_extra_targets:
+			return
 
-			cur_idx = self.examine_target.prereq.spell_upgrades.index(self.examine_target)
-			cur_idx += movedir
-			cur_idx = cur_idx % (len(self.examine_target.prereq.spell_upgrades) + 1)
-
-			if cur_idx == len(self.examine_target.prereq.spell_upgrades):
-				self.examine_target = self.examine_target.prereq
-			else:
-				self.examine_target = self.examine_target.prereq.spell_upgrades[cur_idx]
+		self._examine_index += movedir
+		self._examine_index = max(0, self._examine_index)
+		self._examine_index = min(num_extra_targets, self._examine_index)
 
 	def process_examine_panel_input(self):
 		for evt in self.events:
-			if not evt.type == pygame.KEYDOWN:
-				continue
-
-			if evt.key in self.key_binds[KEY_BIND_NEXT_EXAMINE_TARGET]:
-				self.move_examine_target(1)
-			elif evt.key in self.key_binds[KEY_BIND_PREV_EXAMINE_TARGET]:
-				self.move_examine_target(-1)
+			if evt.type == pygame.KEYDOWN:
+				if evt.key in self.key_binds[KEY_BIND_NEXT_EXAMINE_TARGET]:
+					self.move_examine_target(1)
+				elif evt.key in self.key_binds[KEY_BIND_PREV_EXAMINE_TARGET]:
+					self.move_examine_target(-1)
+			elif evt.type == pygame.MOUSEWHEEL:
+				if evt.y > 0:
+					self.move_examine_target(-1)
+				elif evt.y < 0:
+					self.move_examine_target(1)
 
 
 	def process_level_input(self):
@@ -1866,8 +2133,9 @@ class PyGameView(object):
 			# do this here instead of by checking pressed keys to deal with pygame alt tab bug
 			self.path = []
 			
-			if evt.key == pygame.K_BACKSPACE:
+			if evt.key in self.key_binds[KEY_BIND_FF]:
 				self.fast_forward = True
+				self.game.try_pass()
 
 			if self.can_execute_inputs():
 				if evt.key in self.key_binds[KEY_BIND_UP]:
@@ -1971,9 +2239,12 @@ class PyGameView(object):
 				if evt.key in self.key_binds[KEY_BIND_MESSAGE_LOG]:
 					self.open_combat_log()
 
+				if evt.key in self.key_binds[KEY_BIND_REROLL]:
+					self.game.try_reroll_rifts()
+
 			global cheats_enabled
 			if can_enable_cheats and evt.key == pygame.K_z and keys[pygame.K_LSHIFT] and keys[pygame.K_LCTRL]:
-				cheats_enabled = True
+				cheats_enabled = not cheats_enabled
 
 			if cheats_enabled:
 				if evt.key == pygame.K_t and level_point:
@@ -1990,7 +2261,8 @@ class PyGameView(object):
 					self.game.p1.max_hp += 250
 					self.game.p1.cur_hp += 250
 
-				if evt.key == pygame.K_k:
+				# Press j to jill everything.  Cause k opens the skill menu.
+				if evt.key == pygame.K_j:
 					for unit in list(self.game.cur_level.units):
 						if unit != self.game.p1:
 							unit.kill()
@@ -2048,7 +2320,8 @@ class PyGameView(object):
 				if evt.key == pygame.K_MINUS:
 					self.game.level_num -= 1
 
-				if evt.key == pygame.K_m:
+				# Press n to spawn 1 of each nonster, since m opens the message log
+				if evt.key == pygame.K_n:
 					for monster, cost in spawn_options:
 						unit = monster()
 						p = self.game.cur_level.get_summon_point(0, 0, radius_limit=40)
@@ -2205,7 +2478,7 @@ class PyGameView(object):
 				cur_y += self.linesize
 
 			available_upgrades = len([b for b in spell.spell_upgrades if not b.applied])
-			if available_upgrades:
+			if available_upgrades and not self.game.spell_is_upgraded(spell):
 				self.draw_string(' %d Upgrades Available' % available_upgrades, self.middle_menu_display, cur_x, cur_y)
 				cur_y += self.linesize
 
@@ -2253,6 +2526,7 @@ class PyGameView(object):
 			self.examine_target = shoptions[0]
 
 		self.tag_filter.clear()
+		self.attr_filter.clear()
 
 	def open_abandon_prompt(self):
 		self.state = STATE_CONFIRM
@@ -2282,12 +2556,17 @@ class PyGameView(object):
 
 		self.chosen_purchase = item
 
-		if self.shop_type == SHOP_TYPE_SHOP:
+		if isinstance(item, Equipment):
+			self.confirm_text = "Get %s?" % item.name
+		elif isinstance(item, ShrineBuff):
 			attr = self.chosen_purchase.name.replace(self.chosen_purchase.shrine_name + ' ', '').lower()
 			self.confirm_text = "Use %s on %s?" % (self.game.cur_level.cur_shop.name, self.chosen_purchase.prereq.name)
 		else:
-			cost = self.game.get_upgrade_cost(self.chosen_purchase)
-			self.confirm_text = "Learn %s for %s SP?" % (self.chosen_purchase.name, cost)
+			if self.shop_type == SHOP_TYPE_SHOP:
+				self.confirm_text = "Learn %s?" % (self.chosen_purchase.name)
+			else:
+				cost = self.game.get_upgrade_cost(self.chosen_purchase)
+				self.confirm_text = "Learn %s for %s SP?" % (self.chosen_purchase.name, cost)
 
 		# Default to no (?)
 		self.examine_target = False
@@ -2295,8 +2574,11 @@ class PyGameView(object):
 	def confirm_buy(self):
 
 		success = self.game.try_shop(self.chosen_purchase)
-		if not success:
-			return
+		# Shouldnt get into the screen if we cannot buy
+		assert(success)
+
+		if isinstance(self.chosen_purchase, Spell) or isinstance(self.chosen_purchase, Upgrade):
+			SteamAdapter.record_purchase(self.chosen_purchase.name)
 
 		if self.shop_type in [SHOP_TYPE_SPELLS, SHOP_TYPE_UPGRADES]:
 			self.char_sheet_select_index += 1
@@ -2312,7 +2594,7 @@ class PyGameView(object):
 	def draw_confirm(self):
 		self.middle_menu_display.fill((0, 0, 0))
 
-		cur_y = self.linesize * 5
+		cur_y = self.middle_menu_display.get_height() // 2 - 3*self.linesize
 		cur_x = (self.middle_menu_display.get_width() - self.font.size(self.confirm_text)[0]) // 2
 		self.draw_string(self.confirm_text, self.middle_menu_display, cur_x, cur_y)
 
@@ -2381,6 +2663,11 @@ class PyGameView(object):
 
 		for bind in range(KEY_BIND_MAX+1):
 			cur_x = col_xs[0]
+
+			# Skip depreciated keybinds- aka the two los keys
+			if bind not in key_names:
+				continue
+			
 			self.draw_string("%s:" % key_names[bind], self.screen, cur_x, cur_y)
 
 			key1, key2 = self.new_key_binds[bind]
@@ -2717,6 +3004,7 @@ class PyGameView(object):
 				self.play_sound("menu_confirm")
 				self.state = STATE_LEVEL
 				self.tag_filter.clear()
+				self.attr_filter.clear()
 
 			if evt.key in self.key_binds[KEY_BIND_CONFIRM]:
 				if self.examine_target == LEARN_SKILL_TARGET:
@@ -2758,11 +3046,11 @@ class PyGameView(object):
 				self.play_sound("menu_confirm")
 
 				contents = [
-					ChainLightningSpell(),
-					NightmareSpell(),
-					MeteorShower(),
-					StoneAuraSpell(),
-					AngelicChorus(),
+					DrainPulse(),
+					ImmolateSpell(),
+					FaehauntGardenSpell(),
+					CarnivalOfPain(),
+					IdolOfBurningHunger(),
 				]
 
 				to_blit = self.examine_display
@@ -2811,12 +3099,17 @@ class PyGameView(object):
 				self.state = STATE_LEVEL
 				self.play_sound("menu_abort")
 
+	def is_valid_shop_option(self, opt):
+		if self.filter_unused and SteamAdapter.has_been_purchased(opt.name):
+			return False
+
+		return all(t in opt.tags for t in self.tag_filter) and all(hasattr(opt, attr) for attr in self.attr_filter)
 
 	def get_shop_options(self):
 		if self.shop_type == SHOP_TYPE_SPELLS:
-			return [s for s in self.game.all_player_spells if all(t in s.tags for t in self.tag_filter)]
+			return [s for s in self.game.all_player_spells if self.is_valid_shop_option(s)]
 		if self.shop_type == SHOP_TYPE_UPGRADES:
-			return [u for u in self.game.all_player_skills if all(t in u.tags for t in self.tag_filter)]
+			return [u for u in self.game.all_player_skills if self.is_valid_shop_option(u)]
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
 			return [u for u in self.shop_upgrade_spell.spell_upgrades]
 		if self.shop_type == SHOP_TYPE_SHOP:
@@ -2827,6 +3120,36 @@ class PyGameView(object):
 		else:
 			return []
 
+	def get_icon(self, obj):
+		if isinstance(obj, Spell):
+			return self.get_spell_asset
+
+	def get_equipment_icon(self, item):
+		if isinstance(item, PetCollar):
+			if not hasattr(item, 'spritesheet'):
+				item.spritesheet = SpriteSheet(get_unit_asset(item.example), recolor_primary=item.example.recolor_primary)
+			icon = item.spritesheet.anim_frames[ANIM_IDLE][0]
+		elif isinstance(item, PetSigil):
+			self.asset_name = "trinket_sigil"
+
+			example_monster = item.spawn_fn()
+			example_sprite = self.get_sprite_sheet(get_unit_asset(example_monster))
+			sigil_color = Color(*example_sprite.get_lair_colors()[0][:3])
+
+			icon = get_image(item.get_asset(), recolor_primary=sigil_color)
+
+		elif isinstance(item, Spell) or isinstance(item, Upgrade):
+			asset = get_spell_asset(item)
+			image = get_image(asset, alphafy=True)
+
+			if not image:
+				return
+
+			icon = image.subsurface((0, 0, 16, 16))
+		else:
+			icon = get_image(item.get_asset(), recolor_primary=item.recolor_primary, recolor_secondary=item.recolor_secondary)
+		return icon
+	
 	def draw_shop(self):
 
 		# Spells: show spells show filters
@@ -2842,13 +3165,26 @@ class PyGameView(object):
 		if self.shop_type == SHOP_TYPE_SHOP:
 			cur_shop = self.game.cur_level.tiles[self.game.p1.x][self.game.p1.y].prop
 			if cur_shop:
-				# TODO- draw the sprite onto a surface so that animation works and blit THAT surface
 				image = get_image(cur_shop.asset).subsurface((0, 0, SPRITE_SIZE, SPRITE_SIZE))
 				big_shop = pygame.transform.scale(image, (SPRITE_SIZE*32, SPRITE_SIZE*32))
 				dx = (self.middle_menu_display.get_width() - big_shop.get_width()) // 2
 				dy = (self.middle_menu_display.get_height() - big_shop.get_height()) // 2
 				big_shop.fill((255, 255, 255, 90), special_flags=pygame.BLEND_RGBA_MULT)
 				self.middle_menu_display.blit(big_shop, (dx, dy))
+
+		# Draw Spell Background
+		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
+			asset = get_spell_asset(self.shop_upgrade_spell)
+			image = get_image(asset, alphafy=True)
+			if image:
+				image = image.subsurface((0, 0, SPRITE_SIZE, SPRITE_SIZE))
+				big_shop = pygame.transform.scale(image, (SPRITE_SIZE*32, SPRITE_SIZE*32))
+				dx = (self.middle_menu_display.get_width() - big_shop.get_width()) // 2
+				dy = (self.middle_menu_display.get_height() - big_shop.get_height()) // 2
+				big_shop.fill((255, 255, 255, 90), special_flags=pygame.BLEND_RGBA_MULT)
+				self.middle_menu_display.blit(big_shop, (dx, dy))
+
+
 
 		mx, my = self.get_mouse_pos()
 		options = self.get_shop_options()
@@ -2859,8 +3195,8 @@ class PyGameView(object):
 
 		tag_offset = 16 * 32
 
-		spell_column_width = (self.middle_menu_display.get_width() - 2 * self.border_margin) // 2
-		level_x = cur_x + 16 * 29
+		spell_column_width = 16 * 29
+		level_x = cur_x + spell_column_width
 
 		shoptions = self.get_shop_options()
 		num_options = len(shoptions)
@@ -2897,6 +3233,12 @@ class PyGameView(object):
 			if self.shop_type in [SHOP_TYPE_SPELLS, SHOP_TYPE_UPGRADES]:
 				self.draw_spell_icon(opt, self.middle_menu_display, cur_x, cur_y)
 				cur_x += 20
+				
+
+			if isinstance(opt, Equipment):
+				icon = self.get_equipment_icon(opt)
+				self.middle_menu_display.blit(icon, (cur_x, cur_y))
+				cur_x += 20
 
 			fmt = opt.name          
 			cur_color = (255, 255, 255)
@@ -2905,7 +3247,7 @@ class PyGameView(object):
 				fmt = "?????????????????????"
 				cur_color = (100, 100, 100)
 			
-			if self.shop_type != SHOP_TYPE_BESTIARY:
+			if self.shop_type in [SHOP_TYPE_SPELLS, SHOP_TYPE_UPGRADES, SHOP_TYPE_SPELL_UPGRADES]:
 				cost = self.game.get_upgrade_cost(opt)
 				if self.game.has_upgrade(opt):
 					cur_color = (0, 255, 0)
@@ -2916,18 +3258,19 @@ class PyGameView(object):
 
 			
 			if self.shop_type == SHOP_TYPE_SHOP:
-				self.draw_string(fmt, self.middle_menu_display, 0, cur_y, cur_color, mouse_content=opt, content_width=self.middle_menu_display.get_width(), center=True)
+				width = self.middle_menu_display.get_width() - cur_x - self.border_margin
+				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, cur_color, mouse_content=opt, content_width=width)
 			else:
 				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, cur_color, mouse_content=opt, content_width=spell_column_width)
 
-			if hasattr(opt, 'level') and isinstance(opt.level, int) and opt.level > 0:
-				fmt = str(cost)
-				if opt.name in self.game.p1.scroll_discounts:
-					fmt += '*'
-				self.draw_string(fmt, self.middle_menu_display, level_x, cur_y, cur_color)
+				if hasattr(opt, 'level') and isinstance(opt.level, int) and opt.level > 0:
+					fmt = str(cost)
+					if opt.name in self.game.p1.scroll_discounts:
+						fmt += '*'
+					self.draw_string(fmt, self.middle_menu_display, level_x, cur_y, cur_color)
 
 
-			if self.shop_type != SHOP_TYPE_BESTIARY and hasattr(opt, 'tags'):
+			if self.shop_type in [SHOP_TYPE_SPELLS, SHOP_TYPE_UPGRADES]:
 				tag_x = cur_x + tag_offset
 				for tag in Tags:
 					if tag not in opt.tags:
@@ -2940,13 +3283,15 @@ class PyGameView(object):
 
 		if self.shop_type in [SHOP_TYPE_UPGRADES, SHOP_TYPE_SPELLS]:
 			# Draw filters
-			cur_x = 16 * 40
+			cur_x = 18 * 40
 			cur_y = self.linesize
 
 			tag_width = self.middle_menu_display.get_width() - cur_x - self.border_margin
-			self.draw_string("Filter:", self.middle_menu_display, cur_x, cur_y)
+
 			cur_y += 2*self.linesize
-			
+			self.draw_string("Filter by Tag:", self.middle_menu_display, cur_x, cur_y)
+			cur_y += self.linesize
+
 			for tag in self.game.spell_tags:
 
 				color = tag.color.to_tup() if tag in self.tag_filter else (150, 150, 150)
@@ -2962,6 +3307,39 @@ class PyGameView(object):
 		
 				cur_y += self.linesize
 
+			filter_attrs = [
+				'damage',
+				'radius',
+				'duration',
+				'num_targets',
+				'num_summons',
+				'minion_health',
+				'minion_damage',
+				'minion_duration',
+				'minion_range',
+			]
+
+			cur_y += self.linesize
+			self.draw_string("Filter by Attribute:", self.middle_menu_display, cur_x, cur_y)
+			cur_y += self.linesize
+
+			for attr in filter_attrs:
+				attr_color = attr_colors[attr].to_tup()
+				color = attr_color if attr in self.attr_filter else (150, 150, 150)
+				self.draw_string(format_attr(attr).lower(), self.middle_menu_display, cur_x, cur_y, color, mouse_content=attr, content_width=tag_width)
+
+				idx = 0
+				for c in attr:
+					if self.attr_keys.get(c.lower(), None) == attr:
+						self.draw_string(c.lower(), self.middle_menu_display, cur_x + self.font.size(attr[:idx])[0], cur_y, attr_color)
+						break
+					idx += 1
+
+				cur_y += self.linesize
+
+			cur_y += self.linesize
+			color = (255, 255, 255) if self.filter_unused else (150, 150, 150)
+			self.draw_string("Filter Unused", self.middle_menu_display, cur_x, cur_y, color, mouse_content=UNPURCHASED_TARGET, content_width=tag_width)
 
 		cur_x = spell_x_offset
 		cur_y = self.linesize * (self.max_shop_objects+4)
@@ -2994,30 +3372,45 @@ class PyGameView(object):
 		if self.shop_type == SHOP_TYPE_BESTIARY:
 			return
 
+		# Try to buy the examine target
+		to_buy = self._examine_target
+
 		# If its an owned spell, open upgrades shop for that spell
-		if self.examine_target in self.game.p1.spells:
+		if to_buy in self.game.p1.spells:
 			self.play_sound("menu_confirm")
-			self.open_shop(SHOP_TYPE_SPELL_UPGRADES, spell=self.examine_target)
+			self.open_shop(SHOP_TYPE_SPELL_UPGRADES, spell=to_buy)
 			self.abort_to_spell_shop = True
 			return
 
-		success = self.game.can_shop(self.examine_target)
+		if not to_buy:
+			return
+
+		success = self.game.can_shop(to_buy)
 		if not success:
 			self.play_sound("menu_abort")
 			return
 
-		self.open_buy_prompt(self.examine_target)
+		self.open_buy_prompt(to_buy)
 
 		if not prompt:
 			self.confirm_buy()
 		
 
-	def toggle_shop_filter(self, tag):
+	def toggle_shop_filter(self, tag=None, attr=None):
 		self.play_sound("menu_confirm")
-		if tag in self.tag_filter:
-			self.tag_filter.remove(tag)
-		else:
-			self.tag_filter.add(tag)
+		
+		if tag:
+			if tag in self.tag_filter:
+				self.tag_filter.remove(tag)
+			else:
+				self.tag_filter.add(tag)
+
+		if attr:
+			if attr in self.attr_filter:
+				self.attr_filter.remove(attr)
+			else:
+				self.attr_filter.add(attr)
+
 		self.shop_page = 0
 		self.shop_selection_index = 0
 
@@ -3036,10 +3429,9 @@ class PyGameView(object):
 			return
 		self.play_sound("menu_confirm")
 		
-		if self.examine_target in shoptions:
-			shop_selection_index = shoptions.index(self.examine_target)
-		elif hasattr(self.examine_target, 'prereq') and self.examine_target.prereq in shoptions:
-			shop_selection_index = shoptions.index(self.examine_target.prereq)
+		if self._examine_target in shoptions:
+			shop_selection_index = shoptions.index(self._examine_target)
+
 		else:
 			shop_selection_index = self.get_max_shop_pages() * self.shop_page
 			inc = 0
@@ -3102,6 +3494,8 @@ class PyGameView(object):
 
 		shop_options = self.get_shop_options()
 		num_options = len(shop_options)
+		keys = pygame.key.get_pressed()
+
 		for evt in self.events:
 			if evt.type != pygame.KEYDOWN:
 				continue
@@ -3118,9 +3512,15 @@ class PyGameView(object):
 			if evt.key in self.key_binds[KEY_BIND_RIGHT]:
 				self.shop_page_adjust(1)
 
-			if (pygame.K_a <= evt.key <= pygame.K_z) and chr(evt.key) in self.tag_keys:
-				tag = self.tag_keys[chr(evt.key)]
-				self.toggle_shop_filter(tag)
+			if (pygame.K_a <= evt.key <= pygame.K_z):
+				if not any(keys[b] for b in self.key_binds[KEY_BIND_MODIFIER_1]):
+					if chr(evt.key) in self.tag_keys:
+						tag = self.tag_keys[chr(evt.key)]
+						self.toggle_shop_filter(tag=tag)
+				else:
+					if chr(evt.key) in self.attr_keys:
+						attr = self.attr_keys[chr(evt.key)]
+						self.toggle_shop_filter(attr=attr)
 
 			if evt.key in self.key_binds[KEY_BIND_CONFIRM]:
 				self.try_buy_shop_selection(prompt=False)
@@ -3150,14 +3550,6 @@ class PyGameView(object):
 			if click.type != pygame.MOUSEBUTTONDOWN:
 				continue
 
-			if click.button == pygame.BUTTON_WHEELDOWN:
-				self.play_sound("menu_confirm")
-				self.shop_page_adjust(1)
-
-			if click.button == pygame.BUTTON_WHEELUP:
-				self.play_sound("menu_confirm")
-				self.shop_page_adjust(-1)
-
 			if click.button == pygame.BUTTON_LEFT:
 
 				for r, c in self.ui_rects:
@@ -3169,8 +3561,12 @@ class PyGameView(object):
 						elif c == TOOLTIP_EXIT:
 							self.close_shop()
 						elif isinstance(c, Tag):
-							self.toggle_shop_filter(c)
+							self.toggle_shop_filter(tag=c)
 							break
+						elif isinstance(c, str):
+							self.toggle_shop_filter(attr=c)
+						elif c == UNPURCHASED_TARGET:
+							self.filter_unused = not self.filter_unused
 						else:
 							if click.button == pygame.BUTTON_LEFT:
 								self.try_buy_shop_selection(prompt=True)
@@ -3191,8 +3587,9 @@ class PyGameView(object):
 			yield self.floor_tiles[tileset][tile_index]
 			return
 		if tile.is_wall():
-			tile_index = hash((2*x, y)) % len(self.wall_tiles[tileset])
-			yield self.wall_tiles[tileset][tile_index]
+			if not hasattr(tile, 'sprite_index') or tile.sprite_index >= len(self.wall_tiles[tileset]):
+				tile.sprite_index = random.randint(0, len(self.wall_tiles[tileset])-1) 
+			yield self.wall_tiles[tileset][tile.sprite_index]
 			return
 		if tile.is_chasm:
 
@@ -3238,6 +3635,9 @@ class PyGameView(object):
 
 	def make_tile_sprite(self, tile, occupied):
 		sprite = pygame.Surface((SPRITE_SIZE, SPRITE_SIZE))
+		sprite.set_colorkey((0, 0, 0))
+
+		# Draw water tile.  Obsolete.
 		if tile.is_chasm:
 			if tile.water or 'water' in sys.argv:
 				if 'water' in sys.argv:
@@ -3256,7 +3656,7 @@ class PyGameView(object):
 
 		for image in sprites:
 
-			tileset = tile.level.tileset
+			tileset = tile.tileset
 			if 'tileset' in sys.argv:
 				tileset = sys.argv[sys.argv.index('tileset') + 1]
 
@@ -3267,14 +3667,14 @@ class PyGameView(object):
 
 		return sprite
 
-	def draw_tile(self, tile, partial_occulde=False):
+	def draw_tile(self, tile, partial_occlude=False):
 		x = tile.x * SPRITE_SIZE
 		y = tile.y * SPRITE_SIZE
 		
 		if not tile.sprites:
 			tile.sprites = [None, None]
 
-		if not partial_occulde:
+		if not partial_occlude:
 			if not tile.sprites[0]:
 				tile.sprites[0] = self.make_tile_sprite(tile, 0)
 			image = tile.sprites[0]
@@ -3284,7 +3684,14 @@ class PyGameView(object):
 			image = tile.sprites[1]
 				
 		#image = self.floor_tiles['ruby'][0]
+
+		bg_x = x % self.bg_test.get_width()
+		bg_y = y % self.bg_test.get_height()
+		
+		#self.level_display.blit(self.bg_test.subsurface(bg_x, bg_y, SPRITE_SIZE, SPRITE_SIZE), (x, y))
+
 		self.level_display.blit(image, (x, y))
+		
 
 	def draw_unit(self, u):
 		x = u.x * SPRITE_SIZE
@@ -3307,15 +3714,19 @@ class PyGameView(object):
 			frame_num = cloud_frame_clock // STATUS_SUBFRAMES % num_frames 
 			source_rect = (STATUS_ICON_SIZE*frame_num, 0, STATUS_ICON_SIZE, STATUS_ICON_SIZE)
 			
-			self.level_display.blit(image, (x + SPRITE_SIZE - 4, y+1), source_rect)
+			self.level_display.blit(image, (x + SPRITE_SIZE - 4 + (u.radius*SPRITE_SIZE), y+1-(u.radius*SPRITE_SIZE)), source_rect)
 
 		# Lifebar
 		if u.cur_hp != u.max_hp:
 			hp_percent = u.cur_hp / float(u.max_hp)
-			max_bar = SPRITE_SIZE - 2
+			max_bar = SPRITE_SIZE - 2 + (u.radius*SPRITE_SIZE*2)
 			bar_pixels = int(hp_percent * max_bar)
 			margin = (max_bar - bar_pixels) // 2
-			pygame.draw.rect(self.level_display, (255, 0, 0, 128), (x + 1 + margin, y+SPRITE_SIZE-2, bar_pixels, 1))
+
+			lifebar_x = x - (SPRITE_SIZE*u.radius)
+			lifebar_y = y + SPRITE_SIZE + (SPRITE_SIZE*u.radius)
+
+			pygame.draw.rect(self.level_display, (255, 0, 0, 128), (lifebar_x + 1 + margin, lifebar_y-2, bar_pixels, 1))
 
 		# Draw Buffs
 		status_effects = []
@@ -3337,21 +3748,23 @@ class PyGameView(object):
 		if not status_effects:
 			return
 
-		buff_x = x+1
 		buff_index = cloud_frame_clock // (STATUS_SUBFRAMES * 4) % len(status_effects)
 		
 		b = status_effects[buff_index]
 
+		buff_x = x+1 - (SPRITE_SIZE*u.radius)
+		buff_y = y+1 - (SPRITE_SIZE*u.radius)
+
 		if not b.asset:
 			color = b.color if b.color else Color(255, 255, 255)
-			pygame.draw.rect(self.level_display, color.to_tup(), (buff_x, y+1, 3, 3))
+			pygame.draw.rect(self.level_display, color.to_tup(), (buff_x, buff_y, 3, 3))
 		else:
 			image = get_image(b.asset)
 			num_frames = image.get_width() // STATUS_ICON_SIZE
 
 			frame_num = cloud_frame_clock // STATUS_SUBFRAMES % num_frames 
 			source_rect = (STATUS_ICON_SIZE*frame_num, 0, STATUS_ICON_SIZE, STATUS_ICON_SIZE)
-			self.level_display.blit(image, (buff_x, y+1), source_rect)
+			self.level_display.blit(image, (buff_x, buff_y), source_rect)
 		buff_x += 4
 
 	def draw_cloud(self, cloud, secondary=False):
@@ -3404,8 +3817,65 @@ class PyGameView(object):
 	def draw_effect(self, e):
 		e.draw(self.level_display)
 
+	def draw_border(self, points, color, hidden=None):
+		points = set(points)
+		for p in points:
+			if hidden:
+				if p in hidden:
+					continue
+
+			pixel_coords = Point(SPRITE_SIZE*p.x, SPRITE_SIZE*p.y)
+
+			# Left border
+			if (p.x - 1, p.y) not in points:
+				rect = (p.x * SPRITE_SIZE, p.y * SPRITE_SIZE, 1, SPRITE_SIZE)
+				pygame.draw.rect(self.level_display, color, rect)
+
+			# Right Border
+			if (p.x + 1, p.y) not in points:
+				rect = (p.x * SPRITE_SIZE + (SPRITE_SIZE - 1), p.y * SPRITE_SIZE, 1, SPRITE_SIZE)
+				pygame.draw.rect(self.level_display, color, rect)
+
+			# Top Border
+			if (p.x, p.y - 1) not in points:
+				rect = (p.x * SPRITE_SIZE, p.y * SPRITE_SIZE, SPRITE_SIZE, 1)
+				pygame.draw.rect(self.level_display, color, rect)
+
+			# Bottom Border
+			if (p.x, p.y + 1) not in points:
+				rect = (p.x * SPRITE_SIZE, p.y * SPRITE_SIZE + (SPRITE_SIZE - 1), SPRITE_SIZE, 1)
+				pygame.draw.rect(self.level_display, color, rect)
+
+			# LR corner
+			if (p.x+1, p.y+1) not in points:
+				coord = (p.x * SPRITE_SIZE + (SPRITE_SIZE-1), p.y*SPRITE_SIZE + (SPRITE_SIZE-1))
+				self.level_display.set_at(coord, color)
+
+			# UR corner
+			if (p.x+1, p.y-1) not in points:
+				coord = (p.x * SPRITE_SIZE + (SPRITE_SIZE-1), p.y*SPRITE_SIZE)
+				self.level_display.set_at(coord, color)
+
+			# LL corner
+			if (p.x-1, p.y+1) not in points:
+				coord = (p.x * SPRITE_SIZE, p.y*SPRITE_SIZE + (SPRITE_SIZE-1))
+				self.level_display.set_at(coord, color)
+
+			# UL corner
+			if (p.x-1, p.y-1) not in points:
+				coord = (p.x * SPRITE_SIZE, p.y*SPRITE_SIZE)
+				self.level_display.set_at(coord, color)
+
+	def draw_targeting_borders(self):
+		if self.cur_spell.can_cast(self.cur_spell_target.x, self.cur_spell_target.y):
+			impacted_tiles = list(self.cur_spell.get_impacted_tiles(self.cur_spell_target.x, self.cur_spell_target.y))
+			self.draw_border(impacted_tiles, (255, 255, 255))
+		else:
+			self.draw_border([self.cur_spell_target], (255, 255, 255))
+
 	def draw_targeting(self):
-		blit_area = (idle_frame * SPRITE_SIZE, 0, SPRITE_SIZE, SPRITE_SIZE)
+		frame_no = (cloud_frame_clock // 3) % 6 
+		blit_area = (frame_no*SPRITE_SIZE, 0, SPRITE_SIZE, SPRITE_SIZE)
 
 		# Current main target
 		x = self.cur_spell_target.x * SPRITE_SIZE
@@ -3421,6 +3891,7 @@ class PyGameView(object):
 		used_tiles = set()
 		used_tiles.add(Point(self.cur_spell_target.x, self.cur_spell_target.y))
 
+		impacted_tiles = []
 		# Currently impacted squares
 		if self.cur_spell.can_cast(self.cur_spell_target.x, self.cur_spell_target.y):
 			for p in self.cur_spell.get_impacted_tiles(self.cur_spell_target.x, self.cur_spell_target.y):
@@ -3432,6 +3903,7 @@ class PyGameView(object):
 				used_tiles.add(Point(p.x, p.y))
 
 		if self.cur_spell.show_tt:
+
 			# Targetable squares
 			for p in self.targetable_tiles:
 				if p in used_tiles:
@@ -3440,6 +3912,7 @@ class PyGameView(object):
 				y = p.y * SPRITE_SIZE
 				to_blit.append((self.tile_targetable_image, (x, y), blit_area))
 				used_tiles.add(Point(p.x, p.y))
+
 
 			# Untargetable but in range squares
 			if self.cur_spell.melee:
@@ -3459,7 +3932,7 @@ class PyGameView(object):
 				x = p.x * SPRITE_SIZE
 				y = p.y * SPRITE_SIZE
 				to_blit.append((self.tile_invalid_target_in_range_image, (x, y), blit_area))
-		
+
 		self.level_display.blits(to_blit)
 	
 	def add_threat(self,level,x,y):
@@ -3468,13 +3941,17 @@ class PyGameView(object):
 			if t.can_walk or t.can_fly:
 				self.threat_zone.add((x,y))
 
+	def draw_threat_borders(self):
+		self.draw_border([Point(t[0], t[1]) for t in self.threat_zone], (255, 0, 0))
+
 	def draw_threat(self):
 		level = self.get_display_level()
 		# Narrow to one unit maybe
 		highlighted_unit = None
 		mouse_point = self.get_mouse_level_point()
-		if mouse_point:
-			highlighted_unit = level.get_unit_at(mouse_point.x, mouse_point.y)
+
+		if isinstance(self.examine_target, Unit):
+			highlighted_unit = self.examine_target
 		
 		if highlighted_unit and highlighted_unit.is_player_controlled:
 			highlighted_unit = None
@@ -3540,25 +4017,31 @@ class PyGameView(object):
 						self.threat_zone.add((t.x, t.y))
 						break
 
-		blit_area = (idle_frame * SPRITE_SIZE, 0, SPRITE_SIZE, SPRITE_SIZE)
+		blit_area = (0, 0, SPRITE_SIZE, SPRITE_SIZE)
 
 		to_blit = []
 		
-		image = self.tile_invalid_target_image
+		image = self.hostile_los_image
 		for t in self.threat_zone:
 			to_blit.append((image, (SPRITE_SIZE * t[0], SPRITE_SIZE * t[1]), blit_area))
 		
 		self.level_display.blits(to_blit)
 
+
+	def draw_los_borders(self):
+		self.draw_border(self.los_tiles, (255, 255, 255))
+
 	def draw_los(self):
 
 		global idle_frame
-		cur_frame = idle_frame
+		num_frames = self.tile_visible_image.get_width() // SPRITE_SIZE
+		cur_frame = idle_frame % num_frames
 		blit_area = (cur_frame * SPRITE_SIZE, 0, SPRITE_SIZE, SPRITE_SIZE)
-		image = self.tile_targetable_image
+		image = self.tile_visible_image
 
 		level = self.get_display_level()
 		p = self.deploy_target or (self.cur_spell_target if self.cur_spell else self.get_mouse_level_point() or Point(self.game.p1.x, self.game.p1.y))
+		los_tiles = []
 		for x in range(LEVEL_SIZE):
 			for y in range(LEVEL_SIZE):
 				if level.can_see(p.x, p.y, x, y):
@@ -3567,7 +4050,10 @@ class PyGameView(object):
 					
 					draw_point = (SPRITE_SIZE * x, SPRITE_SIZE * y)
 					self.level_display.blit(image, draw_point, blit_area)
+					los_tiles.append(Point(x, y))
 
+		self.los_tiles = los_tiles
+		
 	def get_max_deploy_frames(self):
 		# Number of frames needed to show animation = maximum taxicab distance btw player and a corner
 		return max(
@@ -3656,28 +4142,6 @@ class PyGameView(object):
 				return self.game.cur_level
 			else:
 				return self.game.next_level or self.game.prev_next_level
-
-
-		for i in range(0, LEVEL_SIZE):
-			for j in range(0, LEVEL_SIZE):
-
-				level = get_level(i, j)
-
-				tile = level.tiles[i][j]
-				
-				should_draw_tile = True
-				if tile.prop:
-					should_draw_tile = False
-				if tile.unit and not tile.is_chasm:
-					should_draw_tile = False
-				if should_draw_tile:
-					partial_occulde = tile.unit or (i, j) in effect_tiles
-					self.draw_tile(tile, partial_occulde=partial_occulde)
-
-				if self.examine_target and (self.examine_target in [tile.unit, tile.cloud, tile.prop]):
-						rect = (self.examine_target.x * SPRITE_SIZE, self.examine_target.y * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE)
-						color = (60, 60, 60)
-						pygame.draw.rect(self.level_display, color, rect)
 	
 		# Draw LOS if requested
 		keys = pygame.key.get_pressed()
@@ -3689,6 +4153,31 @@ class PyGameView(object):
 		# Draw targeting if a spell is chosen
 		elif self.cur_spell:    
 			self.draw_targeting()
+
+		for i in range(0, LEVEL_SIZE):
+			for j in range(0, LEVEL_SIZE):
+
+				level = get_level(i, j)
+				if not level:
+					continue
+
+				tile = level.tiles[i][j]
+				
+				should_draw_tile = True
+				if tile.prop:
+					should_draw_tile = False
+				if tile.unit and not tile.is_chasm:
+					should_draw_tile = False
+				if should_draw_tile:
+					partial_occlude = tile.unit or (i, j) in effect_tiles
+					self.draw_tile(tile, partial_occlude=partial_occlude)
+
+				if self.examine_target and (self.examine_target in [tile.unit, tile.cloud, tile.prop]) and not self.cur_spell:
+					rect = (self.examine_target.x * SPRITE_SIZE, self.examine_target.y * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE)
+					color = (60, 60, 60)
+					if isinstance(self.examine_target, Unit):
+						color = (80, 0, 0) if are_hostile(self.examine_target, self.game.p1) else (0, 80, 0)
+					pygame.draw.rect(self.level_display, color, rect)
 	
 		for i in range(0, LEVEL_SIZE):
 			for j in range(0, LEVEL_SIZE):
@@ -3697,14 +4186,25 @@ class PyGameView(object):
 
 				tile = level.tiles[i][j]
 				
-				if tile.unit:
+				if tile.unit and tile.x == tile.unit.x and tile.y == tile.unit.y:
 					self.draw_unit(tile.unit)
-					if tile.cloud:
-						self.draw_cloud(tile.cloud)
-				elif tile.cloud:
-					self.draw_cloud(tile.cloud)
-				elif tile.prop and(i, j) not in effect_tiles:
+
+				elif not tile.unit and tile.prop and(i, j) not in effect_tiles:
 					self.draw_prop(tile.prop)
+
+				if tile.cloud:
+					self.draw_cloud(tile.cloud)
+
+		# Draw LOS if requested
+		keys = pygame.key.get_pressed()
+		if any(k and keys[k] for k in self.key_binds[KEY_BIND_LOS]):
+			self.draw_los_borders()
+		# Draw threat if requested
+		elif any(k and keys[k] for k in self.key_binds[KEY_BIND_THREAT]) and self.game.is_awaiting_input():
+			self.draw_threat_borders()
+		# Draw targeting if a spell is chosen
+		elif self.cur_spell:    
+			self.draw_targeting_borders()
 
 		if isinstance(self.examine_target, Unit):
 			buff = self.examine_target.get_buff(OrbBuff)
@@ -3766,8 +4266,8 @@ class PyGameView(object):
 			if (dx or dy) and abs_rect.collidepoint(self.get_mouse_pos()):
 				self.examine_target = mouse_content
 
-			# If, for whatever reason, this content is the examine target, draw the highlight rect
-			if self.examine_target == mouse_content:
+			# If, for whatever reason, this content is the parent examine target, draw the highlight rect
+			if self._examine_target == mouse_content:
 				should_highlight = True
 				if char_panel:
 					if not abs_rect.collidepoint(self.get_mouse_pos()):
@@ -3779,7 +4279,7 @@ class PyGameView(object):
 		surface.blit(string_surface, (x, y))
 
 	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False):
-		lines = string.split('\n')
+		lines = [l for l in string.split('\n') if l]
 
 		cur_x = x
 		cur_y = y
@@ -3790,7 +4290,7 @@ class PyGameView(object):
 		chars_per_line = width // char_width
 		for line in lines:
 			#words = line.split(' ')
-			# This regex separates periods, spaces, commas, and tokens
+			# This regex separates periods, spaces, com`, and tokens
 			exp = '[\[\]:|\w\|\'|%|-]+|.| |,'
 			words = re.findall(exp, line)
 			words.reverse()
@@ -3826,7 +4326,7 @@ class PyGameView(object):
 						chars_left = chars_per_line
 
 					self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=width)               
-				
+									
 				cur_x += (len(word)) * char_width
 				chars_left -= len(word)
 
@@ -3855,6 +4355,8 @@ class PyGameView(object):
 			self.show_help()
 		elif target == OPTIONS_TARGET:
 			self.open_options()
+		elif target == REROLL_PORTALS_TARGET:
+			self.game.try_reroll_rifts()
 		elif button == pygame.BUTTON_LEFT:
 			if isinstance(target, SpellCharacterWrapper):
 				self.choose_spell(target.spell)
@@ -3904,12 +4406,7 @@ class PyGameView(object):
 		if not image:
 			return
 
-		frame = 4
-		if isinstance(spell, Item):
-			frame = 1
-
-		x1 = 16 * frame
-		icon = image.subsurface((x1, 0, 16, 16))
+		icon = image.subsurface((0, 0, 16, 16))
 		
 		if icon:
 			surface.blit(icon, (x, y))
@@ -3940,7 +4437,7 @@ class PyGameView(object):
 		self.draw_string("SP %d" % self.game.p1.xp, self.character_display, cur_x, cur_y, color=COLOR_XP)
 		cur_y += linesize
 
-		self.draw_string("Realm %d" % self.game.level_num, self.character_display, cur_x, cur_y)
+		self.draw_string("Realm %d, Turn %d" % (self.game.level_num, self.game.cur_level.turn_no), self.character_display, cur_x, cur_y)
 		cur_y += linesize
 
 		# TODO- buffs here
@@ -3966,10 +4463,20 @@ class PyGameView(object):
 			else:
 				cur_color = (128, 128, 128)
 			
-			fmt = "%2s  %-17s%2d" % (hotkey_str, spell.name, spell.cur_charges)
+			fmt = "%-2s %-24s%2d" % (hotkey_str, spell.name, spell.cur_charges)
+			if SIZE == SIZE_MED:
+				fmt = "%-2s %-18s%2d" % (hotkey_str, spell.name, spell.cur_charges)
+			if SIZE == SIZE_SMALL:
+				fmt = "%s %-18s" % (hotkey_str, spell.name)
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=SpellCharacterWrapper(spell), char_panel=True)
-			self.draw_spell_icon(spell, self.character_display, cur_x + 38, cur_y)
+
+			if SIZE == SIZE_MED:
+				self.draw_spell_icon(spell, self.character_display, cur_x + 26, cur_y)
+			elif SIZE == SIZE_SMALL:
+				pass
+			else:
+				self.draw_spell_icon(spell, self.character_display, cur_x + 26, cur_y)
 
 			cur_y += linesize
 			index += 1
@@ -3982,21 +4489,29 @@ class PyGameView(object):
 		index = 1
 		for item in self.game.p1.items:
 
-			hotkey_str = "A%d" % (index % 10)
+			hotkey_str = "%d" % (index % 10)
 
 			cur_color = (255, 255, 255)
 			if item.spell == self.cur_spell:
 				cur_color = (0, 255, 0)
-			fmt = "%2s  %-17s%2d" % (hotkey_str, item.name, item.quantity)          
+
+
+			fmt = "%s  %-24s%2d" % (hotkey_str, item.name, item.quantity)          
+			if SIZE == SIZE_MED:
+				fmt = "%s  %-18s%2d" % (hotkey_str, item.name, item.quantity)   
+			if 'size_small' in sys.argv:
+				fmt = "%s %-16s%2d" % (hotkey_str, item.name, item.quantity)   
 
 			self.draw_string(fmt, self.character_display, cur_x, cur_y, cur_color, mouse_content=item)
-			self.draw_spell_icon(item, self.character_display, cur_x + 38, cur_y)
+
+			if 'size_small' not in sys.argv:
+				self.draw_spell_icon(item, self.character_display, cur_x + 26, cur_y)
 
 			cur_y += linesize
 			index += 1
 
 		# Buffs
-		status_effects = [b for b in self.game.p1.buffs if b.buff_type != BUFF_TYPE_PASSIVE]
+		status_effects = [b for b in self.game.p1.buffs if b.buff_type in [BUFF_TYPE_BLESS, BUFF_TYPE_CURSE]]
 		counts = {}
 		for effect in status_effects:
 			if effect.name not in counts:
@@ -4024,6 +4539,31 @@ class PyGameView(object):
 				self.draw_string(fmt, self.character_display, cur_x, cur_y, color, mouse_content=buff)
 				cur_y += linesize
 
+
+		if self.game.p1.equipment or self.game.p1.trinkets:
+			cur_y += linesize
+			self.draw_string("Equipment:", self.character_display, cur_x, cur_y, (255, 255, 255))
+			cur_y += linesize
+			for slot in [ITEM_SLOT_STAFF, ITEM_SLOT_ROBE, ITEM_SLOT_HEAD, ITEM_SLOT_GLOVES, ITEM_SLOT_BOOTS]:
+				item = self.game.p1.equipment.get(slot)
+				if not item:
+					continue
+
+				self.draw_string("  %s" % item.name, self.character_display, cur_x, cur_y, mouse_content=item)
+				
+				icon = self.get_equipment_icon(item)
+				self.character_display.blit(icon, (cur_x, cur_y))
+
+				cur_y += linesize
+
+			for item in self.game.p1.trinkets:
+				self.draw_string("  %s" % item.name, self.character_display, cur_x, cur_y, mouse_content=item)
+				
+				icon = self.get_equipment_icon(item)
+				self.character_display.blit(icon, (cur_x, cur_y))
+
+				cur_y += linesize
+
 		skills = [b for b in self.game.p1.buffs if b.buff_type == BUFF_TYPE_PASSIVE and not b.prereq]
 		if skills:
 			cur_y += linesize
@@ -4033,14 +4573,45 @@ class PyGameView(object):
 
 			skill_x_max = self.character_display.get_width() - self.border_margin - 16
 			for skill in skills:
+				self.draw_string("  %s" % skill.name, self.character_display, cur_x, cur_y, mouse_content=skill)
 				self.draw_spell_icon(skill, self.character_display, cur_x, cur_y)
-				cur_x += 18
-				if cur_x > skill_x_max:
-					cur_x = self.border_margin
-					cur_y += self.linesize
+				cur_y += linesize
+
+			cur_y += linesize
+
+		resist_tags = [t for t in Tags if t in self.game.p1.resists and self.game.p1.resists[t] != 0]
+		resist_tags.sort(key = lambda t: -self.game.p1.resists[t])
+
+		cur_y += self.linesize
+		for negative in [False, True]:
+			has_resists = False
+			for tag in resist_tags:
+				
+				if not ((self.game.p1.resists[tag] < 0) == negative):
+					continue
+
+				self.draw_string('%d%% Resist %s' % (self.game.p1.resists[tag], tag.name), self.character_display, cur_x, cur_y, tag.color.to_tup())
+				has_resists = True
+				cur_y += self.linesize
+
+			if has_resists:
+				cur_y += self.linesize
+
+		stunbuff = self.game.p1.get_buff(Stun)
+		if stunbuff:
+			color = (255, 0, 0) if self.cast_fail_frames else stunbuff.color.to_tup()
+			self.draw_string("YOU ARE %s" % stunbuff.name.upper(), self.character_display, cur_x, cur_y, color=color, mouse_content=STUNNED_TARGET)
+			cur_y += linesize
 
 		cur_x = self.border_margin
-		cur_y = self.character_display.get_height() - self.border_margin - 3*self.linesize
+		cur_y = self.character_display.get_height() - self.border_margin - 4*self.linesize
+
+		if cheats_enabled:
+			self.draw_string("Cheats Enabled", self.character_display, cur_x, cur_y - self.linesize, color=(255, 0, 0))
+
+		if self.game.rift_rerolls:
+			self.draw_string("Reroll Rifts (R)", self.character_display, cur_x, cur_y, mouse_content=REROLL_PORTALS_TARGET)
+		cur_y += linesize
 
 		self.draw_string("Menu (ESC)", self.character_display, cur_x, cur_y, mouse_content=OPTIONS_TARGET)
 		cur_y += linesize
@@ -4058,10 +4629,12 @@ class PyGameView(object):
 		if (self.game and getattr(self.examine_target, "level", None) == self.game.cur_level) and self.game.deploying:
 			self.examine_target = None
 
+		if self.state == STATE_LEVEL and not self.game.is_awaiting_input():
+			self.examine_target = None
+
 		self.examine_display.fill((0, 0, 0))
 
 		self.draw_panel(self.examine_display)
-
 		if self.examine_target:
 			if isinstance(self.examine_target, Spell):
 				self.draw_examine_spell()
@@ -4074,10 +4647,10 @@ class PyGameView(object):
 				self.draw_examine_unit()
 			elif isinstance(self.examine_target, Buff):
 				self.draw_examine_upgrade()
-			#elif isinstance(self.examine_target, Buff):
-			#   self.draw_examine_buff()
 			elif isinstance(self.examine_target, Portal):
 				self.draw_examine_portal()
+			elif isinstance(self.examine_target, Shop):
+				self.draw_examine_shop()
 			else:
 				self.draw_examine_misc()
 		elif self.game:
@@ -4085,13 +4658,104 @@ class PyGameView(object):
 				self.draw_examine_misc(DEPLOY_TARGET)
 			elif self.game.has_granted_xp:
 				self.draw_level_stats()
-			elif self.game.level_num == 1:
+			elif self.game.cur_level.turn_no > 0:
+				self.draw_turn_stats()
+			elif self.game.level_num == 1 and self.game.cur_level.turn_no == 0:
 				self.draw_examine_misc(WELCOME_TARGET)
 
 		if self.game and self.game.gameover:
 			self.draw_level_stats()
 
+		if self._examine_extras:
+			x = self.border_margin
+			y = self.examine_display.get_height() - 2*self.border_margin
+			fmt = "<<<< PGUP %d/%d PGDN >>>>" % (self._examine_index+1, len(self._examine_extras)+1)
+			
+			self.draw_string(fmt, self.examine_display, x, y, (255, 255, 255), center=True, content_width=self.examine_display.get_width())
+
 		self.screen.blit(self.examine_display, (self.screen.get_width() - self.h_margin, 0))
+
+	def draw_turn_stats(self):
+		cur_x = self.border_margin
+		cur_y = self.border_margin
+		linesize = self.linesize
+		turn_summary = self.game.cur_level.turn_summary
+
+		char_limit = 22 # Todo- make this different at lower resolutions?
+		stat_fmt = " %-22s %5d"
+
+		if SIZE == SIZE_MED:
+			char_limit = 16
+			stat_fmt = " %-16s %5d"
+		if SIZE == SIZE_SMALL:
+			char_limit = 13
+			stat_fmt = " %-13s %5d"
+
+		last_action = self.game.p1.last_action
+		if last_action is not None:
+			action_type = type(last_action)
+			if action_type == MoveAction:
+				action_str = "You moved"
+			elif action_type == CastAction:
+				action_str = "You cast %s" % last_action.spell.name
+			elif action_type == PassAction:
+				action_str = "You waited"
+			elif action_type == StunnedAction:
+				action_str = "You were %s for %d turns" % (last_action.buff.name, last_action.duration)
+
+			self.draw_string(action_str, self.examine_display, cur_x, cur_y)
+			cur_y += 2*linesize
+
+		if turn_summary.damage_dealt:
+			total_dmg = sum(turn_summary.damage_dealt.values())
+			self.draw_string("Damage Dealt: %15d" % total_dmg, self.examine_display, cur_x, cur_y)
+			cur_y += linesize
+
+			sorted_items = sorted(turn_summary.damage_dealt.items(), key=lambda t: -t[1])
+
+			for src, dmg in sorted_items:
+				self.draw_string(stat_fmt % (src[:char_limit], dmg), self.examine_display, cur_x, cur_y)
+				cur_y += linesize
+
+			cur_y += linesize
+
+		if turn_summary.self_damage_taken:
+			total_dmg = sum(turn_summary.self_damage_taken.values())
+			self.draw_string("Damage Taken: %15d" % total_dmg, self.examine_display, cur_x, cur_y)
+			cur_y += linesize
+			for src, dmg in turn_summary.self_damage_taken.items():
+				self.draw_string(stat_fmt % (src[:char_limit], dmg), self.examine_display, cur_x, cur_y)
+				cur_y += linesize
+
+			cur_y += linesize
+
+		if turn_summary.ally_damage_taken:
+			total_dmg = sum(turn_summary.ally_damage_taken.values())
+			self.draw_string("Ally Damage Taken: %10d" % total_dmg, self.examine_display, cur_x, cur_y)
+			cur_y += linesize
+			for src, dmg in turn_summary.ally_damage_taken.items():
+				self.draw_string(stat_fmt % (src[:char_limit], dmg), self.examine_display, cur_x, cur_y)
+				cur_y += linesize
+
+			cur_y += linesize
+			
+		if turn_summary.enemy_kill_counts:
+			total_kills = sum(turn_summary.enemy_kill_counts.values())
+			self.draw_string("Enemies Slain: %14d" % total_kills, self.examine_display, cur_x, cur_y)
+			cur_y += linesize
+			for name, kills in turn_summary.enemy_kill_counts.items():
+				self.draw_string(stat_fmt % (name[:char_limit], kills), self.examine_display, cur_x, cur_y)
+				cur_y += linesize
+			cur_y += linesize
+
+		if turn_summary.ally_kill_counts:
+			total_kills = sum(turn_summary.ally_kill_counts.values())
+			self.draw_string("Allies Lost: %16d" % total_kills, self.examine_display, cur_x, cur_y)
+			cur_y += linesize
+			for name, kills in turn_summary.ally_kill_counts.items():
+				self.draw_string(stat_fmt % (name[:char_limit], kills), self.examine_display, cur_x, cur_y)
+				cur_y += linesize
+			cur_y += linesize
 
 	def draw_examine_upgrade(self):
 		path = ['UI', 'spell skill icons', self.examine_target.name.lower().replace(' ', '_') + '.png']
@@ -4103,7 +4767,25 @@ class PyGameView(object):
 
 		width = self.examine_display.get_width() - 2 * border_margin
 		lines = self.draw_wrapped_string(self.examine_target.name, self.examine_display, cur_x, cur_y, width=width)
-		cur_y += self.linesize * (lines+1)
+		cur_y += self.linesize * lines
+
+		# For items, draw item type
+		if isinstance(self.examine_target, Equipment):
+			if self.examine_target.slot == ITEM_SLOT_AMULET:
+				slot_str = "Trinket"
+			elif self.examine_target.slot == ITEM_SLOT_STAFF:
+				slot_str = "Staff"
+			elif self.examine_target.slot == ITEM_SLOT_HEAD:
+				slot_str = "Helmet"
+			elif self.examine_target.slot == ITEM_SLOT_ROBE:
+				slot_str = "Robe"
+			elif self.examine_target.slot == ITEM_SLOT_BOOTS:
+				slot_str = "Boots"
+
+			self.draw_string(slot_str, self.examine_display, cur_x, cur_y)
+			cur_y += self.linesize
+
+		cur_y += self.linesize
 
 		# Draw upgrade tags
 		if not getattr(self.examine_target, 'prereq', None) and hasattr(self.examine_target, 'tags'):
@@ -4129,8 +4811,13 @@ class PyGameView(object):
 				fmt = "%s spells and skills gain [%s_%s:%s]." % (tag.name, val, attr, attr)
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
-			cur_y += self.linesize
 
+		for tag, bonuses in self.examine_target.tag_bonuses_pct.items():
+			for attr, val in bonuses.items():
+				#cur_color = tag.color
+				fmt = "%s spells and skills gain [%d%%_%s:%s]." % (tag.name, int(val), attr, attr)
+				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
+				cur_y += (lines+1) * self.linesize
 
 		for spell, bonuses in self.examine_target.spell_bonuses.items():
 			spell_ex = spell()
@@ -4146,13 +4833,35 @@ class PyGameView(object):
 					fmt = "%s gains %d %s" % (spell_ex.name, val, format_attr(attr))
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
-			cur_y += self.linesize
+
+		for spell, bonuses in self.examine_target.spell_bonuses_pct.items():
+			spell_ex = spell()
+
+			useful_bonuses = [(attr, val) for (attr, val) in bonuses.items() if hasattr(spell_ex, attr)]
+			if not useful_bonuses:
+				continue
+
+			for attr, val in useful_bonuses:
+				if attr in tooltip_colors:
+					fmt = "%s gains [%s%%_%s:%s]" % (spell_ex.name, val, attr, attr)
+				else:
+					fmt = "%s gains %d%% %s" % (spell_ex.name, val, format_attr(attr))
+				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
+				cur_y += (lines+1) * self.linesize
 
 		for attr, val in self.examine_target.global_bonuses.items():
 			if val >= 0:
 				fmt = "All spells and skills gain %d %s" % (val, format_attr(attr))
 			else:
 				fmt = "All spells and skills lose %d %s" % (-val, format_attr(attr))
+			lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width)
+			cur_y += (lines+1) * self.linesize
+
+		for attr, val in self.examine_target.global_bonuses_pct.items():
+			if val >= 0:
+				fmt = "All spells and skills gain %d%% %s" % (val, format_attr(attr))
+			else:
+				fmt = "All spells and skills lose %d%% %s" % (-val, format_attr(attr))
 			lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width)
 			cur_y += (lines+1) * self.linesize
 
@@ -4180,7 +4889,31 @@ class PyGameView(object):
 				desc += "\nWARNING: Will replace %s" % existing[0].name
 
 		if desc:
-			self.draw_wrapped_string(desc, self.examine_display, cur_x, cur_y, width, extra_space=True)
+			lines = self.draw_wrapped_string(desc, self.examine_display, cur_x, cur_y, width, extra_space=True)
+			cur_y += lines * self.linesize
+
+		if SIZE == SIZE_LARGE and isinstance(self.examine_target, Upgrade) and not self.examine_target.prereq:
+			self.draw_string("Attributes:", self.examine_display, cur_x, cur_y)
+			cur_y += self.linesize
+			had_attrs = False
+
+			for attr in tt_attrs:
+				if not hasattr(self.examine_target, attr):
+					continue
+				had_attrs = True
+				self.draw_string(" %3d %s" % (self.examine_target.get_stat(attr), format_attr(attr)), self.examine_display, cur_x, cur_y, attr_colors[attr].to_tup())
+				cur_y += self.linesize
+			
+			if not had_attrs:
+				self.draw_string(" None", self.examine_display, cur_x, cur_y)
+				cur_y += self.linesize
+			cur_y += self.linesize
+
+
+		# Inform player if this item will replace a currently held one
+		if isinstance(self.examine_target, Equipment):
+			if self.examine_target.slot != ITEM_SLOT_AMULET and not self.examine_target.applied and self.game.p1.equipment.get(self.examine_target.slot):
+				self.draw_string("(Will replace %s)" % self.game.p1.equipment[self.examine_target.slot].name, self.examine_display, cur_x, cur_y)
 
 	def draw_examine_misc(self, target=None):
 		border_margin = self.border_margin
@@ -4201,25 +4934,20 @@ class PyGameView(object):
 
 	def draw_examine_icon(self):
 	
-		icon = get_image(get_spell_asset(self.examine_target))
-		if not icon:
+		if isinstance(self.examine_target, Equipment):
+			icon = self.get_equipment_icon(self.examine_target)
+		else:
+			icon = get_image(get_spell_asset(self.examine_target))
+		if not icon:	
 			return
 
 		self.examine_icon_surface.fill((0, 0, 0))
 
-		source = (self.examine_icon_frame * SPRITE_SIZE, 0, SPRITE_SIZE, SPRITE_SIZE)
+		source = (0, 0, SPRITE_SIZE, SPRITE_SIZE)
 		self.examine_icon_surface.blit(icon, (0, 0), source)
 		
 		subsurface = self.examine_display.subsurface((self.examine_display.get_width() - self.border_margin - 64, self.border_margin, 64, 64))
 		pygame.transform.scale(self.examine_icon_surface, (64, 64), subsurface)
-
-		self.examine_icon_subframe += 1
-		if self.examine_icon_subframe >= SUB_FRAMES[ANIM_IDLE]:
-			self.examine_icon_subframe = 0
-			self.examine_icon_frame += 1
-
-			if self.examine_icon_frame >= icon.get_width() // SPRITE_SIZE:
-				self.examine_icon_frame = 0
 
 	def draw_examine_spell(self):
 
@@ -4256,14 +4984,39 @@ class PyGameView(object):
 			self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
+		if spell.quick_cast:
+			self.draw_string("Quick Cast", self.examine_display, cur_x, cur_y)
+			cur_y += self.linesize
+
 		if spell.max_charges:
 			self.draw_string("Charges: %d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
+			cur_y += self.linesize
+
+		if spell.hp_cost:
+			self.draw_string("HP Cost: %d" % spell.hp_cost, self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		cur_y += linesize
 
 		lines = self.draw_wrapped_string(spell.get_description(), self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2*self.border_margin, extra_space=True)
 		cur_y += linesize * lines
+
+		if SIZE == SIZE_LARGE:
+			self.draw_string("Attributes:", self.examine_display, cur_x, cur_y)
+			cur_y += self.linesize
+			had_attrs = False
+
+			for attr in tt_attrs:
+				if not hasattr(self.examine_target, attr):
+					continue
+				had_attrs = True
+				self.draw_string(" %3d %s" % (self.examine_target.get_stat(attr), format_attr(attr)), self.examine_display, cur_x, cur_y, attr_colors[attr].to_tup())
+				cur_y += self.linesize
+			
+			if not had_attrs:
+				self.draw_string(" None", self.examine_display, cur_x, cur_y)
+				cur_y += self.linesize
+			cur_y += self.linesize
 
 		if spell.spell_upgrades:
 			self.draw_string("Upgrades:", self.examine_display, cur_x, cur_y)
@@ -4275,11 +5028,11 @@ class PyGameView(object):
 				if self.game.has_upgrade(upg):
 					cur_color = (0, 255, 0)
 
-				self.draw_string('%d - %s' % (upg.level, upg.name), self.examine_display, cur_x, cur_y, color=cur_color)
+				self.draw_string(' %d - %s' % (upg.level, upg.name), self.examine_display, cur_x, cur_y, color=cur_color)
 				cur_y += linesize
 
-	def draw_examine_portal(self):
 
+	def draw_examine_portal(self):
 
 		border_margin = self.border_margin
 		cur_x = border_margin
@@ -4292,7 +5045,7 @@ class PyGameView(object):
 		self.draw_string("Rift", self.examine_display, cur_x, cur_y)
 		cur_y += linesize
 
-		if self.game.next_level:
+		if self.game.next_level or not self.game.has_granted_xp:
 			cur_y += linesize
 			self.draw_string("????????", self.examine_display, cur_x, cur_y)
 			return
@@ -4309,41 +5062,45 @@ class PyGameView(object):
 		self.draw_string("Contents:", self.examine_display, cur_x, cur_y)
 		cur_y += 2*linesize
 
-		images = []
+		units = []
 
 		COLOR_POP = (255, 255, 255)
 		COLOR_BOSS = (253, 143, 77)
 		COLOR_ELITE = COLOR_BOSS
 		COLOR_ENC = (255, 0, 0)
 
-		for s, l in gen_params.spawn_options:
-			unit = s()
-			sprite_sheet = self.get_sprite_sheet(get_unit_asset(unit))
-			images.append((sprite_sheet, unit.name, COLOR_POP))
+		if gen_params.primary_spawn:
+			unit = gen_params.primary_spawn()
+			units.append((unit, COLOR_POP))
 
-			#lair_sheet = self.get_sprite_sheet('lair', fill_color=sprite_sheet.get_lair_color())
-			#images.append((lair_sheet, '%s Lair' % unit.name))
+		if gen_params.secondary_spawn and gen_params.secondary_spawn != gen_params.primary_spawn:
+			unit = gen_params.secondary_spawn()
+			units.append((unit, COLOR_POP))
 
 		drawn_bosses = set()
 		for b in gen_params.bosses:
 			if b.name in drawn_bosses:
 				continue
-			# Dont draw old style bosses
-			if 'boss' in b.get_asset_name():
-				continue
+
+			units.append((b, COLOR_BOSS if not b.is_boss else COLOR_ENC))
 			drawn_bosses.add(b.name)
 
-			sprite_sheet = self.get_sprite_sheet(get_unit_asset(b))
-			images.append((sprite_sheet, b.name, COLOR_BOSS if not b.is_boss else COLOR_ENC))
+		for unit, color in units:
 
-		for image, name, color in images:
+			sprite_sheet = self.get_sprite_sheet(get_unit_asset(unit), radius=unit.radius, recolor_primary=unit.recolor_primary)
+			frame = (cloud_frame_clock // 12) % (len(sprite_sheet.anim_frames[ANIM_IDLE]))
 
-			frame = (cloud_frame_clock // 12) % (len(image.anim_frames[ANIM_IDLE]))
+			if unit.outline_color:
+				glow_image = sprite_sheet.get_glow_frame(ANIM_IDLE, frame, unit.outline_color, flipped=False, outline=True)
+				scaledimage = pygame.transform.scale(glow_image, (36, 36))
+				self.examine_display.blit(scaledimage, (cur_x-2, cur_y-2))
 			
-			sprite = image.anim_frames[ANIM_IDLE][frame]
+			sprite = sprite_sheet.anim_frames[ANIM_IDLE][frame]
 			scaledimage = pygame.transform.scale(sprite, (32, 32))
-
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
+
+
+			name = unit.name
 			if len(name) > 20:
 				name = name[0:18] + '..'
 			self.draw_string(name, self.examine_display, cur_x + 36, cur_y + 10, color)
@@ -4352,24 +5109,6 @@ class PyGameView(object):
 		cur_y += linesize
 
 		width = self.examine_display.get_width() - 2 *border_margin
-		if gen_params.shrine:
-			name = gen_params.shrine.name
-			
-			image = self.get_prop_image(gen_params.shrine)
-			frame = (cloud_frame_clock // 12) % (image.get_width() // 16)
-			sourcerect = (SPRITE_SIZE * frame, 0, SPRITE_SIZE, SPRITE_SIZE)
-			subimage = image.subsurface(sourcerect) 
-			scaledimage = pygame.transform.scale(subimage, (64, 64))
-
-			self.examine_display.blit(scaledimage, (cur_x, cur_y))
-			
-			self.draw_string(gen_params.shrine.name, self.examine_display, 64 + border_margin, cur_y + 24, content_width=width)
-			
-			cur_y += 64 + linesize
-
-			lines = self.draw_wrapped_string(gen_params.shrine.description, self.examine_display, cur_x, cur_y, width, extra_space=True)
-			cur_y += linesize * lines 
-
 
 		for item in gen_params.items:
 			image = get_image(item.get_asset())
@@ -4384,9 +5123,8 @@ class PyGameView(object):
 
 			cur_y += 32
 
-		for s in gen_params.scroll_spells:
-			asset = ['tiles', 'library', 'library_white']
-			image = get_image(asset)
+		for i in range(gen_params.num_xp):
+			image = get_image(['tiles', 'items', 'animated', 'mana_orb'])
 
 			frame = (cloud_frame_clock // 12) % (image.get_width() // 16)
 			sourcerect = (SPRITE_SIZE * frame, 0, SPRITE_SIZE, SPRITE_SIZE)
@@ -4394,19 +5132,61 @@ class PyGameView(object):
 			scaledimage = pygame.transform.scale(subimage, (32, 32))
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
-			self.draw_wrapped_string(s.name, self.examine_display, cur_x + 38, cur_y+8, width - 38)
-
+			self.draw_string('Memory Orb', self.examine_display, cur_x + 38, cur_y+8)
 			cur_y += 32
 
-		cur_x = border_margin
+		if gen_params.shrine:
+			cur_y += linesize
+			name = gen_params.shrine.name
+			
+			image = self.get_prop_image(gen_params.shrine)
+			frame = (cloud_frame_clock // 12) % (image.get_width() // 16)
+			sourcerect = (SPRITE_SIZE * frame, 0, SPRITE_SIZE, SPRITE_SIZE)
+			subimage = image.subsurface(sourcerect) 
+			scaledimage = pygame.transform.scale(subimage, (32, 32))
 
+			self.examine_display.blit(scaledimage, (cur_x, cur_y))
+			
+			self.draw_string(gen_params.shrine.name, self.examine_display, 38 + border_margin, cur_y + 8, content_width=width)
+
+			cur_y += 32
+			if isinstance(gen_params.shrine, Shop):
+				for item in gen_params.shrine.items:
+					self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
+					
+					icon = self.get_equipment_icon(item)
+					if icon:
+						self.examine_display.blit(icon, (cur_x+16, cur_y))
+					cur_y += linesize
+
+	def draw_examine_shop(self):
+		cur_x = self.border_margin
+		cur_y = self.border_margin
+
+		self.draw_string(self.examine_target.name, self.examine_display, cur_x, cur_y)
+		cur_y += self.linesize
+
+		image = self.get_prop_image(self.examine_target)
+		frame = (cloud_frame_clock // 12) % (image.get_width() // 16)
+		sourcerect = (SPRITE_SIZE * frame, 0, SPRITE_SIZE, SPRITE_SIZE)
+		subimage = image.subsurface(sourcerect) 
+		scaledimage = pygame.transform.scale(subimage, (64, 64))
+
+		self.examine_display.blit(scaledimage, (self.examine_display.get_width() - self.border_margin - 64, 0))
+
+		for item in self.examine_target.items:
+			self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
+			icon = self.get_equipment_icon(item)
+			if icon:
+				self.examine_display.blit(icon, (cur_x+16, cur_y))
+			cur_y += self.linesize
 
 
 	def draw_examine_unit(self):
 
 		# If a game is running, do not display dead monsters or the player
 		if self.game:
-			if self.examine_target.cur_hp <= 0:
+			if self.examine_target.killed:
 				return
 
 			if self.examine_target == self.game.p1:
@@ -4445,9 +5225,12 @@ class PyGameView(object):
 		subsurface = self.examine_display.subsurface((self.examine_display.get_width() - self.border_margin - 64, self.border_margin, 64, 64))
 		pygame.transform.scale(self.examine_icon_surface, (64, 64), subsurface)
 
-
-		self.draw_string("%s %d/%d" % (CHAR_HEART, unit.cur_hp, unit.max_hp), self.examine_display, cur_x, cur_y)
-		self.draw_string("%s" % CHAR_HEART, self.examine_display, cur_x, cur_y, (255, 0, 0))
+		if unit.cur_hp > 0:
+			self.draw_string("%s %d/%d" % (CHAR_HEART, unit.cur_hp, unit.max_hp), self.examine_display, cur_x, cur_y)
+			self.draw_string("%s" % CHAR_HEART, self.examine_display, cur_x, cur_y, (255, 0, 0))
+		else:
+			self.draw_string("%d HP" % unit.max_hp, self.examine_display, cur_x, cur_y, attr_colors['minion_health'].to_tup())
+		
 		cur_y += linesize
 		
 		if unit.shields:
@@ -4497,7 +5280,11 @@ class PyGameView(object):
 				cur_y += linesize
 				hasattrs = True
 			if spell.cool_down > 0:
-				rem_cd = spell.caster.cool_downs.get(spell, 0)
+				
+				rem_cd = 0
+				if spell.caster:
+					rem_cd = spell.caster.cool_downs.get(spell, 0)
+
 				if not rem_cd:
 					fmt = ' %d turn cooldown' % spell.cool_down
 				else:
@@ -4522,7 +5309,11 @@ class PyGameView(object):
 			self.draw_string("Immobile", self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
-		if unit.flying or unit.stationary:
+		if unit.burrowing:
+			self.draw_string("Burrowing", self.examine_display, cur_x, cur_y)
+			cur_y += linesize
+
+		if unit.flying or unit.stationary or unit.burrowing:
 			cur_y += linesize
 
 		resist_tags = [t for t in Tags if t in self.examine_target.resists and self.examine_target.resists[t] != 0]
@@ -4543,9 +5334,12 @@ class PyGameView(object):
 				cur_y += self.linesize
 
 		# Unit Passives
-		for buff in unit.buffs:
-			if buff.buff_type != BUFF_TYPE_PASSIVE:
-				continue
+		if hasattr(self.examine_target, 'level'):
+			passives = [b for b in self.examine_target.buffs if b.buff_type == BUFF_TYPE_PASSIVE]
+		else:
+			passives = self.examine_target.buffs
+
+		for buff in passives:
 
 			buff_desc = buff.get_tooltip()
 			if not buff_desc:
@@ -4557,12 +5351,17 @@ class PyGameView(object):
 			buff_color = (buff_color.r, buff_color.g, buff_color.b)
 
 
+
 			lines = self.draw_wrapped_string(buff_desc, self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2*border_margin, buff_color)
 			cur_y += linesize * (lines+1)
 
 		cur_y += linesize
 
-		status_effects = [b for b in self.examine_target.buffs if b.buff_type != BUFF_TYPE_PASSIVE]
+		if hasattr(self.examine_target, 'level'):
+			status_effects = [b for b in self.examine_target.buffs if b.buff_type in [BUFF_TYPE_BLESS, BUFF_TYPE_CURSE]]
+		else:
+			status_effects = []
+
 		counts = {}
 		for effect in status_effects:
 			if effect.name not in counts:
@@ -4593,15 +5392,30 @@ class PyGameView(object):
 
 
 	def draw_title(self):
-		title_disp_frame = self.title_frame // 16 % 2
-		self.screen.blit(self.title_image, (0, 0, 1600, 900), (title_disp_frame*1600, 0, 1600, 900))
 
 		m_loc = self.get_mouse_pos()
 
-		self.title_frame += 1
+		if SIZE == SIZE_LARGE:
+			cur_x = 25*SPRITE_SIZE*2-12
+			cur_y = 23*SPRITE_SIZE*2 + 5
+			title_x = self.screen.get_width() // 2 - self.title_image.get_width() // 2
+			title_y = 40
+		
+		if SIZE == SIZE_MED:
+			cur_x = 20*SPRITE_SIZE*2 - 12
+			cur_y = 23*SPRITE_SIZE*2 - 10
+			title_x = self.screen.get_width() // 2 - self.title_image.get_width() // 2
+			title_y = 20
 
-		cur_x = 629
-		cur_y = 535
+		if SIZE == SIZE_SMALL:
+			cur_x = 16*SPRITE_SIZE*2-1
+			cur_y = 18*SPRITE_SIZE*2 + 5
+			title_y = -120
+			title_x = self.screen.get_width() // 2 - self.title_image.get_width() // 2
+		
+		title_origin = (title_x, title_y)
+
+		self.screen.blit(self.title_image, title_origin)
 
 		rect_w = self.font.size("CONTINUE GAME")[0]
 
@@ -4618,10 +5432,9 @@ class PyGameView(object):
 					 (TITLE_SELECTION_EXIT, "QUIT")])
 
 		for o, w in opts:
-
 			cur_color = (255, 255, 255)
 			self.draw_string(w, self.screen, cur_x, cur_y, cur_color, mouse_content=o, content_width=rect_w)
-			cur_y += self.linesize + 2
+			cur_y += self.linesize+2
 
 		cur_y += 3*self.linesize
 
@@ -4630,6 +5443,13 @@ class PyGameView(object):
 		#self.draw_string("Loses:  %d" % SteamAdapter.get_stat('l'), self.screen, cur_x, cur_y)
 		cur_y += self.linesize
 		#self.draw_string("Streak: %d" % SteamAdapter.get_stat('s'), self.screen, cur_x, cur_y)
+
+		# Draw border of tiles
+		tileset = 'stone'
+		big_tiles = [pygame.transform.scale(tile, (32, 32)) for tile in self.wall_tiles[tileset]]
+
+		screen_tile_height = self.screen.get_height() // (SPRITE_SIZE*2)
+		screen_tile_width = self.screen.get_width() // (SPRITE_SIZE*2)
 
 	def process_title_input(self):
 		selection = None
@@ -4651,16 +5471,21 @@ class PyGameView(object):
 
 				if direction:
 					self.play_sound('menu_confirm')
-					self.examine_target += direction
-					self.examine_target = min(self.examine_target, TITLE_SELECTION_MAX)
+					
+					if self.examine_target is None:
+						self.examine_target = 0
+					else:
 
-					min_selection = TITLE_SELECTION_LOAD if can_continue_game() else TITLE_SELECTION_NEW
-					self.examine_target = max(min_selection, self.examine_target)
+						self.examine_target += direction
+						self.examine_target = min(self.examine_target, TITLE_SELECTION_MAX)
 
-					# do not allow selection of new game no savegame exists
-					if can_continue_game():
-						if self.examine_target == TITLE_SELECTION_NEW:
-							self.examine_target += direction
+						min_selection = TITLE_SELECTION_LOAD if can_continue_game() else TITLE_SELECTION_NEW
+						self.examine_target = max(min_selection, self.examine_target)
+
+						# do not allow selection of new game no savegame exists
+						if can_continue_game():
+							if self.examine_target == TITLE_SELECTION_NEW:
+								self.examine_target += direction
 
 			if evt.type == pygame.MOUSEBUTTONDOWN:
 
@@ -4675,15 +5500,24 @@ class PyGameView(object):
 
 		dx, dy = self.get_mouse_rel()
 		if dx or dy:
+			mouse_is_over_option = False
 			for r, o in self.ui_rects:
 				if r.collidepoint(m_loc):
 					if self.examine_target != o:
 						self.play_sound('menu_confirm')
 					self.examine_target = o
+					mouse_is_over_option = True
+			if not mouse_is_over_option:
+				self.examine_target = None
 
 		if selection == TITLE_SELECTION_NEW:
-			self.state = STATE_PICK_MODE
-			self.examine_target = 0
+			
+			# TEMP: do not pick mode, just start new game
+			#self.state = STATE_PICK_MODE
+			#self.examine_target = 0
+			self.new_game()
+			#
+
 		if selection == TITLE_SELECTION_ABANDON:
 			self.open_abandon_prompt()
 		if selection == TITLE_SELECTION_OPTIONS:
@@ -4919,7 +5753,14 @@ class PyGameView(object):
 
 	def draw_message(self):
 		cur_y = self.border_margin
-		for line in self.message.split('\n'):
+
+		lines = self.message.split('\n')
+
+		# If centering the message, center vertically too
+		if self.center_message:
+			cur_y = self.screen.get_height() // 2 - self.linesize * len(lines) // 2 
+
+		for line in lines:
 			if line:
 				self.draw_string(line, self.screen, 0, cur_y, center=self.center_message, content_width=self.screen.get_width())
 			cur_y += self.linesize
@@ -4960,7 +5801,7 @@ class PyGameView(object):
 
 		if stype == 'sound':
 			for channel, base_volume in self.base_volumes.items():
-				channel.set_volume(base_volume * new_volume / 100.0)
+				channel.set_volume(base_volume * new_volume / 165.0)
 
 		self.save_options()
 
@@ -5175,6 +6016,8 @@ class PyGameView(object):
 				self.combat_log_turn -= direction
 		# Trying to go to next level
 		elif self.combat_log_turn > max_turn:
+
+			
 			# Go to next level if possible
 			if self.combat_log_level < max_level:
 				self.combat_log_level += 1
@@ -5220,9 +6063,24 @@ class PyGameView(object):
 
 		self.center_message = True
 		self.state = STATE_MESSAGE
-		self.play_music('battle_2')
+
+		self.play_battle_music()
+		
 		self.make_level_screenshot()
 		SteamAdapter.set_presence_level(1)
+
+	def play_battle_music(self, num=None):
+		if not self.track_queue:
+			self.track_queue = [i for i in range(2, 11)]
+			self.track_queue.remove(4)
+			self.track_queue.remove(5)
+			random.shuffle(self.track_queue)
+			num = 1
+		else:
+			num = self.track_queue.pop()
+
+		song_name = 'battle_%d' % num
+		self.play_music(song_name)
 
 	def make_level_screenshot(self):
 
@@ -5283,7 +6141,7 @@ class PyGameView(object):
 		self.draw_panel(self.examine_display)
 		for line in lines:
 			num_lines = self.draw_wrapped_string(line, self.examine_display, cur_x, cur_y, width=self.examine_display.get_width() - (self.border_margin*2), indent=True)
-			cur_y += num_lines * self.linesize
+			cur_y += max(1, num_lines) * self.linesize
 
 	def make_game_end_screenshot(self):
 
@@ -5305,9 +6163,9 @@ class PyGameView(object):
 		self.game = continue_game(filename=filename)
 		self.state = STATE_LEVEL
 		if self.game.level_num != LAST_LEVEL:
-			self.play_music('battle_2')
+			self.play_battle_music()
 		else:
-			self.play_music('mordred_theme')
+			self.play_music('boss_theme')
 
 	def return_to_title(self):
 		self.game = None
@@ -5322,7 +6180,7 @@ class PyGameView(object):
 		else:
 			self.examine_target = TITLE_SELECTION_NEW
 
-		self.play_music('battle_1')
+		self.play_music('title_theme')
 
 		SteamAdapter.set_presence_menu()
 
@@ -5347,10 +6205,10 @@ class PyGameView(object):
 
 			if not self.gameover_tiles:
 				break
-
+				
 			x, y = self.gameover_tiles.pop()
 			rect = (x*SPRITE_SIZE*2 + self.character_display.get_width(),
-					y*SPRITE_SIZE*2,
+					y*SPRITE_SIZE*2 + 2*self.v_margin,
 					2*SPRITE_SIZE,
 					2*SPRITE_SIZE)
 
@@ -5358,16 +6216,26 @@ class PyGameView(object):
 
 		if not self.gameover_tiles:
 			if self.game.victory:
-				cur_y = self.screen.get_height() // 2 - 200
-				for line in text.victory_text.split('\n'):
+				
+				lines = text.victory_text.split('\n')
+				content_size = self.victory_image.get_height() + (self.linesize * len(lines))
+				cur_y = self.screen.get_height() // 2 - content_size // 2
+
+				victory_image_x = self.screen.get_width() // 2 - self.victory_image.get_width() // 2
+				self.screen.blit(self.victory_image, (victory_image_x, cur_y))
+
+				cur_y += self.linesize + self.victory_image.get_height()
+
+				for line in lines:
 					if line:
 						self.draw_string(line, self.screen, 0, cur_y, center=True, content_width=self.screen.get_width())
 					cur_y += self.linesize
 
 			else:
-				end_message = "DEFEATED"
-				self.draw_string(end_message, self.screen, self.screen.get_width() // 2 - (self.font.size(end_message)[0] // 2), self.screen.get_height() // 2 - 100)
-			
+
+				cur_y = self.screen.get_height() // 2 - self.defeat_image.get_height() // 2
+				defeat_image_x = self.screen.get_width() // 2 - self.victory_image.get_width() // 2
+				self.screen.blit(self.defeat_image, (defeat_image_x, cur_y))
 
 	def run(self):
 
@@ -5389,7 +6257,7 @@ class PyGameView(object):
 			if idle_subframe >= SUB_FRAMES[ANIM_IDLE]:
 				idle_subframe = 0
 				idle_frame += 1
-				idle_frame = idle_frame % 2
+				idle_frame = idle_frame % 100000
 
 
 			self.clock.tick(30)
@@ -5405,6 +6273,11 @@ class PyGameView(object):
 				if not keys[repeat_key]:
 					del self.repeat_keys[repeat_key]
 
+			for sound in list(self.sound_cooldowns.keys()):
+				self.sound_cooldowns[sound] -= 1
+				if self.sound_cooldowns[sound] <= 0:
+					del(self.sound_cooldowns[sound])
+
 			for event in self.events:
 				if event.type == pygame.QUIT:
 					if self.game and self.game.p1.is_alive():
@@ -5415,12 +6288,15 @@ class PyGameView(object):
 				if event.type == pygame.KEYDOWN and event.key not in self.repeat_keys:
 					for bind in [KEY_BIND_LEFT, KEY_BIND_UP_LEFT, KEY_BIND_UP, KEY_BIND_UP_RIGHT,
 								 KEY_BIND_RIGHT, KEY_BIND_DOWN_RIGHT, KEY_BIND_DOWN, KEY_BIND_DOWN_LEFT,
-								 KEY_BIND_PASS]:
+								 KEY_BIND_PASS, KEY_BIND_FF]:
 						if event.key in self.key_binds[bind]:
 							self.repeat_keys[event.key] = time.time() + REPEAT_DELAY
 
 				if event.type == pygame.VIDEORESIZE:
 					self.resize_window(event)
+
+				if event.type == MUSIC_OVER_EVENT:
+					self.on_music_end()
 
 			if profile:
 				import cProfile
@@ -5431,21 +6307,24 @@ class PyGameView(object):
 				
 				pr.enable()
 
-			self.ui_rects = []
 
 			self.mouse_dx, self.mouse_dy = pygame.mouse.get_rel()
 			
 			# Reset examine target if mouse was moved and not in any ui rects
 			if self.mouse_dy or self.mouse_dx:
-				mx, my = self.get_mouse_pos()
-				if self.state == STATE_TITLE:
-					pass
-				elif self.state == STATE_LEVEL and mx > self.h_margin:
-					pass
-				elif self.state == STATE_REBIND:
-					pass
-				else:
-					self.examine_target = None
+				mouse_in_rect = any(r.collidepoint(pygame.mouse.get_pos()) for r, _ in self.ui_rects)
+				if not mouse_in_rect:
+					mx, _ = self.get_mouse_pos()
+					if self.state == STATE_TITLE:
+						pass
+					elif self.state == STATE_LEVEL and mx > self.h_margin:
+						pass
+					elif self.state == STATE_REBIND:
+						pass
+					else:
+						self.examine_target = None
+
+			self.ui_rects = []
 
 			self.frameno += 1
 			
@@ -5513,7 +6392,7 @@ class PyGameView(object):
 
 				if self.game and self.game.deploying and not self.deploy_target:
 					self.deploy_target = Point(self.game.p1.x, self.game.p1.y)
-					self.tab_targets = [t for t in self.game.next_level.iter_tiles() if isinstance(t.prop, Portal)]
+					self.tab_targets = [t for t in self.game.next_level.iter_tiles() if isinstance(t.prop, Portal) or isinstance(t.prop, Shop)]
 
 				self.process_level_input()
 

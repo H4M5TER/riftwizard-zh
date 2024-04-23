@@ -1,10 +1,42 @@
 from Level import *
 
+def get_spawn_min_max(difficulty):
+
+	spawn_levels = [
+		(1, 1), # 1
+		(1, 2), # 2
+		(2, 2), # 3 
+		(2, 3), # 4
+		(2, 3), # 5 
+		(2, 4), # 6
+		(3, 4), # 7
+		(3, 4), # 8
+		(3, 5), # 9
+		(3, 5), # 10
+		(4, 5), # 11
+		(4, 5), # 12
+		(5, 6), # 13
+		(5, 6), # 14
+		(6, 7), # 15
+		(6, 7), # 16
+		(7, 7), # 17
+		(8, 8), # 18
+		(8, 9), # 19
+		(9, 9), # 20
+	]
+
+
+	# This formula is weird and appears to do very strange things but im not going to change it now because balance is good
+	index = min(difficulty - 1, len(spawn_levels) - 1)
+
+	min_level, max_level = spawn_levels[index]
+	return min_level, max_level
+
 class SimpleMeleeAttack(Spell):
 
 	def __init__(self, damage=1, buff=None, buff_duration=0, damage_type=Tags.Physical, onhit=None, attacks=1, trample=False, drain=False):
 		Spell.__init__(self)
-		self.name = "Melee"
+		self.name = "Melee Attack"
 		self.range = 1.5
 		self.melee = True
 		self.damage = damage
@@ -30,6 +62,7 @@ class SimpleMeleeAttack(Spell):
 					x = target.x
 					y = target.y
 
+			# Deal the damage
 			dealt = self.caster.level.deal_damage(x, y, self.get_stat('damage'), self.damage_type, self)
 			if self.drain:
 				self.caster.deal_damage(-dealt, Tags.Heal, self)
@@ -37,8 +70,10 @@ class SimpleMeleeAttack(Spell):
 			if unit and unit.is_alive():
 				if self.buff:		
 					unit.apply_buff(self.buff(), self.buff_duration)
-				if self.trample:
-					
+				
+			if unit:
+				if self.trample and unit.can_teleport():
+
 					trample_points = [p for p in self.caster.level.get_adjacent_points(Point(x, y ), check_unit=True, filter_walkable=True)] + [None]
 					p = random.choice(trample_points)
 					if p:
@@ -80,8 +115,22 @@ class SimpleRangedAttack(Spell):
 			if isinstance(damage_type, Tag):
 				if radius:
 					self.name = "%s Ball" % damage_type.name
+				elif beam:
+					self.name = "%s Beam" % damage_type.name
 				else:
 					self.name = "%s Bolt" % damage_type.name
+
+		if not proj_name:
+			if damage_type == Tags.Lightning:
+				proj_name = 'lightning_bolt'
+			if damage_type == Tags.Fire:
+				proj_name = 'fire_bolt'
+			if damage_type == Tags.Ice:
+				proj_name = 'ice_bolt'
+			if damage_type == Tags.Arcane:
+				proj_name = 'arcane_bolt'
+			if damage_type == Tags.Physical:
+				proj_name = 'physical_bolt'
 
 		if not self.name:
 			name = "Ranged Attack"
@@ -264,6 +313,10 @@ class SimpleCurse(Spell):
 			self.target_allies = True
 		self.description = "Applies %s for %d turns" % (buff().name, buff_duration)
 		
+	def can_threaten(self, x, y):
+		if self.target_allies:
+			return False
+		return Spell.can_cast(self, x, y)
 
 	def can_cast(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
@@ -286,41 +339,50 @@ class SimpleCurse(Spell):
 
 class SimpleSummon(Spell):
 
-	def __init__(self, spawn_func, num_summons=1, cool_down=0, duration=0, max_channel=0, global_summon=False, path_effect=None):
+	def __init__(self, spawn_func, num_summons=1, cool_down=0, duration=0, max_channel=0, global_summon=False, path_effect=None, sort_dist=False, radius=3):
 		Spell.__init__(self)
 		
 		self.duration = duration
+		self.example_monster = spawn_func()
 
-		spawn_name = spawn_func().name
-		self.name = "Summon %s" % spawn_name
 		self.num_summons = num_summons
-		if num_summons > 1:
-			self.name += 's'
-
-		self.cool_down = cool_down
-
-		if self.duration:
-			spawn_name = "temporary " + spawn_name
-
-		if num_summons == 1:
-			self.description = "Summons a %s" % spawn_name
-		else:
-			self.description = "Summons %d %ss" % (self.num_summons, spawn_name)
-
 		self.global_summon = global_summon
-		if self.global_summon:
-			self.description = " at a random location on the map"
-
-		self.spawn_func = spawn_func
-		self.max_channel = max_channel
-		if self.max_channel:
-			self.description = "Can be channeled for %d turns" % self.max_channel
+		self.cool_down = cool_down
 
 		# How close to an enemy the ai needs to get the target
 		self.ai_cast_radius = 2
 
+		self.sort_dist = sort_dist
+
 		self.path_effect = path_effect
 
+		self.radius = radius
+		self.spawn_func = spawn_func
+		self.max_channel = max_channel
+
+		self.calc_text()
+
+	def calc_text(self):
+		spawn_name = self.spawn_func().name
+
+		self.name = "Summon %s" % spawn_name
+		if self.num_summons > 1:
+			self.name += 's'
+
+		if self.duration:
+			spawn_name = "temporary " + spawn_name
+
+		if self.num_summons == 1:
+			self.description = "Summons a %s" % spawn_name
+		else:
+			self.description = "Summons %d %ss" % (self.num_summons, spawn_name)
+
+		if self.global_summon:
+			self.description += " at a random location on the map"
+
+		if self.max_channel:
+			self.description += "\nCan be channeled for %d turns" % self.max_channel
+		
 	def on_init(self):
 		self.range = 0
 
@@ -334,13 +396,7 @@ class SimpleSummon(Spell):
 			return self.get_corner_target(self.ai_cast_radius)
 
 	def cast(self, x, y, channel_cast=False):
-		if self.global_summon:
-			ex = self.spawn_func()
-			targets = [t for t in self.caster.level.iter_tiles() if self.caster.level.can_stand(t.x, t.y, ex)]
-			if targets:
-				target = random.choice(targets)
-				x = target.x
-				y = target.y
+
 
 		if self.max_channel and not channel_cast:
 			self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), self.max_channel)
@@ -350,7 +406,17 @@ class SimpleSummon(Spell):
 			unit = self.spawn_func()
 			if self.duration:
 				unit.turns_to_death = self.duration
-			self.summon(unit, Point(x, y), sort_dist=False)
+
+			if self.global_summon:
+				ex = self.spawn_func()
+
+				targets = [t for t in self.caster.level.iter_tiles() if self.caster.level.can_stand(t.x, t.y, ex)]
+				if targets:
+					target = random.choice(targets)
+					x = target.x
+					y = target.y
+
+			self.summon(unit, Point(x, y), sort_dist=self.sort_dist, radius=self.radius)
 			if self.path_effect:
 				self.owner.level.show_path_effect(self.owner, unit, self.path_effect, minor=True)
 			yield
@@ -432,7 +498,8 @@ class HealAlly(Spell):
 		units_in_range = self.caster.level.get_units_in_ball(Point(self.caster.x, self.caster.y), self.range)
 		units_in_range = [u for u in units_in_range if not self.caster.level.are_hostile(self.caster, u)]
 		units_in_range = [u for u in units_in_range if self.can_cast(u.x, u.y)]
-		units_in_range = [u for u in units_in_range if not u.is_player_controlled]
+		units_in_range = [u for u in units_in_range if u.resists[Tags.Heal] < 100]
+		#units_in_range = [u for u in units_in_range if not u.is_player_controlled]
 
 		if self.tag:
 			units_in_range = [u for u in units_in_range if self.tag in u.tags]
@@ -483,16 +550,29 @@ class BlizzardCloud(Cloud):
 		self.name = "Blizzard"
 		self.asset_name = 'ice_cloud'
 		self.source = None
+		self.spellcast = None
 
 	def get_description(self):
 		return "Each turn, deals [%d_ice:ice] damage and has a 50%% chance to freeze to any unit standing inside of it.\nExpires in %d turns." % (self.damage, self.duration)
 
 	def on_advance(self):
 		self.level.deal_damage(self.x, self.y, self.damage, Tags.Ice, self.source or self)
+		if self.spellcast and random.random() < 0.25:
+			if self.source:
+				spell = self.source.caster.get_or_make_spell(self.spellcast)
+				self.source.caster.level.act_cast(self.source.owner, spell, self.x, self.y, pay_costs=False)
+			else:
+				spell = self.spellcast()
+				self.source.caster.level.act_cast(self.source.owner, spell, self.x, self.y, pay_costs=False)
+
 		unit = self.level.get_unit_at(self.x, self.y)
 		if unit:
 			if random.random() > .5:
 				unit.apply_buff(FrozenBuff(), 1)
+
+	def on_damage(self, dtype):
+		if dtype == Tags.Fire:
+			self.kill()
 
 class FireCloud(Cloud):
 
@@ -688,14 +768,17 @@ class TrollRegenBuff(Buff):
 
 class DamageAuraBuff(Buff):
 
-	def __init__(self, damage, damage_type, radius, friendly_fire=False, melt_walls=False):
-		Buff.__init__(self)
+	def __init__(self, damage, damage_type, radius, custom_name=None, friendly_fire=False, melt_walls=False):
+		
 		self.damage = damage
 		self.damage_type = damage_type
 		self.radius = radius
 		self.friendly_fire = friendly_fire
 		self.source = None
-		if isinstance(self.damage_type, Tag):
+
+		if custom_name:
+			self.name = custom_name
+		elif isinstance(self.damage_type, Tag):
 			self.name = "%s Aura" % self.damage_type.name
 		else:
 			self.name = "Damage Aura" 
@@ -704,42 +787,46 @@ class DamageAuraBuff(Buff):
 		self.damage_dealt = 0
 
 		self.melt_walls = melt_walls
+		Buff.__init__(self)
+
+	def on_hit(self, unit):
+		# For derived to override
+		pass
 
 	def on_advance(self):
 
-		effects_left = 7
+		for p in self.owner.level.get_points_in_ball(self.owner.x, self.owner.y, self.radius):
 
-		for unit in self.owner.level.get_units_in_ball(Point(self.owner.x, self.owner.y), self.radius):
-			if unit == self.owner:
-				continue
-
-			if not self.friendly_fire and not self.owner.level.are_hostile(self.owner, unit):
-				continue
+			unit = self.owner.level.get_unit_at(p.x, p.y)
 
 			if isinstance(self.damage_type, list):
 				damage_type = random.choice(self.damage_type)
 			else:
 				damage_type = self.damage_type
-			self.damage_dealt += unit.deal_damage(self.damage, damage_type, self.source or self)
-			effects_left -= 1
 
-		# Show some graphical indication of this aura if it didnt hit much
-		points = self.owner.level.get_points_in_ball(self.owner.x, self.owner.y, self.radius)
-		points = [p for p in points if not self.owner.level.get_unit_at(p.x, p.y)]
-		random.shuffle(points)
-		for i in range(effects_left):
-			if not points:
-				break
-			p = points.pop()
-			if isinstance(self.damage_type, list):
-				damage_type = random.choice(self.damage_type)
+			if unit:
+				if unit == self.owner:
+					continue
+
+				if not self.friendly_fire and not self.owner.level.are_hostile(self.owner, unit):
+					continue
+
+
+				self.damage_dealt += unit.deal_damage(self.damage, damage_type, self.source or self)
+				
+				self.on_hit(unit)
 			else:
-				damage_type = self.damage_type
-			self.owner.level.deal_damage(p.x, p.y, 0, damage_type, source=self.source or self)
+				if not self.owner.level.tiles[p.x][p.y].can_see:
+					continue
 
-			# Wall melting
-			if self.melt_walls and not self.owner.level.tiles[p.x][p.y].can_see:
-				self.owner.level.make_floor(p.x, p.y)
+				# Only show 50% of tiles?
+				if random.random() < .5:
+					continue
+
+				self.owner.level.show_effect(p.x, p.y, damage_type, minor=True)
+
+		
+		# TODO- make wall melting work again
 
 	def can_threaten(self, x, y):
 		return distance(self.owner, Point(x, y)) <= self.radius
@@ -751,7 +838,7 @@ class DamageAuraBuff(Buff):
 
 class HealAuraBuff(Buff):
 
-	def __init__(self, heal, radius, whole_map=False, can_heal_player=False):
+	def __init__(self, heal, radius, whole_map=False, can_heal_player=True):
 		Buff.__init__(self)
 		self.name = "Healing Aura"
 		self.color = Tags.Heal.color
@@ -803,7 +890,7 @@ class EssenceAuraBuff(Buff):
 
 class LeapAttack(Spell):
 
-	def __init__(self, damage, range, damage_type=Tags.Physical, is_leap=True, charge_bonus=0, is_ghost=False):
+	def __init__(self, damage, range, damage_type=Tags.Physical, is_leap=True, charge_bonus=0, is_ghost=False, buff=None, buff_duration=0):
 		Spell.__init__(self)
 		self.damage = damage
 		self.damage_type = damage_type
@@ -813,9 +900,20 @@ class LeapAttack(Spell):
 		self.is_ghost = is_ghost
 		self.name = "Pounce" if self.is_leap else "Charge"
 		self.requires_los = not self.is_ghost
+		self.buff = buff
+		self.buff_duration = buff_duration
+		self.buff_name = buff().name if buff else None
 
 	def get_leap_dest(self, x, y):
+		potential_targets = []
 		target_points = list(self.caster.level.get_adjacent_points(Point(x, y), check_unit=True))
+
+		# Be willing to leap next to 3x3 or 5x5 monsters
+		target_unit = self.owner.level.get_unit_at(x, y)
+		if target_unit and target_unit.radius:
+			for p in target_unit.iter_occupied_points():
+				target_points.extend(self.caster.level.get_adjacent_points(p, check_unit=True))
+
 		random.shuffle(target_points)
 		for point in target_points:
 			if point == Point(x, y):
@@ -855,13 +953,19 @@ class LeapAttack(Spell):
 	def cast(self, x, y):
 
 		# Projectile
-
 		leap_dest = self.get_leap_dest(x, y)
+		if not leap_dest:
+			return
+
 		path = self.caster.level.get_points_in_line(Point(self.caster.x, self.caster.y), Point(leap_dest.x, leap_dest.y), find_clear=not self.is_ghost)
 		for point in path:
 			self.caster.level.leap_effect(point.x, point.y, self.damage_type.color, self.caster)
 			yield
 		
+		unit = self.caster.level.get_unit_at(x, y)
+		if self.buff and unit:
+			unit.apply_buff(self.buff(), self.buff_duration)
+
 		self.caster.level.act_move(self.caster, leap_dest.x, leap_dest.y, teleport=True)
 
 		charge_bonus = self.charge_bonus * (len(path) - 2)
@@ -1001,6 +1105,44 @@ class MonsterTeleport(Spell):
 	def cast_instant(self, x, y):
 		randomly_teleport(self.caster, self.range, flash=True, requires_los=self.requires_los)
 
+class MonsterLeap(Spell):
+
+	def on_init(self):
+		self.name = "Leap"
+		self.description = "Instantly moves to the target tile"
+		self.range = 6
+		self.requires_los = True
+		self.cool_down = 5
+
+	def get_ai_target(self):
+		choices = [t for t in self.caster.level.get_tiles_in_ball(self.caster.x, self.caster.y, self.get_stat('range')) if self.caster.level.can_stand(t.x, t.y, self.caster)]
+		choices = [t for t in choices if distance(self.caster, t) >= 2] # Do not leap one square
+		if self.requires_los:
+			choices = [t for t in choices if self.caster.level.can_see(self.caster.x, self.caster.y, t.x, t.y)]
+
+		if not choices:
+			return None
+
+		return random.choice(choices)
+
+	def can_threaten(self, x, y):
+		return False
+
+	def cast(self, x, y):
+
+		if not self.caster.level.can_stand(x, y, self.caster):
+			return
+
+		path = self.caster.level.get_points_in_line(Point(self.caster.x, self.caster.y), Point(x, y), find_clear=True)
+
+		for point in path:
+			self.caster.level.leap_effect(point.x, point.y, Tags.Physical.color, self.caster)
+			yield
+
+		self.caster.level.act_move(self.caster, x, y, teleport=True)
+
+
+
 def randomly_teleport(unit, radius, flash=True, requires_los=False):
 		blink_targets = [p for p in unit.level.get_points_in_ball(unit.x, unit.y, radius) if unit.level.can_stand(p.x, p.y, unit)]
 		if not blink_targets:
@@ -1044,7 +1186,7 @@ class RegenBuff(Buff):
 
 class ShieldRegenBuff(Buff):
 
-	def __init__(self, shield_max, shield_freq):
+	def __init__(self, shield_max, shield_freq=1):
 		Buff.__init__(self)
 		self.shield_max = shield_max
 		self.shield_freq = shield_freq
@@ -1070,7 +1212,7 @@ class ReincarnationBuff(Buff):
 		self.lives = lives
 		self.owner_triggers[EventOnDeath] = self.on_death
 		self.name = "Reincarnation %d" % self.lives
-		self.buff_type = BUFF_TYPE_BLESS
+		self.buff_type = BUFF_TYPE_PASSIVE
 		self.duration = 0
 		self.turns_to_death = None
 		self.shields = 0
@@ -1106,6 +1248,7 @@ class ReincarnationBuff(Buff):
 				self.owner.remove_buff(b)
 
 			self.lives -= 1
+			self.old_pos = Point(self.owner.x, self.owner.y)
 			self.owner.level.queue_spell(self.respawn())
 			self.name = "Reincarnation %d" % self.lives
 
@@ -1125,6 +1268,15 @@ class ReincarnationBuff(Buff):
 			self.owner.cur_hp = self.owner.max_hp
 			self.owner.turns_to_death = self.turns_to_death
 			self.owner.level.add_obj(self.owner, dest.x, dest.y)
+
+			self.owner.level.leap_effect(self.old_pos.x, self.old_pos.y, Tags.Holy.color, self.owner)
+			
+			yield
+			for p in self.owner.level.get_points_in_line(self.old_pos, dest)[1:-1]:
+				self.owner.level.show_effect(p.x, p.y, Tags.Holy, minor=True)
+			yield
+
+			self.owner.level.leap_effect(dest.x, dest.y, Tags.Holy.color, self.owner)
 
 		if self.lives == 0:
 			self.owner.remove_buff(self)
@@ -1182,6 +1334,28 @@ def remove_buff(caster, target):
 	if target.is_alive():
 		target.remove_buff(to_remove)
 
+class LichSealSoulSpell(Spell):
+
+	def on_init(self):
+		self.name = "Soul Jar"
+		self.description = "Summon a soul jar.  The caster is unkillable while the soul jar exists.  Limit one jar per lich."
+		self.range = 0
+		self.cool_down = 20
+
+	def can_cast(self, x, y):
+		return not self.caster.has_buff(Soulbound) and Spell.can_cast(self, x, y)
+
+	def cast_instant(self, x, y):
+
+		phylactery = Unit()
+		phylactery.name = 'Soul Jar'
+		phylactery.max_hp = 6
+		phylactery.stationary = True
+		phylactery.tags = [Tags.Construct, Tags.Dark]
+
+		if self.summon(phylactery, Point(x, y)):
+			self.caster.apply_buff(Soulbound(phylactery))
+
 class Soulbound(Buff):
 
 	def __init__(self, guardian):
@@ -1213,26 +1387,6 @@ class Soulbound(Buff):
 		if evt.unit == self.guardian:
 			self.owner.remove_buff(self)
 
-
-class PainMirror(Buff):
-
-	def __init__(self, source=None):
-		Buff.__init__(self)
-		self.source = source
-
-	def on_init(self):
-		self.name = "Pain Mirror"
-		self.owner_triggers[EventOnDamaged] = self.on_damage
-		self.color = Tags.Dark.color
-
-	def on_damage(self, event):
-		self.owner.level.queue_spell(self.reflect(event.damage))
-
-	def reflect(self, damage):
-		for u in self.owner.level.get_units_in_los(self.owner):
-			if are_hostile(self.owner, u):
-				u.deal_damage(damage, Tags.Dark, self.source or self)
-				yield
 
 class BloodrageBuff(Buff):
 	
@@ -1308,6 +1462,74 @@ class Thorns(Buff):
 		unit.deal_damage(self.damage, self.dtype, self)
 		yield
 
+class RetaliationBuff(Buff):
+
+	def __init__(self, damage, dtype):
+		self.damage = damage
+		self.dtype = dtype
+		Buff.__init__(self)
+		self.name = "%s Retaliation" % dtype.name
+		self.description = "Deals %d %s damage to any unit that harms it" % (self.damage, self.dtype.name)
+
+	def on_init(self):
+		self.owner_triggers[EventOnDamaged] = self.on_damage
+
+	def on_damage(self, evt):
+		if not evt.source:
+			return
+
+		if not evt.source.owner:
+			return
+
+		if evt.source.owner == self.owner:
+			return
+
+		# Infinite loop prevention perhaps
+		if not self.owner.is_alive():
+			return
+
+		if isinstance(evt.source, RetaliationBuff):
+			return
+
+		self.owner.level.queue_spell(self.do_damage(evt.source.owner))
+
+	def do_damage(self, unit):
+		if not unit.is_alive():
+			return
+
+		# Show path
+		self.owner.level.show_path_effect(self.owner, unit, self.dtype, minor=True)
+
+		unit.deal_damage(self.damage, self.dtype, self)
+		yield
+
+
+
+
+class ChanceToBecome(Buff):
+
+	def __init__(self, spawner, chance, name=None):
+		self.spawner = spawner
+		self.chance = chance
+		self.spawn_name = name
+		Buff.__init__(self)
+
+	def on_init(self):
+		name = self.spawn_name if self.spawn_name else self.spawner().name
+		self.description = "Each turn has a %d%% chance to become a %s" % (self.chance*100, name)
+
+	def on_advance(self):
+		if random.random() > self.chance:
+			return
+
+		self.owner.kill(trigger_death_event=False)
+		new_unit = self.spawner()
+		new_unit.team = self.owner.team
+		new_unit.source = self.owner.source
+		p = self.owner.level.get_summon_point(self.owner.x, self.owner.y, radius_limit=8, flying=new_unit.flying)
+		if p:
+			self.owner.level.add_obj(new_unit, p.x, p.y)
+
 class MatureInto(Buff):
 
 	def __init__(self, spawner, duration):
@@ -1344,6 +1566,9 @@ class SpawnOnDeath(Buff):
 		self.apply_bonuses = True
 
 	def on_death(self, evt):
+		self.owner.level.queue_spell(self.spawn())
+
+	def spawn(self):
 		for i in range(self.num_spawns):
 			unit = self.spawner()
 			# Inherit source- this propogates minion bonuses from shrines and skills
@@ -1351,14 +1576,17 @@ class SpawnOnDeath(Buff):
 				unit.source = self.owner.source
 				apply_minion_bonuses(self.owner.source, unit)
 			self.summon(unit)
+			yield
 
 class RespawnAs(Buff):
 
-	def __init__(self, spawner):
+	def __init__(self, spawner, name=None):
 		Buff.__init__(self)
 		self.spawner = spawner
-		self.spawn_name = None
-		self.get_tooltip() # populate name
+		self.spawn_name = name
+		if not self.spawn_name:
+			self.spawn_name = self.spawner().name
+			
 		self.name = "Respawn As %s" % self.spawn_name
 
 	def on_init(self):
@@ -1368,22 +1596,61 @@ class RespawnAs(Buff):
 		if self.owner.cur_hp <= 0:
 			# Supress death events- this creature isn't really dying, its respawning
 			self.owner.kill(trigger_death_event=False)
-			self.respawn()
+
+			self.owner.level.queue_spell(self.respawn())
 
 	def respawn(self):
 		new_unit = self.spawner()
+
+
 		new_unit.team = self.owner.team
 		new_unit.source = self.owner.source
 		new_unit.parent = self.owner
+		
+		if self.owner.source:
+			new_unit.source = self.owner.source
+			apply_minion_bonuses(self.owner.source, new_unit)
+
 		p = self.owner.level.get_summon_point(self.owner.x, self.owner.y, radius_limit=8, flying=new_unit.flying)
 		if p:
 			self.owner.level.add_obj(new_unit, p.x, p.y)
+			
+			# If the spawner is not a new monster, but an old monster that was removed from the map or something, it might need to be refreshed
+			new_unit.refresh()
+
+		yield
 		
 
 	def get_tooltip(self):
 		if not self.spawn_name:
 			self.spawn_name = self.spawner().name
 		return "On reaching 0 hp, transforms into a %s" % self.spawn_name
+
+class SplittingBuff(Buff):
+	# A buff that makes a creature split into smaller versions of itself when killed
+
+	def __init__(self, spawner, children=2):
+		Buff.__init__(self)
+		self.spawner = spawner
+		self.owner_triggers[EventOnDeath] = self.on_death
+		self.children = children
+		self.child_example = spawner()
+		self.name = "Splitting"
+
+	def on_death(self, evt):
+		self.owner.level.queue_spell(self.split())
+
+	def split(self):
+		for i in range(self.children):
+			unit = self.spawner()
+			if unit.max_hp == 0:
+				return
+
+			self.summon(unit)
+			yield
+			
+	def get_tooltip(self):
+		return "On death, splits into %d smaller versions of itself" % self.children
 
 class SimpleBurst(Spell):
 
@@ -1455,13 +1722,9 @@ def spawn_webs(unit):
 
 
 def raise_skeleton(owner, unit, source=None):
-	if unit.has_been_raised:
-		return
 
 	if Tags.Living not in unit.tags:
 		return
-
-	unit.has_been_raised = True
 
 	skeleton = Unit()
 	skeleton.name = "Skeletal %s" % unit.name
@@ -1569,10 +1832,15 @@ def MonsterSpawner(spawn_func):
 	example_monster = spawn_func()
 	unit.sprite = example_monster.sprite
 	unit.sprite.color = Color(0, 0, 0)
-	unit.name = "%s Gate" % example_monster.name
-	unit.max_hp = 20
+
+	unit.name = "%s Spawner" % example_monster.name
+	unit.max_hp = 40
+
 	unit.sprite.bg_color = Color(255, 255, 255)
-	unit.buffs.append(Generator2Buff(spawn_func))
+	summon = SimpleSummon(spawn_func, cool_down=random.randint(7, 10), sort_dist=True)
+	summon.cool_down
+	unit.spells.append(summon)
+	unit.cool_downs[summon] = random.randint(5, 10)
 	unit.stationary = True
 	unit.is_lair = True
 	return unit
@@ -1807,6 +2075,7 @@ class FireProtection(Spell):
 				u.apply_buff(ResistFire(), self.get_stat('duration'))
 				yield
 
+
 class TeleportyBuff(Buff):
 
 	def __init__(self, radius=3.5, chance=.25, flash = None, hop=False):
@@ -1829,7 +2098,11 @@ class TeleportyBuff(Buff):
 		if self.owner.has_buff(ChannelBuff):
 			return
 
+		old = Point(self.owner.x, self.owner.y)
 		randomly_teleport(self.owner, self.radius, requires_los=self.hop)
+
+		for p in self.owner.level.get_points_in_line(old, self.owner)[:-1]:
+			self.owner.level.show_effect(p.x, p.y, Tags.Translocation, minor=True)
 
 	def get_tooltip(self):
 		moveword = "hop" if self.hop else "blink"
@@ -1898,3 +2171,58 @@ class Electrified(Buff):
 		self.stack_type	= STACK_INTENSITY
 		self.asset = ['status', 'amplified_lightning']
 		self.color = Tags.Lightning.color
+
+def drain_spell_charges(caster, target):
+	possible_spells = [s for s in target.spells if s.cur_charges > 0]
+	if possible_spells:
+		spell = random.choice(possible_spells)
+		spell.cur_charges = spell.cur_charges - 1
+	
+
+def grant_minion_spell(spell_class, unit, master, cool_down=1, pre_insert=True):
+	spell = spell_class()
+	spell.statholder = master
+	spell.caster = unit
+	spell.owner = unit
+
+	# Erase charges and add cooldown 
+	spell.max_charges = 0
+	spell.cur_charges = 0
+	spell.cool_down = cool_down
+
+	if pre_insert:
+		unit.spells.insert(0, spell)
+
+	# Return spell so further modifications can be made (range twiddling ect)
+	return spell
+
+
+class AdaptiveArmorResistBuff(Buff):
+
+	def __init__(self, tag, resist):
+		Buff.__init__(self)
+		self.buff_type = BUFF_TYPE_BLESS
+		self.stack_type = STACK_INTENSITY
+		self.name = "%s Armor" % tag.name
+		self.color = tag.color
+		self.resists[tag] = resist
+
+
+class AdaptiveArmorBuff(Buff):
+
+	def __init__(self, resist):
+		self.res_amt = resist
+		Buff.__init__(self)
+
+	def on_init(self):
+		self.name = "Adaptive Armor"
+		self.description = "On taking damage, gains %d%% resistance to that damage type for 1 turn." % self.res_amt
+		self.owner_triggers[EventOnDamaged] = self.on_damage
+
+	def on_damage(self, evt):
+		
+		# do not resist heals or whatever
+		if evt.damage <= 0:
+			return
+
+		self.owner.apply_buff(AdaptiveArmorResistBuff(evt.damage_type, self.res_amt), 1)

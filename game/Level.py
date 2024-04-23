@@ -17,7 +17,7 @@ TEAM_PLAYER = 0
 TEAM_ENEMY = 1
 TEAM_PREY = 2
 
-LAST_LEVEL = 25
+LAST_LEVEL = 21
 
 RANGE_GLOBAL = 50
 
@@ -26,6 +26,17 @@ ABORT_BUFF_APPLY = 99
 
 # Max advance time = 20 milliseconds
 MAX_ADVANCE_TIME = .02
+
+ITEM_SLOT_STAFF = 0
+ITEM_SLOT_ROBE = 1
+ITEM_SLOT_HEAD = 2
+ITEM_SLOT_GLOVES = 3
+ITEM_SLOT_BOOTS = 4
+ITEM_SLOT_AMULET = 5
+
+TILE_TYPE_FLOOR = 0
+TILE_TYPE_WALL = 1
+TILE_TYPE_CHASM = 2
 
 visual_mode = False
 def set_visual_mode(val):
@@ -129,6 +140,7 @@ EventOnDeath = namedtuple("EventOnDeath", "unit damage_event")
 EventOnPropEnter = namedtuple("EventOnPropEnter", "unit prop")
 EventOnPreDamaged = namedtuple("EventOnPreDamaged", "unit damage damage_type source")
 EventOnDamaged = namedtuple("EventOnDamaged", "unit damage damage_type source")
+EventOnHealed = namedtuple("EventOnHealed", "unit heal source")
 EventOnItemPickup = namedtuple("EventOnItemPickup", "item")
 EventOnBuffApply = namedtuple("EventOnBuffApply", "buff unit")
 EventOnBuffRemove = namedtuple("EventOnBuffRemove", "buff unit")
@@ -136,6 +148,7 @@ EventOnMoved = namedtuple("EventOnMoved", "unit x y teleport")
 EventOnUnitAdded = namedtuple("EventOnUnitAdded", "unit")
 EventOnUnitPreAdded = namedtuple("EventOnUnitPreAdded", "unit")
 EventOnPass = namedtuple("EventOnPass", "unit")
+EventOnSpendHP = namedtuple("EventOnSpendHP", "unit hp")
 
 class EventHandler():
 	# A system for dynamically registering and unregistering from global or entity scoped events
@@ -145,11 +158,11 @@ class EventHandler():
 
 	def __init__(self):
 		self._queue = []
-		self._handlers = defaultdict(lambda : defaultdict(lambda : set()))
+		self._handlers = defaultdict(lambda : defaultdict(list))
 
 	def register_global_trigger(self, event_type, handler):
 		assert(isinstance(event_type, type))
-		self._handlers[event_type][None].add(handler)
+		self._handlers[event_type][None].append(handler)
 
 	def unregister_global_trigger(self, event_type, handler):
 		assert(isinstance(event_type, type))
@@ -157,7 +170,7 @@ class EventHandler():
 
 	def register_entity_trigger(self, event_type, entity, handler):
 		assert(isinstance(event_type, type))
-		self._handlers[event_type][entity].add(handler)
+		self._handlers[event_type][entity].append(handler)
 
 	def unregister_entity_trigger(self, event_type, entity, handler):
 		assert(isinstance(event_type, type))
@@ -205,13 +218,26 @@ class Burst():
 		self.expand_diagonals = expand_diagonals if not burst_cone_params else True
 		self.ignore_walls = ignore_walls
 
+
 	def is_in_burst(self, p):
 
 		dist = distance(p, self.origin)
 		if dist > self.radius:
 			return False
 
-		angle = abs(get_min_angle(self.origin.x, 
+
+
+		if isinstance(self.origin, Unit):
+			# Take minimum of angle with each of the occupied points of the origin monster
+			angle = min(get_min_angle(o.x, 
+									  o.y, 
+									  self.burst_cone_params.target.x, 
+									  self.burst_cone_params.target.y, 
+									  p.x, 
+									  p.y) for o in self.origin.iter_occupied_points())
+
+		else:
+			angle = abs(get_min_angle(self.origin.x, 
 								  self.origin.y, 
 								  self.burst_cone_params.target.x, 
 								  self.burst_cone_params.target.y, 
@@ -222,12 +248,16 @@ class Burst():
 
 	def __iter__(self):
 
-		already_exploded = set([self.origin])
+		# Start with the origin point, or, with all the points of the origin unit
 		last_stage = set([self.origin])
 
-		# start with the center point obviously
+		if isinstance(self.origin, Unit):
+			last_stage = [u for u in self.origin.iter_occupied_points()]
+
+		already_exploded = set(last_stage)
+
 		if not self.burst_cone_params:
-			yield set([self.origin])
+			yield last_stage
 
 		for i in range(self.radius):
 			next_stage = set()
@@ -236,7 +266,10 @@ class Burst():
 				ball_radius = 1.5 if self.expand_diagonals else 1.1
 				next_stage.update(self.level.get_points_in_ball(point.x, point.y, ball_radius, diag=self.expand_diagonals))
 
+			# Remove already explored points from the next stage
 			next_stage.difference_update(already_exploded)
+
+			# Remove walls in non wall ignoring bursts
 			if not self.ignore_walls:
 				next_stage = [p for p in next_stage if self.level.tiles[p.x][p.y].can_see]
 
@@ -307,6 +340,7 @@ class Effect(object):
 		self.frames = frames
 		self.frames_left = frames
 		self.minor = False
+		self.speed = 1
 
 	def advance(self):
 		t = (self.frames - self.frames_left) / float(self.frames)
@@ -427,6 +461,9 @@ class Spell(object):
 		# AI targest allies instead of enemies if true
 		self.target_allies = False
 
+		# AI targets random valid empty targets
+		self.target_empty = False
+
 		self.diag_range = False
 
 		self.animate = True
@@ -477,6 +514,10 @@ class Spell(object):
 
 	def modify_test_level(self, level):
 		pass
+
+	# Override with objects that will appear in the tooltip when the mouse wheel is scrolled (Summons, buffs)
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades
 
 	def fmt_dict(self):
 		return {s: self.get_stat(s) for s in self.stats}
@@ -567,7 +608,15 @@ class Spell(object):
 		if self.self_target:
 			return self.caster if self.can_cast(self.caster.x, self.caster.y) else None
 
-		def is_good_target(u):
+		if self.target_empty:
+			candidates = [p for p in self.owner.level.get_points_in_ball(self.caster.x, self.caster.y, self.get_stat('range')) if self.can_cast(p.x, p.y)]
+			if candidates:
+				return random.choice(candidates)
+			else:
+				return None
+
+		def is_good_target(p):
+			u = self.owner.level.get_unit_at(p.x, p.y)
 			if not u:
 				return False
 			if bool(self.target_allies) == bool(self.caster.level.are_hostile(u, self.caster)):
@@ -579,11 +628,16 @@ class Spell(object):
 				else:
 					if u.resists[self.damage_type] >= 100:
 						return False
-			if not self.can_cast(u.x, u.y):
+			if not self.can_cast(p.x, p.y):
 				return False
 			return True
 
-		targets = [u for u in self.caster.level.units if is_good_target(u)]
+		targets = []
+		for u in self.caster.level.units:
+			for p in u.iter_occupied_points():
+				if is_good_target(p):
+					targets.append(p)
+
 		if not targets:
 			return None
 		else:
@@ -646,6 +700,9 @@ class Spell(object):
 
 	def can_pay_costs(self):
 		
+		if self.caster.is_stunned():
+			return False
+
 		# Can always cast items
 		if self.item:
 			return True
@@ -658,7 +715,7 @@ class Spell(object):
 				return False
 
 		if self.hp_cost:
-			if self.hp_cost > self.caster.cur_hp:
+			if self.get_stat('hp_cost') >= self.caster.cur_hp:
 				return False
 
 		return True
@@ -694,7 +751,7 @@ class Spell(object):
 		if self.caster.is_blind() and distance(Point(x, y), self.caster, diag=True) > 1:
 			return False
 
-		if not distance(Point(x, y), Point(self.caster.x, self.caster.y), diag=self.melee or self.diag_range) <= self.get_stat('range'):
+		if not distance(Point(x, y), Point(self.caster.x, self.caster.y), diag=self.melee or self.diag_range) <= self.get_stat('range') + self.owner.radius:
 			return False
 
 		if self.get_stat('requires_los'):
@@ -716,6 +773,11 @@ class Spell(object):
 		if self.max_charges:
 			self.cur_charges -= 1
 
+		if self.hp_cost:
+			self.caster.cur_hp -= self.get_stat('hp_cost')
+			self.caster.level.combat_log.debug("%s pays %d HP to cast %s" % (self.caster.name, self.hp_cost, self.name))
+			self.caster.level.event_manager.raise_event(EventOnSpendHP(self.caster, self.get_stat('hp_cost')), self.caster)
+			self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Blood, minor = self.get_stat('hp_cost') < 11)
 
 	def get_description(self):
 		return self.description
@@ -725,7 +787,7 @@ class Spell(object):
 		#  but never actually pay or print negative numbers
 		return max(0, self.mana_cost)
 
-	def summon(self, unit, target=None, radius=3, team=None, sort_dist=True):
+	def summon(self, unit, target=None, radius=4, team=None, sort_dist=True):
 		if not unit.source:
 			unit.source = self
 		if not target:
@@ -740,6 +802,7 @@ class Spell(object):
 MoveAction = namedtuple("MoveAction", "x y")
 CastAction = namedtuple("CastAction", "spell x y")
 PassAction = namedtuple("PassAction", "")
+StunnedAction = namedtuple("StunnedAction", "buff duration")
 
 class Item(object):
 
@@ -811,6 +874,11 @@ class Buff(object):
 		self.global_bonuses = defaultdict(lambda: 0)
 		self.tag_bonuses = defaultdict(lambda : defaultdict(lambda: 0))
 
+		self.spell_bonuses_pct = defaultdict(lambda : defaultdict(lambda: 0))
+		self.global_bonuses_pct = defaultdict(lambda: 0)
+		self.tag_bonuses_pct = defaultdict(lambda : defaultdict(lambda: 0))
+
+
 		self.buff_type = BUFF_TYPE_BLESS
 		self.show_effect = True
 
@@ -821,10 +889,12 @@ class Buff(object):
 			# For now- do not allow conversion AND global damage subscription
 			# Perhaps later allow this by chaining the two functions together with functools or something
 			assert EventOnPreDamaged not in self.global_triggers
-			self.global_triggers[EventOnPreDamaged] = self.process_conversions
+			self.global_triggers[EventOnDamaged] = self.process_conversions
 
 		# Do not allow setting of turns_left in on_init, since usually its an accidental overload of the term
 		assert(self.turns_left == 0)
+
+		self.prereq = None
 
 	def can_threaten(self, x, y):
 		return False
@@ -875,6 +945,8 @@ class Buff(object):
 
 		self.applied = True
 
+		prev_max_charges = {spell: spell.get_stat('max_charges') for spell in self.owner.spells}
+
 		event_manager = self.owner.level.event_manager
 
 		if self.owner.level:
@@ -888,13 +960,24 @@ class Buff(object):
 		for attr, amt in self.global_bonuses.items():
 			owner.global_bonuses[attr] += amt
 
+		for attr, amt in self.global_bonuses_pct.items():
+			owner.global_bonuses_pct[attr] += amt
+
 		for spell_class, bonuses in self.spell_bonuses.items():
 			for attr, amt in bonuses.items():
 				owner.spell_bonuses[spell_class][attr] += amt
 
+		for spell_class, bonuses in self.spell_bonuses_pct.items():
+			for attr, amt in bonuses.items():
+				owner.spell_bonuses_pct[spell_class][attr] += amt
+
 		for tag, bonuses in self.tag_bonuses.items():
 			for attr, amt in bonuses.items():
 				owner.tag_bonuses[tag][attr] += amt
+
+		for tag, bonuses in self.tag_bonuses_pct.items():
+			for attr, amt in bonuses.items():
+				owner.tag_bonuses_pct[tag][attr] += amt
 
 		# Modify spells
 		for spell in self.owner.spells:
@@ -912,12 +995,20 @@ class Buff(object):
 			assert(self.stack_type == STACK_TYPE_TRANSFORM)
 			self.owner.transform_asset_name = self.transform_asset_name
 
-		self.subscribe()
+		# Update spells whos max charges have changed
+		for spell in self.owner.spells:
+			if spell not in prev_max_charges:
+				continue
+
+			charge_diff = spell.get_stat('max_charges') - prev_max_charges[spell]
+			spell.cur_charges += charge_diff
 
 	def unapply(self):
 
 		assert(self.applied)
 		self.applied = False
+
+		prev_max_charges = {spell: spell.get_stat('max_charges') for spell in self.owner.spells}
 
 		self.on_unapplied()
 
@@ -930,18 +1021,29 @@ class Buff(object):
 		for attr, amt in self.global_bonuses.items():
 			self.owner.global_bonuses[attr] -= amt
 
+		# Unaccumulate spell bonuses
+		for attr, amt in self.global_bonuses_pct.items():
+			self.owner.global_bonuses_pct[attr] -= amt
+
 		for spell_class, bonuses in self.spell_bonuses.items():
 			for attr, amt in bonuses.items():
 				self.owner.spell_bonuses[spell_class][attr] -= amt
+
+		for spell_class, bonuses in self.spell_bonuses_pct.items():
+			for attr, amt in bonuses.items():
+				self.owner.spell_bonuses_pct[spell_class][attr] -= amt
 
 		for tag, bonuses in self.tag_bonuses.items():
 			for attr, amt in bonuses.items():
 				self.owner.tag_bonuses[tag][attr] -= amt
 
+		for tag, bonuses in self.tag_bonuses_pct.items():
+			for attr, amt in bonuses.items():
+				self.owner.tag_bonuses_pct[tag][attr] -= amt
+
 
 		# This is an intersting idea but it causes lots of race conditions when writing death triggers
 		#self.owner = None
-
 
 		spells_from_other_buffs = [s.name for b in self.owner.buffs for s in b.spells if b != self]
 		for spell in self.owner.spells:
@@ -961,6 +1063,13 @@ class Buff(object):
 
 		self.unsubscribe()
 
+		# Update spells whos max charges have changed
+		for spell in self.owner.spells:
+			if spell not in prev_max_charges:
+				continue
+
+			charge_diff = spell.get_stat('max_charges') - prev_max_charges[spell]
+			spell.cur_charges += charge_diff
 
 	def on_add_spell(self, spell):
 		self.modify_spell(spell)
@@ -990,16 +1099,17 @@ class Buff(object):
 		if not evt.unit.is_alive():
 			return
 
+		# Global conversions: whenever an enemy takes any damage of the given type, redeal it as another type
 		if evt.damage_type in self.conversions and are_hostile(self.owner, evt.unit):
 			for dest_dtype, mult in self.conversions[evt.damage_type].items():
 				self.owner.level.queue_spell(self.deal_conversion_damage(evt, mult, dest_dtype))
 
+
+		# Check for conversions of 1) the spell which dealt the damage and 2) the spell which summoned the creature that cast the spell (if applicable)
 		sources = [evt.source]
-		# Disabled for now- this is too much goodstuff for minions
-		# Try treating the spell that summoned the owner of the source as the source so that conversions work on summon spells
-		#if evt.source.owner:
-		#	if type(evt.source.owner.source) in self.spell_conversions:
-		#		sources.append(evt.source.owner.source)
+		if evt.source.owner:
+			if type(evt.source.owner.source) in self.spell_conversions:
+				sources.append(evt.source.owner.source)
 
 		for source in sources:
 			# Spell conversions only convert damage from the owner's spells (or minions)
@@ -1036,11 +1146,16 @@ class Buff(object):
 	def get_tooltip_color(self):
 		return self.color if self.color else Color(255, 255, 255)
 
+	def get_extra_examine_tooltips(self):
+		return []
+
 	def summon(self, unit, target=None, radius=3, team=None, sort_dist=True):
 		unit.source = self
 		if not target:
 			target = Point(self.owner.x, self.owner.y)
 		return self.owner.level.summon(self.owner, unit, target, radius, team, sort_dist)
+
+
 
 class Upgrade(Buff):
 
@@ -1072,10 +1187,49 @@ class Upgrade(Buff):
 		else:
 			return base
 
+class Equipment(Buff):
+
+	def __init__(self):
+
+		self.slot = -1
+		self.level = 0
+		self.asset_name = None
+		self.recolor_primary = False
+		self.recolor_secondary = False
+
+		Buff.__init__(self)
+		
+		self.buff_type = BUFF_TYPE_ITEM
+		self.stack_type = STACK_INTENSITY  # Allow multiples of same item to stack
+
+	def __str__(self):
+		return "Equipment: %s" % self.name
+
+	def get_asset(self):
+		asset = ['tiles', 'items', 'equipment', self.name.lower().replace(' ', '_') if not self.asset_name else self.asset_name]
+		# use generic trinket asset if specific asset is not present
+		if not os.path.exists(os.path.join('rl_data', *asset) + '.png'):
+
+			if self.slot == ITEM_SLOT_AMULET:
+				asset = ['tiles', 'items', 'equipment', 'generic_amulet']
+			if self.slot == ITEM_SLOT_STAFF:
+				asset = ['tiles', 'items', 'equipment', 'generic_staff']
+			if self.slot == ITEM_SLOT_BOOTS:
+				asset = ['tiles', 'items', 'equipment', 'generic_boots']
+			if self.slot == ITEM_SLOT_ROBE:
+				asset = ['tiles', 'items', 'equipment', 'generic_robe']
+			if self.slot == ITEM_SLOT_HEAD:
+				asset = ['tiles', 'items', 'equipment', 'generic_hat']
+			
+		return asset
+
+	def get_extra_examine_tooltips(self):
+		return None
+
 ABORT_CHANNEL = 99
 class ChannelBuff(Buff):
 
-	def __init__(self, spell, target, cast_after_channel=False, channel_check=None):
+	def __init__(self, spell, target, cast_after_channel=False, channel_check=None, on_stop=None):
 		Buff.__init__(self)
 		self.spell = spell
 		self.name = "Channeling"
@@ -1085,10 +1239,12 @@ class ChannelBuff(Buff):
 		self.owner_triggers[EventOnPass] = self.on_pass
 		self.stack_type = STACK_INTENSITY
 
-		self.buff_type = BUFF_TYPE_NONE
+		self.buff_type = BUFF_TYPE_BLESS
 
 		self.cast_after_channel = cast_after_channel
 		self.channel_check = channel_check
+
+		self.on_stop=on_stop
 
 	def on_applied(self, owner):
 		self.channel_turns = 0
@@ -1099,6 +1255,10 @@ class ChannelBuff(Buff):
 			if b.spell != self.spell:
 				owner.remove_buff(b)
 
+	def on_unapplied(self):
+		if self.on_stop:
+			self.on_stop()
+		
 	def on_advance(self):
 
 		self.channel_turns += 1
@@ -1106,11 +1266,6 @@ class ChannelBuff(Buff):
 		if not self.passed:
 			self.owner.remove_buff(self)
 			return
-
-		if self.channel_check:
-			if not self.channel_check(self.spell_target):
-				self.owner.remove_buff(self)
-				return
 
 		cast = False
 		if not self.cast_after_channel:
@@ -1143,8 +1298,6 @@ class SpellUpgrade(Upgrade):
 		self.level = level
 		self.amount = amount
 		self.exc_class = exc_class
-		if exc_class:
-			self.description += "\n%s can be upgraded with only 1 %s upgrade" % (spell.name, exc_class)
 
 class Immobilize(Buff):
 
@@ -1216,12 +1369,12 @@ class Stun(Buff):
 class StunImmune(Buff):
 
 	def on_init(self):
-		self.buff_type = BUFF_TYPE_NONE
+		self.buff_type = BUFF_TYPE_BLESS
 		self.stack_type = STACK_NONE
 		self.name = "Clarity"
 
 	def get_tooltip(self):
-		return "Immune to disabling debuffs"
+		return "Cannot be stunned, frozen, or petrified."
 
 class CowardBuff(Buff):
 
@@ -1268,6 +1421,11 @@ class Unit(object):
 		self.spell_bonuses = defaultdict(lambda : defaultdict(lambda: 0))
 		self.global_bonuses = defaultdict(lambda: 0)
 		self.tag_bonuses = defaultdict(lambda : defaultdict(lambda: 0))
+		
+		self.spell_bonuses_pct = defaultdict(lambda : defaultdict(lambda: 0))
+		self.global_bonuses_pct = defaultdict(lambda: 0)
+		self.tag_bonuses_pct = defaultdict(lambda : defaultdict(lambda: 0))
+
 		self.Anim = None
 		self.Transform_Anim = None
 
@@ -1282,7 +1440,6 @@ class Unit(object):
 		self.buff_immune = False
 
 		self.is_coward = False
-		self.has_been_raised = False
 
 		# The spell or buff which summoned this unit
 		self.source = None
@@ -1300,6 +1457,29 @@ class Unit(object):
 
 		self.asset = None
 
+		# for 3x3, 5x5, 7x7 units
+		# Use radius so that unit.x and unit.y give the unit's center
+		self.radius = 0
+
+		self.outline_color = None
+		self.recolor_primary = None
+
+		self.equipment = {}
+		self.trinkets = []
+
+		self.last_action = None
+
+		self.burrowing = False
+
+		self.boss_modifier = None
+
+		self.melee_spell = None # Autospell to cast when the player melees something.  Only used by elephant form but could bring back flaming sword or something.
+
+	def iter_occupied_points(self):
+		for i in range(-self.radius, self.radius+1):
+			for j in range(-self.radius, self.radius+1):
+				yield Point(self.x + i, self.y + j)
+
 	def get_asset_name(self):
 		if self.asset_name:
 			name = self.asset_name
@@ -1308,38 +1488,38 @@ class Unit(object):
 		return name
 
 	def get_stat(self, base, spell, attr):
-		
-
 		# Range for self targeted or melee spells does not change
 		if attr == 'range' and spell.range < 2:
 			return spell.range
 
 		bonus_total = 0
-		# Add spell specific bonus
-		bonus_total += self.spell_bonuses[type(spell)].get(attr, 0)
+		pct_total = 100.0
 
-		# Add tag bonuses
+		# Accumulate spell specific bonus
+		bonus_total += self.spell_bonuses[type(spell)].get(attr, 0)
+		pct_total += self.spell_bonuses_pct[type(spell)].get(attr, 0)
+
+		# Accumulate tag bonuses
 		for tag in spell.tags:
 			bonus_total += self.tag_bonuses[tag].get(attr, 0)
+			pct_total += self.tag_bonuses_pct[tag].get(attr, 0)
 
-		# Add global bonus
+		# Accumulate global bonus
 		bonus_total += self.global_bonuses.get(attr, 0)
+		pct_total += self.global_bonuses_pct.get(attr, 0)
 
 		isint = type(base) == int
 
-		if is_stat_pct(attr):
-			multiplier = (bonus_total + 100) / 100.0
-			value = base * multiplier
-			if isint:
-				value = int(math.ceil(value))
-			return value
+		value = (base + bonus_total) * (pct_total / 100.0)
+		if isint:
+			value = int(math.ceil(value))
 
-		else:
-			value = base + bonus_total			
-			value = max(value, 0)
-			if attr in ['range', 'duration']:
-				value = max(value, 1)
-			return value
+		# Cap things at 0- or at 1, in the case of range or duration, as those function poorly when zeroed	
+		value = max(value, 0)
+		if attr in ['range', 'duration']:
+			value = max(value, 1)
+
+		return value
 
 	def __reduce__(self):
 		if self.Anim:
@@ -1347,6 +1527,39 @@ class Unit(object):
 			self.Anim = None
 		self.glow = None
 		return object.__reduce__(self)
+
+	def equip(self, item):
+		assert(item.slot >= 0)
+
+		# TEMP: all items stack.  Lets try it out.
+		if item.slot != ITEM_SLOT_AMULET:
+			to_replace = self.equipment.get(item.slot)
+			if to_replace:
+				self.unequip(to_replace)
+
+			self.equipment[item.slot] = item
+		else:
+			self.trinkets.append(item)
+
+		self.apply_buff(item)
+
+		# Instantly proc on unit added self triggers
+		if EventOnUnitAdded in item.owner_triggers:
+			evt = EventOnUnitAdded(self)
+			item.owner_triggers[EventOnUnitAdded](None)
+
+
+	def unequip(self, item):
+		if item.slot != ITEM_SLOT_AMULET:
+			self.equipment[item.slot] = None
+		else:
+			self.trinkets.remove(item)
+			
+		self.remove_buff(item)
+
+		# TODO- Find a tile without a prop?  Generally unequip comes after a prop is destroyed anyways so its generally ok?
+		self.level.add_prop(EquipPickup(item), self.x, self.y)
+
 
 	def add_item(self, item):
 		existing = [i for i in self.items if i.name == item.name]
@@ -1357,16 +1570,12 @@ class Unit(object):
 				item.spell.caster = self
 				item.spell.owner = self
 			self.items.append(item)
-			if item.buff:
-				self.apply_buff(item.buff)
 
 	def remove_item(self, item):
 		item = [i for i in self.items if i.name == item.name][0]
 		item.quantity -= 1
 		if item.quantity == 0:
 			self.items.remove(item)
-			if item.buff:
-				self.remove_buff(item.buff)
 
 	def get_skills(self):
 		return sorted((b for b in self.buffs if b.buff_type == BUFF_TYPE_PASSIVE and b.prereq == None), key=lambda b: b.name)
@@ -1387,6 +1596,10 @@ class Unit(object):
 		for b in self.buffs:
 			if not b.on_attempt_advance():
 				can_act = False
+				if self.is_player_controlled:
+					stun_duration = 1 if not isinstance(self.last_action, StunnedAction) else self.last_action.duration + 1
+					self.last_action = StunnedAction(b, stun_duration)
+					self.level.requested_action = None
 
 		if can_act:
 			# Take an action
@@ -1395,15 +1608,16 @@ class Unit(object):
 			else:
 				action = self.level.requested_action
 				self.level.requested_action = None
+				self.last_action = action
 				
 			logging.debug("%s will %s" % (self, action))
 			assert(action is not None)
 
 			if isinstance(action, MoveAction):
-				self.level.act_move(self, action.x, action.y, force_swap=self.is_coward)
+				self.level.act_move(self, action.x, action.y)
 			elif isinstance(action, CastAction):
 				self.level.act_cast(self, action.spell, action.x, action.y)
-				if action.spell.quick_cast:
+				if action.spell.get_stat('quick_cast'):
 					return False
 			elif isinstance(action, PassAction):
 				self.level.event_manager.raise_event(EventOnPass(self), self)
@@ -1422,7 +1636,7 @@ class Unit(object):
 
 		if not any(are_hostile(self.level.player_unit, u) for u in self.level.units):
 			if not self.is_player_controlled:
-				if random.random() < .1:
+				if random.random() < .2:
 					self.kill(trigger_death_event=False)
 					self.level.show_effect(self.x, self.y, Tags.Translocation)
 
@@ -1465,13 +1679,24 @@ class Unit(object):
 		return False
 
 	def get_ai_action(self):
+		
 		assert(not self.is_player_controlled)
 		assert(self.is_alive())
 		assert(not self.killed)
 
 		# For now always channel if you can
 		if self.has_buff(ChannelBuff):
-			return PassAction()
+			b = self.get_buff(ChannelBuff)
+
+			if b.channel_check:
+				if b.channel_check(b.spell_target):
+					return PassAction()
+				else:
+					# If should not channel, keep going to decide on action
+					pass
+			else:
+				# If no channel check exists, default to continue channeling
+				return PassAction()
 
 		for spell in self.spells:
 			if not spell.can_pay_costs():
@@ -1531,8 +1756,11 @@ class Unit(object):
 					# Must be able to walk on the tile
 					if not self.level.can_stand(p.x, p.y, self, check_unit=False):
 						return False
+					# Cannot swap with 3x3s
+					if unit and unit.radius:
+						return False
 					# If there is a unit, *it* must be able to walk on the tile I am currently on
-					if unit and not self.level.can_stand(p.x, p.y, unit, check_unit=False):
+					if unit and not self.level.can_stand(self.x, self.y, unit, check_unit=False):
 						return False
 					return True
 
@@ -1613,6 +1841,11 @@ class Unit(object):
 
 	def apply_buff(self, buff, duration=0):
 		assert(isinstance(buff, Buff))
+
+		# If we call this method before adding the monster to the level just add the buff to the list and we will call this again later
+		if not hasattr(self, 'level'):
+			self.buffs.append(buff)
+			return
 		
 		# Do not apply buffs to dead units
 		if not self.is_alive():
@@ -1633,11 +1866,18 @@ class Unit(object):
 		#assert(self.level)
 		# For now unstackable = stack_type stack duration
 
+		# Do not refresh stuns on clarity havers
+		# Otherwise they can get stunlocked by anything with 2 or more duration
+		# Which defeats the purpose of clarity
+		if self.gets_clarity and isinstance(buff, Stun) and self.is_stunned():
+			return
+
 		def same_buff(b1, b2):
 			return b1.name == b2.name and type(b1) == type(b2)
 
 		existing = [b for b in self.buffs if same_buff(b, buff)]
 		if existing:
+
 			if buff.stack_type == STACK_NONE:
 				existing[0].turns_left = max(duration, existing[0].turns_left)
 				return
@@ -1655,7 +1895,7 @@ class Unit(object):
 
 		assert(isinstance(buff, Buff))
 		buff.turns_left = duration
-
+		
 		self.buffs.append(buff)
 		result = buff.apply(self)
 		if result == ABORT_BUFF_APPLY:
@@ -1699,7 +1939,7 @@ class Unit(object):
 		return False
 
 	def get_buff(self, buff_class):
-		candidates = [b for b in self.buffs if type(b) == buff_class]
+		candidates = [b for b in self.buffs if isinstance(b, buff_class)]
 		if candidates:
 			return candidates[0]
 		else:
@@ -1728,6 +1968,29 @@ class Unit(object):
 			for i in range(wait_frames):
 				yield self.sprite.color
 
+	def steal_hp(self, amount, source):
+
+		amount = min(self.cur_hp, amount)
+		self.cur_hp -= amount
+		
+		self.event_manager.raise_event()
+
+		if self.cur_hp <= 0:
+			self.kill()
+
+		self.level.show_effect(self.x, self.y, Tags.Blood)
+
+		source_name = "%s's %s" % (source.owner.name, source.name) if source.owner else source.name
+		self.level.combat_log.debug("%s lost %d life from %s" % (self.name, amount, source_name))
+
+		return amount
+
+	def heal(self, amount, spell):
+		if not self.is_alive():
+			return 0
+
+		return self.level.deal_damage(self.x, self.y, -amount, Tags.Heal, spell)
+
 	def deal_damage(self, amount, damage_type, spell):
 		if not self.is_alive():
 			return 0
@@ -1740,6 +2003,55 @@ class Unit(object):
 		# Max 20 shields
 		self.shields = min(self.shields, 20)
 
+	def remove_shields(self, shields):
+		if not self.shields:
+			return
+
+		self.level.show_effect(self.x, self.y, Tags.Shield_Expire)
+		
+		self.shields -= shields
+		if self.shields < 0:
+			self.shields = 0
+
+
+	def can_teleport(self):
+		return self.radius == 0
+
+	def refresh(self):
+		
+		# Remove all temporary buffs and debuffs
+		temp_buffs = [b for b in self.buffs if b.buff_type in [BUFF_TYPE_CURSE, BUFF_TYPE_BLESS]]
+		for d in temp_buffs:
+			self.remove_buff(d)
+
+		self.cur_hp = self.max_hp
+
+		for s in self.spells:
+			s.cur_charges = s.get_stat('max_charges')
+
+		self.shields = 0
+
+		self.killed = False
+
+	# Used by things other than the unit to make the unit cast a spell
+	def get_spell(self, spell_class):
+		spells = [s for s in self.spells if isinstance(s, spell_class)]
+		if not spells:
+			return None
+
+		return spells[0]
+		
+	# Get the spell if it exists in the units spell list, make it up if it doesnt
+	def get_or_make_spell(self, spell_class):
+		spell = self.get_spell(spell_class)
+		if spell:
+			return spell
+
+		spell = spell_class()
+		spell.owner = self
+		spell.caster = self
+		return spell
+
 	def kill(self, damage_event=None, trigger_death_event=True):
 		# Sometimes you kill something twice, whatever.
 		if self.killed:
@@ -1748,13 +2060,20 @@ class Unit(object):
 		# TODO- trigger on death events and such?
 		if trigger_death_event:
 			self.level.event_manager.raise_event(EventOnDeath(self, damage_event), self)
+			if self.level.player_unit and self.level.player_unit != self:
+				if are_hostile(self.level.player_unit, self):
+					self.level.turn_summary.enemy_kill_counts[self.name] += 1
+				else:
+					self.level.turn_summary.ally_kill_counts[self.name] += 1
 		self.level.remove_obj(self)
 		self.cur_hp = 0
 		self.killed = True
 
+
 BUFF_TYPE_PASSIVE = 0
 BUFF_TYPE_BLESS = 1
 BUFF_TYPE_CURSE = 2
+BUFF_TYPE_ITEM = 3
 BUFF_TYPE_NONE = -1
 
 TILE_FLOOR = 0
@@ -1809,6 +2128,8 @@ class Tile(object):
 		self.level = level
 		self.sprites = None
 		self.star = None
+		self.tileset = 'glass'
+		self.water = None
 
 	def __reduce__(self):
 		self.star = None
@@ -1845,6 +2166,8 @@ class Tile(object):
 		return any(self.level.tiles[p.x][p.y].is_chasm for p in neighbors)
 
 	def calc_glyph(self, cascade=True):
+		return
+
 		level = self.level
 		global visual_mode
 		if visual_mode:
@@ -2063,15 +2386,14 @@ class SpellScroll(Prop):
 	def __init__(self, spell):
 		self.spell = spell
 		self.name = 'Scroll: %s' % spell.name
-		self.description = 'Decrease the cost to learn %s by 1 SP' % spell.name
+		self.description = 'Learn %s for free' % spell.name
 		self.asset = ['tiles', 'library', 'library_white']
 
 	def on_player_enter(self, player):
-		if self.spell.name not in player.scroll_discounts:
-			player.scroll_discounts[self.spell.name] = 0
-		player.scroll_discounts[self.spell.name] += 1
-		self.level.remove_prop(self)
-		self.level.event_manager.raise_event(EventOnItemPickup(self), player)
+		if self.spell not in player.spells:
+			player.add_spell(self.spell)
+			self.level.remove_prop(self)
+			self.level.event_manager.raise_event(EventOnItemPickup(self), player)
 
 class HeartDot(Prop):
 	def __init__(self, bonus=10):
@@ -2165,6 +2487,8 @@ class Shop(Prop):
 
 		if isinstance(item, Item):
 			shopper.add_item(item)
+		elif isinstance(item, Equipment):
+			shopper.equip(item)
 		elif isinstance(item, Buff):
 			shopper.apply_buff(item)
 		elif isinstance(item, Spell):
@@ -2227,10 +2551,24 @@ class ShrineShop(ShiftingShop):
 
 		# TODO- summon guardian here?
 
+class EquipPickup(Prop):
+
+	def __init__(self, item):
+		self.item = item
+		self.description = item.description
+		self.name = item.name
+		self.asset = item.get_asset()
+
+	def on_player_enter(self, player):
+		self.level.remove_prop(self)
+		self.level.event_manager.raise_event(EventOnItemPickup(self.item), player)
+
+		# Todo- by default do not swap with held item
+		player.equip(self.item)
+		
 class ItemPickup(Prop):
 
 	def __init__(self, item):
-		self.sprite = Sprite(chr(5), Color(252, 186, 3))
 		self.item = item
 		self.name = item.name
 		self.description = item.description
@@ -2372,6 +2710,8 @@ class Level(object):
 	def __init__(self, w, h):
 		self.width = w
 		self.height = h
+
+		self.size = self.width
 		
 		self.tiles = [[Tile(char='A', color=Color(50, 128, 50), x=j, y=i, level=self) for i in range(h)] for j in range(w)]
 		self.effects = []
@@ -2403,6 +2743,7 @@ class Level(object):
 		self.level_id = random.randint(0, 100000)
 
 		self.spell_counts = defaultdict(lambda: 0)
+		self.item_counts = defaultdict(lambda: 0)
 
 		self.damage_taken_sources = defaultdict(lambda: 0)
 		self.damage_dealt_sources = defaultdict(lambda: 0)
@@ -2418,6 +2759,9 @@ class Level(object):
 
 		self.logdir = None
 		self.level_no = 0
+
+		self.turn_summary = TurnSummary()
+		self.brush_tileset = None
 
 	def __getstate__(self):
 		state = self.__dict__.copy()
@@ -2467,29 +2811,59 @@ class Level(object):
 			t.calc_glyph(cascade=False)
 
 	def can_move(self, unit, x, y, teleport=False, force_swap=False):
-
 		if not teleport and distance(Point(unit.x, unit.y), Point(x, y), diag=True) > 1.5:
 			return False
 
 		if not self.is_point_in_bounds(Point(x, y)):
 			return False
 
+		if not self.can_stand(x, y, unit, check_unit=False):
+			return False
+
+		# Big units can only move to completely clear tiles- they have no chance of swapping units
+		if unit.radius:
+			if not self.can_stand(x, y, unit, check_unit=True):
+				return False
+
+		# Blockers can be swapped unless they are large or stationary or cannot stand on the tile they are being swapped to
 		blocker = self.tiles[x][y].unit
+		
+		# Big units should not block themselves of course
+		if blocker == unit:
+			blocker = None
+
 		if blocker is not None:
-			if force_swap:
-				# Even with force swap, cannot force walkers onto chasms
-				if not blocker.flying and not self.tiles[x][y].can_walk:
+
+			# big units cannot swap or be swapped
+			if unit.radius > 0 or blocker.radius > 0:
+				return False
+
+			# Do not non flying units onto chasms
+			if not self.can_stand(unit.x, unit.y, blocker, check_unit=False):
+				return False
+
+			# Do not force walkers onto chasms
+			if not blocker.flying and not self.tiles[x][y].can_walk:
+				return False
+
+			# Check additional conditions if the swap is not forced, aka is from a move command not a spell:
+			if not force_swap:
+
+				# Only coward units and players can do non forced swap movement
+				if not unit.is_coward and not unit.is_player_controlled:
 					return False
 
-			elif not unit.is_player_controlled or unit.team != blocker.team or blocker.stationary:
-				return False
+				# Enemies can only swap via spells
+				if are_hostile(unit, blocker):
+					return False
 
-		if not unit.flying:
-			if not self.can_walk(x, y):
-				return False
-		else:
-			if not self.tiles[x][y].can_fly:
-				return False
+				# Nothing can swap the player except magic
+				if blocker.is_player_controlled:
+					return False
+
+				# Nothing can swap stationary units except magic
+				if blocker.stationary:
+					return False
 
 		return True
 
@@ -2533,15 +2907,31 @@ class Level(object):
 
 		# allow swaps
 		swapper = self.tiles[x][y].unit
+		if swapper == unit:
+			swapper = None
 
 		oldx = unit.x
 		oldy = unit.y
 
-		self.tiles[unit.x][unit.y].unit = None
+		# Clear previously occupied tiles
+		for i in range(-unit.radius, unit.radius+1):
+			for j in range(-unit.radius, unit.radius+1):
+				self.tiles[unit.x+i][unit.y+j].unit = None
+
 		unit.x = x
 		unit.y = y
 
-		self.tiles[x][y].unit = unit
+		# Poit occupied tiles to unit
+		for i in range(-unit.radius, unit.radius+1):
+			for j in range(-unit.radius, unit.radius+1):
+				self.tiles[x+i][y+j].unit = unit
+
+		# Execute burrow
+		if unit.burrowing:
+			for occ in unit.iter_occupied_points():
+				if self.tiles[occ.x][occ.y].is_wall():
+					self.make_floor(occ.x, occ.y)
+					self.show_effect(occ.x, occ.y, Tags.Physical)
 
 		# allow swaps
 		if swapper:
@@ -2570,11 +2960,14 @@ class Level(object):
 		if cloud:
 			cloud.on_unit_enter(unit)
 		
-	def act_cast(self, unit, spell, x, y, pay_costs=True):		
+	def act_cast(self, unit, spell, x, y, pay_costs=True, queue=True):		
 		assert(isinstance(unit, Unit)), "caster is not of type unit, is %s" % type(unit)
 
 		if unit.is_player_controlled:
-			self.spell_counts[spell] += 1
+			if spell.item:
+				self.item_counts[spell.name] += 1
+			else:
+				self.spell_counts[spell.name] += 1
 
 		self.combat_log.debug("%s uses %s" % (unit.name, spell.name))
 
@@ -2591,9 +2984,17 @@ class Level(object):
 		if pay_costs:
 			spell.pay_costs()
 		
-		self.queue_spell(spell.cast(x, y))
+		
+		# If we want to queue the spell, queue it.  Else return the generator so the calling spell can iterate over it.
+		if queue:
+			self.queue_spell(spell.cast(x, y))
+			rval = None
+		else:
+			rval = spell.cast(x, y)
+
 		self.event_manager.raise_event(EventOnSpellCast(spell, unit, x, y), unit)
 
+		return rval
 
 	def act_shop(self, unit, item):
 
@@ -2608,16 +3009,43 @@ class Level(object):
 
 	def can_stand(self, x, y, unit, check_unit=True):
 		assert(isinstance(unit, Unit))
-		if not self.is_point_in_bounds(Point(x, y)):
+
+		# Use a weird loop format to avoid heap allocating range objects since can_stand is called *constantly*
+		i = -unit.radius
+
+		chasms = 0
+
+		while i <= unit.radius:
+			j = -unit.radius
+			while j <= unit.radius:
+
+				cur_x = x + i
+				cur_y = y + j
+
+				if not self.is_coord_in_bounds(cur_x, cur_y):
+					return False
+
+				if check_unit and self.get_unit_at(cur_x, cur_y) not in [None, unit]:
+					return False
+
+				# Only flyers can go over chasms
+				tile = self.tiles[cur_x][cur_y]
+				if tile.is_chasm and not unit.flying:
+					chasms += 1
+
+				# Only burrowers can go through walls
+				if tile.is_wall() and not unit.burrowing:
+					if not self.tiles[cur_x][cur_y].can_fly:
+						return False
+
+				j += 1
+			i += 1
+
+		total_sq_occupied = (1 + 2*unit.radius) * (1 + 2*unit.radius) 
+		if not unit.flying and chasms > total_sq_occupied / 2.0:
 			return False
 
-		if check_unit and self.get_unit_at(x, y):
-			return False
-
-		if unit.flying:
-			return self.tiles[x][y].can_fly
-		else:
-			return self.tiles[x][y].can_walk
+		return True
 
 	def can_walk(self, x, y, check_unit=False):
 
@@ -2630,12 +3058,12 @@ class Level(object):
 
 		return self.tiles[x][y].can_walk
 
-	def find_path(self, start, target, pather, pythonize=False, cosmetic=False):
+	def find_path(self, start, target, pather, pythonize=False, cosmetic=False, unit_penalty=4):
 		
 		# Early out if the pather is surrounded by units and walls
 		# If the unit cannot move, we dont care how it should move
 		# Do not do this for cosmetic paths- they can step over units, and are infrequently called anyways
-		if not cosmetic:
+		if not cosmetic and unit_penalty != 0:
 			boxed_in = True
 			for p in self.get_adjacent_points(start, filter_walkable=False):
 				if self.can_stand(p.x, p.y, pather):
@@ -2646,31 +3074,38 @@ class Level(object):
 				return None
 
 		def path_func(xFrom, yFrom, xTo, yTo, userData):
-			tile = self.tiles[xTo][yTo]
+			# If the previous point is basically 'arrived', we dont need to check further points.
+			if pather.radius:
+				if distance(Point(xFrom, yFrom), target, diag=True) <= pather.radius + 1:
+					return 0.5
+
+			if not self.can_stand(xTo, yTo, pather, check_unit=False):
+				return False
+
+			# By default, all traversable tiles have cost 1.
+			# But various things can penalize this- units in the way, props on the ground
+			cost = 1.0
+
+
+			for i in range(-pather.radius, pather.radius+1):
+				for j in range(-pather.radius, pather.radius+1):
+
+					tile = self.tiles[xTo+i][yTo+j]
+					blocker_unit = tile.unit if tile.unit != pather else None
 			
-			if pather.flying:
-				if not tile.can_fly:
-					return 0.0
-			else:
-				if not tile.can_walk:
-					return 0.0
-			 
-			blocker_unit = tile.unit
-
-			if not blocker_unit:
-				if tile.prop:
-					# player pathing avoids props unless prop is the target
-					if (isinstance(tile.prop, Portal) or isinstance(tile.prop, Shop)) and pythonize and not (xTo == target.x and yTo == target.y):
-						return 0.0
-					# creatuers slight preference to avoid props
-					return 1.1
-				else:
-					return 1.0
-			if blocker_unit.stationary:
-				return 50.0
-			else:
-				return 5.0
-
+					if blocker_unit:
+						if blocker_unit.stationary:
+							cost += 12.5 * unit_penalty
+						else:
+							cost += unit_penalty
+					if not blocker_unit:
+						if tile.prop:
+							# player pathing avoids props unless prop is the target
+							if (isinstance(tile.prop, Portal) or isinstance(tile.prop, Shop)) and pythonize and not (xTo == target.x and yTo == target.y):
+								return False
+							# creatuers slight preference to avoid props
+							cost += 0.1
+			return cost
 
 		path = libtcod.path_new_using_function(self.width, self.height, path_func)
 		libtcod.path_compute(path, start.x, start.y, target.x, target.y)
@@ -2736,6 +3171,10 @@ class Level(object):
 		return 
 
 	def iter_frame(self, mark_turn_end=False):
+
+		while self.can_advance_spells():
+			yield self.advance_spells()
+
 		# An iterator representing the order of turns for all game objects
 		while True:
 
@@ -2774,11 +3213,21 @@ class Level(object):
 						if unit.is_player_controlled and not unit.is_stunned() and not self.requested_action:
 							self.is_awaiting_input = True
 							yield
-						finished_advance = unit.advance()
 						
-					#yield
-					while self.can_advance_spells():
-						yield self.advance_spells()
+						# Yield for 1 frame if stunned to prevent jarring time skip
+						if unit.is_player_controlled and unit.is_stunned():
+							yield
+
+						# Clear turn summary as soon as player chooses an action, before it is executed
+						# But group all things happening during stuns together
+						if unit.is_player_controlled and not unit.is_stunned():
+							self.turn_summary.clear()
+
+						finished_advance = unit.advance()
+
+						#yield
+						while self.can_advance_spells():
+							yield self.advance_spells()
 
 					# Advance buffs after advancing spells
 					unit.advance_buffs()
@@ -2809,10 +3258,52 @@ class Level(object):
 			return None
 		return self.tiles[x][y].unit
 
+	def get_connected_group_from_point(self, x, y, avoid_tags=[], required_tags=[], ignored_units=[], check_hostile=False, num_targets=-1):
+		#Avoid Tags: If a unit has these tags, it will be ignored.
+		#Required Tags: If a unit does not have these tags, it will be ignored.
+		#Ignored Units: Add units you want to be ignored, e.g. the player.
+		#Check Hostile: Determines whether or not to check if units are player-controlled.
+		candidates = set([Point(x, y)])
+		unit_group = set()
+
+		while candidates:
+			candidate = candidates.pop()
+			unit = self.get_unit_at(candidate.x, candidate.y)
+			if unit and unit not in unit_group:
+
+				skip = False
+
+				if unit in ignored_units:
+					continue
+
+				for tag in required_tags:
+					if not tag in unit.tags:
+						skip = True
+
+				for tag in avoid_tags:
+					if tag in unit.tags:
+						skip = True
+
+				if skip:
+					continue
+
+				if check_hostile and unit.is_player_controlled:
+					continue
+
+				if num_targets > -1 and len(unit_group) >= num_targets:
+					break
+
+				unit_group.add(unit)
+
+				for p in self.get_adjacent_points(Point(unit.x, unit.y), filter_walkable=False):
+					candidates.add(p)
+
+		return list(unit_group)
+
 	def get_summon_point(self, x, y, radius_limit=5, sort_dist=True, flying=False, diag=False):
 		options = list(self.get_points_in_ball(x, y, radius_limit, diag=diag))
 		random.shuffle(options)
-		
+
 		if sort_dist:
 			options.sort(key=lambda p: distance(p, Point(x, y)))
 
@@ -2845,7 +3336,11 @@ class Level(object):
 				yield self.tiles[i][j]
 
 	def is_point_in_bounds(self, point):
-		return point.x	>= 0 and point.x < self.width and point.y >= 0 and point.y < self.height
+		return point.x >= 0 and point.x < self.width and point.y >= 0 and point.y < self.height
+
+	def is_coord_in_bounds(self, x, y):
+		return x >= 0 and x < self.width and y >= 0 and y < self.height
+
 
 	def get_points_in_rect(self, xmin, ymin, xmax, ymax):
 		xmin = max(xmin,0)
@@ -2920,14 +3415,28 @@ class Level(object):
 		dx = dest.y - origin.y
 
 		longer_len = max(abs(dy), abs(dx))
-		dx /= longer_len
-		dy /= -longer_len
+		if longer_len:
+			dx /= longer_len
+			dy /= -longer_len
+		# Default to a flat line if origin = dest
+		else:
+			dx = 1
+			dy = 0
 
 		line_start = Point(round(dest.x + length * dx), round(dest.y + length * dy))
 		line_end = Point(round(dest.x - length * dx), round(dest.y - length * dy))
 		return [p for p in self.get_points_in_line(line_start, line_end, two_pass=False) if self.is_point_in_bounds(p)]
 		
-	def get_points_in_line(self, start, end, two_pass=True, find_clear=False):
+	def show_beam(self, start, end, dtype, minor=True, inclusive=False):
+
+		points = self.get_points_in_line(start, end)
+		if not inclusive:
+			points = points[1:-1]
+
+		for p in points:
+			self.show_effect(p.x, p.y, dtype, minor=minor)
+
+	def get_points_in_line(self, start, end, two_pass=True, find_clear=False, no_diag=False):
 		steep = abs(end.y - start.y) > abs(end.x - start.x);
 
 		# Orient the line so that it is going left to right with slope between 1 and -1
@@ -2997,6 +3506,22 @@ class Level(object):
 			if reverse:
 				result.reverse()
 
+			if no_diag:
+				insertions = []
+				for i in range(len(result)-1):
+					p = result[i]
+					q = result[i+1]
+					if p.x != q.x and p.y != q.y:
+						if random.random() > .5:
+							insertions.append((Point(p.x, q.y), i))
+						else:
+							insertions.append((Point(q.x, p.y), i))
+
+				insert_num = 0
+				for new_point, index in insertions:
+					result.insert(insert_num + index, new_point)
+					insert_num += 1
+
 			return result
 
 		# If we are looking for a clear path but none are clear return the default
@@ -3010,16 +3535,16 @@ class Level(object):
 			unit.resists.setdefault(Tags.Holy, -100)
 			unit.resists.setdefault(Tags.Dark, 100)
 
+		if Tags.Metallic in unit.tags:
+			unit.resists.setdefault(Tags.Fire, 50)
+			unit.resists.setdefault(Tags.Physical, 50)
+			unit.resists.setdefault(Tags.Ice, 75)
+			unit.resists.setdefault(Tags.Lightning, 100)
+
 		if Tags.Undead in unit.tags:
 			unit.resists.setdefault(Tags.Holy, -100)
 			unit.resists.setdefault(Tags.Dark, 100)
 			unit.resists.setdefault(Tags.Ice, 50)
-
-		if Tags.Metallic in unit.tags:
-			unit.resists.setdefault(Tags.Fire, 50)
-			unit.resists.setdefault(Tags.Physical, 50)
-			unit.resists.setdefault(Tags.Lightning, 100)
-			unit.resists.setdefault(Tags.Ice, 100)
 
 		if Tags.Glass in unit.tags:
 			unit.resists.setdefault(Tags.Fire, 50)
@@ -3036,6 +3561,10 @@ class Level(object):
 			unit.resists.setdefault(Tags.Poison, 0)
 		else:
 			unit.resists.setdefault(Tags.Poison, 100)
+
+		# Creatures with radius should also uh 'resist' stuns
+		if unit.radius:
+			unit.gets_clarity = True
 
 	def can_add_cloud(self, p):
 		t = self.tiles[p.x][p.y]
@@ -3056,12 +3585,24 @@ class Level(object):
 		if isinstance(obj, Unit):
 			self.event_manager.raise_event(EventOnUnitPreAdded(obj), obj)
 
+			if obj.max_hp <= 1:
+				obj.max_hp = 1
+
 			if not obj.cur_hp:
 				obj.cur_hp = obj.max_hp
 				assert(obj.cur_hp > 0)
 				
-			assert(self.tiles[x][y].unit is None)
-			self.tiles[x][y].unit = obj
+			
+			for i in range(-obj.radius, obj.radius+1):
+				for j in range(-obj.radius, obj.radius+1):
+					cur_x = x + i
+					cur_y = y + j
+
+					if not self.tiles[cur_x][cur_y].unit is None:
+						print("Cannot add %s at %s, already has %s" % (obj.name, str((x, y)), self.tiles[cur_x][cur_y].unit.name))
+						assert(self.tiles[cur_x][cur_y].unit is None)
+
+					self.tiles[cur_x][cur_y].unit = obj
 
 			# Hack- allow improper adding in monsters.py
 			for spell in obj.spells:
@@ -3114,8 +3655,15 @@ class Level(object):
 			for buff in obj.buffs:
 				buff.unapply()
 
-			assert(self.tiles[obj.x][obj.y].unit == obj)
-			self.tiles[obj.x][obj.y].unit = None
+			radius = obj.radius if hasattr(obj, 'radius') else 0
+			
+			for i in range(-radius, radius+1):
+				for j in range(-radius, radius+1):
+					cur_x = obj.x + i
+					cur_y = obj.y + j
+					
+					assert(self.tiles[cur_x][cur_y].unit == obj)
+					self.tiles[cur_x][cur_y].unit = None
 
 			assert(obj in self.units)
 			self.units.remove(obj)
@@ -3161,7 +3709,7 @@ class Level(object):
 		if p:
 			self.add_obj(unit, p.x, p.y)
 			self.show_effect(p.x, p.y, Tags.Conjuration)
-			return True
+			return unit
 		else:
 			return False
 
@@ -3199,43 +3747,61 @@ class Level(object):
 			multiplier = (100 - resist_amount) / 100.0
 			amount = int(math.ceil(amount * multiplier))
 
+		source_name = "%s's %s" % (source.owner.name, source.name) if source.owner else source.name
+
 		if amount > 0 and unit.shields > 0:
 			unit.shields = unit.shields - 1
-			self.combat_log.debug("%s blocked %d %s damage from %s" % (unit.name, amount, damage_type.name, source.name))
+			self.combat_log.debug("%s blocked %d %s damage from %s" % (unit.name, amount, damage_type.name, source_name))
 			self.show_effect(unit.x, unit.y, Tags.Shield_Expire)				
 			return 0
 
-		amount = min(amount, unit.cur_hp)
+		# Cap damage to current hp, cap healing to missing hp
+		if amount > 0:
+			amount = min(amount, unit.cur_hp)
+		elif amount < 0:
+			amount = max(amount, unit.cur_hp - unit.max_hp)
+
 		unit.cur_hp = unit.cur_hp - amount
 
+		# Logging
 		if amount > 0:
-			self.combat_log.debug("%s took %d %s damage from %s" % (unit.name, amount, damage_type.name, source.name))
+			self.combat_log.debug("%s took %d %s damage from %s" % (unit.name, amount, damage_type.name, source_name))
 		elif amount < 0:
-			self.combat_log.debug("%s healed %d from %s" % (unit.name, -amount, source.name))
+			self.combat_log.debug("%s healed %d from %s" % (unit.name, -amount, source_name))
 
-		if (amount > 0):
+		# Processing
+		if amount < 0:
+			evt = EventOnHealed(unit, amount, source)
+			self.event_manager.raise_event(evt, unit)
 
-			# Record damage for post level summary
-			if source.owner and source.owner != self.player_unit:
-				source_key = "%s (%s)" % (source.name, source.owner.name)
-				self.damage_taken_sources
-			else:
-				source_key = "%s" % source.name
-
+		elif amount > 0:
 			# Record damage sources when a player unit exists (aka not in unittests)
 			if self.player_unit:
+				# Enemy
 				if are_hostile(unit, self.player_unit):
 					key = source.name
-					if source.owner and source.owner.source:
+					if source.owner and source.owner.source and not (isinstance(source, Buff) and source.buff_type == BUFF_TYPE_CURSE):
 						key = source.owner.name
 
 					self.damage_dealt_sources[key] += amount
-				elif unit == self.player_unit:
-					if source.owner:
+					self.turn_summary.damage_dealt[key] += amount
+				# Ally/Self
+				else:
+					if isinstance(source, Buff) and source.buff_type == BUFF_TYPE_CURSE:
+						key = source.name
+					elif source.owner:
 						key = source.owner.name
 					else:
 						key = source.name	
-					self.damage_taken_sources[key] += amount
+					
+					# Self
+					if unit == self.player_unit:
+						self.damage_taken_sources[key] += amount
+						self.turn_summary.self_damage_taken[key] += amount
+					# Ally
+					else:
+						self.turn_summary.ally_damage_taken[key] += amount
+	
 
 			damage_event = EventOnDamaged(unit, amount, damage_type, source)
 			self.event_manager.raise_event(damage_event, unit)
@@ -3260,21 +3826,32 @@ class Level(object):
 	def flash(self, x, y, color):
 		self.effects.append(Effect(x, y, color, Color(0, 0, 0), 12))
 
-	def show_effect(self, x, y, effect_tag, fill_color=Color(0, 0, 0), minor=False):
+	def show_effect(self, x, y, effect_tag, fill_color=Color(0, 0, 0), minor=False, speed=1):
 		effect = Effect(x, y, effect_tag.color, fill_color, 12)
 		effect.minor = minor
+		effect.speed = speed
 		self.effects.append(effect)
 
-	def show_path_effect(self, start, finish, effect_tag, fill_color=Color(0, 0, 0), minor=False):
+	def show_path_effect(self, start, finish, effect_tag, fill_color=Color(0, 0, 0), minor=False, straight=False, inclusive=True):
 
 		unit = Unit()
 		unit.can_fly = True
 		path = self.find_path(start, finish, unit, pythonize=True, cosmetic=True)
-		if not path:
+		if straight or not path:
 			path = self.get_points_in_line(start, finish)
 
+		if not inclusive:
+			path = path[0:-1]
+
+		i = 0
 		for p in path:
-			self.show_effect(p.x, p.y, effect_tag, fill_color, minor)
+			if isinstance(effect_tag, list):
+				i += 1
+				cur_tag = effect_tag[i % len(effect_tag)]
+			else:
+				cur_tag = effect_tag
+
+			self.show_effect(p.x, p.y, cur_tag, fill_color, minor)
 
 
 	def leap_effect(self, x, y, color, unit):
@@ -3313,19 +3890,26 @@ class Level(object):
 	def all_enemies_dead(self):
 		return len([u for u in self.units if self.are_hostile(self.player_unit, u)]) == 0
 
+	def set_brush_tileset(self, tileset):
+		self.brush_tileset = tileset
+
 	def make_wall(self, x, y, calc_glyph=True):
 
 		tile = self.tiles[x][y]
-		tile.sprites = None
 		tile.can_walk = False
 		tile.can_see = False
 		tile.can_fly = False
 		tile.is_chasm = False
 		tile.name = "Wall"
 		tile.description = "Solid rock"
-				
+		
+		if self.brush_tileset:
+			tile.tileset = self.brush_tileset
+
 		if calc_glyph:
 			tile.calc_glyph()
+
+		self.clear_tile_sprite(tile)
 
 		if self.tcod_map:
 			libtcod.map_set_properties(self.tcod_map, tile.x, tile.y, tile.can_see, tile.can_walk)
@@ -3333,7 +3917,6 @@ class Level(object):
 	def make_floor(self, x, y, calc_glyph=True):
 
 		tile = self.tiles[x][y]
-		tile.sprites = None
 		tile.can_walk = True
 		tile.can_see = True
 		tile.can_fly = True
@@ -3341,15 +3924,19 @@ class Level(object):
 		tile.name = "Floor"
 		tile.description = "A rough rocky floor"
 
+		if self.brush_tileset:
+			tile.tileset = self.brush_tileset
+
 		if calc_glyph:
 			tile.calc_glyph()
+
+		self.clear_tile_sprite(tile)
 
 		if self.tcod_map:
 			libtcod.map_set_properties(self.tcod_map, tile.x, tile.y, tile.can_see, tile.can_walk)
 
 	def make_chasm(self, x, y, calc_glyph=True):
 		tile = self.tiles[x][y]
-		tile.sprites = None
 		tile.can_walk = False
 		tile.can_see = True
 		tile.can_fly = True
@@ -3360,8 +3947,17 @@ class Level(object):
 		if calc_glyph:
 			tile.calc_glyph()
 
+		self.clear_tile_sprite(tile)
+
 		if self.tcod_map:
 			libtcod.map_set_properties(self.tcod_map, tile.x, tile.y, tile.can_see, tile.can_walk)
+
+	def clear_tile_sprite(self, tile):
+		if not self.turn_no:
+			return
+
+		for p in self.get_points_in_rect(tile.x - 1, tile.y - 1, tile.x + 1, tile.y + 1):
+			self.tiles[p.x][p.y].sprites = None
 
 
 	def make_map(self):
@@ -3387,7 +3983,152 @@ class Level(object):
 			libtcod.map_compute_fov(self.tcod_map, x2, y2, radius=40, light_walls=False, algo=self.fov)
 			return libtcod.map_is_in_fov(self.tcod_map, x1, y1)
 
-		
+	def set_tileset(self, tileset):
+		for tile in self.iter_tiles():
+			tile.tileset = tileset
+
+	def get_random_sublevel(self, randomizer):
+		xsize = randomizer.randint(10, 20)
+		ysize = randomizer.randint(10, 20)
+		xstart = randomizer.randint(0, self.size - xsize - 1)
+		ystart = randomizer.randint(0, self.size - ysize - 1)
+		return SubLevel(self, xstart, ystart, xsize, ysize, randomizer)
+
+	def get_random_lump(self, size, randomizer):
+		start = Point(randomizer.randint(0, self.size - 1), randomizer.randint(0, self.size - 1))
+		candidates = [start]
+		chosen = set()
+		for j in range(size):
+			cur_point = randomizer.choice(candidates)
+			candidates.remove(cur_point)
+
+			chosen.add(cur_point)
+
+			for point in self.get_points_in_ball(cur_point.x, cur_point.y, 1):
+				if point not in candidates and point not in chosen:
+					candidates.append(point)
+
+		return list(chosen)
+
+# A class used by Vaults in order to treat a subsection of the level as a whole level for mutators
+class SubLevel():
+
+	def __init__(self, level, xstart, ystart, xsize, ysize, randomizer):
+		self.master_level = level
+		self.level = self # hack for levelgen helpers
+		self.xstart = xstart
+		self.ystart = ystart
+		self.width = xsize
+		self.height = ysize
+
+		self.random = randomizer
+
+	def get_spawn_points(self):
+		# Find points to put stuff
+		floor_spawn_points = []
+		wall_spawn_points = []
+		for i in range(self.width):
+			for j in range(self.height):
+				
+				cur_point = self.translate_coords(i, j)
+				if not cur_point:
+					continue
+
+				if self.master_level.get_unit_at(cur_point[0], cur_point[1]):
+					continue
+
+				if self.master_level.can_walk(cur_point[0], cur_point[1]):
+					floor_spawn_points.append(cur_point)
+
+				else:
+					if len([p for p in self.master_level.get_adjacent_points(cur_point)]) > 1:
+						wall_spawn_points.append(cur_point)
+
+		self.random.shuffle(floor_spawn_points)
+		self.random.shuffle(wall_spawn_points)
+
+		return floor_spawn_points, wall_spawn_points
+
+	def translate_coords(self, x, y):
+		if x >= self.width:
+			return None
+		if y >= self.height:
+			return None
+
+		new_coords = Point(x + self.xstart, y + self.ystart)
+		return new_coords
+
+	def iter_tiles(self):
+		for i in range(0, self.width):
+			for j in range(0, self.height):
+				coords = self.translate_coords(i, j)
+				if coords is not None:
+					yield self.master_level.tiles[coords[0]][coords[1]]
+
+	def set_tileset(self, tileset):
+		for tile in self.iter_tiles():
+			tile.tileset = tileset
+
+	def fill_walls(self):
+		for i in range(0, self.width):
+			for j in range(0, self.height):
+				self.make_wall(i, j)
+
+	def fill_chasms(self):
+		for i in range(0, self.width):
+			for j in range(0, self.height):
+				self.make_chasm(i + self.xstart, j + self.ystart)
+
+	def fill_floors(self):
+		for i in range(0, self.width):
+			for j in range(0, self.height):
+				self.make_floor(i + self.xstart, j + self.ystart)
+
+	def make_floor(self, x, y):
+		translated_coords = self.translate_coords(x, y)
+		if translated_coords is None:
+			return
+
+		self.master_level.make_floor(translated_coords[0], translated_coords[1])
+
+	def make_chasm(self, x, y):
+		translated_coords = self.translate_coords(x, y)
+		if translated_coords is None:
+			return
+
+		self.master_level.make_chasm(translated_coords[0], translated_coords[1])
+
+	def make_wall(self, x, y):
+		translated_coords = self.translate_coords(x, y)
+		if translated_coords is None:
+			return
+
+		self.master_level.make_wall(translated_coords[0], translated_coords[1])
+
+	def add_obj(self, obj, x, y):
+		translated_coords = self.translate_coords(x, y)
+		if translated_coords is None:
+			return
+
+		self.master_level.add_obj(obj, translated_coords[0], translated_coords[1])
+
+
+class TurnSummary():
+
+	def __init__(self):
+		self.ally_kill_counts = defaultdict(lambda: 0)
+		self.enemy_kill_counts = defaultdict(lambda: 0)
+		self.ally_damage_taken = defaultdict(lambda: 0)
+		self.damage_dealt = defaultdict(lambda: 0)
+		self.self_damage_taken = defaultdict(lambda: 0)
+
+	def clear(self):
+		self.ally_kill_counts.clear()
+		self.enemy_kill_counts.clear()
+		self.ally_damage_taken.clear()
+		self.damage_dealt.clear()
+		self.self_damage_taken.clear()
+
 class NameLookupCollection():
 	def __init__(self, elements):
 		self.elements = elements
@@ -3445,6 +4186,7 @@ Tags = NameLookupCollection([
 	Tag("Eye", Color(255, 255, 255)),
 	Tag("Glass", Color(43, 175, 43)),
 	Tag("Chaos", Color(255, 171, 77)),
+	Tag("Blood", Color(134, 13, 7)),
 	Tag("Tongue", Color(236, 94, 149)),
 	Tag("Slime", Color(206, 220, 56)),
 	# Getting hacky here
@@ -3460,8 +4202,23 @@ Tags = NameLookupCollection([
 
 	Tag("Arrow", Color(0, 0, 7)),	
 	Tag("Petrification", Color(0, 0, 8)),
-	Tag("Glassification", Color(0, 0, 9))
+	Tag("Glassification", Color(0, 0, 9)),
+
+	Tag("Immolate", Color(0, 0, 10)),
+	Tag("Thunderstrike", Color(0, 0, 11)),
+	Tag("ArmageddonBlade", Color(0, 0, 12)),
 ])
+
+damage_tags = [
+	Tags.Physical,
+	Tags.Fire,
+	Tags.Lightning,
+	Tags.Dark,
+	Tags.Poison,
+	Tags.Holy,
+	Tags.Arcane,
+	Tags.Ice
+]
 
 Knowledges = [
 	Tags.Fire,
@@ -3469,6 +4226,7 @@ Knowledges = [
 	Tags.Lightning,
 	Tags.Nature,
 	Tags.Dark,
+	Tags.Holy,
 	Tags.Arcane,
 	Tags.Sorcery,
 	Tags.Conjuration,
@@ -3494,3 +4252,4 @@ attr_colors = {
 	'cooldown': Tags.Enchantment.color,
 	'cascade_range': COLOR_CHARGES,
 }
+

@@ -1,23 +1,41 @@
-intro_text = """Welcome back Wizard, to the ruins of the universe.
+intro_text = """Welcome back once again Wizard, to the ruins of the universe.
 
 Aeons passed while you slumbered.
 You have sleptwalk across many worlds.
 
-The universe, once ordered and beautiful, lies in chaos and ruin.
+Weep for Avalon, o lonely old Wizard!
+Love and beauty transmuted to chaos and ruin.
 
-And you as well:
-You were a great wizard once, but your magic and your memories have faded.
+Your beloved Avalon, and you, her loyal servant, as well.
 
-Your purpose you remember.  Revenge.
+Once a great Wizard,
+Your memories and magics have faded.
+
+Now a thirst for revenge awakens you.
 The Dark Wizard Mordred is nearby.
 
-Perhaps he is what woke you?
+Regain your power.
+Slay Mordred.
+Vengeance for Avalon.
+"""
 
-Regain your power, and slay Mordred.
+unused_new_intro_text = """Arise Wizard,
+
+Aeons passed while you slumbered.
+You have sleptwalk across many worlds.
+
+Weep for Avalon!
+The dread serpent Jormangandr has laid waste to your beautiful empire.
+
+But the phase of the moon turns,
+And the Serpent returns to the material plane.
+
+You will awaken one last time.
+Gather again your lost memories, and put the beasts of chaos to rest.
 """
 
 
-victory_text = """VICTORY
+old_victory_text = """VICTORY
 
 Mordred is defeated.
 
@@ -26,6 +44,16 @@ Order and justice will soon return to the universe.
 Exhausted, you fade from conciousness back into sleep.
 
 Perhaps this time, you may dream.
+"""
+
+victory_text = """The Dark Wizard is slain.
+
+His beasts have been broken and made tame.
+
+The beauty of avalon will be built again.
+
+Your soul is permitted to sleep and dream once more.
+
 """
 
 welcome_text = """WELCOME
@@ -40,7 +68,7 @@ Beware, for once you enter, there will be no way to return."""
 
 how_to_play = """HOW TO PLAY
 
-Finish 24 levels and kill Mordred to win the game.
+Finish 20 levels and slay your nemesis to win the game.
 Destroy all enemies to finish a level.
 
 After completing a level, walk onto a rift to peek inside.
@@ -48,10 +76,10 @@ Teleport through the rift by clicking any empty tile, or abort the teleport usin
 After you teleport into a level, you cannot leave until it is finished.  Teleport with care.
 
 Spells and passive skills can all purchased with skillpoints (SP) from the Character Sheet.
-Spells can be individually upgraded from the Character sheet using SP, and at shrines found in the world.
+Spells can be individually upgraded from the Character sheet using SP.
 
 Spells have limited charges.  Casting a spell costs one charge from that spell.
-Regain charges by drinking mana potions, which can be found on the ground in some levels.
+Regain charges by drinking a mana potion or completing the level.
 
 CONTROLS:
 
@@ -116,5 +144,5 @@ glassify_desc = ("[Glassified] units cannot act.\n"
 				"[Glassified] units gain [75_fire:fire] resist.")
 stun_desc = "[Stunned] units cannot act."
 berserk_desc = "[Berserk] units are hostile to all other units, they will attack and be attacked by their allies."
-poison_desc = "[Poisoned] units take 1 [poison] damage each turn."
+poison_desc = "[Poisoned] units take 1 [poison] damage each turn and cannot heal."
 blind_desc = "[Blind] units have all their spell ranges reduced to 1."

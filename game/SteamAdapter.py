@@ -1,4 +1,4 @@
-import steamworks
+# import steamworks
 import dill as pickle
 import os
 
@@ -22,6 +22,7 @@ default_vals = {
 	'steam_contact': False, # Has steam ever been contacted for stats
 	'trials': set(), # Set of strings of names of finished trials
 	'bestiary': set(), # Set of strings of defeated monster names
+	'purchases': set(), # Set of strings of spells and skills ever purchased
 }
 
 
@@ -80,22 +81,30 @@ def init():
 
 
 def get_stat(stat):
-	# Try to init sw- updating stats dict if needed
-	try_get_sw()
-	stats_log.debug("Fetching %s, result %s" % (stat, stats[stat]))
-	return stats[stat]
+
+	# Disable for now
+	if False:
+		# Try to init sw- updating stats dict if needed
+		try_get_sw()
+		stats_log.debug("Fetching %s, result %s" % (stat, stats[stat]))
+		return stats[stat]
+	else:
+		return 0
 
 def set_stat(stat, val):
-	stats_log.debug("Setting %s to %s" % (stat, val))
-	stats[stat] = val
 
-	with open('stats.dat', 'wb') as stats_file:
-		pickle.dump(stats, file=stats_file)
+		stats_log.debug("Setting %s to %s" % (stat, val))
+		stats[stat] = val
 
-	s = try_get_sw()
-	if s:
-		s.SetStatInt(stat.encode('ascii'), val)
-		s.StoreStats()
+		with open('stats.dat', 'wb') as stats_file:
+			pickle.dump(stats, file=stats_file)
+
+		# Disable for now
+		if False:
+			s = try_get_sw()
+			if s:
+				s.SetStatInt(stat.encode('ascii'), val)
+				s.StoreStats()
 
 def set_presence_menu():
 	s = try_get_sw()
@@ -123,6 +132,16 @@ def set_trial_complete(trial_name):
 	s = try_get_sw()
 	if s:
 		s.SetAchievement(trial_name.upper().replace(' ', '_').encode('ascii'))
+
+def record_purchase(spell_name):
+	if spell_name not in stats["purchases"]:
+		stats["purchases"].add(spell_name)
+		
+		with open('stats.dat', 'wb') as stats_file:
+			pickle.dump(stats, file=stats_file)
+
+def has_been_purchased(spell_name):
+	return spell_name in stats["purchases"]
 
 def unlock_bestiary(monster_name):
 	if monster_name not in stats["bestiary"]:

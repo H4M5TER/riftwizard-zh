@@ -328,6 +328,9 @@ class Enlarge(Spell):
 					s.damage += 1
 			yield
 
+	def can_threaten(self, x, y):
+		return False
+
 def Tablet(name):
 	unit = Unit()
 	unit.max_hp = 35
@@ -1200,14 +1203,6 @@ def OrcArmored():
 	unit.name = "Orc Juggernaut"
 	return unit
 
-def OrcHoundlord():
-	unit = Orc()
-	unit.name = "Orc Houndlord"
-	unit.max_hp += 9
-	houndy = SimpleSummon(OrcWolf, num_summons=2, cool_down=10)
-	unit.spells.insert(0, houndy)
-	return unit
-
 def GoatHeadGiant():
 	unit = Giant(GoatHead())
 	unit.asset_name = "gotia_giant"
@@ -1278,68 +1273,6 @@ def RavenToxic():
 	unit.resists[Tags.Poison] = 100
 	return unit
 
-def WormBallGhostly(HP=10):
-	unit = Unit()
-	unit.max_hp = HP
-
-	if HP >= 10:
-		unit.name = "Large Ghost Worm Ball"
-		unit.asset_name = "wormball_med_ghostly"
-	else:
-		unit.name = "Small Ghost Worm Ball"
-		unit.asset_name = "wormball_small_ghostly"
-
-	if HP >= 10:
-		unit.buffs.append(SplittingBuff(spawner=lambda : WormBallGhostly(unit.max_hp // 2), children=2))
-
-	unit.buffs.append(RegenBuff(3))
-	unit.spells.append(SimpleMeleeAttack(HP // 2, damage_type=Tags.Dark))
-
-	unit.resists[Tags.Physical] = 100
-	unit.tags = [Tags.Undead]
-	return unit
-
-def WormBallToxic(HP=10):
-	unit = Unit()
-	unit.max_hp = HP
-
-	if HP >= 10:
-		unit.name = "Large Toxic Worm Ball"
-		unit.asset_name = "wormball_med_toxic"
-	else:
-		unit.name = "Small Toxic Worm Ball"
-		unit.asset_name = "wormball_small_toxic"
-
-	if HP >= 10:
-		unit.buffs.append(SplittingBuff(spawner=lambda : WormBallToxic(unit.max_hp // 2), children=2))
-
-	unit.buffs.append(RegenBuff(3))
-	unit.spells.append(SimpleMeleeAttack(HP // 2))
-	unit.buffs.append(DamageAuraBuff(damage=2 if HP >= 10 else 1, damage_type=Tags.Poison, radius=3))
-
-	unit.tags = [Tags.Living, Tags.Poison]
-	unit.resists[Tags.Poison] = 100
-	return unit
-
-def WormBallIron(HP=10):
-	unit = Unit()
-	unit.max_hp = HP
-
-	if HP >= 10:
-		unit.name = "Large Iron Worm Ball"
-		unit.asset_name = "wormball_med_iron"
-	else:
-		unit.name = "Small Iron Worm Ball"
-		unit.asset_name = "wormball_small_iron"
-
-	if HP >= 10:
-		unit.buffs.append(SplittingBuff(spawner=lambda : WormBallIron(unit.max_hp // 2), children=2))
-
-	unit.buffs.append(RegenBuff(3))
-	unit.spells.append(SimpleMeleeAttack(3 + HP // 2))
-
-	unit.tags = [Tags.Construct, Tags.Metallic]
-	return unit
 
 def OgreArmored():
 	unit = Armored(Ogre())
@@ -1479,14 +1412,6 @@ def BagOfBugsFire():
 	unit.tags.append(Tags.Fire)
 	return unit
 
-def LightningFlies():
-	unit = FlyCloud()
-	unit.name = "Lightning Bug Swarm"
-	unit.asset_name = "fly_swarm_lightning"
-	unit.spells = [SimpleRangedAttack(damage=1, damage_type=Tags.Lightning, range=3)]
-	unit.resists[Tags.Lightning] = 75
-	unit.tags.append(Tags.Lightning)
-	return unit
 
 def BagOfBugsLightning():
 	unit = BagOfBugs(LightningFlies)
@@ -1517,7 +1442,7 @@ def BagOfBugsBrain():
 
 def BagOfBugsGiant():
 	unit = Giant(BagOfBugs())
-	unit.get_buff(BagOfBugsBuff).spawns *= 8
+	unit.get_buff(SpawnOnDeath).num_spawns *= 8
 	unit.get_buff(GeneratorBuff).spawn_chance *= 2
 	return unit
 
@@ -1592,19 +1517,6 @@ def TroublerGlass():
 	unit.tags.append(Tags.Glass)
 	return unit
 
-def FairyIce():
-	unit = EvilFairy()
-	unit.name = "Ice Faery"
-	unit.asset_name = "faery_ice"
-
-	icebolt = SimpleRangedAttack(damage=2, range=4, damage_type=Tags.Ice, buff=FrozenBuff, buff_duration=1)
-	icebolt.name = "Freezing Bolt"
-
-	unit.spells = [HealAlly(heal=7, range=6), icebolt]
-	unit.tags.append(Tags.Ice)
-	unit.resists[Tags.Ice] = 100
-	return unit
-
 def ArmoredBat():
 	unit = Bat()
 	unit.asset_name = "bat_vampire_armored"
@@ -1638,14 +1550,28 @@ def CountBat():
 	unit.buffs.append(MatureInto(VampireCount, 20))
 	return unit
 
+def bat_or_ghost():
+	unit = random.choice([Bat(), Ghost()])
+	unit.turns_to_death = random.randint(5, 9)
+	return unit
+
 def VampireCount():
 	unit = Vampire()
 	unit.name = "Vampire Count"
 	unit.asset_name = "vampire_count"
-	unit.max_hp = 93
+	unit.max_hp = 333
 	unit.spells[0].damage += 4
 
 	unit.buffs.append(VampireCountBuff())
+
+	unit.spells.insert(0, SimpleSummon(Vampire, num_summons=2, cool_down=20))
+
+	batcloud = SimpleSummon(bat_or_ghost, num_summons=15, cool_down=15)
+	batcloud.name = "Army of Darkness"
+	batcloud.description = "Summons 15 ghosts and bats.  The units last between 5 and 9 turns"
+
+	unit.spells.insert(1, batcloud)
+
 	unit.get_buff(RespawnAs).spawner = CountBat
 	return unit
 
@@ -1964,19 +1890,6 @@ def PolarBearShaman():
 
 	return unit
 
-def FurnaceHound():
-	unit = HellHound()
-	unit.name = "Furnace Hound"
-	unit.asset_name = "hell_hound_furnace"
-	unit.tags.append(Tags.Metallic)
-	unit.max_hp += 7
-	buff = DamageAuraBuff(damage=1, damage_type=Tags.Fire, radius=4)
-	buff.name = "Furnace Aura"
-	unit.buffs.append(buff)
-	unit.spells[0].damage_type = Tags.Physical
-	unit.spells[1].damage_type = Tags.Physical
-	unit.resists[Tags.Ice] = -50
-	return unit
 
 def ChaosHound():
 	unit = Unit()
@@ -2487,13 +2400,6 @@ def DarkTormentorGiant():
 	unit.asset_name = "tormentor_dark_giant"
 	return unit
 
-def FieryTormentorMass():
-	unit = FieryTormentor()
-	unit.name = "Fiery Tormenting Mass"
-	unit.asset_name = "tormentor_fiery_mass"
-	unit.max_hp += 17
-	unit.buffs.append(SpawnOnDeath(FieryTormentor, 3))
-	return unit
 
 def IcyTormentorMass():
 	unit = IcyTormentor()
@@ -2590,52 +2496,6 @@ def FloatingEyeIce():
 	unit.tags.append(Tags.Ice)
 	unit.resists[Tags.Ice] = 100
 	return unit
-
-def ChaosSpirit():
-	spirit = Unit()
-	spirit.max_hp = 36
-	spirit.name = "Chaos Spirit"
-
-	spirit.sprite.char = 'S'
-	spirit.sprite.color = Color(255, 160, 60)
-
-	spirit.buffs.append(SpiritBuff(Tags.Fire))
-	spirit.buffs.append(SpiritBuff(Tags.Lightning))
-
-	chaosball = SimpleRangedAttack(damage=11, radius=1, range=6, damage_type=[Tags.Fire, Tags.Lightning])
-	chaosball.name = "Chaos Blast"
-
-	spirit.spells.append(chaosball)
-
-	spirit.resists[Tags.Fire] = 100
-	spirit.resists[Tags.Lightning] = 100
-
-	spirit.tags = [Tags.Fire, Tags.Lightning]
-	
-	return spirit
-
-def StormSpirit():
-	spirit = Unit()
-	spirit.max_hp = 36
-	spirit.name = "Storm Spirit"
-
-	spirit.sprite.char = 'S'
-	spirit.sprite.color = Color(255, 160, 60)
-
-	spirit.buffs.append(SpiritBuff(Tags.Ice))
-	spirit.buffs.append(SpiritBuff(Tags.Lightning))
-
-	chaosball = SimpleRangedAttack(damage=11, radius=1, range=6, damage_type=[Tags.Ice, Tags.Lightning])
-	chaosball.name = "Storm Blast"
-
-	spirit.spells.append(chaosball)
-
-	spirit.resists[Tags.Ice] = 100
-	spirit.resists[Tags.Lightning] = 100
-
-	spirit.tags = [Tags.Ice, Tags.Lightning]
-	
-	return spirit
 
 def StarfireSpirit():
 	spirit = Unit()
@@ -3319,13 +3179,13 @@ variants = {
 		(GreenMushboomGiant, 2, 4, WEIGHT_COMMON),
 		(GreenMushboomKing, 1, 1, WEIGHT_RARE),
 		(GlassMushboom, 3, 6, WEIGHT_RARE),
-		(SwampQueen, 1, 1, WEIGHT_RARE),
+		#(SwampQueen, 1, 1, WEIGHT_RARE),
 	],
 	GreyMushboom: [
 		(GreyMushboomGiant, 2, 4, WEIGHT_COMMON),
 		(GreyMushboomKing, 1, 1, WEIGHT_RARE),
 		(GlassMushboom, 3, 6, WEIGHT_RARE),
-		(SwampQueen, 1, 1, WEIGHT_RARE),
+		#(SwampQueen, 1, 1, WEIGHT_RARE),
 	],
 	Mantis: [
 		(MetalMantis, 1, 3, WEIGHT_COMMON),
