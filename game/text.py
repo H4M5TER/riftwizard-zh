@@ -1,148 +1,142 @@
-intro_text = """Welcome back once again Wizard, to the ruins of the universe.
+intro_text = """巫师，欢迎回来，回到宇宙的废墟。
 
-Aeons passed while you slumbered.
-You have sleptwalk across many worlds.
+当你沉睡的时候，纪元已经过去。
+你已经梦游了许多世界。
 
-Weep for Avalon, o lonely old Wizard!
-Love and beauty transmuted to chaos and ruin.
+为阿瓦隆哀悼，我孤独的老巫师！
+爱与美好化作了混乱与废墟。
 
-Your beloved Avalon, and you, her loyal servant, as well.
+你深爱的阿瓦隆，以及你，她的忠诚侍从。
 
-Once a great Wizard,
-Your memories and magics have faded.
+曾经伟大的巫师，
+你的记忆和法力已经褪色。
 
-Now a thirst for revenge awakens you.
-The Dark Wizard Mordred is nearby.
+现在，复仇的渴望将你唤醒。
+黑暗巫师莫德瑞德正在附近。
 
-Regain your power.
-Slay Mordred.
-Vengeance for Avalon.
+重拾你的力量。
+杀死莫德雷德。
+为阿瓦隆复仇。
 """
 
-unused_new_intro_text = """Arise Wizard,
+unused_new_intro_text = """醒来巫师，
 
-Aeons passed while you slumbered.
-You have sleptwalk across many worlds.
+当你沉睡的时候，纪元已经过去。
+你已经梦游了许多世界。
 
-Weep for Avalon!
-The dread serpent Jormangandr has laid waste to your beautiful empire.
+为阿瓦隆哀悼！
+恐怖的巨蛇耶梦加得摧毁了你美丽的帝国。
 
-But the phase of the moon turns,
-And the Serpent returns to the material plane.
+随着月相转变，
+耶梦加得重返物质位面。
 
-You will awaken one last time.
-Gather again your lost memories, and put the beasts of chaos to rest.
+你将苏醒最后一次。
+再次聚拢你失落的记忆，让混沌之兽安息。
 """
 
 
-old_victory_text = """VICTORY
+old_victory_text = """「胜利」
 
-Mordred is defeated.
+莫德雷德被打败了。
 
-Order and justice will soon return to the universe.
+宇宙将回归秩序和正义。
 
-Exhausted, you fade from conciousness back into sleep.
+疲惫不堪, 你失去知觉, 回到了睡眠中。
 
-Perhaps this time, you may dream.
+也许这次, 你会做梦。
 """
 
-victory_text = """The Dark Wizard is slain.
+victory_text = """黑暗巫师死了。
 
-His beasts have been broken and made tame.
+他的野兽被打败, 被驯服。
 
-The beauty of avalon will be built again.
+阿瓦隆的美丽将再次重建。
 
-Your soul is permitted to sleep and dream once more.
+你的灵魂被允许再次入睡和做梦。
 
 """
 
-welcome_text = """WELCOME
-Welcome to Rift Wizard.
-Press H for a full help screen and details on all the game's controls.
-Mouseover something for a detailed description of what it does.
-Press S to purchase a spell."""
+welcome_text = """「欢迎」
+欢迎来到《裂隙巫师2》。
+按 H 以查看帮助说明, 了解操作方式。
+鼠标悬浮在物件上以查看详情。
+按 S 以学习法术。
+"""
 
-deploy_text = """You have stepped halfway through the rift.  
-You may choose any point in the next world to materialize at (Enter, left click), or you may step out of this rift and return to the previous world (ESC, right click).
-Beware, for once you enter, there will be no way to return."""
+deploy_text = """你半脚踏进了裂隙。
+你可以选择在下个世界中的任何一个地块现身（回车, 左键单击）, 
+也可以退出此裂隙并返回上一个世界（Esc, 右键单击）。
+当心, 进去之后就没有回头路了。
+"""
 
-how_to_play = """HOW TO PLAY
+how_to_play = """「如何游玩」
+消灭所有敌人以完成一个关卡。
+完成 24 个关卡并杀死你的宿敌以赢得游戏。
 
-Finish 20 levels and slay your nemesis to win the game.
-Destroy all enemies to finish a level.
+完成一个关卡后, 走到一个裂隙上可以窥探它的目的地。
+单击任何空地穿过裂隙传送到那里, 或使用 Esc 取消传送。
+传送到关卡后, 在完成之前不能离开。传送需谨慎。
 
-After completing a level, walk onto a rift to peek inside.
-Teleport through the rift by clicking any empty tile, or abort the teleport using escape.  
-After you teleport into a level, you cannot leave until it is finished.  Teleport with care.
+法术和能力都可以在角色界面通过支付技能点 (SP) 学习。
+法术可以使用技能点 (SP) 升级。
 
-Spells and passive skills can all purchased with skillpoints (SP) from the Character Sheet.
-Spells can be individually upgraded from the Character sheet using SP.
+法术的充能有限。每次施放法术会消耗该法术的一次充能。
+完成关卡或饮用法力药水可以恢复所有的充能。
 
-Spells have limited charges.  Casting a spell costs one charge from that spell.
-Regain charges by drinking a mana potion or completing the level.
+【控制方式】
+C: 角色界面    S: 学习法术    K: 学习能力    H: 帮助（本屏幕）
+左键单击/回车: 移动, 或向光标位置施放当前所选的法术
+右键单击/Esc: 取消当前法术, 退出当前菜单
+小键盘/鼠标: 移动
 
-CONTROLS:
-
-H: Help (This Screen)      C: Character Sheet      S: Learn Spells     K: Learn Skills
-
-Left click: Move, or cast currently selected spell at the cursor's position.
-Right click: Cancel current spell or exit current menu
-
-Numpad:
+小键盘: 
 7 8 9
-4   6  -> Move one space in the corresponding direction.
+4   6  -> 向对应方向移动一格。
 1 2 3
+小键盘 5: 等待一回合, 若正在引导法术则继续引导。
 
-Numpad 5: Wait one turn (Or continue channeling if channeling a spell)
+        1 2 3 4 5 6 7 8 9 0: 施放/选择法术 1-10
+Shift + 1 2 3 4 5 6 7 8 9 0: 施放/选择法术 11-20
+Alt   + 1 2 3 4 5 6 7 8 9 0: 使用/选择物品 1-10
 
-        1 2 3 4 5 6 7 8 9 0: Cast/Select spell 1-10
-Shift + 1 2 3 4 5 6 7 8 9 0: Cast/Select spell 11-20)
-Alt   + 1 2 3 4 5 6 7 8 9 0: Use/Select item 1-10
-
-Numpad/mouse: move the targeting reticle.
-Esc: Cancel spell targeting
-Enter: cast current spell or enter portal at current location
-
-Advanced Controls:
-
-l: Show line of sight           t: Show threatened tiles
-Tab:  Next target               m:   Show message log
-
-v: look (target a square to look, tab target to look at interesting places)
-w: walk (target a square to walk there, tab target to walk to interesting places)
-a: autopickup all loot (after clearing level)
-Shift + up/down arrow on character sheet: change selected spell hotkey
-i: interact with current tile (enter portal, open shop)
-pgup/pgdown: view descriptions of spell upgrades (when viewing spell description)
+【进阶控制】
+L: 显示视线    T: 显示受威胁的地块
+Tab: 切换目标  M: 显示消息日志
+V: 看向（一个地块, 切换目标看向特殊地点）
+W: 走向（一个地块, 切换目标走向特殊地点）
+A: 自动捡取所有战利品（清场后）
+I: 与所在地块交互（进入传送门, 进入商店）
+PgUp/PgDn: 查看法术升级的描述（查看法术描述时）
+Shift + Up/Down: 更改所选法术的快捷键（角色界面）
 """
 
-advanced_tips = """STATUS EFFECTS
+advanced_tips = """【状态效果】
 
-Stunned: Cannot act.
-Poisoned: Take 1 poison damage per turn and cannot heal.
-Petrified: Cannot act, gain 100 ice and lightning resist, gain 75 physical and fire resist.
-Glassified: Cannot act, gain 100 ice and lightning resist, 75 fire resist, lose 100 physical resist.
-Frozen: Cannot act.  Ends upon taking fire or physical damage.  Cannot affect units with 100 ice resist.
-Berserked: Become hostile to all other units.  Will attack and be attacked by allies.
-Blind: All spell ranges reduced to 1.
-Channeling: Will continue to cast previous spell with same target if no other action is taken.
-Shield (SH): If a unit with SH would be dealt damage, it loses 1 SH instead.
+击晕: 无法行动。
+中度: 每回合受到 1 点毒素伤害, 无法回复血量。
+石化: 无法行动, 获得 100 寒冰和闪电抗性, 75 物理和火焰抗性。
+玻璃化: 无法行动, 获得 100 寒冰和闪电抗性, 75 火焰抗性, 失去 100 物理抗性。
+冻结: 无法行动。受到火焰或物理伤害时解冻。100 寒冰抗性的单位免受影响。
+狂暴: 敌对所有其他单位。会攻击友方, 并且会被友方攻击。
+蔽目: 所有法术的射程降低为 1。
+引导: 如果没有行动, 对相同目标施放之前的法术。
+护盾（SH）: 具有护盾的单位将受伤时, 改为失去 1 点护盾。
 """
 
-endings = ["Utopia", "Nirvana", "Ragnarok"]
+endings = ["乌托邦", "涅槃", "诸神黄昏"]
 
-frozen_desc = "[Frozen] units cannot act. Frozen units unfreeze upon taking [fire] or [physical] damage."
-petrify_desc = ("[Petrified] units cannot act.\n"
-				"[Petrified] units gain [100_ice:ice] resist.\n"
-				"[Petrified] units gain [100_lightning:lightning] resist.\n"
-				"[Petrified] units gain [75_physical:physical] resist.\n"
-				"[Petrified] units gain [75_fire:fire] resist.")
-glassify_desc = ("[Glassified] units cannot act.\n"
-				"[Glassified] units gain [-100_physical:physical] resist.\n"
-				"[Glassified] units gain [100_ice:ice] resist.\n"
-				"[Glassified] units gain [100_lightning:lightning] resist.\n"
-				"[Glassified] units gain [75_fire:fire] resist.")
-stun_desc = "[Stunned] units cannot act."
-berserk_desc = "[Berserk] units are hostile to all other units, they will attack and be attacked by their allies."
-poison_desc = "[Poisoned] units take 1 [poison] damage each turn and cannot heal."
-blind_desc = "[Blind] units have all their spell ranges reduced to 1."
+frozen_desc = "[Frozen] 无法行动。受到 [fire] 或 [physical] 伤害时结束。"
+petrify_desc = ("[Petrified] 的单位无法行动。\n"
+				"[Petrified] 的单位获得 [100_ice:ice] 抗性。\n"
+				"[Petrified] 的单位获得 [100_lightning:lightning] 抗性。\n"
+				"[Petrified] 的单位获得 [75_physical:physical] 抗性。\n"
+				"[Petrified] 的单位获得 [75_fire:fire] 抗性。")
+glassify_desc = ("[Glassified] 的单位无法行动。\n"
+				"[Glassified] 的单位获得 [-100_physical:physical] 抗性。\n"
+				"[Glassified] 的单位获得 [100_ice:ice] 抗性。\n"
+				"[Glassified] 的单位获得 [100_lightning:lightning] 抗性。\n"
+				"[Glassified] 的单位获得 [75_fire:fire] 抗性。")
+stun_desc = "[Stunned] 的单位无法行动。"
+berserk_desc = "[Berserk] 敌对所有其他单位。会攻击友方, 并会被友方攻击。"
+poison_desc = "[Poisoned] 每回合受到 1 点毒素伤害, 无法回复血量。"
+blind_desc = "[Blind] 单位所有法术的射程降低到 1。"
