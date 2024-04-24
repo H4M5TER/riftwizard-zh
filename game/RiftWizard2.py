@@ -2560,7 +2560,7 @@ class PyGameView(object):
 
 			# Upgrades
 			for upgrade in sorted((b for b in self.game.p1.buffs if isinstance(b, Upgrade) and b.prereq == spell), key=lambda b: b.shrine_name is None):
-				fmt = loc.upgrades.get(upgrade.name, upgrade.name)
+				# TODO 翻译
 				if upgrade.shrine_name:
 					color = COLOR_XP
 					fmt = upgrade.name.replace('(%s)' % spell.name, '')
@@ -2663,15 +2663,18 @@ class PyGameView(object):
 		self.confirm_no = self.abort_buy
 
 		self.chosen_purchase = item
-		_name = loc.upgrades.get(item.name, item.name)
 
 		if isinstance(item, Equipment):
-			self.confirm_text = "拾取 %s？" % item.name
+			_name = loc.equipments.get(item.name, item.name)
+			self.confirm_text = "拾取 %s？" % _name
 		elif isinstance(item, ShrineBuff):
 			# dead code, shrines are not in the game
 			attr = self.chosen_purchase.name.replace(self.chosen_purchase.shrine_name + ' ', '').lower()
 			self.confirm_text = "对 %s 使用 %s？" % (self.chosen_purchase.prereq.name, self.game.cur_level.cur_shop.name)
 		else:
+			_name = loc.spells.get(item.name, item.name)
+			_name = loc.skills.get(_name, _name)
+			_name = loc.upgrades.get(_name, _name)
 			if isinstance(self.game.cur_level.cur_shop, AmnesiaShop) and isinstance(item, Spell):
 				self.confirm_text = "遗忘 %s?" % self.chosen_purchase.name
 			elif self.shop_type == SHOP_TYPE_SHOP:
@@ -3381,8 +3384,8 @@ class PyGameView(object):
 		if self.shop_type == SHOP_TYPE_UPGRADES:
 			self.draw_string("学习能力: ", self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-			# TODO 翻译
-			self.draw_string("升级 %s：" % self.shop_upgrade_spell.name, self.middle_menu_display, cur_x, cur_y)
+			upg_name = loc.upgrades.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name)
+			self.draw_string("升级 %s：" % upg_name, self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SHOP:
 			self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 			cur_y += self.linesize
@@ -3419,7 +3422,7 @@ class PyGameView(object):
 			if self.shop_type == SHOP_TYPE_SPELLS:
 				fmt = loc.spells.get(opt.name, opt.name)
 			elif self.shop_type == SHOP_TYPE_UPGRADES:
-				fmt = loc.upgrades.get(opt.name, opt.name)
+				fmt = loc.skills.get(opt.name, opt.name)
 			else:
 				fmt = opt.name
 			cur_color = (255, 255, 255)
@@ -4469,22 +4472,11 @@ class PyGameView(object):
 		max_width = width
 
 		cur_y = y # start y pos
-
-		char_width = self.font.size('w')[0]
-		chars_per_line = width // char_width
-
-		for line in lines: # pre separated by \n、
-			exp = "\[[^]]+\]|[a-zA-Z]+| |." # 着色块、英语单词、空格、任意（汉字等）
-			words = re.findall(exp, line) # words is now all the words in the line
-			words.reverse() # get them in reverse order so we can pop the first ones from the end (faster than pop(0))
-			cur_line = "" 
-			chars_left = chars_per_line
-
-			# Start each line all the way to the left
-			cur_x = x
-			
-			assert(all(len(word) < chars_per_line) for word in words)
-
+		for line in lines:
+			cur_x = x + 1 # 首行缩进
+			exp = "\[[^]]+\]|[a-zA-Z]+| |."
+			words = re.findall(exp, line)
+			words.reverse()
 			while words:
 				cur_color = color
 				word = words.pop()
@@ -4505,15 +4497,13 @@ class PyGameView(object):
 
 				word_width = self.font.size(word)[0]
 				is_symbol = word in [',', '.', ':', '，', '。', '：','、']
-				if word_width > pixels_left and not is_symbol:
+				if cur_x + word_width > x + max_width and not is_symbol:
 					num_lines += 1
 					cur_x = x
 					cur_y += line_height
-					pixels_left = max_width
 
 				self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
 				cur_x += word_width
-				pixels_left -= word_width
 
 			cur_y += line_height
 			num_lines += 1
@@ -5184,34 +5174,35 @@ class PyGameView(object):
 		for tag in Tags:
 			if tag not in spell.tags:
 				continue
+			# TODO 翻译
 			self.draw_string(tag.name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
 			cur_y += linesize
 		cur_y += linesize
 
 		if spell.level:
-			self.draw_string("Level %d" % spell.level, self.examine_display, cur_x, cur_y)
+			self.draw_string("等级 %d" % spell.level, self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
 		if spell.melee:
-			self.draw_string("Melee Range", self.examine_display, cur_x, cur_y)
+			self.draw_string("近战距离", self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 		elif spell.range:
-			fmt = "Range %d" % spell.get_stat('range')
+			fmt = "施法范围 %d" % spell.get_stat('range')
 			if not spell.requires_los:
-				fmt += " (Ignores LOS)"
+				fmt += " (无须视线)"
 			self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		if spell.get_stat('quick_cast'):
-			self.draw_string("Quick Cast", self.examine_display, cur_x, cur_y)
+			self.draw_string("快速施放", self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		if spell.max_charges:
-			self.draw_string("Charges: %d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
+			self.draw_string("充能数：%d/%d " % (self.examine_target.cur_charges, self.examine_target.get_stat('max_charges')), self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		if spell.hp_cost:
-			self.draw_string("HP Cost: %d" % spell.get_stat('hp_cost'), self.examine_display, cur_x, cur_y)
+			self.draw_string("生命消耗: %d" % spell.get_stat('hp_cost'), self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		cur_y += linesize
@@ -5220,7 +5211,7 @@ class PyGameView(object):
 		cur_y += linesize * lines
 
 		if SIZE == SIZE_LARGE:
-			self.draw_string("Attributes:", self.examine_display, cur_x, cur_y)
+			self.draw_string("属性:", self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 			had_attrs = False
 
@@ -5261,7 +5252,7 @@ class PyGameView(object):
 
 		gen_params = self.examine_target.level_gen_params
 
-		self.draw_string("Rift", self.examine_display, cur_x, cur_y)
+		self.draw_string("裂隙", self.examine_display, cur_x, cur_y)
 		cur_y += linesize
 
 		if self.game.next_level or not self.game.has_granted_xp:
@@ -5273,12 +5264,12 @@ class PyGameView(object):
 			cur_y += linesize
 			
 			width = self.examine_display.get_width() - 2*border_margin
-			lines = self.draw_wrapped_string("(Defeat all enemies and destroy all gates to unlock)", self.examine_display, cur_x, cur_y, width)
+			lines = self.draw_wrapped_string("(击败所有敌人和刷怪笼解锁)", self.examine_display, cur_x, cur_y, width)
 			cur_y += lines*linesize
 
 		cur_y += linesize
 
-		self.draw_string("Contents:", self.examine_display, cur_x, cur_y)
+		self.draw_string("内容:", self.examine_display, cur_x, cur_y)
 		cur_y += 2*linesize
 
 		units = []
@@ -5351,7 +5342,7 @@ class PyGameView(object):
 			scaledimage = pygame.transform.scale(subimage, (32, 32))
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
-			self.draw_string('Memory Orb', self.examine_display, cur_x + 38, cur_y+8)
+			self.draw_string('记忆法球', self.examine_display, cur_x + 38, cur_y+8)
 			cur_y += 32
 
 		if gen_params.shrine:
@@ -5382,6 +5373,7 @@ class PyGameView(object):
 		cur_x = self.border_margin
 		cur_y = self.border_margin
 
+		# TODO 翻译
 		self.draw_string(self.examine_target.name, self.examine_display, cur_x, cur_y)
 		cur_y += self.linesize
 
@@ -5400,6 +5392,7 @@ class PyGameView(object):
 			cur_y += self.linesize * desc_len
 
 		for item in self.examine_target.items:
+			# TODO 翻译
 			self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
 			icon = self.get_equipment_icon(item)
 			if icon:
