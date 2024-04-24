@@ -1167,6 +1167,8 @@ def make_bestiary():
 
 	for m in all_monsters:
 		all_monster_names.append(m.name)
+	
+	return all_monster_names
 
 
 if __name__ == "__main__":
