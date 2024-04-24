@@ -171,7 +171,7 @@ spells = {
     "Bloodflame": "血焰术", # 难听
 }
 
-upgrades = {
+skills = {
     "Arch Enchanter": "附魔大师",
     "Arch Sorcerer": "咒术大师",
     "Arch Conjurer": "召唤大师",
@@ -225,7 +225,7 @@ upgrades = {
     "Venom Spit": "毒液喷射",
     "Icy Vengeance": "冰霜复仇",
     "Ice Tap": "Ice Tap", # 想不到
-    "Frostbite": "冻伤",
+    "Frostbite": "霜咬", # 图里有张嘴
     "Steam Anima": "蒸汽元素",
     "Storm Caller": "呼唤风暴",
     "Holy Water": "圣水",
@@ -273,6 +273,10 @@ upgrades = {
     "Armorer": "盔甲匠",
     "Hemocorruption": "污染血液",
     "Earthwrath": "大地之怒",
+}
+
+upgrades = {
+  
 }
 
 consumables = {
@@ -427,5 +431,3 @@ equipments = {
     "Ugly Curse Doll": "Ugly Curse Doll",
     "Red Curse Doll": "Red Curse Doll",
 }
-
-items = {}

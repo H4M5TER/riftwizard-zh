@@ -5,8 +5,8 @@
 1. `conda create -n riftwizard python=3.8.2`
 2. `conda activate riftwizard`
 3. `pip install -r requirements.txt`
-4. `python RiftWizard2.py`
-5. 把游戏盖到 game 目录上
+4. 把游戏盖到 game 目录上
+5. `python RiftWizard2.py`
 
 ## 注意
 
