@@ -2274,7 +2274,7 @@ class PetCollar(Equipment):
 
 
 	def on_init(self):
-		self.name = "Exotic Pet"
+		self.name = self.example.name
 		self.description = "Start each level with a %s" % self.example.name
 		self.owner_triggers[EventOnUnitAdded] = self.on_add
 		self.slot = ITEM_SLOT_AMULET

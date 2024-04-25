@@ -2474,13 +2474,14 @@ class PyGameView(object):
 
 			# Upgrades
 			for upgrade in sorted((b for b in self.game.p1.buffs if isinstance(b, Upgrade) and b.prereq == spell), key=lambda b: b.shrine_name is None):
-				# TODO 翻译
+				upgrade_name = loc.upgrades.get(upgrade.name, upgrade.name)
 				if upgrade.shrine_name:
+					# dead code
 					color = COLOR_XP
 					fmt = upgrade.name.replace('(%s)' % spell.name, '')
 				else:
 					color = (255, 255, 255)
-				self.draw_string(' ' + fmt, self.middle_menu_display, cur_x, cur_y, mouse_content=upgrade, content_width=col_width, color=color)
+				self.draw_string(' ' + upgrade_name, self.middle_menu_display, cur_x, cur_y, mouse_content=upgrade, content_width=col_width, color=color)
 
 				cur_y += self.linesize
 
@@ -3221,8 +3222,8 @@ class PyGameView(object):
 		if self.shop_type == SHOP_TYPE_UPGRADES:
 			self.draw_string("学习能力: ", self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
-			upg_name = loc.upgrades.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name)
-			self.draw_string("升级 %s：" % upg_name, self.middle_menu_display, cur_x, cur_y)
+			spell_name = loc.spells.get(self.shop_upgrade_spell.name, self.shop_upgrade_spell.name)
+			self.draw_string("升级 %s：" % spell_name, self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SHOP:
 			self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 		if self.shop_type == SHOP_TYPE_BESTIARY:
@@ -3258,6 +3259,8 @@ class PyGameView(object):
 				fmt = loc.spells.get(opt.name, opt.name)
 			elif self.shop_type == SHOP_TYPE_UPGRADES:
 				fmt = loc.skills.get(opt.name, opt.name)
+			elif self.shop_type == SHOP_TYPE_SPELL_UPGRADES:
+				fmt = loc.upgrades.get(opt.name, opt.name)
 			else:
 				fmt = opt.name
 			cur_color = (255, 255, 255)
@@ -3313,17 +3316,17 @@ class PyGameView(object):
 
 			for tag in self.game.spell_tags:
 
-				color = tag.color.to_tup() if tag in self.tag_filter else (150, 150, 150)
-				# TODO 翻译
-				self.draw_string(tag.name, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
+				color = tag.color.to_tup()
+				prefix = "✓ " if tag in self.tag_filter else "  "
+				fmt = prefix + loc.tags.get(tag.name.lower(), tag.name)
+				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
 
-				idx = 0
-
-				for c in tag.name:
-					if self.tag_keys.get(c.lower(), None) == tag:
-						self.draw_string(c, self.middle_menu_display, cur_x + self.font.size(tag.name[:idx])[0], cur_y, tag.color.to_tup())
-						break
-					idx += 1
+				# idx = 0
+				# for c in tag.name:
+				# 	if self.tag_keys.get(c.lower(), None) == tag:
+				# 		self.draw_string(c, self.middle_menu_display, cur_x + self.font.size(tag.name[:idx])[0], cur_y, tag.color.to_tup())
+				# 		break
+				# 	idx += 1
 		
 				cur_y += self.linesize
 
@@ -3345,15 +3348,17 @@ class PyGameView(object):
 
 			for attr in filter_attrs:
 				attr_color = attr_colors[attr].to_tup()
-				color = attr_color if attr in self.attr_filter else (150, 150, 150)
-				self.draw_string(format_attr(attr).lower(), self.middle_menu_display, cur_x, cur_y, color, mouse_content=attr, content_width=tag_width)
+				color = attr_color
+				prefix = "✓ " if attr in self.attr_filter else "  "
+				fmt = prefix + format_attr(attr)
+				self.draw_string(fmt, self.middle_menu_display, cur_x, cur_y, color, mouse_content=attr, content_width=tag_width)
 
-				idx = 0
-				for c in attr:
-					if self.attr_keys.get(c.lower(), None) == attr:
-						self.draw_string(c.lower(), self.middle_menu_display, cur_x + self.font.size(attr[:idx])[0], cur_y, attr_color)
-						break
-					idx += 1
+				# idx = 0
+				# for c in attr:
+				# 	if self.attr_keys.get(c.lower(), None) == attr:
+				# 		self.draw_string(c.lower(), self.middle_menu_display, cur_x + self.font.size(attr[:idx])[0], cur_y, attr_color)
+				# 		break
+				# 	idx += 1
 
 				cur_y += self.linesize
 
@@ -4325,11 +4330,12 @@ class PyGameView(object):
 					word = tokens[0].replace('_', ' ')
 					token = tokens[0].lower()
 					if len(tokens) == 1:
-						word = loc.tags.get(tokens[0], tokens[0])
+						word = loc.tags.get(token, word)
 					if len(tokens) > 1:
 						token = tokens[1].lower()
 						if re.search("^\d+$", tokens[0]):
-							word = loc.tags_format.get(token) % tokens[0]
+							assert token in loc.tags_format
+							word = loc.tags_format[token] % tokens[0]
 					assert token in tooltip_colors, "Unknown tooltip color: %s" % token
 					cur_color = tooltip_colors[token].to_tup()
 
@@ -4774,7 +4780,11 @@ class PyGameView(object):
 		cur_y = border_margin
 
 		width = self.examine_display.get_width() - 2 * border_margin
-		lines = self.draw_wrapped_string(self.examine_target.name, self.examine_display, cur_x, cur_y, width=width)
+		
+		name = loc.equipments.get(self.examine_target.name, self.examine_target.name)
+		name = loc.upgrades.get(name, name)
+		name = loc.skills.get(name, name)
+		lines = self.draw_wrapped_string(name, self.examine_display, cur_x, cur_y, width=width)
 		cur_y += self.linesize * lines
 
 		# For items, draw item type
@@ -4817,16 +4827,14 @@ class PyGameView(object):
 		for tag, bonuses in self.examine_target.tag_bonuses.items():
 			for attr, val in bonuses.items():
 				#cur_color = tag.color
-				# TODO 翻译
-				fmt = "%s法术和能力获得 [%s_%s:%s]." % (tag.name, val, attr, attr)
+				fmt = "[%s]法术和能力获得 [%s:%s]." % (tag.name, val, attr)
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
 
 		for tag, bonuses in self.examine_target.tag_bonuses_pct.items():
 			for attr, val in bonuses.items():
 				#cur_color = tag.color
-				# TODO 翻译
-				fmt = "%s法术和能力获得 [%d%%_%s:%s]." % (tag.name, int(val), attr, attr)
+				fmt = "[%s]法术和能力获得 [%d%%:%s] [%s]." % (tag.name, int(val), attr, attr)
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
 				cur_y += (lines+1) * self.linesize
 
@@ -4840,7 +4848,7 @@ class PyGameView(object):
 			for attr, val in useful_bonuses:
 				spell_name = loc.spells.get(spell_ex.name, spell_ex.name)
 				if attr in tooltip_colors:
-					fmt = "%s 获得 [%s_点%s:%s]" % (spell_name, val, attr, attr)
+					fmt = "%s 获得 [%s:%s]" % (spell_name, val, attr)
 				else:
 					fmt = "%s 获得 %d %s" % (spell_name, val, format_attr(attr))
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
@@ -4856,7 +4864,7 @@ class PyGameView(object):
 			for attr, val in useful_bonuses:
 				spell_name = loc.spells.get(spell_ex.name, spell_ex.name)
 				if attr in tooltip_colors:
-					fmt = "%s 获得 [%s%%_%s:%s]" % (spell_name, val, attr, attr)
+					fmt = "%s 获得 [%s%%:%s] [%s]" % (spell_name, val, attr, attr)
 				else:
 					fmt = "%s 获得 %d%% %s" % (spell_name, val, format_attr(attr))
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width=width)
@@ -4864,17 +4872,18 @@ class PyGameView(object):
 
 		for attr, val in self.examine_target.global_bonuses.items():
 			if val >= 0:
-				fmt = "所有法术和能力获得 %d %s" % (val, format_attr(attr))
+				fmt = "所有法术和能力获得 [%d:%s]" % (val, attr)
 			else:
-				fmt = "所有法术和能力失去 %d %s" % (-val, format_attr(attr))
+				# 似乎没见过失去的
+				fmt = "所有法术和能力失去 [%d:%s]" % (-val, attr)
 			lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width)
 			cur_y += (lines+1) * self.linesize
 
 		for attr, val in self.examine_target.global_bonuses_pct.items():
 			if val >= 0:
-				fmt = "所有法术和能力获得 %d%% %s" % (val, format_attr(attr))
+				fmt = "所有法术和能力获得 [%d%%:%s] [%s]" % (val, attr, attr)
 			else:
-				fmt = "所有法术和能力失去 %d%% %s" % (-val, format_attr(attr))
+				fmt = "所有法术和能力失去[%d%%:%s] [%s]" % (-val, attr, attr)
 			lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, width)
 			cur_y += (lines+1) * self.linesize
 
@@ -4882,8 +4891,8 @@ class PyGameView(object):
 		for tag in Tags:
 			if tag not in self.examine_target.resists:
 				continue
-			# TODO 翻译
-			self.draw_string('%d%% 抵抗 %s' % (self.examine_target.resists[tag], tag.name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
+			tag_name = loc.tags.get(tag.name.lower(), tag.name)
+			self.draw_string('%d%% 抵抗%s' % (self.examine_target.resists[tag], tag_name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
 			has_resists = True
 			cur_y += self.linesize
 
@@ -4920,7 +4929,7 @@ class PyGameView(object):
 				cur_y += self.linesize
 			
 			if not had_attrs:
-				self.draw_string(" None", self.examine_display, cur_x, cur_y)
+				self.draw_string(" 无", self.examine_display, cur_x, cur_y)
 				cur_y += self.linesize
 			cur_y += self.linesize
 
@@ -4942,7 +4951,10 @@ class PyGameView(object):
 			target = self.examine_target
 
 		if hasattr(target, "name"):
-			lines = self.draw_wrapped_string(target.name, self.examine_display, cur_x, cur_y, width=23*16)
+			name = target.name
+			if name.lower() in loc.tags:
+				name = "[%s]" % name
+			lines = self.draw_wrapped_string(name, self.examine_display, cur_x, cur_y, width=23*16)
 			cur_y += (lines + 1) * self.linesize
 		if hasattr(target, "get_description"):
 			self.draw_wrapped_string(target.get_description(), self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2*self.border_margin, extra_space=True)
@@ -5174,6 +5186,9 @@ class PyGameView(object):
 			cur_y += 32
 			if isinstance(gen_params.shrine, Shop):
 				for item in gen_params.shrine.items:
+					item_name = loc.equipments.get(item.name, item.name)
+					item_name = loc.spells.get(item.name, item.name)
+					item_name = loc.skills.get(item.name, item.name)
 					self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
 					
 					icon = self.get_equipment_icon(item)
