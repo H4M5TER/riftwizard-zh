@@ -819,6 +819,33 @@ consumables = {
     "Orb of Corruption": "Orb of Corruption",
 }
 
+ring_tags = {
+    "Fiery": "Fiery",
+    "Icy": "Icy",
+    "Electric": "Electric",
+    "Living": "Living",
+    "Sinister": "Sinister",
+    "Golden": "Golden",
+    "Mystic": "Mystic",
+    "Sorcerous": "Sorcerous",
+    "Enchanting": "Enchanting",
+    "Conjured": "Conjured",
+}
+
+ring_stats = {
+    "Dagger": "Dagger",
+    "Orb": "Orb",
+    "Tome": "Tome",
+    "Lens": "Lens",
+    "Flag": "Flag",
+    "Disk": "Disk",
+    "Scale": "Scale",
+    "Claw": "Claw",
+    "Fang": "Fang",
+    "Hourglass": "Hourglass",
+    "Horn": "Horn",
+}
+
 shrines = {
     "Ruby Heart": "Ruby Heart",
     "Exotic Pet Shop": "Exotic Pet Shop",
@@ -827,7 +854,6 @@ shrines = {
     "Sigil Chest": "Sigil Chest",
     "Box of Wizard Caps": "Box of Wizard Caps",
     "Hat Chest": "Hat Chest",
-    "Golden Trinket Chest": "Golden Trinket Chest",
     "Staff Chest": "Staff Chest",
     "Shoe Box": "Shoe Box",
     "Armor Chest": "Armor Chest",
