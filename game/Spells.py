@@ -5,6 +5,7 @@ import math
 import itertools
 import text
 import BossSpawns
+import loc
 
 class FireballSpell(Spell):
 
@@ -19,13 +20,13 @@ class FireballSpell(Spell):
 		self.max_charges = 18
 		self.range = 8
 
-		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball randomly deals [physical], [lightning], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.", [Tags.Chaos], [Tags.Physical, Tags.Lightning])
-		self.upgrades['shaped_blast'] = (1, 4, "Shaped Blast", "Fireball gains 1 [radius] for every 4 tiles away that you cast it, and never damages the wizard or their allies.")
-		self.upgrades['meteor'] = (1, 3, "Meteor", "Units in the center tile take extra [physical] damage and are stunned for [3:duration] turns.", None, [Tags.Physical])
-		self.upgrades['ash_ball'] = (1, 2, "Ash Ball", "Fireball blinds and poisons units for [4:duration] turns.")
+		self.upgrades['chaos'] = (1, 5, "火球术随机造成[physical]、[lightning]或[fire]伤害。火球术会对目标造成其抗性最低类型的伤害。", [Tags.Chaos], [Tags.Physical, Tags.Lightning])
+		self.upgrades['shaped_blast'] = (1, 4, "Shaped Blast", "火球术施放的地块每距离你四格，[radius]增加1，并且从不伤害施法者或其盟友。")
+		self.upgrades['meteor'] = (1, 3, "Meteor", "火球术中心的单位受到额外一份[physical]伤害并且被[stun][3:duration]。", None, [Tags.Physical])
+		self.upgrades['ash_ball'] = (1, 2, "Ash Ball", "火球术使目标[blind]和[poisoned]四回合")
 
 	def get_description(self):
-		return "Deals [{damage}:damage] [fire] damage to units in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
+		return "对[{radius}:radius]内的单位造成 [{damage}:fire]。".format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		damage = self.get_stat('damage')
@@ -105,8 +106,8 @@ class MeteorShower(Spell):
 
 
 	def get_description(self):
-		return ("Casts your fireball spell targeting [{num_targets}:num_targets] random tiles in a [{storm_radius}_tile:radius] radius each turn.\n"
-				"This spell can be channeled for up to [{max_channel}_turns:duration].  The effect is repeated each turn the spell is channeled.").format(**self.fmt_dict())
+		return ("每回合对[{storm_radius}:radius]内的[{num_targets} 个随机格子:num_targets]施放你的[Fireball:spell]\n"
+				+ loc.clauses['channel'] % "[{max_channel}:duration]").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		return self.caster.level.get_points_in_ball(x, y, self.get_stat('storm_radius') + self.get_stat('radius'))

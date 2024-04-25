@@ -7,6 +7,7 @@ import tcod as libtcod
 import time
 import os
 from copy import copy
+import loc
 
 logger = None
 
@@ -84,11 +85,14 @@ def are_hostile(unit1, unit2):
 
 def format_attr(attr):
 
-	if is_stat_pct(attr):
-		attr = "% " + attr
+	# dead code
+	# if is_stat_pct(attr):
+	# 	attr = "% " + attr
 
-	attr = ' '.join(w.capitalize() for w in attr.replace('_', ' ').split())
-
+	if attr in loc.tags:
+		attr = loc.tags[attr]
+	else:
+		attr = ' '.join(w.capitalize() for w in attr.replace('_', ' ').split())
 	return attr
 
 
