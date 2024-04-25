@@ -2474,14 +2474,14 @@ class PyGameView(object):
 
 			# Upgrades
 			for upgrade in sorted((b for b in self.game.p1.buffs if isinstance(b, Upgrade) and b.prereq == spell), key=lambda b: b.shrine_name is None):
-				upgrade_name = loc.upgrades.get(upgrade.name, upgrade.name)
+				fmt = loc.upgrades.get(upgrade.name, upgrade.name)
 				if upgrade.shrine_name:
 					# dead code
 					color = COLOR_XP
 					fmt = upgrade.name.replace('(%s)' % spell.name, '')
 				else:
 					color = (255, 255, 255)
-				self.draw_string(' ' + upgrade_name, self.middle_menu_display, cur_x, cur_y, mouse_content=upgrade, content_width=col_width, color=color)
+				self.draw_string(' ' + fmt, self.middle_menu_display, cur_x, cur_y, mouse_content=upgrade, content_width=col_width, color=color)
 
 				cur_y += self.linesize
 
@@ -4570,9 +4570,8 @@ class PyGameView(object):
 			equipments = [e for e in equipments if e]
 			equipments = equipments + self.game.p1.trinkets
 			for equipment in equipments:
-
 				equipment_name = loc.equipments.get(equipment.name, equipment.name)
-				self.draw_string("  %s" % equipment_name, self.character_display, cur_x, cur_y, mouse_content=item)
+				self.draw_string("  %s" % equipment_name, self.character_display, cur_x, cur_y, mouse_content=equipment)
 				
 				icon = self.get_equipment_icon(equipment)
 				self.character_display.blit(icon, (cur_x, cur_y))
