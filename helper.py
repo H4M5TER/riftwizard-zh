@@ -1,5 +1,6 @@
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'game'))
+from Shrines import * # 先于 Equipment 引入
 import Spells, Upgrades, Consumables, Equipment, LevelGen
 from Equipment import RandomWand, RandomSheild, RandomLittleRing
 from Level import damage_tags, Knowledges, attr_colors, Tags
@@ -26,12 +27,29 @@ for (n,_) in attr_colors.items():
     tags.append(n)
 tags = tags + ["petrify", "petrified", "petrifies", "glassify", "glassified", "frozen", "freezes", "freeze", "stunned", "stun", "stuns", "berserk", "poisoned", "blind", "blinded", "quick_cast",]
 
+shrines = [
+    hp_shrine,
+    exotic_pet_chest,
+    lambda level, prng : scroll(level, None),
+    treasure_chest,
+    crown_chest,
+    damage_hat_chest,
+    hat_chest,
+    ring_chest,
+    staff_chest,
+    shoe_chest,
+    armor_chest,
+    trinket_chest,
+    lambda level, prng: skill_scroll(level, None),
+]
+
 tasks = [
     ("tags", tags),
     ("spells", [spell.name for spell in spells]),
     ("skills", [skill.name for skill in skills]),
     ('upgrades', deduped),
     ("consumables", [c().name for (c, _) in Consumables.all_consumables]),
+    ("shrines", [s(1, random).name for s in shrines]),
     ("equipments", [c().name for c in Equipment.all_items if c not in [RandomWand, RandomSheild, RandomLittleRing]]),
     ("monsters", LevelGen.make_bestiary()),
 ]

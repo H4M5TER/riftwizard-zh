@@ -855,6 +855,22 @@ consumables = {
     "Orb of Corruption": "腐化法球",
 }
 
+shrines = {
+    "Ruby Heart": "Ruby Heart",
+    "Exotic Pet Shop": "Exotic Pet Shop",
+    "Scroll of Spells": "Scroll of Spells",
+    "Treasure Chest": "Treasure Chest",
+    "Sigil Chest": "Sigil Chest",
+    "Box of Wizard Caps": "Box of Wizard Caps",
+    "Hat Chest": "Hat Chest",
+    "Golden Trinket Chest": "Golden Trinket Chest",
+    "Staff Chest": "Staff Chest",
+    "Shoe Box": "Shoe Box",
+    "Armor Chest": "Armor Chest",
+    "Trinket Box": "Trinket Box",
+    "Scroll of Skills": "Scroll of Skills",
+}
+
 equipments = {
     "The Bladestaff": "利刃法杖",
     "Geometer's Staff": "制图师法杖",
