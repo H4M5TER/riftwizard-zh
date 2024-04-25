@@ -332,7 +332,7 @@ def apply_modifier(modifier, unit, propogate=True, apply_hp_bonus=False):
 					# Apply hp bonus except for splitting buff (since that results in exponentially higher hp values) 
 					#  or for SpawnOnDeaths > 2 (stuff llike burning bag of bugs shouldnt spawn enourmous fly swarms, but it should spawn burning ones)
 					should_apply_hp_bonus = b_type == SplittingBuff or b_type == SpawnOnDeath and b_type.num_spawns > 2
-					apply_modifier(modifier, unit, apply_hp_bonus=should_apply_hp_bonus)
+					apply_modifier(modifier, unit, apply_hp_bonus= not should_apply_hp_bonus)
 
 					return unit
 
