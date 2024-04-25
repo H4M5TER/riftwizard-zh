@@ -5224,15 +5224,16 @@ class PyGameView(object):
 		linesize = self.linesize
 		unit = self.examine_target
 
-		lines = self.draw_wrapped_string(unit.name, self.examine_display, cur_x, cur_y, width=17*16)
+		unit_name = loc.monsters.get(unit.name, unit.name)
+		lines = self.draw_wrapped_string(unit_name, self.examine_display, cur_x, cur_y, width=17*16)
 		cur_y += (lines+1) * linesize
 
 		if unit.team == TEAM_PLAYER:
-			self.draw_string("Friendly", self.examine_display, cur_x, cur_y, Tags.Conjuration.color.to_tup())
+			self.draw_string("盟友", self.examine_display, cur_x, cur_y, Tags.Conjuration.color.to_tup())
 			cur_y += linesize
 
 		if unit.turns_to_death:
-			self.draw_string("%d turns left" % unit.turns_to_death, self.examine_display, cur_x, cur_y)
+			self.draw_string("%d 回合后消失" % unit.turns_to_death, self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
 
@@ -5283,21 +5284,22 @@ class PyGameView(object):
 			hasattrs = False
 			if hasattr(spell, 'damage'):
 				if hasattr(spell, 'damage_type') and isinstance(spell.damage_type, Tag):
-					fmt = ' %d %s damage' % (spell.get_stat('damage'), spell.damage_type.name)
+					fmt = " [%d:%s]" % (spell.get_stat('damage'), spell.damage_type.name)
 				elif hasattr(spell, 'damage_type') and isinstance(spell.damage_type, list):
-					fmt = ' %d %s damage' % (spell.damage, ' or '.join([t.name for t in spell.damage_type]))
+					fmt = ' %d 点%s伤害' % (spell.damage, '或'.join(["[%s]" % t.name for t in spell.damage_type]))
 				else:
-					fmt = ' %d damage' % spell.get_stat('damage')
+					# 你还能无视抗性是吧
+					fmt = ' %d 点伤害' % spell.get_stat('damage')
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2*border_margin, color=COLOR_DAMAGE.to_tup())
 				cur_y += lines * linesize
 				hasattrs = True
 			if spell.range > 1.5:
-				fmt = ' %d range' % spell.get_stat('range')
+				fmt = ' 射程 %d 格' % spell.get_stat('range')
 				self.draw_string(fmt, self.examine_display, cur_x, cur_y, COLOR_RANGE.to_tup())
 				cur_y += linesize
 				hasattrs = True
 			if hasattr(spell, 'radius') and spell.get_stat('radius') > 0:
-				fmt = ' %d radius' % spell.radius
+				fmt = ' 半径 %d 格' % spell.radius
 				self.draw_string(fmt, self.examine_display, cur_x, cur_y, attr_colors['radius'].to_tup())
 				cur_y += linesize
 				hasattrs = True
@@ -5308,9 +5310,9 @@ class PyGameView(object):
 					rem_cd = spell.caster.cool_downs.get(spell, 0)
 
 				if not rem_cd:
-					fmt = ' %d turn cooldown' % spell.cool_down
+					fmt = ' 冷却时间 %d 回合' % spell.cool_down
 				else:
-					fmt = ' %d turn cooldown (%d)' % (spell.cool_down, rem_cd)
+					fmt = ' 冷却时间 %d 回合 (%d 回合后可用)' % (spell.cool_down, rem_cd)
 				self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 				cur_y += linesize
 				hasattrs = True
@@ -5324,15 +5326,15 @@ class PyGameView(object):
 			cur_y += linesize
 
 		if unit.flying:
-			self.draw_string("Flying", self.examine_display, cur_x, cur_y)
+			self.draw_string("飞行", self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
 		if unit.stationary:
-			self.draw_string("Immobile", self.examine_display, cur_x, cur_y)
+			self.draw_string("固定", self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
 		if unit.burrowing:
-			self.draw_string("Burrowing", self.examine_display, cur_x, cur_y)
+			self.draw_string("掘洞", self.examine_display, cur_x, cur_y)
 			cur_y += linesize
 
 		if unit.flying or unit.stationary or unit.burrowing:
@@ -5348,7 +5350,8 @@ class PyGameView(object):
 				if not ((self.examine_target.resists[tag] < 0) == negative):
 					continue
 
-				self.draw_string('%d%% Resist %s' % (self.examine_target.resists[tag], tag.name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
+				tag_name = loc.tags.get(tag.name.lower(), tag.name)
+				self.draw_string('%d%% 抵抗 %s' % (self.examine_target.resists[tag], tag_name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
 				has_resists = True
 				cur_y += self.linesize
 
@@ -5397,11 +5400,12 @@ class PyGameView(object):
 
 		if status_effects:
 			cur_y += linesize
-			self.draw_string("Status Effects:", self.examine_display, cur_x, cur_y, (255, 255, 255))
+			self.draw_string("状态效果:", self.examine_display, cur_x, cur_y, (255, 255, 255))
 			cur_y += linesize
 			for buff_name, (buff, stacks, duration, color) in counts.items():
 
 				fmt = buff_name
+				# TODO 翻译
 
 				if stacks > 1:
 					fmt += ' x%d' % stacks
