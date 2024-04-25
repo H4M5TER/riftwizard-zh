@@ -5121,6 +5121,7 @@ class PyGameView(object):
 
 
 			name = unit.name
+			name = loc.monsters.get(name, name)
 			if len(name) > 20:
 				name = name[0:18] + '..'
 			self.draw_string(name, self.examine_display, cur_x + 36, cur_y + 10, color)
@@ -5139,7 +5140,8 @@ class PyGameView(object):
 			scaledimage = pygame.transform.scale(subimage, (32, 32))
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
-			self.draw_string(item.name, self.examine_display, cur_x + 38, cur_y+8)
+			item_name = loc.consumables.get(item.name, item.name)
+			self.draw_string(item_name, self.examine_display, cur_x + 38, cur_y+8)
 
 			cur_y += 32
 
@@ -5157,7 +5159,7 @@ class PyGameView(object):
 
 		if gen_params.shrine:
 			cur_y += linesize
-			name = gen_params.shrine.name
+			shrine_name = loc.shrines.get(gen_params.shrine.name, gen_params.shrine.name)
 			
 			image = self.get_prop_image(gen_params.shrine)
 			frame = (cloud_frame_clock // 12) % (image.get_width() // 16)
@@ -5167,7 +5169,7 @@ class PyGameView(object):
 
 			self.examine_display.blit(scaledimage, (cur_x, cur_y))
 			
-			self.draw_string(gen_params.shrine.name, self.examine_display, 38 + border_margin, cur_y + 8, content_width=width)
+			self.draw_string(shrine_name, self.examine_display, 38 + border_margin, cur_y + 8, content_width=width)
 
 			cur_y += 32
 			if isinstance(gen_params.shrine, Shop):
@@ -5183,8 +5185,8 @@ class PyGameView(object):
 		cur_x = self.border_margin
 		cur_y = self.border_margin
 
-		# TODO 翻译
-		self.draw_string(self.examine_target.name, self.examine_display, cur_x, cur_y)
+		shop_name = loc.shrines.get(self.examine_target.name, self.examine_target.name)
+		self.draw_string(shop_name, self.examine_display, cur_x, cur_y)
 		cur_y += self.linesize
 
 		image = self.get_prop_image(self.examine_target)
@@ -5196,8 +5198,8 @@ class PyGameView(object):
 		self.examine_display.blit(scaledimage, (self.examine_display.get_width() - self.border_margin - 64, 0))
 
 		for item in self.examine_target.items:
-			# TODO 翻译
-			self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
+			item_name = loc.equipments.get(item.name, item.name)
+			self.draw_string(item_name, self.examine_display, cur_x+38, cur_y)
 			icon = self.get_equipment_icon(item)
 			if icon:
 				self.examine_display.blit(icon, (cur_x+16, cur_y))
@@ -5351,7 +5353,7 @@ class PyGameView(object):
 					continue
 
 				tag_name = loc.tags.get(tag.name.lower(), tag.name)
-				self.draw_string('%d%% 抵抗 %s' % (self.examine_target.resists[tag], tag_name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
+				self.draw_string('%d%% 抵抗%s' % (self.examine_target.resists[tag], tag_name), self.examine_display, cur_x, cur_y, tag.color.to_tup())
 				has_resists = True
 				cur_y += self.linesize
 

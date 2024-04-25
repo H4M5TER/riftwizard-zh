@@ -2084,7 +2084,10 @@ def shrine(player):
 	return make_shrine(shrine, player)
 
 def skill_scroll(level, player):
-	skill_opts = [s for s in player.game.all_player_skills if not player.game.has_upgrade(s)]
+	if player:
+		skill_opts = [s for s in player.game.all_player_skills if not player.game.has_upgrade(s)]
+	else:
+		skill_opts = make_player_skills()
 	random.shuffle(skill_opts)
 	skill_opts = skill_opts[:CHEST_SIZE]
 
