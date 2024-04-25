@@ -5,6 +5,7 @@ import math
 import itertools
 import text
 import BossSpawns
+import loc
 
 class FlameTongue(Spell):
 
@@ -57,12 +58,12 @@ class FireballSpell(Spell):
 		self.tags = [Tags.Fire, Tags.Sorcery]
 		self.level = 1
 
-		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball randomly deals [physical], [lightning], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.", "damage type")
-		self.upgrades['ash'] = (1, 2, "Ash Ball", "Fireball blinds and poisons units for 4 turns.", "damage type")
-		self.upgrades['meteor'] = (1, 3, "Meteor", "Units in the center tile take extra [physical] damage and are stunned for [3:duration] turns.")
+		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "火球术随机造成[physical]、[lightning]或[fire]伤害。火球术会对目标造成其抗性最低类型的伤害。", "damage type")
+		self.upgrades['ash'] = (1, 2, "Ash Ball", "火球术使目标[blind]和[poisoned]四回合", "damage type")
+		self.upgrades['meteor'] = (1, 3, "Meteor", "火球术中心的单位受到额外一份[physical]伤害并且被[stun][3:duration]。")
 
 	def get_description(self):
-		return "Deals [{damage}:damage] [fire] damage to units in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
+		return "对[{radius}:radius]内的单位造成 [{damage}:fire]。".format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		dtypes = [Tags.Fire]
@@ -128,10 +129,10 @@ class MeteorShower(Spell):
 
 
 	def get_description(self):
-		return ("Rains [{num_targets}_meteors:num_targets] down on random tiles in a [{storm_radius}_tile:radius] radius each turn.\n"
-				"Each meteor mimics the effect of your Fireball spell.\n"
-				"Meteors destroy walls.\n"
-				"This spell can be channeled for up to [{max_channel}_turns:duration].  The effect is repeated each turn the spell is channeled.").format(**self.fmt_dict())
+		return ("每回合对[{storm_radius}:radius]内的随机格子砸下 [{num_targets} 颗陨石:num_targets]\n"
+				"每颗陨石产生和你的火球术一样的效果\n"
+				"陨石摧毁墙壁\n"
+				+ loc.clauses['channel'] % "[{max_channel}:duration]").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		return self.caster.level.get_points_in_ball(x, y, self.get_stat('storm_radius') + self.get_stat('radius'))

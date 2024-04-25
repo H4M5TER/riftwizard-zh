@@ -235,22 +235,26 @@ tooltip_colors = {}
 for tag in Tags:
 	tooltip_colors[tag.name.lower()] = tag.color
 tooltip_colors.update(attr_colors)
-tooltip_colors['petrify'] = Tags.Construct.color
-tooltip_colors['petrified'] = tooltip_colors['petrify']
-tooltip_colors['petrifies'] = tooltip_colors['petrify']
-tooltip_colors['frozen'] = Tags.Ice.color
-tooltip_colors['freezes'] = Tags.Ice.color
-tooltip_colors['freeze'] = Tags.Ice.color
-tooltip_colors['stunned'] = Tags.Physical.color
-tooltip_colors['stun'] = tooltip_colors['stunned']
-tooltip_colors['stuns'] = tooltip_colors['stunned']
-tooltip_colors['berserk'] = COLOR_DAMAGE
-tooltip_colors['poisoned'] = Tags.Poison.color
-tooltip_colors['blind'] = Tags.Holy.color
-tooltip_colors['blinded'] = tooltip_colors['blind']
-tooltip_colors['glassify'] = Tags.Glass.color
-tooltip_colors['glassified'] = Tags.Glass.color
-tooltip_colors['quick_cast'] = Color(255, 255, 255)
+tooltip_colors.update({
+    # Tags 里有 petrification 和 glassification，不知道做什么用的
+    "petrify": Tags.Construct.color,
+    "petrified": Tags.Construct.color,
+    "petrifies": Tags.Construct.color,
+    "glassify": Tags.Glass.color,
+    "glassified": Tags.Glass.color,
+    "frozen": Tags.Ice.color,
+    "freezes": Tags.Ice.color,
+    "freeze": Tags.Ice.color,
+	# 这里颜色和 Level.Stun 不一致，那个是 Color(220, 220, 220)，不知道为什么
+    "stunned": Tags.Physical.color,
+    "stun": Tags.Physical.color,
+    "stuns": Tags.Physical.color,
+    "berserk": COLOR_DAMAGE, # Level.BerserkBuff 是 Color(255, 0, 0)
+    "poisoned": Tags.Poison.color,
+    "blind": Tags.Holy.color,
+    "blinded": Tags.Holy.color,
+    "quick_cast": Color(255, 255, 255),
+})
 
 tt_attrs = [
 	'damage',
@@ -2282,7 +2286,7 @@ class PyGameView(object):
 
 				if evt.key == pygame.K_s:
 					self.game.save_game('./cheat_save')
-					
+
 				if evt.key == pygame.K_l:
 					self.game = continue_game('cheat_save')
 
@@ -4300,11 +4304,11 @@ class PyGameView(object):
 		line_height = self.linesize
 		num_lines = 0
 		max_width = width
+		exp = re.compile("\[[^]]+\]|[a-zA-Z]+| |.")
 
 		cur_y = y # start y pos
 		for line in lines:
 			cur_x = x + 1 # 首行缩进
-			exp = "\[[^]]+\]|[a-zA-Z]+| |."
 			words = re.findall(exp, line)
 			words.reverse()
 			while words:
@@ -4320,8 +4324,12 @@ class PyGameView(object):
 					tokens = word[1:-1].split(':')
 					word = tokens[0].replace('_', ' ')
 					token = tokens[0].lower()
+					if len(tokens) == 1:
+						word = loc.tags.get(tokens[0], tokens[0])
 					if len(tokens) > 1:
 						token = tokens[1].lower()
+						if re.search("^\d+$", tokens[0]):
+							word = loc.tags_format.get(token) % tokens[0]
 					assert token in tooltip_colors, "Unknown tooltip color: %s" % token
 					cur_color = tooltip_colors[token].to_tup()
 
@@ -4499,7 +4507,7 @@ class PyGameView(object):
 				cur_color = (0, 255, 0)
 
 
-			item_name = loc.items.get(item.name, item.name)
+			item_name = loc.consumables.get(item.name, item.name)
 			fmt = "%3s    %s%2d" % (hotkey_str, f'{item_name}{" " * (17 - self.font.size(item_name)[0] // self.space_width)}', item.quantity)
 			# fmt = "%s  %-24s%2d" % (hotkey_str, item.name, item.quantity)          
 			# if SIZE == SIZE_MED:
@@ -4968,15 +4976,16 @@ class PyGameView(object):
 		linesize = self.linesize
 
 		spell = self.examine_target
-		self.draw_string(spell.name, self.examine_display, cur_x, cur_y)
+		spell_name = loc.spells.get(spell.name, spell.name)
+		self.draw_string(spell_name, self.examine_display, cur_x, cur_y)
 		cur_y += linesize
 		cur_y += linesize
 		tag_x = cur_x
 		for tag in Tags:
 			if tag not in spell.tags:
 				continue
-			# TODO 翻译
-			self.draw_string(tag.name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
+			tag_name = loc.tags.get(tag.name.lower(), tag.name)
+			self.draw_string(tag_name, self.examine_display, tag_x, cur_y, (tag.color.r, tag.color.g, tag.color.b))
 			cur_y += linesize
 		cur_y += linesize
 

@@ -6227,11 +6227,12 @@ monster_tags = set()
 #	print(i, count)
 
 for o in spawn_options:
-	if not o[0]():
+	instance = o[0]()
+	if not instance:
 		print(o)
-	assert(o[0]())
-	assert(o[0]().tags)
-	for t in o[0]().tags:
+	assert(instance)
+	assert(instance.tags)
+	for t in instance.tags:
 		monster_tags.add(t)
 
 def BossMonster(spawn_func):
