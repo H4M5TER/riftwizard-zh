@@ -143,7 +143,7 @@ spells = {
     "Eye of Ice": "闪电之眼",
     "Eye of Lightning": "寒冰之眼",
     "Eye of Rage": "狂怒之眼",
-    "Fan of Flames": "扇状烈焰", # （火焰扇有种火焰修饰扇的感觉 中文语境下像一种法器（？）
+    "Fan of Flames": "火焰扇", # 黑暗之魂3
     "Freeze": "冰冻术",
     "Goatia Offering": "邪羊献祭", 
     "Healing Light": "治愈之光",
@@ -189,7 +189,7 @@ spells = {
     "Holy Armor": "神圣护甲",
     "Holy Fire": "圣火术",
     "Ironize": "铁化术", # 太难听了
-    "Lightning Halo": "闪电光环", # 唉，被砍成圆环的技能，这个叫光环的话其他 aura 技能怎么办
+    "Lightning Halo": "闪电光圈", # 唉，被砍成圆环的技能
     "Lightning Spire": "闪电尖塔",
     "Lumbriogenesis": "蠕虫孳生", 
     "Mystic Power": "神秘力量",
@@ -197,12 +197,12 @@ spells = {
     "Nightmare Aura": "梦魇光环",
     "Plague of Filth": "污秽瘟疫",
     "Prison of Thorns": "荆棘囚笼",
-    "Psychic Seedling": "灵能幼苗", # 虽说是 psychic，这个树和灵能没什么关系吧
+    "Psychic Seedling": "灵能幼苗", # 主要灵能和 arcane 有什么关系
     "Seal Fate": "命定之死", 
     "Shrapnel Blast": "破片迸发", 
     "Sight of Blood": "血腥视线",
-    "Silver Spear": "银色标枪", # 长了短了都不好听
-    "Suspend Mortality": "死亡拒止", # 虽然immortal和凡人相对但是mortality其实就是死亡的意思）
+    "Silver Spear": "银色标枪",
+    "Suspend Mortality": "死亡拒止",
     "Underworld Passage": "冥界通道",
     "Armageddon Blade": "审判之刃",
     "Blizzard": "暴风雪",
@@ -254,8 +254,8 @@ spells = {
     "Call Archon": "呼唤执政官",
     "Cantrip Cascade": "小招倾泻",
     "Chill Wind": "凛冽寒风",
-    "Death Shock": "死亡电击", # reverse
-    "Fae Court": "仙灵庭院", # 感觉好（
+    "Death Shock": "死亡电击",
+    "Fae Court": "仙灵庭院",
     "Flesh Fiend": "血肉恶魔",
     "Golden Skull": "金色颅骨",
     "Heavenly Idol": "天堂造像",
@@ -288,7 +288,7 @@ spells = {
     "Word of Ice": "冰霜真言",
     "Word of Madness": "疯狂真言",
     "Word of Undeath": "不死真言", # 亡灵真言？
-    "Wyrm Eggs": "巨龙蛋", # 我觉得作者并没有搞清楚什么是 drake 什么是 wyrm，所以就都翻译成巨龙好了
+    "Wyrm Eggs": "游龙蛋",
     "Gates of Helheim": "赫尔海姆之门", # 所以 Aelf 到底是什么生物
     "Horde of Halfmen": "半人部族",
     "Rain of Fire": "陨石雨",
@@ -308,7 +308,7 @@ skills = {
     "Deathchill Familiar": "死寒仆从",
     "Faestone": "仙灵石",
     "Frostbite": "霜咬", # 图里有张嘴
-    "Frozen Fragility": "低温脆化", # 还是想
+    "Frozen Fragility": "低温脆化",
     "Glittering Dance": "闪光之舞",
     "Hibernation": "冬眠",
     "Holy Water": "圣水",
@@ -340,12 +340,12 @@ skills = {
     "Blood Reaping": "鲜血收割",
     "Chaos Casting": "混沌施法",
     "Collected Agony": "苦痛积聚",
-    "Demonic Cruelty": "魔之恶毒", # 这个真的好难听 TODO
+    "Demonic Cruelty": "恶魔心肠", # 这个真的好难听 TODO
     "Earthwrath": "大地之怒",
     "Fae Malevolence": "邪灵作祟", # TODO
     "Fiery Judgement": "火焰审判",
     "Ghostfire": "鬼火",
-    "Hemocorruption": "腐化血液", # 血液腐化？血液放在后面感觉像被腐化的对象
+    "Hemocorruption": "血液污染", # 因为只是有毒所以感觉还是污染好一点
     "Holy Thunder": "神圣雷霆",
     "Hordemancer": "群体召唤", # TODO
     "Horror": "恐惧",
@@ -382,7 +382,7 @@ skills = {
     "Dark Lord": "黑暗领主",
     "Disintegrator": "法术解离", # 解离术士？解离单元？魔力解离？感觉解离器听起来像个有实体的工具
     "Dragon Lord": "巨龙领主",
-    "Enchanters Boon": "附魔恩赐", # 烂 TODO
+    "Enchanters Boon": "附魔幻形", # TODO
     "Fire Lord": "火焰领主",
     "Ice Lord": "冰霜领主",
     "Light Lord": "光明领主",
@@ -398,6 +398,7 @@ skills = {
     "Unblinking Eye": "不瞬之目",
     "Void Lord": "虚空领主",
     "Void Spikes": "虚空棘刺", 
+}
 
 upgrades = {
     "Soul Battery": "灵魂充能",
@@ -1073,7 +1074,7 @@ monsters = {
     "Rotting Zombie": "腐烂僵尸",
     "Ghost": "幽灵",
     "Iron Imp": "铁质小鬼",
-    "Satyr": "半人羊", # 潘神的追随者 萨堤尔/萨特
+    "Satyr": "萨堤尔", # 潘神的追随者 萨堤尔/萨特
     "Large Worm Ball": "大型蠕虫球",
     "Kobold": "狗头人",
     "Witch": "女巫",
@@ -1191,7 +1192,7 @@ monsters = {
     "Dryder": "蛛化精灵", # dnd，其实是蛛化卓尔精灵
     "Dream Hag": "Dream Hag", # 不知道怎么和 Night Hag 协调
     "Ice Drake": "寒冰巨龙",
-    "Ice Wyrm": "寒冰巨龙", # ……
+    "Ice Wyrm": "寒冰游龙", # ……
     "Fire Fiend": "火焰恶魔",
     "Storm Fiend": "风暴恶魔",
     "Iron Fiend": "铁质恶魔",
@@ -1212,7 +1213,7 @@ monsters = {
     "Aether Spider Queen": "以太蜘蛛女皇",
     "Volcano Turtle": "火山龟",
     "Dracolich": "龙巫妖",
-    "Aesir": "亚萨神族", # 像猫头鹰
+    "Aesir": "亚萨神族", # 亚萨神？
     "Titan": "泰坦",
     "Reaper": "死神",
     "Mass of Eyes": "眼球集群",
@@ -1223,7 +1224,7 @@ monsters = {
     "Insanity Fiend": "疯狂恶魔",
     "Rot Fiend": "腐烂恶魔",
     "Ash Fiend": "灰烬恶魔",
-    "Bone Shambler Megalith": "巨大骸骨跛行者",
+    "Bone Shambler Megalith": "庞大骸骨跛行者",
     "Golden Skull": "金色颅骨",
     "Energy Knight": "能量骑士",
     "Twilight Knight": "暮光骑士",
@@ -1248,8 +1249,8 @@ monsters = {
     "Giant Soul Jar": "巨型魂匣",
     "Swamp Queen": "沼泽女王",
     "Chaos Quill": "混沌魔笔",
-    "Fire Wyrm Egg": "火焰巨龙蛋",
-    "Ice Wyrm Egg": "冰霜巨龙蛋",
+    "Fire Wyrm Egg": "火焰游龙蛋",
+    "Ice Wyrm Egg": "冰霜游龙蛋",
     "Box of Woe": "灾祸魔匣", #魔盒？一代叫悲哀盒感觉不太对
     "Bone Wizard": "骸骨巫师",
     "Avian Wizard": "鸟类巫师", # TODO
@@ -1274,10 +1275,10 @@ monsters = {
     "Enchanter": "附魔师",
     "Troubling Mass": "Troubling Mass", # TODO
     "Vampire Count": "吸血鬼伯爵", # Count是伯爵
-    "Black Rider": "饥荒，黑马骑士", # x马还是x色？另外本名到底要不要写出来
-    "White Rider": "瘟疫，白马骑士",
-    "Red Rider": "战争，红马骑士",
-    "Pale Rider": "瘟疫，青马骑士",
+    "Black Rider": "饥荒，黑色骑士", # 或者黑之骑士，感觉又很中二
+    "White Rider": "瘟疫，白色骑士",
+    "Red Rider": "战争，红色骑士",
+    "Pale Rider": "瘟疫，青色骑士",
     "The Furnace": "熔炉",
     "Pillar of Bones": "骸骨之柱",
     "Pillar of Worms": "蠕虫之柱",
@@ -1296,7 +1297,7 @@ monsters = {
     "Idol of Vampirism": "吸血造像",
     "Bone Colossus": "骸骨巨像",
     "Flesh Colossus": "血肉巨像",
-    "Giant Nightmare Turtle": "巨大梦魇龟", #巨型？
+    "Giant Nightmare Turtle": "巨大梦魇龟", #巨型？ 目前 giant 除了魂匣都用的巨大，感觉巨型怪怪的
     "Giant Mass of Eyes": "巨大眼球集群",
     "Giant Gorgon": "巨大戈尔贡",
     "Beastking of Inferno": "Beastking of Inferno",
