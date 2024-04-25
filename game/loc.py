@@ -79,6 +79,14 @@ tags = {
     "quick_cast": "快速施放", # 没见过
 }
 
+schools = {}
+for school in ["Fire", "Ice", "Lightning", "Nature", "Dark", "Holy", "Arcane", "Sorcery", "Conjuration", "Enchantment",]:
+    schools[school] = tags[school.lower()]
+
+damage_tags = {}
+for type in ["Physical", "Fire", "Lightning", "Dark", "Poison", "Holy", "Arcane", "Ice",]:
+    damage_tags[type] = tags[type.lower()]
+
 tags_format = {
     # damage type
     "physical": "%s 点物理伤害",
@@ -855,21 +863,53 @@ consumables = {
     "Orb of Corruption": "腐化法球",
 }
 
+ring_tags = {
+    "Fiery": "Fiery",
+    "Icy": "Icy",
+    "Electric": "Electric",
+    "Living": "Living",
+    "Sinister": "Sinister",
+    "Golden": "Golden",
+    "Mystic": "Mystic",
+    "Sorcerous": "Sorcerous",
+    "Enchanting": "Enchanting",
+    "Conjured": "Conjured",
+}
+
+ring_stats = {
+    "Dagger": "Dagger",
+    "Orb": "Orb",
+    "Tome": "Tome",
+    "Lens": "Lens",
+    "Flag": "Flag",
+    "Disk": "Disk",
+    "Scale": "Scale",
+    "Claw": "Claw",
+    "Fang": "Fang",
+    "Hourglass": "Hourglass",
+    "Horn": "Horn",
+}
+
 shrines = {
     "Ruby Heart": "Ruby Heart",
-    "Exotic Pet Shop": "Exotic Pet Shop",
-    "Scroll of Spells": "Scroll of Spells",
-    "Treasure Chest": "Treasure Chest",
-    "Sigil Chest": "Sigil Chest",
-    "Box of Wizard Caps": "Box of Wizard Caps",
-    "Hat Chest": "Hat Chest",
-    "Golden Trinket Chest": "Golden Trinket Chest",
-    "Staff Chest": "Staff Chest",
-    "Shoe Box": "Shoe Box",
-    "Armor Chest": "Armor Chest",
-    "Trinket Box": "Trinket Box",
-    "Scroll of Skills": "Scroll of Skills",
+    "Exotic Pet Shop": "珍惜宠物商店",
+    "Scroll of Spells": "法术卷轴",
+    "Treasure Chest": "宝物箱",
+    "Sigil Chest": "刷怪笼箱", # TODO
+    "Box of Wizard Caps": "巫师帽盒",
+    "Hat Chest": "帽子箱",
+    "Staff Chest": "法杖箱",
+    "Shoe Box": "鞋盒",
+    "Armor Chest": "盔甲箱",
+    "Trinket Box": "饰品盒",
+    "Scroll of Skills": "能力卷轴",
 }
+for k, v in ring_tags.items():
+    name = "%s Trinket Chest" % k
+    shrines[name] = "%s饰品箱" % v
+for k, v in ring_stats.items():
+    name = "%s Chest" % k
+    shrines[name] = "%s箱" % v
 
 equipments = {
     "The Bladestaff": "利刃法杖",
@@ -1002,6 +1042,16 @@ equipments = {
     "Ugly Curse Doll": "丑陋巫蛊",
     "Red Curse Doll": "红色巫蛊",
 }
+for k, v in ring_tags.items():
+    for k2, v2 in ring_stats.items():
+        name = "%s %s" % (k, k2)
+        equipments[name] = "%s %s" % (v, v2)
+for k, v in schools.items():
+    name = "%s Wand" % k
+    equipments[name] = "%s魔杖" % v
+for k,v in damage_tags.items():
+    name = "%s Shield" % k
+    equipments[name] = "%s护盾" % v
 
 monsters = {
     "Goblin": "哥布林",
