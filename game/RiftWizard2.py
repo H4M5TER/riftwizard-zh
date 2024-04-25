@@ -4334,8 +4334,10 @@ class PyGameView(object):
 					if len(tokens) > 1:
 						token = tokens[1].lower()
 						if re.search("^\d+$", tokens[0]):
-							assert token in loc.tags_format
-							word = loc.tags_format[token] % tokens[0]
+							if token in loc.tags_format:
+								word = loc.tags_format[token] % tokens[0]
+							else:
+								print(token)
 					assert token in tooltip_colors, "Unknown tooltip color: %s" % token
 					cur_color = tooltip_colors[token].to_tup()
 
@@ -4547,7 +4549,7 @@ class PyGameView(object):
 			cur_y += linesize
 			for buff_name, (buff, stacks, duration, color) in counts.items():
 
-				fmt = loc.buffs.get(buff_name, buff_name)
+				fmt = loc.tags.get(buff_name, buff_name)
 
 				if stacks > 1:
 					fmt += ' x%d' % stacks
@@ -4572,7 +4574,7 @@ class PyGameView(object):
 				equipment_name = loc.equipments.get(equipment.name, equipment.name)
 				self.draw_string("  %s" % equipment_name, self.character_display, cur_x, cur_y, mouse_content=item)
 				
-				icon = self.get_equipment_icon(item)
+				icon = self.get_equipment_icon(equipment)
 				self.character_display.blit(icon, (cur_x, cur_y))
 
 				cur_y += linesize
@@ -5186,10 +5188,14 @@ class PyGameView(object):
 			cur_y += 32
 			if isinstance(gen_params.shrine, Shop):
 				for item in gen_params.shrine.items:
-					item_name = loc.equipments.get(item.name, item.name)
-					item_name = loc.spells.get(item.name, item.name)
-					item_name = loc.skills.get(item.name, item.name)
-					self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
+					item_name = item.name
+					if isinstance(item, Spell):
+						item_name = loc.spells.get(item.name, item.name)
+					elif isinstance(item, Equipment):
+						item_name = loc.equipments.get(item.name, item.name)
+					elif isinstance(item, Upgrade):
+						item_name = loc.skills.get(item.name, item.name)
+					self.draw_string(item_name, self.examine_display, cur_x+38, cur_y)
 					
 					icon = self.get_equipment_icon(item)
 					if icon:
