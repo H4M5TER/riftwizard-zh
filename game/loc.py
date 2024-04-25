@@ -6,7 +6,7 @@ spells = {
     "Lightning Bolt": "闪电箭",
     "Magic Missile": "魔法飞弹",
     "Poison Sting": "毒刺",
-    "Wolf": "招狼术", # anything better?
+    "Wolf": "召唤狼",
     "Annihilate": "湮灭术",
     "Boiling Blood": "沸腾之血",
     "Bone Spear": "骨矛术",
@@ -18,7 +18,7 @@ spells = {
     "Eye of Ice": "闪电之眼",
     "Eye of Lightning": "寒冰之眼",
     "Eye of Rage": "狂怒之眼",
-    "Fan of Flames": "扇状烈焰",
+    "Fan of Flames": "扇状烈焰", # 还是想叫火焰扇
     "Freeze": "冰冻术",
     "Goatia Offering": "邪羊献祭", 
     "Healing Light": "治愈之光",
@@ -35,7 +35,7 @@ spells = {
     "Plague of Undeath": "亡灵瘟疫", 
     "Pyrostatic Pulse": "电焰脉冲",
     "Regeneration Aura": "再生光环",
-    "Scourge": "天罚", # 为什么神圣法术会用这么难听的词
+    "Scourge": "天罚",
     "Soul Swap": "灵魂换位",
     "Thunder Strike": "雷霆打击",
     "Touch of Death": "死亡之触",
@@ -44,7 +44,7 @@ spells = {
     "Aether Swap": "以太换位",
     "Arcane Orb": "奥术法球",
     "Basilisk Armor": "石化护甲",
-    "Blazerip": "炽裂术", # 熔刃术？
+    "Blazerip": "炽裂术",
     "Blinding Light": "眩目之光",
     "Blink": "闪现术",
     "Bloodshift": "鲜血转移",
@@ -59,12 +59,12 @@ spells = {
     "Flame Gate": "火门术", 
     "Frostfire Hydra": "霜火九头蛇", # 作为海德拉你不能移动是正常的吗？
     "Ghostball": "鬼球术",
-    "Giant Bear": "巨熊",
+    "Giant Bear": "召唤巨熊",
     "Glass Orb": "玻璃法球",
     "Holy Armor": "神圣护甲",
     "Holy Fire": "圣火术",
     "Ironize": "铁化术", # 太难听了
-    "Lightning Halo": "闪电光环", # 唉，被砍成圆环的技能
+    "Lightning Halo": "闪电光环", # 唉，被砍成圆环的技能，这个叫光环的话其他 aura 技能怎么办
     "Lightning Spire": "闪电尖塔",
     "Lumbriogenesis": "蠕虫孳生", 
     "Mystic Power": "神秘力量",
@@ -72,12 +72,12 @@ spells = {
     "Nightmare Aura": "梦魇光环",
     "Plague of Filth": "污秽瘟疫",
     "Prison of Thorns": "荆棘囚笼",
-    "Psychic Seedling": "灵能幼苗",
+    "Psychic Seedling": "灵能幼苗", # 虽说是 psychic，这个树和灵能没什么关系吧
     "Seal Fate": "命定之死", 
     "Shrapnel Blast": "破片迸发", 
     "Sight of Blood": "血腥视线",
     "Silver Spear": "银色标枪", # 长了短了都不好听
-    "Suspend Mortality": "死亡拒止",
+    "Suspend Mortality": "死亡拒止", # 想组一个带“凡性”的词
     "Underworld Passage": "冥界通道",
     "Armageddon Blade": "审判之刃",
     "Blizzard": "暴风雪",
@@ -86,12 +86,12 @@ spells = {
     "Burning Idol": "焚烬造像",
     "Call Seraph": "呼唤炽天使",
     "Carnival of Pain": "痛楚祭典",
-    "Combust Poison": "燃毒术", # 想不到
-    "Conductance": "电导术",
-    "Death Cleave": "死亡分裂", # 我还是有点想叫死亡顺劈
+    "Combust Poison": "毒素燃爆",
+    "Conductance": "电导术", # 比较希望统一这种状态改变技能的名字
+    "Death Cleave": "死亡分裂",
     "Dispersion Field": "驱散立场",
-    "Drain Pulse": "汲魂脉冲", # 很烂
-    "Essence Flux": "要素异变", # 想不到
+    "Drain Pulse": "汲魂脉冲",
+    "Essence Flux": "要素异变",
     "Fiery Tormentor": "火热折磨者", # 拷问者？行刑者？这个的图像很自然让我想到魂3的狱卒和火刑魔女，拿着一个烙铁，这个形象来源于哪里呢
     "Fire Drake": "火焰巨龙",
     "Flame Burst": "炎爆术",
@@ -99,7 +99,7 @@ spells = {
     "Ice Drake": "冰霜巨龙",
     "Ice Orb": "冰霜法球",
     "Ice Vortex": "寒冰漩涡",
-    "Imp Swarm": "小恶魔群", # 在 rw 里，fiend 就是 demon，imp 是小号 fiend，但是有的地方还是叫小鬼好听一点，纠结
+    "Imp Swarm": "小鬼集结",
     "Lightning Form": "闪电形态",
     "Lightning Storm": "闪电风暴",
     "Mass Calcification": "群体钙化",
@@ -112,7 +112,7 @@ spells = {
     "Searing Seal": "灼热印记",
     "Siege Golems": "攻城魔像",
     "Siphon Shields": "虹吸护盾",
-    "Stampede Form": "象群形态", # 想不到
+    "Stampede Form": "象群形态",
     "Storm Burst": "风暴爆发",
     "Storm Drake": "风暴巨龙",
     "The Restless Dead": "不息死者",
@@ -120,17 +120,17 @@ spells = {
     "Void Beam": "虚空射线",
     "Void Drake": "虚空巨龙",
     "Volcanic Eruption": "火山爆发",
-    "Wall of Ice": "寒冰之墙", # 不管是冰墙还是冰墙术还是召唤冰墙都很难听
-    "Watcher Form": "守卫形态", # 我完全搞不懂这个技能的用途也不知道怎么翻译，不如说游戏里那个 Watcher 到底是什么生物
+    "Wall of Ice": "寒冰之墙",
+    "Watcher Form": "监视者形态",
     "Wheel of Death": "死亡轮盘",
     "Ball Lightning": "球状闪电",
     "Bloodflame": "血焰术", # 难听
     "Blue Lion": "蓝狮子",
     "Call Archon": "呼唤执政官",
     "Cantrip Cascade": "小招倾泻",
-    "Chill Wind": "凛冽寒风", # 想不到好听又能和 soul wind 对称的
-    "Death Shock": "致死电击",
-    "Fae Court": "妖精庭院",
+    "Chill Wind": "凛冽寒风",
+    "Death Shock": "致死电击", # 这样就只有电的意思了，像是某种电死人触发 dark 伤害的 skill
+    "Fae Court": "妖精庭院", # 要不要改成仙灵呢
     "Flesh Fiend": "血肉恶魔",
     "Golden Skull": "金色颅骨",
     "Heavenly Idol": "天堂造像",
@@ -172,7 +172,7 @@ spells = {
 }
 
 skills = {
-    "Arcane Accounting": "奥术节能", # 难听
+    "Arcane Accounting": "奥术节能",
     "Arcane Combustion": "奥术爆燃",
     "Arcane Shield": "奥术护盾",
     "Bone Guard": "骸骨卫士",
@@ -183,64 +183,64 @@ skills = {
     "Deathchill Familiar": "死寒仆从",
     "Faestone": "仙灵石",
     "Frostbite": "霜咬", # 图里有张嘴
-    "Frozen Fragility": "低温脆化", 
+    "Frozen Fragility": "低温易碎", 
     "Glittering Dance": "闪光之舞",
     "Hibernation": "冬眠",
     "Holy Water": "圣水",
     "Houndlord": "猎犬领主",
     "Hungry Dead": "饥饿死者",
-    "Lifespark Lantern": "生灵弧灯", # 我恨透了合成词3
+    "Lifespark Lantern": "生灵弧灯",
     "Lightning Warp": "闪电跃迁",
     "Master of Memories": "记忆大师",
     "Megavenom": "剧毒",
     "Melting Armor": "熔化护甲",
     "Minion Regeneration": "随从再生",
     "Natural Healing": "自然回复",
-    "Natural Vigour": "自然之力", # ?
+    "Natural Vigour": "自然之力", # 要不还是护甲吧
     "Paralyzing Venom": "麻痹毒液",
-    "Prince of Ruin": "毁灭王子", # 我还是想叫废墟王子
+    "Prince of Ruin": "毁灭王子",
     "Radiant Chill": "寒气逼人",
     "Shielded Minions": "盾护随从",
     "Silkshifter": "蛛网行者",
     "Spell Sniper": "法术狙击",
-    "Spider Spawning": "蜘蛛孳生", # 难听
+    "Spider Spawning": "蜘蛛孳生",
     "Stormbrood Tricksters": "风巢诡魔", # 召唤出来的巨魔会闪现术
-    "Toadblood Transmutation": "蟾血异变", # 想不到
+    "Toadblood Transmutation": "蟾血异变",
     "Unholy Alliance": "不洁同盟",
     "Venom Spit": "毒液喷射",
-    "Voidflame Lantern": "虚空火灯", 
+    "Voidflame Lantern": "虚空燃灯", 
     "Acid Fumes": "酸雾",
-    "Armorer": "盔甲构装",
+    "Armorer": "盔甲构装", # 盔甲匠好点吧
     "Blood Anima": "鲜血灵体", 
     "Blood Reaping": "鲜血收割",
     "Chaos Casting": "混乱施法",
     "Collected Agony": "苦痛积聚",
-    "Demonic Cruelty": "魔之恶毒",
+    "Demonic Cruelty": "魔之恶毒", # 这个真的好难听
     "Earthwrath": "大地之怒",
     "Fae Malevolence": "邪灵作祟", # TODO
     "Fiery Judgement": "火焰审判",
     "Ghostfire": "鬼火",
-    "Hemocorruption": "血之腐化",
+    "Hemocorruption": "血之腐化", # 想改回污染血液，或者腐化血液也行
     "Holy Thunder": "神圣雷霆",
-    "Hordemancer": "群体召唤",
+    "Hordemancer": "群体召唤", # TODO
     "Horror": "恐惧",
     "Hypocrisy": "伪善",
     "Master of Space": "空间大师",
     "Master of Time": "时间大师",
     "Multimancy": "多重施法",
-    "Necrostatics": "亡灵起电",
+    "Necrostatics": "亡灵起电", # TODO
     "Purestrike": "纯洁打击",
     "Pyrophilia": "嗜火症",
     "Righteous March": "正义之师", 
-    "Scalefeather Egregore": "鳞羽群灵", # 鳞羽格式塔（？
+    "Scalefeather Egregore": "鳞羽群灵", # 鳞羽格式塔（？ 那这个怪翻译成群灵吗
     "Searing Heat": "炎炎酷热", 
     "Starfire": "星火交辉",
     "Thorn Garden": "荆棘花园",
-    "Wordspeaker": "真言行者",
+    "Wordspeaker": "真言诵者", # 或者咏者？颂者？
     "Chastisement": "惩戒", # 这个图标和 Scourge 一样啊，那都叫惩戒行吗（不行
     "Cracklevoid": "虚空电鸣", 
     "Echomancer": "法术回响",
-    "Ice Tap": "共振冰棱",
+    "Ice Tap": "共振冰棱", # 冰坠子
     "Icy Vengeance": "冰霜复仇",
     "Inferno Engines": "炼狱引擎",
     "Lightning Frenzy": "闪电狂热",
@@ -248,14 +248,14 @@ skills = {
     "Scalespinner": "鳞甲变换",
     "Shatter Shards": "碎冰裂片",
     "Steam Anima": "蒸汽灵体",
-    "Storm Caller": "风暴召师",
+    "Storm Caller": "风暴召师", # 还是呼唤风暴吧
     "Arch Conjurer": "召唤大师",
     "Arch Enchanter": "附魔大师",
     "Arch Sorcerer": "咒术大师",
     "Blood Lord": "鲜血领主",
     "Chaos Poet": "混沌诗人",
     "Dark Lord": "黑暗领主",
-    "Disintegrator": "解离者", # 不能叫解离术，怎么办
+    "Disintegrator": "解离者", # 要不解离器？
     "Dragon Lord": "巨龙领主",
     "Enchanters Boon": "附魔恩赐", # 烂
     "Fire Lord": "火焰领主",
@@ -282,11 +282,11 @@ upgrades = {
     "Chaos Ball": "混沌球",
     "Ash Ball": "灰烬球",
     "Meteor": "火流星",
-    "Freezing": "Freezing",
-    "Ice Spear": "Ice Spear",
-    "Icicle Harvest": "Icicle Harvest",
-    "Blood Bond": "Blood Bond",
-    "Life Funnel": "Life Funnel",
+    "Freezing": "冻结",
+    "Ice Spear": "冰矛",
+    "Icicle Harvest": "Icicle Harvest", # 冰伤害击杀返还 icicle 充能
+    "Blood Bond": "Blood Bond", # 吸取挂上 life drain 的单位周围的敌人
+    "Life Funnel": "生命虹吸",
     "Blindcasting": "无需视线",
     "Channeling": "引导施法",
     "Electric Ink": "电能复写",
@@ -295,17 +295,17 @@ upgrades = {
     "Disruption Bolt": "干扰飞弹",
     "Arcane Crossfire": "奥术交火",
     "Ricochet": "弹射飞弹",
-    "Acidity": "Acidity",
-    "Silk Shot": "Silk Shot",
-    "Stinger Barrage": "Stinger Barrage",
-    "Wolf Pack": "群狼术",
+    "Acidity": "腐蚀",
+    "Silk Shot": "蛛网射击",
+    "Stinger Barrage": "Stinger Barrage", # 攻击近距离内带毒敌人
+    "Wolf Pack": "群狼术", # 真的吗，别术了吧
     "Ice Hound": "寒冰猎犬",
     "Clay Hound": "黏土猎犬",
-    "Cascade": "倾泻湮灭",
+    "Cascade": "倾泻湮灭", # 我觉得击杀后跳跃不能叫倾泻
     "Comprehensive Annihilation": "全面湮灭",
     "Doom Storm": "毁灭风暴",
     "Extra Damage": "额外伤害",
-    "Duration": "持续回合",
+    "Duration": "持续时间",
     "Holy Fury": "神圣怒火",
     "Dark Fury": "黑暗怒火",
     "Infernal Spear": "Infernal Spear",
