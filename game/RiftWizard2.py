@@ -258,6 +258,8 @@ tooltip_colors['blinded'] = tooltip_colors['blind']
 tooltip_colors['glassify'] = Tags.Glass.color
 tooltip_colors['glassified'] = Tags.Glass.color
 tooltip_colors['quick_cast'] = Color(255, 255, 255)
+tooltip_colors['spell']: Color(80, 175, 255)
+tooltip_colors['unit']: Color(249, 210, 109)
 tooltip_colors['requires_los'] = Tags.Translocation.color
 tooltip_colors['wizard'] = Color(2, 136, 209)
 tooltip_colors['enemy'] = tooltip_colors['damage']
@@ -4504,6 +4506,10 @@ class PyGameView(object):
 								word = loc.tags_format[token] % tokens[0]
 							else:
 								print(token)
+						if token == "spell":
+							word = loc.spells.get(word, word)
+						elif token == "unit":
+							word = loc.monsters.get(word, word)
 					assert token in tooltip_colors, "Unknown tooltip color: %s" % token
 					cur_color = tooltip_colors[token].to_tup()
 

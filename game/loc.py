@@ -101,17 +101,17 @@ tags_format = {
 
     # upgrade attributes
     "damage": "%s 点伤害",
-    "range": "%s 格范围",
-    "minion_health": "%s 点随从生命",
-    "minion_damage": "%s 点随从伤害",
+    "range": "%s 格",
+    "minion_health": "%s 点生命",
+    "minion_damage": "%s 点伤害",
     "breath_damage": "%s 点吐息伤害",
-    "minion_duration": "%s 回合随从持续时间",
-    "minion_range": "%s 格随从攻击范围",
+    "minion_duration": "%s 回合",
+    "minion_range": "%s 格",
     "duration": "%s 个回合",
     "max_charges": "%s 点最大充能",
     "radius": "半径 %s 格",
     "num_summons": "%s 个召唤数量",
-    "num_targets": "%s 个目标数量",
+    "num_targets": "%s 个目标",
     "shields": "%s 点护盾",
     "shot_cooldown": "%s shot_cooldown", # TODO
     "strikechance": "%s 打击概率", # 没见过
@@ -1316,3 +1316,9 @@ monsters = {
     "Insanity Queen": "疯狂女王",
     "Mordred": "莫德雷德",
 }
+
+# 这里是散落在源代码中没有从怪物文件 dump 出来的名字，手动挡
+monsters.update({
+    "Fire Elemental": "火元素",
+    "Starfire Elemental": "星火元素",
+})
