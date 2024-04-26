@@ -254,6 +254,8 @@ tooltip_colors.update({
     "blind": Tags.Holy.color,
     "blinded": Tags.Holy.color,
     "quick_cast": Color(255, 255, 255),
+	"spell": Color(80, 175, 255),
+	"unit": Color(249, 210, 109),
 })
 
 tt_attrs = [
@@ -4338,6 +4340,10 @@ class PyGameView(object):
 								word = loc.tags_format[token] % tokens[0]
 							else:
 								print(token)
+						if token == "spell":
+							word = loc.spells.get(word, word)
+						elif token == "unit":
+							word = loc.monsters.get(word, word)
 					assert token in tooltip_colors, "Unknown tooltip color: %s" % token
 					cur_color = tooltip_colors[token].to_tup()
 

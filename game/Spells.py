@@ -58,9 +58,9 @@ class FireballSpell(Spell):
 		self.tags = [Tags.Fire, Tags.Sorcery]
 		self.level = 1
 
-		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "火球术随机造成[physical]、[lightning]或[fire]伤害。火球术会对目标造成其抗性最低类型的伤害。", "damage type")
-		self.upgrades['ash'] = (1, 2, "Ash Ball", "火球术使目标[blind]和[poisoned]四回合", "damage type")
-		self.upgrades['meteor'] = (1, 3, "Meteor", "火球术中心的单位受到额外一份[physical]伤害并且被[stun][3:duration]。")
+		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "[Fireball:spell]随机造成[physical]、[lightning]或[fire]伤害。[Fireball:spell]会对目标造成其抗性最低类型的伤害。", "damage type")
+		self.upgrades['ash'] = (1, 2, "Ash Ball", "[Fireball:spell]使目标[blind]和[poisoned] [4:duration]", "damage type")
+		self.upgrades['meteor'] = (1, 3, "Meteor", "[Fireball:spell]中心的单位受到额外一份[physical]伤害并且被[stun] [3:duration]。")
 
 	def get_description(self):
 		return "对[{radius}:radius]内的单位造成 [{damage}:fire]。".format(**self.fmt_dict())
@@ -121,9 +121,9 @@ class MeteorShower(Spell):
 
 		self.max_channel = 10
 
-		self.upgrades['chaos'] = (1, 7, "Chaos Storm", "Each meteor casts your Annihilate on [3:num_targets] enemy units within [4:radius] tiles")
-		self.upgrades['dragons'] = (1, 8, "Rain of Dragons", "Each meteor has a 50% chance of casting your fire drake spell as well")
-		self.upgrades['pyrostatic'] = (1, 8, "Pyrostatic Storm", "Each meteor casts your Lightning Bolt on up to [2:num_targets] enemies in line of sight")
+		self.upgrades['chaos'] = (1, 7, "Chaos Storm", "每颗陨石对[4:radius]内的 [3:num_targets]施放你的[Annihilate:spell]")
+		self.upgrades['dragons'] = (1, 8, "Rain of Dragons", "每颗陨石有 50% 概率施放你的[Fire Drake:spell]")
+		self.upgrades['pyrostatic'] = (1, 8, "Pyrostatic Storm", "每颗陨石对视线内至多 [2:num_targets]敌人施放你的[Lightning Bolt:spell]")
 
 		self.stats.append('storm_radius')
 
@@ -197,9 +197,9 @@ class LightningBoltSpell(Spell):
 		self.tags = [Tags.Lightning, Tags.Sorcery]
 		self.level = 1
 
-		self.upgrades['channel'] = (1, 2, "Channeling", "Lightning bolt can be channeled for up to 10 turns.")
-		self.upgrades['scrolls'] = (1, 7, "Electric Ink", "Whenever Lightning Bolt kills a unit, spawn a living lightning scroll that can cast your Lightning Bolt spell once.")
-		self.upgrades['energy'] = (1, 6, "Energy Bolt", "Lightning bolt also deals arcane damage")
+		self.upgrades['channel'] = (1, 2, "Channeling", loc.clauses["channel"] % "[10:duration]")
+		self.upgrades['scrolls'] = (1, 7, "Electric Ink", "每当[Lightning Bolt:spell]击杀一个单位，生成一个可以再次施放你的[Lightning Bolt:spell]的[Living Scroll of Lightning:unit]")
+		self.upgrades['energy'] = (1, 6, "Energy Bolt", "[Lightning Bolt:spell]额外造成一份[arcane]伤害")
 
 		self.suicide = False
 		self.damage_type = Tags.Lightning # For scroll AI
@@ -208,7 +208,7 @@ class LightningBoltSpell(Spell):
 		self.origin_point = None
 
 	def get_description(self):
-		return "Deals [{damage}_lightning:lightning] damage in a beam.".format(**self.fmt_dict())
+		return "对一条直线造成 [{damage}:lightning]".format(**self.fmt_dict())
 
 	def scroll(self):
 		scroll = LivingLightningScroll()
@@ -280,15 +280,14 @@ class AnnihilateSpell(Spell):
 		self.arcane = 0
 		self.dark = 0
 
-		self.upgrades['cascade_range'] =  (3, 3, 'Cascade', 'Hits from Annihilate will jump to nearby targets if the main target is killed')
-		self.upgrades['extra'] =  (1, 2, 'Comprehensive Annihilation', 'Annihilate deals additional dark and arcane damage hits')
-		self.upgrades['doom_storm'] =  (1, 3, 'Doom Storm', 'Annihilate chains to up to [5:num_targets] random storms in line of sight')
+		self.upgrades['cascade_range'] =  (3, 3, 'Cascade', '[Annihilate:spell]击杀主目标之后会选择周围的目标轰击')
+		self.upgrades['extra'] =  (1, 2, 'Comprehensive Annihilation', '[Annihilate:spell]额外使用[dark]和[arcane]轰击')
+		self.upgrades['doom_storm'] =  (1, 3, 'Doom Storm', '[Annihilate:spell]会对视线内至多 [5:num_targets]风暴地块连锁施放') # TODO
 
 		self.origin_point = None
 
 	def get_description(self):
-		desc = "Deals [{damage}_fire:fire] damage, [{damage}_lightning:lightning] damage,"
-		desc += " and [{damage}_physical:physical] damage to the target."
+		desc = "对目标造成 [{damage}:fire], [{damage}:lightning], [{damage}:physical]"
 		return desc.format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -345,9 +344,9 @@ class MegaAnnihilateSpell(AnnihilateSpell):
 		self.arcane = 0
 		self.dark = 0
 
-		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', 'Hits from Annihilate will jump to nearby targets if the main target is killed')
-		self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', 'Annihilate deals an additional dark damage hit')
-		self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', 'Annihilate deals an additional arcane damage hit')
+		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', '[Mega Annihilate:spell]击杀主目标之后会选择周围的目标轰击')
+		self.upgrades['dark'] =  (1, 2, 'Dark Annihilation', '[Mega Annihilate:spell]额外使用[dark]伤害轰击')
+		self.upgrades['arcane'] =  (1, 2, 'Arcane Annihilation', '[Mega Annihilate:spell]额外使用[arcane]伤害轰击')
 
 		self.origin_point = None
 
@@ -362,9 +361,9 @@ class Teleport(Spell):
 		self.tags = [Tags.Sorcery, Tags.Arcane, Tags.Translocation]
 		self.level = 5
 
-		self.upgrades['quick_cast'] = (1, 4, "Quickcast", "Casting Teleport does not end your turn.")
-		self.upgrades['group_teleport'] = (1, 4, "Group Teleport", "Teleport also teleports up to [10:num_targets] ally units with you.")
-		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "Teleport deals arcane damage to all enemy units in line of sight of the targeted tile equal to its maximum number of charges.")
+		self.upgrades['quick_cast'] = (1, 4, "Quickcast", "[Teleport:spell]不会结束你的回合")
+		self.upgrades['group_teleport'] = (1, 4, "Group Teleport", "[Teleport:spell]会携带至多 [10:num_targets]友军单位")
+		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "[Teleport:spell]对目标地块视线范围内的所有敌人造成和它的最大充能数相同的[arcane]伤害")
 
 	def get_description(self):
 		return "Teleport to target tile"
@@ -436,9 +435,9 @@ class BlinkSpell(Teleport):
 		self.tags = [Tags.Arcane, Tags.Sorcery, Tags.Translocation]
 		self.level = 3
 
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Blink can be cast without line of sight")
-		self.upgrades['dispersal'] = (1, 2, "Dissolution", "Casting blink also casts dispersion")
-		self.upgrades['thunder'] = (1, 2, "Thunderblink", "Casting blink casts thunderstrike on the two closest enemy targets in line of sight.")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "施放[Blink:spell]不再需要视线")
+		self.upgrades['dispersal'] = (1, 2, "Dissolution", "施放[Blink:spell]一同施放[Disperse:spell]")
+		self.upgrades['thunder'] = (1, 2, "Thunderblink", "施放[Blink:spell]会对视线内最近的两个敌人施放[Thunder Strike:spell]")
 
 class FlameGateBuff(Buff):
 
@@ -449,7 +448,7 @@ class FlameGateBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'flame_gate']
 		self.cast = True
-		self.description = "Whenever you cast a fire spell, temporarily summon a fire elemental near the target.\n\nThis enchantment ends if you move or cast a non fire spell."
+		self.description = "每当你施放一个[fire]法术，在目标地块附近生成一个[Fire Elemental:unit]\n\n这个效果在你移动或施放[fire]之外的法术时结束"
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -476,6 +475,7 @@ class FlameGateBuff(Buff):
 			elemental.name = 'Fire Elemental'
 			elemental.sprite.char = 'E'
 			elemental.sprite.color = Color(255, 0, 0)
+			# TODO
 			elemental.spells.append(SimpleRangedAttack("Elemental Fire", self.spell.get_stat('minion_damage'), Tags.Fire, self.spell.get_stat('minion_range'), radius=self.spell.get_stat('radius')))
 			if self.spell.get_stat('cast_eye'):
 				grant_minion_spell(EyeOfFireSpell, elemental, self.spell.caster, cool_down=10)
@@ -498,7 +498,7 @@ class StarfireGateBuff(Buff): #I separated this into a separate buff so that I w
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'flame_gate']
 		self.cast = True
-		self.description = "Whenever you cast a fire or arcane spell, temporarily summon a starfire elemental near the target.\n\nThis enchantment ends if you move or cast a non fire or arcane spell."
+		self.description = "每当你施放一个[fire]或[arcane]法术，在目标地块附近生成一个[Starfire Elemental:unit]\n\n这个效果在你移动或施放[fire]或[arcane]之外的法术时失效"
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -526,6 +526,7 @@ class StarfireGateBuff(Buff): #I separated this into a separate buff so that I w
 			elemental.sprite.char = 'E'
 			elemental.sprite.color = Color(255, 0, 0)
 			elemental.asset_name = 'starfire_elemental'
+			# TODO
 			elemental.spells.append(SimpleRangedAttack("Elemental Starfire", self.spell.get_stat('minion_damage'), [Tags.Fire, Tags.Arcane], self.spell.get_stat('minion_range'), radius=self.spell.get_stat('radius')))
 			elemental.resists[Tags.Fire] = 100
 			elemental.resists[Tags.Arcane] = 100
@@ -554,9 +555,16 @@ class FlameGateSpell(Spell):
 		self.minion_health = 22
 		self.minion_range = 4
 
-		self.upgrades['radius'] = (1, 3, "Burst Fire", "Elemental attacks gain 1 radius.")
-		self.upgrades['cast_eye'] = (1, 5, "Eye Gate", "Your elementals instantly cast your Eye of Fire spell when summoned")
-		self.upgrades['starfire_summon'] = (1, 5, "Starfire Gate", "Starfire Gate can sustain off of both Fire and Arcane spells. Starfire Gate summons Starfire Elementals instead of Fire Elementals.")
+		self.upgrades['radius'] = (1, 3, "Burst Fire", "[Fire Elemental:unit]的攻击获得[1:radius]")
+		self.upgrades['cast_eye'] = (1, 5, "Eye Gate", "[Fire Elemental:unit]被召唤时施放你的[Eye of Fire:spell]")
+		self.upgrades['starfire_summon'] = (1, 5, "Starfire Gate", "现在[星火之门]会在你施放[fire]或[arcane]法术时召唤[Starfire Elemental:unit]\n不会在你施放[arcane]法术时结束")
+
+	def get_description(self):
+		return ("每当你施放一个[fire]法术，在目标地块附近生成一个[Fire Elemental:unit]\n"
+				"[Fire Elemental:unit]有 [{minion_health}:minion_health], [100% 火焰抗性:fire], [50% 物理抗性:physical], [-50% 寒冰抗性:ice]\n"
+				"[Fire Elemental:unit]的攻击造成 [{minion_damage}:fire]、射程 [{minion_range}:minion_range]\n"
+				"[Fire Elemental:unit]在 [{minion_duration}:minion_duration]后消失\n"
+				"这个效果在你移动或施放[fire]之外的法术时失效").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		if self.get_stat('starfire_summon'):
@@ -601,13 +609,6 @@ class FlameGateSpell(Spell):
 	def get_extra_examine_tooltips(self):
 		return [self.get_fire_elemental(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.get_starfire_elemental()]
 
-	def get_description(self):
-		return ("Whenever you cast a [fire] spell, summon a fire elemental at the target of that spell.\n"
-				"Fire elementals have [{minion_health}_HP:minion_health], [100_fire:fire] resist, [50_physical:physical] resist, and [-50_ice:ice] resist.\n"
-				"Fire elementals have an attack which deals [{minion_damage}_fire:fire] damage with a [{minion_range}_tile:minion_range] range.\n"
-				"Fire elementals vanish after [{minion_duration}_turns:minion_duration].\n"
-				"This effect lasts until you fail to cast a fire spell.").format(**self.fmt_dict())
-
 class LightningFormBuff(Buff):
 
 	def __init__(self, spell, phys_immune = False):
@@ -619,7 +620,7 @@ class LightningFormBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'lightning_form']
 		self.color = Tags.Lightning.color
-		self.description = "Whenever you cast a lightning spell, if the target square is empty, teleport to the target square.\n\nThis enchantment ends if you move or cast a non lightning spell."
+		self.description = "你施放一个[lightning]法术时，如果目标地块是空的，传送到目标地块。\n\n这个效果在你移动或施放[lightning]之外的法术时失效"
 		self.cast = True
 		self.stack_type = STACK_TYPE_TRANSFORM
 		
@@ -688,19 +689,19 @@ class LightningFormSpell(Spell):
 		self.tags = [Tags.Lightning, Tags.Enchantment]
 		self.level = 4
 
-		self.upgrades['lingering_form'] = (1, 2, "Lingering Form", "Lasts 3 turns after you cast a [lightning:lightning] spell instead of vanishing instantly.")
-		self.upgrades['fire_form'] = (1, 3, "Fire Form", "Also works on [fire:fire] spells and gives [100_fire:fire] resist.")
-		self.upgrades['crackling_aura'] = (1, 4, "Crackling Aura", "In lightning form, deal [5_lightning:lightning] damage to up to [4:num_targets] enemies in a 5 tile radius each turn.")
+		self.upgrades['lingering_form'] = (1, 2, "Lingering Form", "[Lightning Form:spell]在你未施放[lightning]法术时持续 [3:duration] 而不是马上消失")
+		self.upgrades['fire_form'] = (1, 3, "Fire Form", "同样对[fire]法术生效\n获得 [100% 火焰抗性]")
+		self.upgrades['crackling_aura'] = (1, 4, "Crackling Aura", "在[Lightning Form:spell]中，每回合对[5:radius]内的 [4:num_targets]敌人造成 [5:lightning]")
 
 	def cast(self, x, y):
 		self.caster.apply_buff(LightningFormBuff(self))
 		yield
 
 	def get_description(self):
-		return ("Whenever you cast a [lightning] spell, teleport to that spell's target.\n"
-				"Gain [100_lightning:lightning] resistance.\n"
-				"Gain [100_physical:physical] resistance.\n"
-				"This effect ends the first turn that you fail to cast a [lightning] spell.").format(**self.fmt_dict())
+		return ("你施放一个[lightning]法术时，如果目标地块是空的，传送到目标地块。\n"
+				"获得 [100% 闪电抗性:lightning]\n"
+				"获得 [100% 物理抗性:physical]\n"
+				"这个效果在你移动或施放[lightning]之外的法术时失效").format(**self.fmt_dict())
 
 
 class VoidBeamResistDebuff(Buff):
@@ -708,7 +709,7 @@ class VoidBeamResistDebuff(Buff):
 	def on_init(self):
 		self.buff_type = BUFF_TYPE_CURSE
 		self.color = Tags.Arcane.color
-		self.name = "Arcane Vulnerability"
+		self.name = "Arcane Vulnerability" # TODO
 		self.stack_type = STACK_INTENSITY
 		self.resists[Tags.Arcane] = -25
 
@@ -726,10 +727,13 @@ class VoidBeamSpell(Spell):
 
 		self.element = Tags.Arcane
 
-		self.upgrades['voidbomber'] = (1, 2, "Void Binding", "Slain enemies are raised as void bombers")
-		self.upgrades['starbeam'] = (1, 3, "Star Beam", "Void beam also deals [fire] damage")
-		self.upgrades['voidcurse'] = (1, 3, "Voidcurse", "Enemies in the aoe lose 25 [arcane] resist")
+		self.upgrades['voidbomber'] = (1, 2, "Void Binding", "[Void Beam:spell]击杀的敌人重生为[Void Bomber:unit]") # 我觉得不应该翻译成重生
+		self.upgrades['starbeam'] = (1, 3, "Star Beam", "[Void Beam:spell]额外造成一份[fire]伤害")
+		self.upgrades['voidcurse'] = (1, 3, "Voidcurse", "[Void Beam:spell]造成伤害前使敌人失去 [25% 奥术抗性:arcane]")
 		# More void beam.... fork?  Combustion... but bigger?  Triple beam?
+
+	def get_description(self):
+		return "对一条直线造成 [{damage}:arcane]\n摧毁墙壁".format(**self.fmt_dict())
 
 	def aoe(self, x, y):
 		start = Point(self.caster.x, self.caster.y)
@@ -769,9 +773,6 @@ class VoidBeamSpell(Spell):
 
 	def get_impacted_tiles(self, x, y):
 		return list(self.aoe(x, y))
-
-	def get_description(self):
-		return "Deal [{damage}_arcane:arcane] damage and destroy walls in a beam.".format(**self.fmt_dict())
 
 class ThunderStrike(Spell):
 
