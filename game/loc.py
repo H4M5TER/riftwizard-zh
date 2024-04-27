@@ -110,8 +110,8 @@ tags_format = {
     "duration": "%s 个回合",
     "max_charges": "%s 点最大充能",
     "radius": "半径 %s 格",
-    "num_summons": "%s 个召唤数量",
-    "num_targets": "%s 个目标",
+    "num_summons": "%s 个",
+    "num_targets": "%s 个",
     "shields": "%s 点护盾",
     "shot_cooldown": "%s shot_cooldown", # TODO
     "strikechance": "%s 打击概率", # 没见过
@@ -140,8 +140,8 @@ spells = {
     "Disperse": "驱散", 
     "Dreamwalk": "梦游",
     "Eye of Fire": "火焰之眼",
-    "Eye of Ice": "闪电之眼",
-    "Eye of Lightning": "寒冰之眼",
+    "Eye of Ice": "寒冰之眼",
+    "Eye of Lightning": "闪电之眼",
     "Eye of Rage": "狂怒之眼",
     "Fan of Flames": "火焰扇", # 黑暗之魂3
     "Freeze": "冰冻",
@@ -1321,4 +1321,14 @@ monsters = {
 monsters.update({
     "Fire Elemental": "火元素",
     "Starfire Elemental": "星火元素",
+    "Golem": "魔像",
+    "Flying Golem": "飞行魔像",
+    "Skeleton": "骷髅",
+    "Flying Skeleton": "飞行骷髅",
+    "Wolf": "狼",
+    "Ice Hound": "寒冰猎犬",
+    "Clay Hound": "黏土猎犬",
+    "Giant Bear": "巨熊",
+    "Metallic Giant Bear": "金属巨熊",
+    "Venom Bear": "毒液熊",
 })
