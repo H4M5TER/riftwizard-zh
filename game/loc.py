@@ -114,9 +114,12 @@ tags_format = {
     "num_targets": "%s 个",
     "shields": "%s 点护盾",
     "shot_cooldown": "%s shot_cooldown", # TODO
-    "strikechance": "%s 打击概率", # 没见过
+    "strikechance": "%s% 概率", # 没见过
     "cooldown": "%s 回合冷却时间", # 没见过
     "cascade_range": "%s 格弹射范围",
+
+    # other
+    "heal": "%s 点生命",
 }
 
 clauses = {
@@ -1113,7 +1116,7 @@ monsters = {
     "Thunderbird": "雷鸟",
     "Bone Knight": "骸骨骑士",
     "Blood Hound": "鲜血猎犬",
-    "Spark Spirit": "之灵", # 不想叫电光之灵，更不能叫火花之灵
+    "Spark Spirit": "电光之灵", # 不想叫电光之灵，更不能叫火花之灵
     "Fire Spirit": "火焰之灵",
     "Golem": "魔像",
     "Redcap": "红帽子",
@@ -1331,4 +1334,13 @@ monsters.update({
     "Giant Bear": "巨熊",
     "Metallic Giant Bear": "金属巨熊",
     "Venom Bear": "毒液熊",
+    "Storm Spirit": "风暴之灵",
+    "Thorny Plant": "荆棘",
+    "Iron Thorn": "铁荆棘",
+    "Icy Thorn": "冰荆棘",
+    "Orb": "法球",
+    "Arcane Orb": "奥术法球",
+    "Searing Orb": "灼热法球",
+    "Ball Lightning": "球状闪电",
+    "Ice Faery": "冰霜仙灵",
 })
