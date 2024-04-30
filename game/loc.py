@@ -113,9 +113,9 @@ tags_format = {
     "num_summons": "%s 个",
     "num_targets": "%s 个",
     "shields": "%s 点护盾",
-    "shot_cooldown": "%s shot_cooldown", # TODO
-    "strikechance": "%s% 概率", # 没见过
-    "cooldown": "%s 回合冷却时间", # 没见过
+    "shot_cooldown": "%s 回合",
+    "strikechance": "%s% 概率",
+    "cooldown": "%s 回合",
     "cascade_range": "%s 格弹射范围",
 
     # other
@@ -1343,4 +1343,5 @@ monsters.update({
     "Searing Orb": "灼热法球",
     "Ball Lightning": "球状闪电",
     "Ice Faery": "冰霜仙灵",
+    "Frost Eyeball": "霜冻眼球",
 })

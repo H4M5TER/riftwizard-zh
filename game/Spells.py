@@ -1007,7 +1007,7 @@ class DispersalSpell(Spell):
 		self.level = 2
 
 		self.upgrades['warpdagger'] = (1, 3, "Violent Warp", "对每个被传送的敌人施放[Magic Missile:spell]")
-		self.upgrades['sheilds'] = (1, 2, "Protective Warp", "每个被传送的盟友获得 3 SH")
+		self.upgrades['sheilds'] = (1, 2, "Protective Warp", "每个被传送的盟友获得 [3:shields]")
 
 	def get_description(self):
 		return ("把[{radius}_tile:radius]内的所有单位传送到随机位置\n"
@@ -1070,7 +1070,7 @@ class PetrifySpell(Spell):
 
 		self.upgrades['glassify'] = (1, 3, 'Glassify', '把目标[glassify]而不是[petrify]\n[glassify]单位有 [-100% 物理抗性:physical]')
 		self.upgrades['arcane_conductivity'] = (1, 3, "Arcane Conductivity", "目标失去 [100% 奥术抗性:arcane]")
-		self.upgrades['petrified_animation'] = (1, 3, "Rocky Servitude", "目标死亡时将其复活为魔像，继承生命值") #will add extra examine tooltip
+		self.upgrades['petrified_animation'] = (1, 3, "Rocky Servitude", "目标死亡时将其复活为[Golem:unit]，继承生命值") #will add extra examine tooltip
 
 		self.tags = [Tags.Arcane, Tags.Enchantment]
 		self.level = 2
@@ -1160,7 +1160,7 @@ class StoneAuraSpell(Spell):
 		self.radius = 7
 
 		self.upgrades['crumbling_aura'] = (1, 3, "Crumbling Aura", "每回合击杀光环范围内[小于 16 点血量:damage][petrify]的敌人")
-		self.upgrades['wormification'] = (1, 4, "Wormification Aura", "光环范围内[petrify]的敌人死亡时，将其复活为钻地蠕虫，继承生命值")
+		self.upgrades['wormification'] = (1, 4, "Wormification Aura", "光环范围内[petrify]的敌人死亡时，将其复活为[Rock Worm:unit]，继承生命值")
 		self.upgrades['glassify'] = (1, 5, "Glassify", "将敌人[glassify]而不是[petrify]\n[glassify]单位有 [-100% 物理抗性:physical]")
 
 	def get_description(self):
@@ -2593,8 +2593,8 @@ class ElementalEyeBuff(Buff):
 		self.color = element.color
 		self.buff_type = BUFF_TYPE_BLESS
 
-		freq_str = "each turn" if self.freq == 1 else ("every %d turns" % self.freq)
-		self.description = "Deals %d %s damage to a random enemy in LOS %s" % (self.damage, self.element.name, freq_str)
+		freq_str = "每回合" if self.freq == 1 else ("每 %d 回合" % self.freq)
+		self.description = "%s对视线内一个随机敌人造成 [%d:%s]" % (freq_str, self.damage, self.element.name)
 		self.spell = spell
 
 	def on_advance(self):
@@ -2653,6 +2653,8 @@ class RageEyeBuff(ElementalEyeBuff):
 		ElementalEyeBuff.__init__(self, Tags.Physical, 0, freq, spell)
 		self.berserk_duration = berserk_duration
 		self.name = "Eye of Rage"
+		freq_str = "每回合" if self.freq == 1 else ("每 %d 回合" % self.freq)
+		self.description = freq_str + "每回合使视线内一个随机敌人[berserk] [%d:duration]" % self.berserk_duration # 要不然是造成 0 点物理伤害，虽然真的有人看 buff 效果吗
 		self.color = Tags.Nature.color
 		self.asset = ['status', 'rage_eye']
 
@@ -2757,9 +2759,9 @@ class EyeOfFireSpell(Spell):
 		
 		self.stats.append('shot_cooldown')
 		
-		self.upgrades['replace_cast'] = (1, 5, "Eye of Fireballs", "Eye of Fire casts your fireball spell")
-		self.upgrades['summon_eyeball'] = (1, 2, "Fiery Onlooker", "Eye of fire summons a Flaming Eyeball on expiration")
-		self.upgrades['cascade'] = (1, 3, "Eye of Conflaguration", "Whenever eye of fire kills an enemy, it fires again")
+		self.upgrades['replace_cast'] = (1, 5, "Eye of Fireballs", "[Eye of Fire:spell]改为施放你的[Fireball:spell]")
+		self.upgrades['summon_eyeball'] = (1, 2, "Fiery Onlooker", "[Eye of Fire:spell]效果结束时召唤一个[Flaming Eyeball:unit]")
+		self.upgrades['cascade'] = (1, 3, "Eye of Conflaguration", "[Eye of Fire:spell]击杀敌人时，再射击一次")
 
 		self.tags = [Tags.Fire, Tags.Enchantment, Tags.Eye]
 		self.level = 2
@@ -2773,8 +2775,8 @@ class EyeOfFireSpell(Spell):
 		return [self.spell_upgrades[0], self.spell_upgrades[1], FlamingEye(), self.spell_upgrades[2]]
 
 	def get_description(self):
-		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_fire:fire] damage to a random enemy unit in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每 [{shot_cooldown}:shot_cooldown]对视线一个随机敌人造成 [{damage}:fire]\n"
+				"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class EyeOfLightningSpell(Spell):
 
@@ -2791,9 +2793,9 @@ class EyeOfLightningSpell(Spell):
 
 		self.replacement_spell = ThunderStrike
 
-		self.upgrades['healing'] = (1, 3, "Archon Eye", "Allies along the beam are healed for [15:damage] and gain [1_SH:shields]")
-		self.upgrades['replace_cast'] = (1, 4, "Eye of Thunderstrike", "Eye of Lightning casts your Thunderstrike spell.")
-		self.upgrades['applies_buff'] = (1, 4, "Penetrating Gaze", "Eye of Lightning applies a non-stacking -50 Lightning resist to target.")
+		self.upgrades['healing'] = (1, 3, "Archon Eye", "[Eye of Lightning:spell]攻击的敌人与你之间的友军恢复 [15:heal]、获得 [1:shields]") # 天杀的拗口
+		self.upgrades['replace_cast'] = (1, 4, "Eye of Thunderstrike", "[Eye of Lightning:spell]改为施放你的[Thunderstrike:spell]")
+		self.upgrades['applies_buff'] = (1, 4, "Penetrating Gaze", "[Eye of Lightning:spell]对目标施加不叠加的 [-50% 闪电抗性:lightning]")
 
 		self.tags = [Tags.Lightning, Tags.Enchantment, Tags.Eye]
 		self.level = 2
@@ -2804,8 +2806,8 @@ class EyeOfLightningSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_lightning:lightning] damage to a random enemy unit in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每 [{shot_cooldown}:shot_cooldown]对视线一个随机敌人造成 [{damage}:lightning]\n"
+				"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class EyeOfIceSpell(Spell):
 
@@ -2822,9 +2824,9 @@ class EyeOfIceSpell(Spell):
 
 		self.stats.append('shot_cooldown')
 		
-		self.upgrades['summon_eyeball'] = (1, 2, "Frosty Onlooker", "Summons a Frosty Eyeball when the buff runs out.")
-		self.upgrades['freezing'] = (1, 3, "Eye of Freezing", "Freezes target for 3 turns.")
-		self.upgrades['replace_cast'] = (1, 6, "Eye of Iceballs", "Eye of Ice casts your Iceball spell.")
+		self.upgrades['summon_eyeball'] = (1, 2, "Frosty Onlooker", "[Eye of Ice:spell]效果结束时召唤一个[Frosty Eyeball:unit]")
+		self.upgrades['freezing'] = (1, 3, "Eye of Freezing", "[Eye of Ice:spell]使目标[frozen] [3:duration]")
+		self.upgrades['replace_cast'] = (1, 6, "Eye of Iceballs", "[Eye of Ice:spell]改为施放你的[Iceball:spell]")
 
 		self.tags = [Tags.Ice, Tags.Enchantment, Tags.Eye]
 		self.level = 2
@@ -2838,8 +2840,8 @@ class EyeOfIceSpell(Spell):
 		return [self.spell_upgrades[0], FrostEye(), self.spell_upgrades[1], self.spell_upgrades[2]]
 
 	def get_description(self):
-		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_ice:ice] damage to a random enemy unit in line of sight.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每 [{shot_cooldown}:shot_cooldown]对视线一个随机敌人造成 [{damage}:ice]\n"
+				"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class EyeOfRageSpell(Spell):
 
@@ -2854,9 +2856,9 @@ class EyeOfRageSpell(Spell):
 		self.berserk_duration = 2
 		self.stats.append('berserk_duration')
 
-		self.upgrades['lycanthrophy'] = (1, 5, "Lycanthropy", "When Eye of Rage targets a [living] unit with 25 or less HP, that unit is instantly killed and raised as friendly Werewolf.  That Werewolf is berserked for 14 turns.")
-		self.upgrades['connected_group'] = (1, 5, "Infectious Rage", "Eye of Rage targets a connected group")
-		self.upgrades['fiery_aura'] = (1, 5, "Burning Rage", "Targeted units gain a fiery aura that damages nearby units.")
+		self.upgrades['lycanthrophy'] = (1, 5, "Lycanthropy", "[Eye of Rage:spell]使一个 [25:heal]以下的[living]单位陷入[berserk]时。杀死该单位，将其为复活[Werewolf:unit]，不继承生命值，[Werewolf:unit][berserk][14:duration]")
+		self.upgrades['connected_group'] = (1, 5, "Infectious Rage", "[Eye of Rage:spell]影响相连的一组敌人")
+		self.upgrades['fiery_aura'] = (1, 5, "Burning Rage", "目标单位获得伤害周围单位的火焰光环")
 
 		self.tags = [Tags.Nature, Tags.Enchantment, Tags.Eye]
 		self.level = 2
@@ -2866,8 +2868,8 @@ class EyeOfRageSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Every [{shot_cooldown}_turns:shot_cooldown], inflict [berserk] on a random enemy unit in line of sight for [{berserk_duration}_turns:berserk].\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每 [{shot_cooldown}:shot_cooldown]使视线一个随机敌人[berserk] [{berserk_duration}:duration].\n"
+				"持续 [{duration}:duration].").format(**self.fmt_dict())
 
 class NightmareBuff(DamageAuraBuff):
 
@@ -2909,9 +2911,9 @@ class NightmareSpell(Spell):
 
 		self.stats.append('aura_damage')
 
-		self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, temporarily summon Ravens, Werewolves, and Old Witches based on the total damage dealt by the spell.", "dream")
-		self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, temporarily summon Spark Spirits, Thunderbirds, and Aelves based on the total damage dealt by the spell.", "dream")
-		self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, temporarily summon Fire Lizards, Fire Spirits, and Flame Rifts based on the total damage dealt by the spell.", "dream")
+		self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "效果结束时根据造成的伤害召唤一定数量的[Raven:unit]、[Werewolf:unit]、[Old Witch:unit]，分别持续 [4 到 13 回合:duration]", "dream")
+		self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "效果结束时根据造成的伤害召唤一定数量的[Spark Spirit:unit]、[Thunderbird:unit]、[Aelf:unit]，分别持续 [4 到 13 回合:duration]", "dream")
+		self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "效果结束时根据造成的伤害召唤一定数量的[Fire Lizard:unit]、[Fire Spirit:unit]、[Flame Rift:unit]，分别持续 [4 到 13 回合:duration]", "dream")
 
 		self.tags = [Tags.Enchantment, Tags.Dark, Tags.Arcane]
 		self.level = 3
@@ -2925,9 +2927,9 @@ class NightmareSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Each turn, randomly deals [{aura_damage}_arcane:arcane] or [{aura_damage}_dark:dark] damage to each enemy in a [{radius}_tile:radius] radius.\n"
-				"This damage is fixed, and cannot be increased using shrines, skills, or buffs.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每回合对[{radius}:radius]内的所有敌人造成 [{aura_damage} 点:damage][arcane]或[dark]伤害\n"
+				"伤害数值固定，不受能力或效果修正\n"
+				"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class CockatriceSkinSpell(Spell):
 
@@ -2947,8 +2949,8 @@ class CockatriceSkinSpell(Spell):
 		self.caster.apply_buff(cockatriceScaleArmorBuff(), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [2:duration] turns.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("一个敌方单位把你作为法术或者攻击的目标时，那个单位被[petrified] [2:duration]\n"
+				"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class WatcherFormBuff(Stun):
 
@@ -3017,29 +3019,29 @@ class WatcherFormSpell(Spell):
 		self.tags = [Tags.Enchantment, Tags.Lightning, Tags.Arcane]
 		self.level = 4
 
-		self.upgrades['pyrostatic_watcher'] = (1, 3, "Pyrostatic Watcher Form", "Instead casts your Pyrostatic Pulse, gain [100_fire:fire] resist instead of 75.")
-		self.upgrades['void_watcher'] = (1, 4, "Void Watcher Form", "Instead casts your Void Beam, gain [100_arcane:arcane] resist.  Can fire at targets outside of line of sight.")
-		self.upgrades['chain_lightning_watcher'] = (1, 5, "Chain Watcher Form", "Instead casts your Chain Lightning.")
+		self.upgrades['pyrostatic_watcher'] = (1, 3, "Pyrostatic Watcher Form", "改为施放你的[Pyrostatic Pulse:spell]\n获得[100% 火焰抗性:fire]")
+		self.upgrades['void_watcher'] = (1, 4, "Void Watcher Form", "改为施放你的[Void Beam:spell]\n获得[100% 奥术抗性:arcane]\n可以对视线外的敌人施放")
+		self.upgrades['chain_lightning_watcher'] = (1, 5, "Chain Watcher Form", "改为施放你的[Chain Lightning:spell]")
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(WatcherFormBuff(self), self.get_stat('duration'))
 		self.caster.apply_buff(WatcherFormDefenses(self), self.get_stat('duration') + 1)
 
 	def get_description(self):
-		return ("Each turn, casts your Lightning Bolt at the farthest enemy in line of sight.\n"
-				"You cannot move or cast spells.\n"
-				"Gain 100 [physical] resist.\n"
-				"Gain 75 [fire] resist.\n"
-				"Gain 100 [lightning] resist.\n"
-				"Gain 100 [poison] resist.\n"
-				"Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
+		return ("每回合对视线内最远的敌人施放你的[Lightning Bolt:spell]\n"
+		  		"你不能移动和施法\n"
+				"获得 [100% 物理抗性:physical]\n"
+				"获得 [75% 火焰抗性:fire]\n"
+				"获得 [100% 闪电抗性:lightning]\n"
+				"获得 [100% 毒素抗性:poison]\n"
+				"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class ImpCallBuff(Buff):
 
 	def __init__(self, spell):
 		Buff.__init__(self)
 		self.name = "Imp Call"
-		self.description = "Summons imps each turn"
+		self.description = "每回合召唤小鬼"
 		self.spell = spell
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'imp_call']
@@ -3065,7 +3067,8 @@ class ChaosBuddiesNew(Upgrade):
 
 	def on_init(self):
 		self.name = "Endless Swarm"
-		self.description = "Every 9 turns, passively summon 1 imp"
+		self.description = "每 [9:duration]再召唤一只小鬼"
+		# 九回合只招一只？四费？seriously？
 		self.counter = 10
 		self.level = 4
 
@@ -3101,10 +3104,18 @@ class ImpGateSpell(Spell):
 		self.num_summons = 2
 
 		self.add_upgrade(ChaosBuddiesNew())
-		self.upgrades['metalswarm'] = (1, 4, "Metal Swarm", "Imp swarm summons copper imps instead of spark imps, and furnace imps instead of fire imps.", "swarm")
-		self.upgrades['darkswarm'] = (1, 3, "Dark Swarm", "Imp swarm summons rot imps, void imps, and insanity imps instead of fire, spark, and iron imps.", "swarm")
+		self.upgrades['metalswarm'] = (1, 4, "Metal Swarm", "[Imp Swarm:spell]召唤[Copper Imp:unit]和[Furnace Imp:unit]而不是[Fire Imp:unit]和[Spark Imp:unit]", "swarm")
+		self.upgrades['darkswarm'] = (1, 3, "Dark Swarm", "[Imp Swarm:spell]召唤[Rot Imp:unit]、[Void Imp:unit]和[Insanity Imp:unit]而不是[Fire Imp:unit]、[Spark Imp:unit]和[Iron Imp:unit]", "swarm")
 
 		self.imp_choices = [self.fire_imp, self.spark_imp, self.iron_imp]
+
+	def get_description(self):
+		return ("每回合在施法者旁召唤 [{num_summons}:num_summons]小鬼\n"
+		  		"持续 [{duration}:duration]\n\n"
+				"随机选择[Fire Imp:unit]、[Iron Imp:unit]、[Spark Imp:unit]中的一种\n"
+				"小鬼有 [{minion_health}:minion_health]，会飞\n"
+				"小鬼的远程攻击造成 [{minion_damage}:minion_damage]，范围 [{minion_range}:minion_range]\n"
+				"小鬼在 [{minion_duration}:minion_duration]回合后消失\n").format(**self.fmt_dict())
 
 	def fire_imp(self):
 		unit = FireImp()
@@ -3168,20 +3179,13 @@ class ImpGateSpell(Spell):
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(ImpCallBuff(self), self.get_stat('duration'))
 
-	def get_description(self):
-		return ("Each turn, summon [{num_summons}_imps:num_summons] near the caster.\n"
-				"Imps have [{minion_health}_HP:minion_health] and can fly.\n"
-				"Imps have a ranged attack dealing [{minion_damage}_damage:minion_damage] with a [{minion_range}_tile:minion_range] range.\n"
-				"Each imp is either a [fire], [iron:physical], or [spark:lightning] imp.\n"
-				"The imps each last [{minion_duration}_turns:minion_duration], and this effect lasts [{duration}_turns:duration].").format(**self.fmt_dict())
-
 class LightningHaloBuff(Buff):
 	
 	def __init__(self, spell):
 		Buff.__init__(self)
 		self.spell = spell
 		self.name = "Lightning Halo"
-		self.description = "Deals lightning damage in a ring each turn"
+		self.description = "每回合对环状范围造成[lightning]伤害"
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'lightning_halo']
 		self.stack_type = STACK_REPLACE
@@ -3232,9 +3236,9 @@ class LightningHaloSpell(Spell):
 		self.element = Tags.Lightning
 
 		self.radius = 3
-		self.upgrades['ring_of_fire'] = (1, 3, "Ring of Fire", "Lightning Halo creates an additional ring with 1 greater radius that deals [fire:fire] damage.")
-		self.upgrades['radioactivity'] = (1, 3, "Radioactive Field", "Deals 50% [poison:poison] damage to enemies inside the halo.") #made it 50% because dealing 100% damage to all units within radius is very powerful
-		self.upgrades['expanding'] = (1, 3, "Lightning Nova", "Every turn, Lightning Halo gets +1 radius")
+		self.upgrades['ring_of_fire'] = (1, 3, "Ring of Fire", "[Lightning Halo:spell]在原本的光圈外添加一格造成[fire]伤害的光圈")
+		self.upgrades['radioactivity'] = (1, 3, "Radioactive Field", "对光圈内的敌人造成一半的[poison]伤害") #made it 50% because dealing 100% damage to all units within radius is very powerful
+		self.upgrades['expanding'] = (1, 3, "Lightning Nova", "每回合[Lightning Halo:spell] 获得[1:radius]") # 不是你半径变大宽度不变有个卵用
  
 	def cast_instant(self, x, y):
 
@@ -3254,8 +3258,8 @@ class LightningHaloSpell(Spell):
 		return points
 
 	def get_description(self):
-		return ("Deal [{damage}_lightning:lightning] damage to all units in a [{radius}_tile:radius] ring each turn.\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("每回合对[{radius}:radius]圆环范围内的所有敌人造成 [{damage}:lightning] 伤害\n"
+		  		"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class ArcaneVisionSpell(Spell):
 
@@ -3270,7 +3274,7 @@ class ArcaneVisionSpell(Spell):
 
 		self.upgrades['duration'] = (8, 2)
 		self.upgrades['bonus'] = (5, 4)
-		self.upgrades['aura'] = (1, 5, "Vision Aura", "Mystic vision affects all allied units")
+		self.upgrades['aura'] = (1, 5, "Vision Aura", "[Mystic Vision:spell]对所有友军单位生效")
 
 	def cast_instant(self, x, y):
 		buff = GlobalAttrBonus('range', self.get_stat('bonus'))
@@ -3286,8 +3290,8 @@ class ArcaneVisionSpell(Spell):
 				u.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("All other spells gain [{bonus}_range:range].\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("所有其他法术获得 [{bonus}:range]范围\n"
+		  		"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class ArcaneDamageSpell(Spell):
 
@@ -3302,7 +3306,7 @@ class ArcaneDamageSpell(Spell):
 
 		self.upgrades['duration'] = (8, 2)
 		self.upgrades['bonus'] = (4, 4, "Damage Bonus")
-		self.upgrades['stackable'] = (1, 4, "Intensity", "Mystic Power stacks in intensity instead of duration")
+		self.upgrades['stackable'] = (1, 4, "Intensity", "[Mystic Power:spell]叠加效果而不是持续时间")
 
 	def cast_instant(self, x, y):
 		buff = GlobalAttrBonus('damage', self.get_stat('bonus'))
@@ -3311,8 +3315,8 @@ class ArcaneDamageSpell(Spell):
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
-		return ("All other spells gain [{bonus}_damage:damage].\n"
-				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("所有其他法术获得 [{bonus}:damage]\n"
+		  		"持续 [{duration}:duration]").format(**self.fmt_dict())
 
 class PainBuff(GlobalAttrBonus):
 
@@ -3330,7 +3334,7 @@ class PainBuff(GlobalAttrBonus):
 		self.owner.remove_buff(self)
 
 class PainSpell(Spell):
-
+# not in game
 	def on_init(self):
 		self.name = "Power of Pain"
 		self.range = 0
@@ -3348,7 +3352,7 @@ class PainSpell(Spell):
 		self.caster.apply_buff(PainBuff(self.bonus))
 
 	def get_description(self):
-		return "Your spells deal +%d damage.  Each turn you take %d dark damage.  Ends when you move." % (self.bonus, self.self_damage)
+		return "你的法术造成额外 [%d:damage]。每回合你受到 [%d:dark]。移动时结束。"
 
 class FlameBurstSpell(Spell):
 
@@ -3361,9 +3365,12 @@ class FlameBurstSpell(Spell):
 		self.level = 4
 		self.radius = 8
 
-		self.upgrades['meltflame'] = (1, 2, "Melting Flame", "Melt walls adjacent to the blast", "flame")
-		self.upgrades['dawnflame'] = (1, 5, "Bright Flame", "Flame Burst deals [holy] instead of [fire], and shields allied units instead of damaging them.", "flame")
-		self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of flame burst consumes all remaining charges.\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.", "flame")
+		self.upgrades['meltflame'] = (1, 2, "Melting Flame", "融化周围一圈的墙", "flame")
+		self.upgrades['dawnflame'] = (1, 5, "Bright Flame", "[Flame Burst:spell]造成[holy]而不是[fire]伤害，给予盟友护盾而不是造成伤害", "flame")
+		self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "施放[Flame Burst:spell]消耗所有充能\n每点充能额外增加 [1:damage]、[1:radius]\n[Flame Burst:spell]杀死敌人后减半伤害和半径再次施放", "flame")
+
+	def get_description(self):
+		return ("对以施法者为中心[{radius}:radius]内的单位造成 [{damage}:fire]").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		radius = self.get_stat('radius')
@@ -3434,9 +3441,6 @@ class FlameBurstSpell(Spell):
 				self.caster.level.make_floor(p.x, p.y)
 				self.caster.level.show_effect(p.x, p.y, Tags.Fire)
 
-	def get_description(self):
-		return ("Deal [{damage}_fire:fire] damage in a [{radius}_tile:radius] burst around the caster.").format(**self.fmt_dict())
-
 class SummonFireDrakeSpell(Spell):
 
 	def on_init(self):
@@ -3451,11 +3455,17 @@ class SummonFireDrakeSpell(Spell):
 		self.breath_damage = FireDrake().spells[0].damage
 		self.minion_range = 7
 
-		self.upgrades['broodlings'] = (1, 5, "Broodlings", "Summoned Fire Drakes can summon 2 Fire Lizards on a 9 turn cooldown.")
-		self.upgrades['metal'] = (1, 3, "Metal Dragon", "Summoned Fire Drakes are metallic")
-		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Fire Drakes can cast your Blazerip with a 4 turn cooldown.\n")
+		self.upgrades['broodlings'] = (1, 5, "Broodlings", "[Fire Drake:unit]可以召唤两只[Fire Lizard:unit]，冷却时间 [9:duration]")
+		self.upgrades['metal'] = (1, 3, "Metal Dragon", "给予[Fire Drake:unit][metallic]词条")
+		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "[Fire Drake:unit]可以施放你的[Blazerip:spell]，冷却时间 [9:duration]")
 
 		self.must_target_empty = True
+
+	def get_description(self):
+		return ("在选定地块召唤[Fire Drake:unit]\n"
+				"[Fire Drake:unit]有 [{minion_health}:minion_health]，会飞，有 [100% 火焰抗性:fire]\n"
+				"[Fire Drake:unit]的吐息造成 [{breath_damage}:fire]\n"
+				"[Fire Drake:unit]的近战攻击造成 [{minion_damage}:physical]").format(**self.fmt_dict())
 
 	def make_lizard(self):
 		lizard = FireLizard()
@@ -3487,12 +3497,6 @@ class SummonFireDrakeSpell(Spell):
 
 		self.summon(drake, Point(x, y))
 
-	def get_description(self):
-		return ("Summon a Fire Drake at target square.\n"
-				"Fire Drakes have [{minion_health}_HP:minion_health], fly, and have [100_fire:fire] resist.\n"
-				"Fire Drakes have a breath weapon which deals [{breath_damage}_fire:fire] damage.\n"
-				"Fire Drakes have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
-
 	def get_extra_examine_tooltips(self):
 		return [FireDrake(), self.spell_upgrades[0], self.make_lizard(), self.spell_upgrades[1], BossSpawns.apply_modifier(BossSpawns.Metallic, FireDrake()), self.spell_upgrades[2]]
 
@@ -3504,7 +3508,8 @@ class LightningSwapBuff(Buff):
 
 	def on_init(self):
 		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
-		self.description = "Swaps with owner when targeted with a lightning spell"
+		# 很难做到查看单位面板的时候快速滑到最右边查看 tooltip，不知道怎么优化下
+		self.description = "被巫师选为[lightning]法术的目标时与巫师交换位置"
 
 	def on_spell_cast(self, evt):
 		if not self.spell.get_stat('drake_swap'):
@@ -3535,7 +3540,7 @@ class SummonStormDrakeSpell(Spell):
 		
 		self.upgrades['storm_legion'] = (1, 4, "Storm Summoning", "Whenever you cast Storm Drake, up to [2:num_summons] lightning storms in line of sight of the target are converted into drakes")
 		self.upgrades['ghost_drake'] = (1, 3, "Ghost Drake", "Summoned Storm Drakes are ghostly.")
-		self.upgrades['drake_swap'] = (1, 1, "Drake Swap", "Whenever you target a summoned Storm Drake with a lightning spell, swap places with it.")
+		self.upgrades['drake_swap'] = (1, 1, "Drake Swap", "Whenever you target a summoned Storm Drake with a lightning spell, swap places with it.") # 这升级有个卵用
 		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Storm Drakes can cast Chain Lightning with a 16 turn cooldown.\nThis Lightning Bolt gains all of your upgrades and bonuses.")
 	
 		self.must_target_empty = True
