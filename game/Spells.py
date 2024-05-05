@@ -13483,8 +13483,8 @@ class BloodflameSpell(Spell):
 
 
 	def get_description(self):
-		return ("The next 4 [Fire] spells can be cast instantly without ending your turn.\n"
-				"Lasts 1 turn.\n")
+		return ("接下来4个 [Fire] 法术可立即施法，无需结束回合。\n"
+				"持续1回合。\n")
 
 	def cast_instant(self, x, y):
 		self.owner.apply_buff(BloodflameBuff(), 1)
