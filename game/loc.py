@@ -114,7 +114,7 @@ tags_format = {
     "num_targets": "%s 个",
     "shields": "%s 点护盾",
     "shot_cooldown": "%s 回合",
-    "strikechance": "%s% 概率",
+    "strikechance": "%s%% 概率",
     "cooldown": "%s 回合",
     "cascade_range": "%s 格弹射范围",
 

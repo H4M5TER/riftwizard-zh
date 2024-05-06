@@ -13269,15 +13269,15 @@ class StampedeFormSpell(Spell):
 		# Burning Stampede - gain fire reists, burning elephants, can cast fire spells and not end
 		# Metal Stampede - gain phys, fire, light resist, metal elephants, can cast metal spells and not end
 
-		self.upgrades['fae'] = (1, 6, "Fae Stampede", "Summon Faetouched elephants instead of normal ones.  Gain 50 arcane resist.  [Arcane] spells do not end elephant form.")
-		self.upgrades['burning'] = (1, 7, "Burning Stampede", "Summon Burning elephants instead of normal ones.  Gain 50 fire resist.  [Fire] spells do not end elephant form.")
-		self.upgrades['metallic'] = (1, 7, "Metal Stampede", "Summon Metallic elephants instead of normal ones.  Gain 25 fire and 50 lightning resist.  [Metallic] spells do not end elephant form.")
+		self.upgrades['fae'] = (1, 6, "Fae Stampede", "召唤仙灵大象而不是普通大象。获得50奥术抗性，施放奥术法术不会结束大象形态。")#faetouched在loc.py里没见过
+		self.upgrades['burning'] = (1, 7, "Burning Stampede", "召唤燃烧大象而不是普通大象。获得50火焰抗性，施放火焰法术不会结束大象形态。")
+		self.upgrades['metallic'] = (1, 7, "Metal Stampede", "召唤金属大象而不是普通大象。获得25火焰抗性和50闪电抗性，施放金属法术不会结束大象形态。")
 	
 	def get_description(self):
-		return ("Become an elephant and also summon [{num_summons}:num_summons] elephants around you.\n"
-				"While in elephant form, you can walk over enemies, knocking them away and dealing [{damage}_physical:physical] damage to them.\n"
-				"Gain 50 [physical] resist in elephant form.\n"
-				"When you cast a spell, elephant form ends and all the elephants are unsummoned.").format(**self.fmt_dict())
+		return ("变形为大象，并同时在你周围召唤[{num_summons}:num_summons]大象。\n"
+				"处于大象形态时，你可以从敌人头上走过，击退它们并对它们造成[{damage}:physical]。\n"
+				"处于大象形态时获得50[physical]抗性。\n"
+				"当你施放一个法术时，结束大象形态并解除召唤所有大象。").format(**self.fmt_dict())
 
 	def get_elephant(self):
 		elephant = Elephant()
@@ -13322,14 +13322,14 @@ class ChannelMalevolence(Spell):
 		#  extra DType
 		#  tormentor charges
 
-		self.upgrades['return'] = (1, 3, "Boomerang", "The bolts also return after they reach their target, damaging units in the middle a second time.")
-		self.upgrades['toxic'] = (1, 3, "Toxic Hatred", "The bolts also [poison] enemies for [13_turns:duration]")
-		self.upgrades['harvest'] = (1, 3, "Torment Harvest", "If this spell kills an enemy, gain a charge of Summon Fiery Tormentor")
+		self.upgrades['return'] = (1, 3, "Boomerang", "箭在抵达目标后会返回，对路径中间的单位造成二次伤害")
+		self.upgrades['toxic'] = (1, 3, "Toxic Hatred", "箭也会对敌人造成 [poison]，持续 [13_turns:duration]")
+		self.upgrades['harvest'] = (1, 3, "Torment Harvest", "如果该法术击杀一名敌人，炽火狱卒法术获得一点充能。")
 
 
 	def get_description(self):
-		return ("Fires bolts at [{num_targets}:num_targets] random enemies each turn, alternatingly dealing [{damage}_fire:fire] or [{damage}_dark:dark] damage to all units on the path.\n"
-				"Can be channeled for up to 5 turns").format(**self.fmt_dict())
+		return ("每回合对[{num_targets}:num_targets]随机敌人发射能量箭，交替对路径上所有单位造成[{damage}:fire]或[{damage}:dark]。\n"
+				"可持续引导至多5回合。").format(**self.fmt_dict())
 
 
 	def cast(self, x, y, channel_cast=False):
