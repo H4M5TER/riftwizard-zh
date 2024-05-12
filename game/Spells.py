@@ -13873,7 +13873,7 @@ class BurningHungerBuff(Buff):
 		Buff.__init__(self)
 
 	def on_init(self):
-		self.description = "Consumes the lowest hp ally each turn, dealing fire damage to nearby enemies"
+		self.description = "每回合吞噬生命值最低的友军，对该单位附近敌人造成火焰伤害。"
 
 	def on_advance(self):
 		allies = [u for u in self.owner.level.units if not are_hostile(u, self.owner)]
@@ -13933,8 +13933,8 @@ class IdolOfBurningHunger(Spell):
 		self.damage = 20
 		self.must_target_empty = True
 		
-		self.upgrades['bone_explosion'] = (1, 2, "Bone Explosion", "Also deals [physical:physical] damage equal to half of the sacrificed unit's hp to all units within 4 tiles of the sacrificed unit.")
-		self.upgrades['archon_beam'] = (1, 3, "Archon Beam", "Shoots lightning along the path to the sacrificed unit, damaging enemies and shielding allies", [Tags.Lightning])
+		self.upgrades['bone_explosion'] = (1, 2, "Bone Explosion", "额外对被牺牲单位4格距离内所有单位造成被牺牲单位一半生命值的[physical:physical]伤害。")
+		self.upgrades['archon_beam'] = (1, 3, "Archon Beam", "在与被牺牲单位连接的路径上发射闪电，对敌人造成伤害，对友方提供护盾。", [Tags.Lightning])
 		self.upgrades['indiscriminate_hunger'] = (1, 4, "Indiscriminate Hunger", "The Idol of Burning Sacrifice will switch teams each turn.")
 
 	def get_impacted_tiles(self, x, y):
@@ -13942,9 +13942,9 @@ class IdolOfBurningHunger(Spell):
 		return [Point(x, y)]
 
 	def get_description(self):
-		return ("Summons an Idol of Burning Sacrifice.\n"
-			    "Each turn the idol consumes its lowest HP ally, dealing fire damage to enemies near the sacrificed unit.\n"
-			    "The Idol and the wizard are both legal sacrifices.\n")
+		return ("召唤一座焚烬造像。\n"
+			    "每回合雕像会吞噬其生命值最低的友军，对临近被牺牲单位的敌人造成火焰伤害。\n"
+			    "巫师与雕像本身都是合法的牺牲对象。\n")
 
 	def make_idol(self):
 		unit = Idol()
@@ -13981,13 +13981,13 @@ class DrainPulse(Spell):
 		# Repeat pulse
 		# Redeal dealt damage as holy (arcane?) 4SP
 
-		self.upgrades['felomancy'] = (1, 4, "Felomancy", "Slain targets are raised as cursed cats.", [Tags.Conjuration])
-		self.upgrades['ursomancy'] = (1, 4, "Ursomancy", "Healing over the wizards max health is converted into blood bears, using up to 75 points of healing per bear.", [Tags.Conjuration])
+		self.upgrades['felomancy'] = (1, 4, "Felomancy", "被杀死的目标重生为被诅咒的猫。", [Tags.Conjuration])
+		self.upgrades['ursomancy'] = (1, 4, "Ursomancy", "超出巫师最大生命值的治疗会召唤鲜血巨熊，每 [75:heal]一只。", [Tags.Conjuration])
 		self.upgrades['radius'] = (3, 4)
 
 	def get_description(self):
-		return ("Deals [{damage}:damage] [dark] and [poison] damage to units in a [{radius}_tile:radius] burst.\n"
-				"You are healed for half the damage dealt.").format(**self.fmt_dict())
+		return ("对[{radius}_tile:radius]范围内的单位造成[{damage}:dark]与[{damage}:poison]。\n" #不改变占位符的话，“伤害”字样会重复
+				"造成伤害的一半会治疗你。").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
 		return [self.spell_upgrades[0],
@@ -14087,14 +14087,14 @@ class SummonWizard(Spell):
 		self.must_target_empty = True
 		self.must_target_walkable = True
 
-		self.upgrades['wizard_army'] = (1, 9, "Wizard Gang", "Summon [3:num_summons] wizards")
+		self.upgrades['wizard_army'] = (1, 9, "Wizard Gang", "召唤[3:num_summons]巫师。")
 		self.upgrades['jealousy'] = (1, 7, "Jealousy", "When you cast this spell, an enemy wizard in line of sight of the summoned wizard becomes your ally.")
 		self.upgrades['dragon_wizard'] = (1, 4, "Dragon Wizard", "You always summon the Dragon Wizard.", [Tags.Dragon])
 		self.upgrades['mutant_wizard'] = (1, 2, "Mutant Wizard", "A random boss modifier is applied to the summoned wizard.", [Tags.Chaos])
 		self.add_upgrade(GlobalSummoning(self))
 
 	def get_description(self):
-		return "Summons a random wizard."
+		return "召唤一名随机巫师。"
 
 	def get_extra_examine_tooltips(self):
 		return [self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.make_dragon_wizard(), self.spell_upgrades[3], self.spell_upgrades[4]]
@@ -14161,13 +14161,13 @@ class BrainSeedSpell(Spell):
 		self.max_charges = 5
 		self.tags = [Tags.Conjuration, Tags.Arcane, Tags.Nature]
 
-		self.upgrades['parasite'] = (1, 4, "Parasitic Growth", "May target an enemy instead of an empty tile.  Targeted enemy takes [1_arcane:arcane] damage per turn for [25_turns:duration].  If the enemy dies spawn a brain tree where it died.", [Tags.Enchantment])
-		self.upgrades['psychic_forest'] = (1, 5, "Psychic Fields", "Plant [5:num_summons] seedlings instead of 1")
-		self.upgrades['eternal_forest'] = (1, 6, "Immortal Forest", "Grow an Immortal Seedling instead of a normal one.", [Tags.Holy])
+		self.upgrades['parasite'] = (1, 4, "Parasitic Growth", "除空地格外还可指定敌人为目标。目标敌人每回合受到[1_arcane:arcane]伤害，持续[25:duration]。若期间该敌人死亡，则在其死亡地格处生成一棵脑树。") 
+		self.upgrades['psychic_forest'] = (1, 5, "Psychic Fields", "种下[5 棵:num_summons]幼苗，而非1棵。")
+		self.upgrades['eternal_forest'] = (1, 6, "Immortal Forest", "种下一棵不朽（复活一次）幼苗，而非普通幼苗。", [Tags.Holy])
 
 	def get_description(self):
-		return "Plant a brain bush seedling. It will eventually mature into a forest of brain bushes."
-
+		return "种下一棵脑树丛幼苗，它最终会成长为一片脑树森林。"
+		#考虑到brain tree这个单位翻译成脑树，这里先叫脑树丛
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
 		if unit and Spell.can_cast(self, x, y):
@@ -14228,15 +14228,15 @@ class SoulWindSpell(Spell):
 		self.name = "Soul Wind"
 		self.damage_type = [Tags.Dark, Tags.Holy]
 
-		self.upgrades['arcane_wind'] = (1, 5, "Arcane Wind", "Also deals [arcane] damage to all units in the area of effect", [Tags.Arcane], [Tags.Arcane])
-		self.upgrades['mirror'] = (1, 4, "Dual Wind", "Soul Wind also casts behind the caster.")
-		self.upgrades['ensoulment'] = (1, 4, "Ensoulment", "Spawn ghosts from non [living] units as well")
+		self.upgrades['arcane_wind'] = (1, 5, "Arcane Wind", "对范围内所有单位再造成一次[arcane]伤害。", [Tags.Arcane], [Tags.Arcane])
+		self.upgrades['mirror'] = (1, 4, "Dual Wind", "额外在施法者身后施放灵魂之风。")
+		self.upgrades['ensoulment'] = (1, 4, "Ensoulment", "非[living]单位也可生成灵体。")
 
 	def get_description(self):
-		return ("Invokes a soul wind.  All units in a [3_tile:radius] wide line perpendicular to the caster take [{damage}_dark:dark] damage.\n"
-			   "All [undead], [dark], and [demon] units in the area take [{damage}_holy:holy] damage instead.\n"
-			   "Summons a spirit from each [Living] unit in the area.\n"
-			   "The spirits may have extra abilities and resistances based on the tags of the units they originated from.").format(**self.fmt_dict())
+		return ("引发一阵灵魂之风。对垂直于施法者的[3 格宽:radius]直线范围内的所有单位造成[{damage}:dark]。\n"
+			   "范围内所有[undead]，[dark]，与[demon]单位改为受到[{damage}:holy]。\n"
+			   "从范围内每个[Living]单位生成一个灵体\n"
+			   "灵体可能因生成该灵体的原本单位的词缀而拥有额外的能力与抗性。").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		line = self.caster.level.get_perpendicular_line(self.caster, Point(x, y))
