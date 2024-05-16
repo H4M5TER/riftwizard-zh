@@ -13717,12 +13717,12 @@ class HelgateSpell(Spell):
 		self.minion_damage = 6
 		self.minion_range = 12
 
-		self.upgrades['aelf_horde'] = (1, 5, "Aelf Horde", "The spawn time is shortened to 4 to 5 turns instead.")
-		self.upgrades['fae_aelves'] = (1, 6, "Fae Aelves", "The Spawners spawn Fae Aelves instead of normal Aelves.", [Tags.Arcane])
-		self.upgrades['elite_aelves'] = (1, 8, "Elite Aelves", "The Spawners spawn Aelf Lightning Artists instead of normal Aelves.")
+		self.upgrades['aelf_horde'] = (1, 5, "Aelf Horde", "刷怪笼生成时间缩短至4到5回合。")
+		self.upgrades['fae_aelves'] = (1, 6, "Fae Aelves", "刷怪笼生成仙灵词条的精灵而非普通精灵。", [Tags.Arcane])
+		self.upgrades['elite_aelves'] = (1, 8, "Elite Aelves", "刷怪笼生成精灵雷术师而非普通精灵。")
 
 	def get_description(self):
-		return "Summons an Aelf spawner at a random location.".format(**self.fmt_dict())
+		return "在随机位置召唤一个精灵的刷怪笼。".format(**self.fmt_dict())#spawner有没有统一译名？
 
 	def elf(self):
 		unit = Elf()
@@ -13777,9 +13777,9 @@ class HordeOfHalfmen(Spell):
 
 		self.range = 9
 
-		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "Summons are [Trollblooded:nature].")
-		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "Summons are [Metallic:metallic].", [Tags.Metallic])
-		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "Summons are [Burning:fire].", [Tags.Fire])
+		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "召唤物带有词条[Trollblooded:nature].")
+		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "召唤物带有词条[Metallic:metallic].", [Tags.Metallic])
+		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "召唤物带有词条[Burning:fire].", [Tags.Fire])
 
 	def tooltip_monster(self, modifier, unit):
 		unit = unit()
@@ -13788,7 +13788,7 @@ class HordeOfHalfmen(Spell):
 		return unit
 
 	def get_description(self):
-		return "Summons [{num_summons}:num_summons] Satyr and [{num_summons}:num_summons] Minotaurs.".format(**self.fmt_dict())
+		return "召唤[{num_summons}:num_summons]萨堤尔和[{num_summons}:num_summons]牛头人。".format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
 		return [Satyr(), Minotaur(),
@@ -13824,9 +13824,9 @@ class GoatOffering(Spell):
 		self.level = 2
 		self.hp_cost = 5
 
-		self.upgrades['reincarnation'] = (1, 3, "Reincarnation", "The Goatia reincarnates once upon death")
-		self.upgrades['pain'] = (1, 3, "Pain Aura", "The Goatia deals [5:minion_damage] [dark] damage to any unit that damages it")
-		self.upgrades['maggot_host'] = (1, 3, "Maggot Host", "On death, the Goatia spawns [2:num_summons] mind maggots")
+		self.upgrades['reincarnation'] = (1, 3, "Reincarnation", "羊头恶魔死亡时可重生一次")
+		self.upgrades['pain'] = (1, 3, "Pain Aura", "羊头恶魔对任何对其造成伤害的单位造成[5:minion_damage] [dark]伤害。")
+		self.upgrades['maggot_host'] = (1, 3, "Maggot Host", "羊头恶魔死亡时，生成[2:num_summons]心灵蛆虫。")
 
 		example = GoatHead()
 
@@ -13864,7 +13864,7 @@ class GoatOffering(Spell):
 		return [self.gotia()] + self.spell_upgrades + [self.make_maggot()]
 
 	def get_description(self):
-		return "Summon a Goatia."
+		return "召唤一只羊头恶魔."
 
 class BurningHungerBuff(Buff):
 
@@ -14087,6 +14087,8 @@ class SummonWizard(Spell):
 		self.must_target_empty = True
 		self.must_target_walkable = True
 
+		self.upgrades['clay_wizard'] = (1, 6, "Clay Wizard", "被召唤的巫师是黏土制成的。")
+		self.upgrades['ghost_wizard'] = (1, 5, "Ghost Wizard", "被召唤的巫师是幽灵。")
 		self.upgrades['wizard_army'] = (1, 9, "Wizard Gang", "召唤[3:num_summons]巫师。")
 		self.upgrades['jealousy'] = (1, 7, "Jealousy", "When you cast this spell, an enemy wizard in line of sight of the summoned wizard becomes your ally.")
 		self.upgrades['dragon_wizard'] = (1, 4, "Dragon Wizard", "You always summon the Dragon Wizard.", [Tags.Dragon])
