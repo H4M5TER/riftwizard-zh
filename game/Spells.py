@@ -13722,7 +13722,7 @@ class HelgateSpell(Spell):
 		self.upgrades['elite_aelves'] = (1, 8, "Elite Aelves", "刷怪笼生成精灵雷术师而非普通精灵。")
 
 	def get_description(self):
-		return "在随机位置召唤一个精灵的刷怪笼。".format(**self.fmt_dict())#spawner有没有统一译名？
+		return "在随机位置召唤一个精灵刷怪笼。".format(**self.fmt_dict())
 
 	def elf(self):
 		unit = Elf()
@@ -13777,9 +13777,9 @@ class HordeOfHalfmen(Spell):
 
 		self.range = 9
 
-		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "召唤物带有词条[Trollblooded:nature].")
-		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "召唤物带有词条[Metallic:metallic].", [Tags.Metallic])
-		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "召唤物带有词条[Burning:fire].", [Tags.Fire])
+		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "召唤物带有[巨魔血:nature]词条")
+		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "召唤物带有词条[metallic].", [Tags.Metallic])
+		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "召唤物带有词条[fire].", [Tags.Fire])
 
 	def tooltip_monster(self, modifier, unit):
 		unit = unit()
@@ -13825,7 +13825,7 @@ class GoatOffering(Spell):
 		self.hp_cost = 5
 
 		self.upgrades['reincarnation'] = (1, 3, "Reincarnation", "羊头恶魔死亡时可重生一次")
-		self.upgrades['pain'] = (1, 3, "Pain Aura", "羊头恶魔对任何对其造成伤害的单位造成[5:minion_damage] [dark]伤害。")
+		self.upgrades['pain'] = (1, 3, "Pain Aura", "羊头恶魔对任何对其造成伤害的单位造成[5:dark]。")
 		self.upgrades['maggot_host'] = (1, 3, "Maggot Host", "羊头恶魔死亡时，生成[2:num_summons]心灵蛆虫。")
 
 		example = GoatHead()
@@ -14168,7 +14168,7 @@ class BrainSeedSpell(Spell):
 		self.upgrades['eternal_forest'] = (1, 6, "Immortal Forest", "种下一棵不朽（复活一次）幼苗，而非普通幼苗。", [Tags.Holy])
 
 	def get_description(self):
-		return "种下一棵脑树丛幼苗，它最终会成长为一片脑树森林。"
+		return "种下一丛脑树幼苗，它最终会成长为一片脑树森林。"
 		#考虑到brain tree这个单位翻译成脑树，这里先叫脑树丛
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
