@@ -13178,9 +13178,9 @@ class HagSummon(Spell):
 		self.range = 5
 		self.tags = [Tags.Blood, Tags.Dark, Tags.Conjuration]
 
-		self.upgrades["bone_spear"] = (1, 5, "Spear Hag", "The Night Hag gains your Bone Spear spell on a 4 turn cooldown")
-		self.upgrades["nightmare"] = (1, 4, "Nightmare Hag", "The Night hag can cast your Nightmare Aura spell", [Tags.Arcane])
-		self.upgrades["bone_lady"] = (1, 6, "Bone Queen", "The Night Hag gains the ability to summon [2:num_summons] small bone shamblers")
+		self.upgrades["bone_spear"] = (1, 5, "Spear Hag", "老鬼婆可施放你的骨矛法术，冷却4回合。")
+		self.upgrades["nightmare"] = (1, 4, "Nightmare Hag", "老鬼婆可施放你的梦魇光环法术。", [Tags.Arcane])
+		self.upgrades["bone_lady"] = (1, 6, "Bone Queen", "老鬼婆可召唤 [2:num_summons]小型骸骨跛行者。")
 
 	def bone_shambler(self):
 		shambler = BoneShambler(8)
@@ -13204,8 +13204,8 @@ class HagSummon(Spell):
 		return hag
 
 	def get_description(self):
-		return ("Summon a Night Hag.\n"
-				"Night Hags can summon ghosts and drain HP from all living units in line of sight when they are wounded.\n")
+		return ("召唤一个老鬼婆。\n"
+				"老鬼婆可召唤幽灵，以及从视野范围内所有受伤的活物单位处吸收生命值。\n")
 
 	def get_extra_examine_tooltips(self):
 		return [self.hag()] + self.spell_upgrades + [self.bone_shambler()]
@@ -13219,7 +13219,7 @@ class BloodGolemVampirism(Buff):
 
 	def on_init(self):
 		self.name = "Blood Golem Vampirism"
-		self.description = "Half of all damage dealt is converted to healing, and distributed amongst [living] allies"
+		self.description = "造成的所有伤害的一半转化为治疗，分配给所有[living]盟友。"
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def on_damage(self, evt):
@@ -13242,7 +13242,7 @@ class BloodGolemBuff(Buff):
 
 	def on_init(self):
 		self.name = "Blood Bond"
-		self.description = "All damage taken is redirected and redistributed to all [living] allies"
+		self.description = "所有伤害被重定向，并重新分配至所有[living]盟友。"
 		self.owner_triggers[EventOnPreDamaged] = self.pre_damage
 
 	def pre_damage(self, evt):
@@ -13291,14 +13291,14 @@ class BloodGolemSpell(Spell):
 		self.hp_cost = 9
 		self.color = Tags.Blood.color
 
-		self.upgrades['pain_aura'] = (1, 3, "Pain Aura", "The Blood Golem gains a [5_tile:radius] damage aura that randomly deals randomly deals 2 [poison] or [fire] damage each turn.", [Tags.Dark])
-		self.upgrades['vampirism'] = (1, 5, "Vampire Golem", "Whenever the Blood Golem deals damage, half that much healing is distributed amongst its [living] allies.")
+		self.upgrades['pain_aura'] = (1, 3, "Pain Aura", "鲜血魔像获得一个[5:radius]的伤害光环，每回合随机造成[2 点:damage][poison]或[fire]伤害。", [Tags.Dark])
+		self.upgrades['vampirism'] = (1, 5, "Vampire Golem", "当鲜血魔像造成伤害，伤害数值的一半作为治疗量分配给[living]友军。")
 		self.upgrades['iron_blood'] = (1, 2, "Iron Blood", "Blood Golems receive [Metallic] unit resistances.")
 
 	def get_description(self):
-		return 	("Summon a Blood Golem.\n"
-				 "The golem never takes damage, instead redistributing damage to its master and any [living] allies.\n"
-				 "The Golem has a [25:minion_damage] [physical] damage melee attack, and thorns which deal [7:minion_damage] [physical] damage to units that attack the golem in melee.")
+		return 	("召唤一个鲜血魔像。\n"
+				 "鲜血魔像不会受到伤害，改为重新分配伤害至召唤者以及任意[living]盟友。\n"
+				 "鲜血魔像的近战攻击造成[25:physical]。拥有荆棘技能，可以对近战攻击鲜血魔像的单位造成[7:physical]。")#为什么近战攻击伤害文本里写成固定的？有空点出来看看受不受随从伤害加成。
 
 	def get_extra_examine_tooltips(self):
 		return [self.BloodGolem()] + self.spell_upgrades
@@ -13423,9 +13423,9 @@ class BloodTapSpell(Spell):
 		self.range = 6
 		self.can_target_empty = False
 
-		self.upgrades['bond'] = (1, 2, "Blood Bond", "Lifedrain also heals [2:num_targets] random [living] allies.")
-		self.upgrades['chain'] = (1, 5, "Life Funnel", "Lifedrain also drains life from [2:num_targets] random enemy units up to [3_tiles:radius] away from the target.")
-		self.upgrades['requires_los'] = (-1, 1, "Blindcasting", "Lifedrain can be cast without line of sight")
+		self.upgrades['bond'] = (1, 2, "Blood Bond", "生命吸取额外治疗[2:num_targets]随机[living]盟友。")
+		self.upgrades['chain'] = (1, 5, "Life Funnel", "生命吸取额外从目标至多[3:radius]内的[2:num_targets]随机敌方单位处吸取生命。")
+		self.upgrades['requires_los'] = (-1, 1, "Blindcasting", ignore_los_upgrade)
 		self.add_upgrade(BloodHexes())
 
 	def get_impacted_tiles(self, x, y):
@@ -13435,7 +13435,7 @@ class BloodTapSpell(Spell):
 			return Spell.get_impacted_tiles(self, x, y)
 
 	def get_description(self):
-		return ("Deals [{damage}_dark:dark] damage to target unit each turn for [{duration}_turns:duration], healing the caster for the same amount.").format(**self.fmt_dict())
+		return ("每回合对目标单位造成[{damage}:dark]，持续[{duration}:duration]，施法者恢复该伤害等量的生命值。").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		for p in self.owner.level.get_points_in_line(self.caster, Point(x, y)):
@@ -13469,16 +13469,16 @@ class RitualOfRevelation(Spell):
 
 
 		self.upgrades['num_summons'] = (4, 7, "Holy Horde")
-		self.upgrades['blasphemy'] = (1, 5, "Blasphemy", "Summoned Prophets are liches.", [Tags.Dark])
-		self.upgrades['arcane_revelation'] = (1, 8, "Arcane Revelation", "Also casts your Blazerip on [3:num_targets] enemies.", [Tags.Arcane])
+		self.upgrades['blasphemy'] = (1, 5, "Blasphemy", "被召唤的先知是巫妖。", [Tags.Dark])
+		self.upgrades['arcane_revelation'] = (1, 8, "Arcane Revelation", "仪式每回合也会对[3:num_targets]个敌人施放炽裂术。", [Tags.Arcane])
 
 
 	def get_description(self):
-		return ("Channel the Ritual of Revelation for [{max_channel}_turns:duration].\n"
-				"Each turn while you channel the ritual, Holy Fire will be cast for free on [{num_targets}:num_targets] enemy units in line of sight.\n"
-				"If not enough enemy units are in line of sight, you or an ally will be targeted as well.\n"
-				"Units will never be targeted more than once."
-				"When the channel is complete, [{num_summons}:num_summons] False Prophets will be summoned.").format(**self.fmt_dict())
+		return ("引导启示仪式[{max_channel}_turns:duration]。\n"
+				"在你引导该仪式的每个回合中，指定视野中的[{num_targets}:num_targets]敌方单位免费施放圣火。\n"
+				"如果视野内敌方单位数量不足，你或友方单位也会被选为目标。\n"
+				"每个单位至多被指定一次。"
+				"当仪式引导完成，召唤[{num_summons}:num_summons]伪先知。").format(**self.fmt_dict())
 
 	def cast(self, x, y, channel_cast=False):
 		if not channel_cast:
@@ -13537,12 +13537,12 @@ class DevourFlesh(Spell):
 		self.range = 1
 		self.melee = True
 
-		self.upgrades['control'] = (1, 1, "Controlled Appetite", "Instead of killing the target, only steal as much HP as you are missing.")
-		self.upgrades['heal_allies'] = (1, 2, "Mass Feeding", "Also heal allies in a 2 tile radius.")
-		self.upgrades['charred_flesh'] = (1, 4, "Charred Flesh", "Slain Living units are raised as Burning Skeletons.", [Tags.Dark, Tags.Fire])
+		self.upgrades['control'] = (1, 1, "Controlled Appetite", "不直接杀死目标，改为从目标偷取等于你已损失生命值的生命值。")
+		self.upgrades['heal_allies'] = (1, 2, "Mass Feeding", "同时治疗2格半径内的盟友。") #same value?
+		self.upgrades['charred_flesh'] = (1, 4, "Charred Flesh", "被杀死的活物单位重生为带燃烧词条的骷髅。", [Tags.Dark, Tags.Fire]) #Added Living requirement due to raise_skeleton(), can change to normal summon to remove req
 
 	def get_description(self):
-		return "Devour an allied [living] unit to heal yourself for its current hp."
+		return "吞噬一个友方[living]单位以治疗你自己，数值等于该单位当前生命值。"
 
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
@@ -13596,12 +13596,12 @@ class Bloodshift(Spell):
 		self.hp_cost = 8
 
 		self.upgrades['freeze'] = (1, 2, "Blood Freeze", "Affected enemies are Frozen for [3_turns:duration]", [Tags.Ice])
-		self.upgrades['toxicity'] = (1, 4, "Toxic Shift", "Bloodshift also deals [poison] damage, though this damage does not cause healing.", None, [Tags.Poison])
+		self.upgrades['toxicity'] = (1, 4, "Toxic Shift", "鲜血转移也会造成[poison]伤害，这部分伤害不会提供治疗。", None, [Tags.Poison])
 		self.upgrades['greed'] = (1, 3, "Blood Greed", "You and only you are healed by this spell, even if you are out of the targeted area.")
 
 	def get_description(self):
-		return ("Enemies in a [{radius}_tile:radius] burst take [{damage}_dark:dark] damage.\n"
-				"Whenever an enemy is dealt damage this way, you or a random wounded ally in the targeted area is healed for half that amount.\n").format(**self.fmt_dict())
+		return ("[{radius}:radius]爆炸范围内的敌人受到[{damage}:dark]。\n"
+				"每当一名敌人因此法术受到伤害，法术目标范围内的你或一名受伤盟友恢复该伤害一半的生命值。\n").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		target = Point(x, y)
@@ -13674,15 +13674,15 @@ class FleshFiendSpell(Spell):
 		self.minion_health = ex.max_hp
 		self.minion_damage = ex.spells[0].damage
 
-		self.upgrades['belly_flop'] = (1, 3, "Belly Flop", "Gains a [25:damage] damage leap attack with a 7 turn cooldown.")
-		self.upgrades['char_fiend'] = (1, 6, "Barbeque Fiends", "Summons burning flesh fiends instead of normal ones.", [Tags.Fire])
-		self.upgrades['worm_lord'] = (1, 8, "Worm Lord", "Flesh Fiends can cast your Lumbriogenesis spell on a 13 turn cooldown.")
+		self.upgrades['belly_flop'] = (1, 3, "Belly Flop", "血肉集群获得[25:damage]伤害的跳跃攻击，冷却7回合。")
+		self.upgrades['char_fiend'] = (1, 5, "Barbeque Fiends", "召唤带燃烧词条的血肉集群，而非普通版本。", [Tags.Fire])
+		self.upgrades['worm_lord'] = (1, 8, "Worm Lord", "血肉集群可施放你的蠕虫孳生法术，冷却13回合。")
 
 
 	def get_description(self):
-		return ("Summons a Fleshy Mass.\n"
-				"Fleshy Masses have [{minion_health}_HP:minion_health] and regenerate 21 HP per turn.\n"
-				"Fleshy Masses have a melee attack which deals [{minion_damage}_physical:physical] damage.\n").format(**self.fmt_dict())
+		return ("召唤一个血肉集群。\n"
+				"血肉集群拥有[{minion_health}:minion_health]，每回合恢复21点生命值。\n"
+				"血肉集群的近战攻击造成[{minion_damage}:physical]。\n").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		fiend = FleshFiend()
@@ -14169,7 +14169,7 @@ class BrainSeedSpell(Spell):
 
 	def get_description(self):
 		return "种下一丛脑树幼苗，它最终会成长为一片脑树森林。"
-		#考虑到brain tree这个单位翻译成脑树，这里先叫脑树丛
+
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
 		if unit and Spell.can_cast(self, x, y):
@@ -14238,7 +14238,7 @@ class SoulWindSpell(Spell):
 		return ("引发一阵灵魂之风。对垂直于施法者的[3 格宽:radius]直线范围内的所有单位造成[{damage}:dark]。\n"
 			   "范围内所有[undead]，[dark]，与[demon]单位改为受到[{damage}:holy]。\n"
 			   "从范围内每个[Living]单位生成一个灵体\n"
-			   "灵体可能因生成该灵体的原本单位的词缀而拥有额外的能力与抗性。").format(**self.fmt_dict())
+			   "灵体可能因生成该灵体的原本单位的词条而拥有额外的能力与抗性。").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		line = self.caster.level.get_perpendicular_line(self.caster, Point(x, y))
