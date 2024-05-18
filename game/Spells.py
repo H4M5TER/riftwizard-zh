@@ -560,7 +560,7 @@ class FlameGateSpell(Spell):
 
 		self.upgrades['radius'] = (1, 3, "Burst Fire", "[Fire Elemental:unit]的攻击获得[1:radius]")
 		self.upgrades['cast_eye'] = (1, 5, "Eye Gate", "[Fire Elemental:unit]被召唤时施放你的[Eye of Fire:spell]")
-		self.upgrades['starfire_summon'] = (1, 5, "Starfire Gate", "现在星火之门会在你施放[fire]或[arcane]法术时召唤[Starfire Elemental:unit]\n不会在你施放[arcane]法术时结束")#绝了，这里加括号会识别为颜色，不存在“星火之门”这个颜色而导致报错
+		self.upgrades['starfire_summon'] = (1, 5, "Starfire Gate", "现在[Flame Gate:spell]会在你施放[fire]或[arcane]法术时召唤[Starfire Elemental:unit]\n不会在你施放[arcane]法术时结束")
 
 	def get_description(self):
 		return ("每当你施放一个[fire]法术，在目标地块附近生成一个[Fire Elemental:unit]\n"
@@ -12694,7 +12694,7 @@ class HelgateSpell(Spell):
 		self.upgrades['elite_aelves'] = (1, 8, "Elite Aelves", "刷怪笼生成精灵雷术师而非普通精灵。")
 
 	def get_description(self):
-		return "在随机位置召唤一个精灵的刷怪笼。".format(**self.fmt_dict())#spawner有没有统一译名？
+		return "在随机位置召唤一个精灵刷怪笼。".format(**self.fmt_dict())
 
 	def elf(self):
 		unit = Elf()
@@ -12749,9 +12749,9 @@ class HordeOfHalfmen(Spell):
 
 		self.range = 9
 
-		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "召唤物带有词条[Trollblooded:nature].")
-		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "召唤物带有词条[Metallic:metallic].")
-		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "召唤物带有词条[Burning:fire].")
+		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "召唤物带有[巨魔血:nature]词条")
+		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "召唤物带有[金属:metallic]词条")
+		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "召唤物带有[燃烧:fire]词条")
 
 	def tooltip_monster(self, modifier, unit):
 		unit = unit()
@@ -12797,7 +12797,7 @@ class GoatOffering(Spell):
 		self.hp_cost = 5
 
 		self.upgrades['reincarnation'] = (1, 3, "Reincarnation", "羊头恶魔死亡时可重生一次")
-		self.upgrades['pain'] = (1, 3, "Pain Aura", "羊头恶魔对任何对其造成伤害的单位造成[5:minion_damage] [dark]伤害。")
+		self.upgrades['pain'] = (1, 3, "Pain Aura", "羊头恶魔对任何对其造成伤害的单位造成[5:dark]。")
 		self.upgrades['maggot_host'] = (1, 3, "Maggot Host", "羊头恶魔死亡时，生成[2:num_summons]心灵蛆虫。")
 
 		example = GoatHead()
@@ -13076,7 +13076,7 @@ class BrainSeedSpell(Spell):
 		self.upgrades['parasite'] = (1, 4, "Parasitic Growth", "除空地格外还可指定敌人为目标。目标敌人每回合受到[1_arcane:arcane]伤害，持续10回合。若期间该敌人死亡，且其具有至少40点最大生命值，则在其死亡地格处生成一棵脑树。") 
 
 	def get_description(self):
-		return "种下一棵脑树丛幼苗，它最终会成长为一片脑树森林。"
+		return "种下一丛脑树幼苗，它最终会成长为一片脑树森林。"
 		#考虑到brain tree这个单位翻译成脑树，这里先叫脑树丛
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
