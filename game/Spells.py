@@ -11653,8 +11653,8 @@ class DreamwalkSpell(Spell):
 		self.duration = 5
 
 	def get_description(self):
-		return ("Dreamwalk for 5 turns.  Afterwards, you are returned to the location you cast it at, restored to the HP you cast it at.\n"
-			    "Casting Dreamwalk while dreamwalk is already active will simply end the current walk.")
+		return ("进入梦行状态5回合。状态结束后，你会回到施放白日梦行时所在地格，生命值回到施放时的状态。\n"
+			    "在梦行状态中再次施放白日梦行会直接结束梦行状态。")
 
 		# 3SP upgrade: Memory walk: refund all SP used during dream walk?
 		# 2SP upgrade: resist arcane, dark, holy, and physical damage while dreamwalking ('dreamform')
@@ -11678,12 +11678,12 @@ class MassCalcification(Spell):
 		self.range = 0
 		self.max_charges = 3
 
-		self.upgrades['fae_bones'] = (1, 4, "Fae Bones", "Arcane Allies are raised as fae bone shamblers instead of normal ones.")
-		self.upgrades['burning_bones'] = (1, 4, "Burning Bones", "Fire allies are raised as burning bone shamblers instead of normal ones.")
-		self.upgrades['bone_shards'] = (1, 5, "Bone Shards", "Each slain ally deals [7_physical:physical] damage to up to [3:num_targets] enemies in line of sight.")
+		self.upgrades['fae_bones'] = (1, 4, "Fae Bones", "[arcane]盟友复生为带仙灵词条的骸骨跛行者，而非普通版本。")
+		self.upgrades['burning_bones'] = (1, 4, "Burning Bones", "[fire]盟友复生为带燃烧词条的骸骨跛行者，而非普通版本。")
+		self.upgrades['bone_shards'] = (1, 5, "Bone Shards", "此法术消灭的每个盟友对视野内至多[3:num_targets]敌人造成[7:physical]。")
 
 	def get_description(self):
-		return "All non undead allies are instantly killed and raised as bone shamblers.\nBone Shamblers have the same HP as the raised units, a quarter that much melee damage, and split into smaller shamblers on death."
+		return "所有非[undead]盟友立刻死亡，复生为骸骨跛行者。\n骸骨跛行者的生命值与原单位相同，物理攻击伤害为生命值的四分之一，死亡时分裂为更小的跛行者。"
 
 	def make_shambler(self, u):
 		shambler = BoneShambler(u.max_hp)
@@ -11726,7 +11726,7 @@ class ScourgeBuff(Stun):
 		self.name = "Scourged"
 		self.color = Tags.Holy.color
 		self.asset = ['status', 'stun']  # TODO- own asset
-		self.description = "Cannot move or cast spells.  [Holy] damage dealt to all nearby units each turn."
+		self.description = "不能移动和施放法术。每回合对周围所有单位造成[Holy]伤害。"
 		
 		if self.spell.get_stat('refresh_conjuration') or self.spell.get_stat('refresh_dominate'):
 			self.owner_triggers[EventOnDeath] = self.on_death
@@ -11759,9 +11759,9 @@ class ScourgeSpell(Spell):
 		self.duration = 5
 		self.radius = 1
 
-		self.upgrades['refresh_conjuration'] = (1, 3, "Redemption", "When a Scourged enemy dies, gain a charge of a random Holy conjuration.")
-		self.upgrades['refresh_dominate'] = (1, 3, "Conversion", "When a Scourged enemy dies, gain a charge of Dominate.")
-		self.upgrades['mass_scourge'] = (1, 4, "Mass Scourge", "Scourge is applied to a connected group of enemies.")
+		self.upgrades['refresh_conjuration'] = (1, 3, "Redemption", "被施加天罚的敌人死亡时，一个随机神圣召唤法术获得1点充能。")
+		self.upgrades['refresh_dominate'] = (1, 3, "Conversion", "被施加天罚的敌人死亡时，支配获得1点充能。")
+		self.upgrades['mass_scourge'] = (1, 4, "Mass Scourge", "天罚施加给相连的一组敌人。")
 
 		self.range = 6
 
@@ -11774,8 +11774,8 @@ class ScourgeSpell(Spell):
 		return tiles
 
 	def get_description(self):
-		return ("The target is stunned for [{duration}_turns:duration].\n"
-				"Each turn, the target and all units within [{radius}_tiles:radius] take [{damage}_holy:holy] damage.").format(**self.fmt_dict())
+		return ("目标被眩晕[{duration}:duration]。\n"
+				"每回合，目标与[{radius}:radius]内的所有单位受到[{damage}:holy]。").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		targets = [self.caster.level.get_unit_at(x, y)]
@@ -11853,15 +11853,15 @@ class ImmolateSpell(Spell):
 
 		self.stats.append('damage_growth')
 
-		self.upgrades['mass_immolate'] = (1, 3, "Conflaguration", "Immolate also affects a connected group of enemies.")
-		self.upgrades['radiant_heat'] = (1, 4, "Radiant Heat", "Immolate deals half damage to units in a [3_tile:radius] radius around the target each turn.")
-		self.upgrades['dragon_soul'] = (1, 2, "Dragon Soul", "When an immolated enemy dies, regain a charge of a random level 4 or lower [dragon] spell you know.")
+		self.upgrades['mass_immolate'] = (1, 3, "Conflaguration", "燔祭效果施加给相连的一组敌人。")
+		self.upgrades['radiant_heat'] = (1, 4, "Radiant Heat", "燔祭每回合同时对目标单位[3:radius]内的单位造成一半伤害。")
+		self.upgrades['dragon_soul'] = (1, 2, "Dragon Soul", "被施加燔祭的敌人死亡时，你已学习的一个随机等级4或更低的[dragon]法术补充1点充能。")
 
 		self.can_target_empty = False
 
 	def get_description(self):
-		return ("Target enemy takes [{damage}_fire:fire] damage each turn for [{duration}_turns:duration].\n"
-				"This damage increases by [{damage_growth}_damage:damage] each turn.").format(**self.fmt_dict())
+		return ("目标敌人每回合受到[{damage}:fire]，持续[{duration}:duration]。\n"
+				"该伤害每回合递增[{damage_growth}:damage]。").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 
@@ -11919,7 +11919,7 @@ class ArmageddonArmorBuff(Buff):
 	def on_init(self):
 		self.name = "Armor of Armageddon"
 		self.color = Tags.Chaos.color
-		self.description = "25 chaos resist. Damages enemies that damage buffed unit 2 damage per chaos type."
+		self.description = "25点混沌（火焰、闪电、物理）抗性。对每个攻击该被增益单位的单位造成每种混沌属性类型各2点伤害。"
 
 		self.resists[Tags.Fire] = 25
 		self.resists[Tags.Lightning] = 25
@@ -11943,13 +11943,13 @@ class ArmeggedonBlade(Spell):
 		self.can_target_empty = False
 
 		# Armor of Armeggedon upgrade to give resists?
-		armor_upgrade_text = "Grants 25 resist to [fire:fire], [lightning:lightning], and [physical:physical] damage and provides thorns buff that deals 2 damage for each chaos type to enemies that attack buffed units."
+		armor_upgrade_text = "获得25点[fire]，[lightning]与[physical]抗性，提供荆棘增益，对每个攻击该被增益单位的单位造成每种混沌属性类型各2点伤害。"
 		self.upgrades['armor'] = (1, 2, "Armor of Armageddon", armor_upgrade_text)
-		self.upgrades['connected_group'] = (1, 5, "Mass Armaments", "Cast on a connected group.")
-		self.upgrades['mega'] = (1, 8, "Mega Armageddon", "Provides unit with a melee version of Mega Annihilate instead of Annihilate.")
+		self.upgrades['connected_group'] = (1, 5, "Mass Armaments", "对相连的一组盟友单位施放。")
+		self.upgrades['mega'] = (1, 8, "Mega Armageddon", "提供近战版本的究极湮灭法术，代替湮灭。")
 
 	def get_description(self):
-		return ("Grants target ally a melee version of Annihilate, gaining any bonuses you have to that spell.")
+		return ("给予目标盟友近战版本的湮灭法术，享受所有你的湮灭法术的加成。")
 
 	def cast_instant(self, x, y):
 
@@ -11990,9 +11990,9 @@ class Bonespear(Spell):
 
 		self.radius = 3
 
-		self.upgrades['fire'] = (1, 4, "Infernal Spear", "Bone Spear also deals [fire] damage.")
-		self.upgrades['toxic'] = (1, 4, "Toxic Spear", "Whenever the spear kills a unit, up to 3 enemy units within a [3_tile:radius] radius take [16_poison:poison] damage.")
-		self.upgrades['stun'] = (1, 3, "Stun Spear", "Bone Spear applies stun for 3 turns")
+		self.upgrades['fire'] = (1, 4, "Infernal Spear", "骨矛也会造成[fire]伤害。")
+		self.upgrades['toxic'] = (1, 4, "Toxic Spear", "每当骨矛杀死一个单位，[3:radius]半径内的至多3个敌方单位受到[16:poison]。")
+		self.upgrades['stun'] = (1, 3, "Stun Spear", "骨矛施加3回合眩晕。")
 
 		self.cast_on_walls = True
 
@@ -12000,7 +12000,7 @@ class Bonespear(Spell):
 		return self.owner.level.get_points_in_line(self.caster, Point(x, y))
 
 	def get_description(self):
-		return ("Deals [{damage}_physical:physical] damage to all units in a line.\nThis spell can target and destroy a wall tile.").format(**self.fmt_dict())
+		return ("对一条直线上所有单位造成[{damage}:physical]。\n该法术可以指定墙壁为目标，并破坏之。").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -12049,14 +12049,14 @@ class WormOffering(Spell):
 		# also summon num_summons little wormballs around main worm ball?
 
 		# Ultimate Upgrades
-		self.upgrades['toxic'] = (1, 6, "Toxogenesis", "Summons a toxic worm ball instead.  Toxic wormballs have a poison aura.", 'ultimate')
-		self.upgrades['iron'] = (1, 5, "Mechanogenesis", "Summons an iron worm ball instead.  Iron wormballs have many resistances.", 'ultimate')
-		self.upgrades['ghostly'] = (1, 5, "Ectogenesis", "Summons a ghost worm ball instead.  Ghost wormballs have many resistances, are undead, and teleport.", 'ultimate')
+		self.upgrades['toxic'] = (1, 6, "Toxogenesis", "召唤剧毒词条的蠕虫球。它拥有中毒光环。", 'ultimate')
+		self.upgrades['iron'] = (1, 5, "Mechanogenesis", "召唤钢铁词条的蠕虫球。它拥有多种抗性。", 'ultimate')
+		self.upgrades['ghostly'] = (1, 5, "Ectogenesis", "召唤幽灵词条的蠕虫球。它拥有多种抗性，是[undead]，拥有传送能力。", 'ultimate')
 
 	def get_description(self):
-		return ("Sacrifice half your HP rounded up and summon a wormball with that much hp.\n"
-				"Wormballs regenerate 3 HP per turn and have a melee attack dealing damage equal to half their max HP.\n"
-				"If you sacrificed 50 or more hp, summon a worm shambler instead of a worm ball.\n")
+		return ("牺牲你生命值的一半（向上取整），召唤一个拥有生命值与你牺牲的生命值等量的蠕虫球。\n"
+				"蠕虫球每回合恢复3点生命值，近战攻击造成等同于自身最大生命值一半的伤害。\n"
+				"如果牺牲了50点生命值或以上，改为召唤蠕虫跛行者。\n")
 
 	def cast_instant(self, x, y):
 		hp = self.caster.cur_hp // 2
