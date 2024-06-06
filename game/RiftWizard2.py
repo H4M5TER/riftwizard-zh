@@ -257,6 +257,7 @@ tooltip_colors.update({
 	"spell": Color(80, 175, 255),
 	"unit": Color(249, 210, 109),
 })
+tooltip_colors.update(dict([(f"r_{t}", tooltip_colors[t]) for t in loc.damage_type_list]))
 
 tt_attrs = [
 	'damage',
@@ -4335,7 +4336,7 @@ class PyGameView(object):
 						word = loc.tags.get(token, word)
 					if len(tokens) > 1:
 						token = tokens[1].lower()
-						if re.search("^\d+$", tokens[0]):
+						if re.search("^-?\d+$", tokens[0]):
 							if token in loc.tags_format:
 								word = loc.tags_format[token] % tokens[0]
 							else:
