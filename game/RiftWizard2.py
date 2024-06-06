@@ -3,7 +3,9 @@ import os
 import sys
 import re
 
-DEBUG_MODE = True
+DEBUG_MODE = False
+if os.environ.get('DEBUG'):
+	DEBUG_MODE = True
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 # Make all the relative file accesses work
@@ -1599,7 +1601,7 @@ class PyGameView(object):
 		if not self.can_play_sound:
 			return
 
-		music_path = os.path.join('rl_data', 'music', track_name + '.wav')
+		music_path = os.path.join('rl_data', 'music', track_name + '.ogg')
 		pygame.mixer.music.load(music_path)
 		self.adjust_volume(0, 'music')
 		pygame.mixer.music.play()
