@@ -77,28 +77,10 @@ tags = {
     "poisoned": "中毒",
     "blind": "致盲",
     "blinded": "致盲",
-    "quick_cast": "快速施放", # 没见过
+    "quick_cast": "快速施放",
 }
 
-schools = {}
-for school in ["Fire", "Ice", "Lightning", "Nature", "Dark", "Holy", "Arcane", "Sorcery", "Conjuration", "Enchantment",]:
-    schools[school] = tags[school.lower()]
-
-damage_tags = {}
-for type in ["Physical", "Fire", "Lightning", "Dark", "Poison", "Holy", "Arcane", "Ice",]:
-    damage_tags[type] = tags[type.lower()]
-
 tags_format = {
-    # damage type
-    "physical": "%s 点物理伤害",
-    "fire": "%s 点火焰伤害",
-    "lightning": "%s 点闪电伤害",
-    "dark": "%s 点黑暗伤害",
-    "poison": "%s 点毒素伤害",
-    "holy": "%s 点神圣伤害",
-    "arcane": "%s 点奥术伤害",
-    "ice": "%s 点寒冰伤害",
-
     # upgrade attributes
     "damage": "%s 点伤害",
     "range": "%s 格",
@@ -121,6 +103,14 @@ tags_format = {
     # other
     "heal": "%s 点生命",
 }
+
+school_list = ["fire", "ice", "lightning", "nature", "dark", "holy", "arcane", "sorcery", "conjuration", "enchantment",]
+schools = dict([(s, tags[s]) for s in school_list])
+
+damage_type_list = ["physical", "fire", "lightning", "dark", "poison", "holy", "arcane", "ice",]
+damage_tags = dict([(t, tags[t]) for t in damage_type_list])
+tags_format.update(dict([(t, f"%s 点{tags[t]}伤害") for t in damage_type_list]))
+tags_format.update(dict([(f"r_{t}", f"%s%% {tags[t]}抗性") for t in damage_type_list]))
 
 clauses = {
     "channel": "这个法术至多可以引导 %s，引导持续的每个回合都会重复相同的效果",
@@ -1344,4 +1334,6 @@ monsters.update({
     "Ball Lightning": "球状闪电",
     "Ice Faery": "冰霜仙灵",
     "Frost Eyeball": "霜冻眼球",
+    "Earth Elemental": "大地元素",
+    "Small Worm Ball": "小型蠕虫球",
 })
