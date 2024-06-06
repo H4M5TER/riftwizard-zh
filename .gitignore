@@ -1,5 +1,6 @@
 game/* 
 build/* 
+env/*
 dist/* 
 !game/*.py 
 !game/requirements.txt 
