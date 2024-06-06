@@ -3,6 +3,10 @@ import os
 import sys
 import re
 
+DEBUG_MODE = False
+if os.environ.get('DEBUG'):
+	DEBUG_MODE = True
+
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 # Make all the relative file accesses work
 cheats_enabled = False
@@ -256,6 +260,15 @@ tooltip_colors.update({
     "quick_cast": Color(255, 255, 255),
 	"spell": Color(80, 175, 255),
 	"unit": Color(249, 210, 109),
+})
+tooltip_colors.update(dict([(f"r_{t}", tooltip_colors[t]) for t in loc.damage_type_list]))
+tooltip_colors.update({
+	"fae": tooltip_colors["arcane"],
+	"burning": tooltip_colors["fire"],
+	"ghostly": tooltip_colors["undead"],
+	"lich": tooltip_colors["undead"],
+	"immortal": tooltip_colors["holy"],
+	
 })
 
 tt_attrs = [
@@ -1588,7 +1601,7 @@ class PyGameView(object):
 		if not self.can_play_sound:
 			return
 
-		music_path = os.path.join('rl_data', 'music', track_name + '.wav')
+		music_path = os.path.join('rl_data', 'music', track_name + '.ogg')
 		pygame.mixer.music.load(music_path)
 		self.adjust_volume(0, 'music')
 		pygame.mixer.music.play()
@@ -2553,6 +2566,7 @@ class PyGameView(object):
 		self.play_sound("menu_confirm")
 		self.state = STATE_TITLE
 		self.examine_target = TITLE_SELECTION_NEW
+		self.new_game()
 	
 	def abort_abandon(self):
 		self.play_sound("menu_confirm")
@@ -4335,7 +4349,7 @@ class PyGameView(object):
 						word = loc.tags.get(token, word)
 					if len(tokens) > 1:
 						token = tokens[1].lower()
-						if re.search("^\d+$", tokens[0]):
+						if re.search("^-?\d+$", tokens[0]):
 							if token in loc.tags_format:
 								word = loc.tags_format[token] % tokens[0]
 							else:
@@ -5084,17 +5098,18 @@ class PyGameView(object):
 		self.draw_string("裂隙", self.examine_display, cur_x, cur_y)
 		cur_y += linesize
 
-		if self.game.next_level or not self.game.has_granted_xp:
-			cur_y += linesize
-			self.draw_string("????????", self.examine_display, cur_x, cur_y)
-			return
+		if not DEBUG_MODE:
+			if self.game.next_level or not self.game.has_granted_xp:
+				cur_y += linesize
+				self.draw_string("????????", self.examine_display, cur_x, cur_y)
+				return
 
-		if self.examine_target.locked:
-			cur_y += linesize
-			
-			width = self.examine_display.get_width() - 2*border_margin
-			lines = self.draw_wrapped_string("(击败所有敌人和刷怪笼解锁)", self.examine_display, cur_x, cur_y, width)
-			cur_y += lines*linesize
+			if self.examine_target.locked:
+				cur_y += linesize
+				
+				width = self.examine_display.get_width() - 2*border_margin
+				lines = self.draw_wrapped_string("(击败所有敌人和刷怪笼解锁)", self.examine_display, cur_x, cur_y, width)
+				cur_y += lines*linesize
 
 		cur_y += linesize
 
@@ -5243,8 +5258,9 @@ class PyGameView(object):
 				return
 
 		if self.state == STATE_SHOP and self.shop_type == SHOP_TYPE_BESTIARY:
-			if not SteamAdapter.has_slain(self.examine_target.name):
-				return
+			if not DEBUG_MODE:
+				if not SteamAdapter.has_slain(self.examine_target.name):
+					return
 
 		border_margin = self.border_margin
 		cur_x = border_margin
@@ -5476,7 +5492,7 @@ class PyGameView(object):
 		opts = []
 		if can_continue_game():
 			opts.append((TITLE_SELECTION_LOAD, "继续游戏"))
-			opts.append((TITLE_SELECTION_ABANDON, "放弃游戏"))
+			opts.append((TITLE_SELECTION_ABANDON, "新游戏"))
 		else:
 			opts.append((TITLE_SELECTION_NEW, "新游戏"))
 
@@ -5565,15 +5581,15 @@ class PyGameView(object):
 				self.examine_target = None
 
 		if selection == TITLE_SELECTION_NEW:
-			
 			# TEMP: do not pick mode, just start new game
 			#self.state = STATE_PICK_MODE
 			#self.examine_target = 0
 			self.new_game()
-			#
-
 		if selection == TITLE_SELECTION_ABANDON:
-			self.open_abandon_prompt()
+			if DEBUG_MODE:
+				self.confirm_abandon()
+			else:
+				self.open_abandon_prompt()
 		if selection == TITLE_SELECTION_OPTIONS:
 			self.open_options()
 		if selection == TITLE_SELECTION_LOAD:
@@ -6122,6 +6138,11 @@ class PyGameView(object):
 		
 		self.make_level_screenshot()
 		SteamAdapter.set_presence_level(1)
+
+		if DEBUG_MODE:
+			self.game.p1.xp += 100
+			for i, c in all_consumables:
+				self.game.p1.add_item(i())
 
 	def play_battle_music(self, num=None):
 		if not self.track_queue:
