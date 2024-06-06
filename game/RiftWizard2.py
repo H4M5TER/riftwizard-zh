@@ -265,6 +265,7 @@ tooltip_colors['wizard'] = Color(2, 136, 209)
 tooltip_colors['enemy'] = tooltip_colors['damage']
 tooltip_colors['ally'] = Tags.Conjuration.color
 tooltip_colors['hp_cost'] = Tags.Blood.color
+tooltip_colors.update(dict([(f"r_{t}", tooltip_colors[t]) for t in loc.damage_type_list]))
 
 tt_attrs = [
 	'damage',
@@ -4501,7 +4502,7 @@ class PyGameView(object):
 						word = loc.tags.get(token, word)
 					if len(tokens) > 1:
 						token = tokens[1].lower()
-						if re.search("^\d+$", tokens[0]):
+						if re.search("^-?\d+$", tokens[0]):
 							if token in loc.tags_format:
 								word = loc.tags_format[token] % tokens[0]
 							else:
