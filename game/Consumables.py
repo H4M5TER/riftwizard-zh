@@ -4,7 +4,6 @@ from Monsters import *
 from CommonContent import *
 
 import text
-import dict_consumables
 
 class HealPotSpell(Spell):
 	def on_init(self):
@@ -399,7 +398,7 @@ class MemoryEnhancement(Buff):
 def memory_draught():
 	item = Item()
 	item.name = "Draught of Memories"
-	self.show_name = "记忆合剂"
+	item.show_name = "记忆合剂"
 	item.description = "你拾起的记忆凝珠效果翻倍, 持续 10 回合。"
 	item.set_spell(PotionSpell(MemoryEnhancement, 10))
 	return item
