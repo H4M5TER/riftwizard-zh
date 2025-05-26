@@ -4958,9 +4958,9 @@ class MysticMemory(Spell):
 		self.range = 0
 		self.max_channel = 5
 
-		self.upgrades['distant_memory'] = (1, 2, "Distant Memory", "Prioritize regaining charges of depleted spells.")
+		self.upgrades['distant_memory'] = (1, 2, "Distant Memory", "优先恢复耗尽法术的充能。")
 		self.upgrades['max_channel'] = (5, 3, "Deep Reflection")
-		self.upgrades['memory_shield'] = (1, 3, "Shield of Memories", "Gain 2 SH each time you gain charges from this spell.")
+		self.upgrades['memory_shield'] = (1, 3, "Shield of Memories", "每通过这个法术获得 1 点充能，获得 [2:shields]。")
 
 	def cast(self, x, y, channel_cast=False):
 		if not channel_cast:
@@ -4988,8 +4988,9 @@ class MysticMemory(Spell):
 		return Spell.can_cast(self, x, y)
 
 	def get_description(self):
-		return "While channeling, regain a charge of a random other spell. Channels for 5 turns."
+		return "每回合随机恢复一点其他法术的充能\n可持续引导至多5回合。"
 
+# not in game
 
 class PermenanceBuff(Buff):
 
@@ -5042,8 +5043,8 @@ class Permenance(Spell):
 			self.caster.apply_buff(PermenanceBuff(self), self.get_stat('duration'))
 
 	def get_description(self):
-		return ("Your spells and temporary summons last an extra [5_turns:duration].\n"
-				"This effect lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+		return ("你的法术和召唤物持续时间增加 [5:duration]。\n"
+				"这个效果持续 [{duration}:duration]。").format(**self.fmt_dict())
 
 class DeathGazeSpell(Spell):
 
@@ -5056,9 +5057,9 @@ class DeathGazeSpell(Spell):
 		self.damage = 6
 		self.hp_cost = 5
 
-		self.upgrades['toxic_gaze'] = (1, 3, "Toxic Gaze", "Vampiric Gaze also deals [poison] damage", [Tags.Nature])
-		self.upgrades['vampire_tax'] = (1, 4, "Vampiric Tax", "You heal for 100% of the damage dealt")
-		self.upgrades['refract'] = (1, 6, "Refracting Gaze", "Each bolt bounces once to a random enemy in line of sight of the original target")
+		self.upgrades['toxic_gaze'] = (1, 3, "Toxic Gaze", "[Vampiric Gaze:spell]额外造成一份[poison]伤害", [Tags.Nature])
+		self.upgrades['vampire_tax'] = (1, 4, "Vampiric Tax", "你也根据造成伤害进行治疗")
+		self.upgrades['refract'] = (1, 6, "Refracting Gaze", "每道目光从原本目标弹射到其视线内的随机敌人上")
 		
 	def get_description(self):
 		return ("Fire a bolt from each ally dealing [{damage}_dark:dark] damage to a random enemy in line of sight."
@@ -5127,13 +5128,13 @@ class BoneBarrageSpell(Spell):
 		self.can_target_empty = False
 		self.damage_type = [Tags.Physical]
 
-		self.upgrades['beam'] = (1, 6, "Bone Spears", "Bone Barrage damages all targets in a beam from the minion to the target")
-		self.upgrades['dark'] = (1, 5, "Cursed Bones", "Bone Barrage also deals [dark] damage")
+		self.upgrades['beam'] = (1, 6, "Bone Spears", "[Bone Barrage:spell]对每个受影响的单位到目标的连线造成伤害")
+		self.upgrades['dark'] = (1, 5, "Cursed Bones", "[Bone Barrage:spell]额外造成一份[dark]伤害")
 		self.upgrades['pistons'] = (1, 3, "Piston Spears", "Damage dealt by [Metallic] allies is multiplied by 4.", [Tags.Metallic])
 
 	def get_description(self):
-		return ("Your summoned allies in line of sight of the target take [physical] damage equal to half their health.\n"
-				"Each affected ally deals that much [physical] damage to the target.")
+		return ("目标视线内所有你召唤的友方单位受到生命值一半的[physical]伤害\n"
+				"每个受影响的单位对目标造成等量[physical]伤害").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 		start = Point(x, y)
@@ -5232,9 +5233,9 @@ class InvokeSavagerySpell(Spell):
 		self.kills = 0
 		self.targets = []
 
-		self.upgrades['poison'] = (10, 1, "Venomous Bite", "Poisons targets for 10 turns.")
-		self.upgrades['leap_attack'] = (1, 4, "Savage Leap", "Instead of a melee attack, do a leap attack with a range of [3:radius].")
-		self.upgrades['recharge_wolf'] = (1, 3, "Scavengers", "Every 3 kills gain a wolf charge.")
+		self.upgrades['poison'] = (10, 1, "Venomous Bite", "施加 [10:duration][poisoned]")
+		self.upgrades['leap_attack'] = (1, 4, "Savage Leap", "单位改为跃击[3:radius]内的敌人")
+		self.upgrades['recharge_wolf'] = (1, 3, "Scavengers", "每击杀三个敌人给予一点[Wolf:spell]充能")
 		self.add_upgrade(SavageSpree())
 
 	def get_impacted_tiles(self, x, y):
@@ -5272,8 +5273,8 @@ class InvokeSavagerySpell(Spell):
 					wolf_spell.cur_charges = min(wolf_spell.cur_charges + 1, wolf_spell.get_stat('max_charges'))
 
 	def get_description(self):
-		return ("Each living ally attacks a random enemy unit in melee range.\n"
-				"The attack deals [{damage}_physical:physical] damage and inflicts [{duration}_turns:duration] of [stun].").format(**self.fmt_dict())
+		return ("每个[living]盟友攻击近战范围内的随机敌人\n"
+				"攻击造成 [{damage}:physical]，施加 [{duration}:duration][stun].").format(**self.fmt_dict())
 
 class MagicMissile(Spell):
 
@@ -5289,10 +5290,10 @@ class MagicMissile(Spell):
 		self.max_charges = 25
 		self.shield_burn = 0
 
-		self.upgrades['shield_burn'] = (1, 2, "Shield Burn", "Magic Missile removes all SH from the target before dealing damage.")
-		self.upgrades['disruption'] = (1, 2, "Disruption Bolt", "If Magic Missile targets an [arcane] unit, it deals [dark] and [holy] damage instead of [arcane].", None, [Tags.Dark, Tags.Holy])
-		self.upgrades['barrage'] = (1, 3, "Arcane Crossfire", "When you cast Magic Missile, up to [4:num_targets] additional missiles are fired from [arcane] allies in line of sight of the target.")
-		self.upgrades['ricochet'] = (1, 5, "Ricochet", "Magic Missile bounces up to [2:num_targets] times to targets in range and line of sight of the target.")
+		self.upgrades['shield_burn'] = (1, 2, "Shield Burn", "[Magic Missile:spell]造成伤害之前移除所有护盾")
+		self.upgrades['disruption'] = (1, 2, "Disruption Bolt", "[Magic Missile:spell]对[arcane]单位造成[dark]和[holy]伤害，而不是[arcane]伤害", None, [Tags.Dark, Tags.Holy])
+		self.upgrades['barrage'] = (1, 3, "Arcane Crossfire", "施放[Magic Missile:spell]时，目标视线内每个[arcane]盟友对其施放一个额外的飞弹，至多 [4:num_targets]")
+		self.upgrades['ricochet'] = (1, 5, "Ricochet", "[Magic Missile:spell]弹射到目标视线范围内、与其距离不超过施法范围的敌方单位上，至多 [2 次:num_targets]")
 
 	def cast(self, x, y):
 		dtypes = [Tags.Arcane]
@@ -5345,7 +5346,7 @@ class MagicMissile(Spell):
 			yield
 
 	def get_description(self):
-		return "Deal [{damage}_arcane:arcane] damage to the target.".format(**self.fmt_dict())
+		return "对目标造成 [{damage}:arcane]".format(**self.fmt_dict())
 
 class MindDevour(Spell):
 
@@ -5370,10 +5371,10 @@ class MindDevour(Spell):
 
 
 	def get_description(self):
-		return ("Deal [{damage}_arcane:arcane] and [{damage}_dark:dark] damage to an enemy unit.\n"
-				"Then, if the target is under 50% HP, deal that damage again.\n"
-				"If this kills the target, they are raised as a zombie.\n"
-				"Can only target [living], [demon], and [arcane] units.").format(**self.fmt_dict())
+		return ("对敌方单位造成 [{damage}:arcane] 和 [{damage}:dark]\n"
+				"之后，如果目标生命值少于一半，额外造成一次\n"
+				"击杀目标时将其复活为僵尸\n"
+				"只能对[living]、[demon]和[arcane]单位施放").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
 		return [self.make_zombie()] + self.spell_upgrades
@@ -5457,13 +5458,13 @@ class DeathShock(Spell):
 
 		self.can_target_empty = False
 
-		self.upgrades['fire'] = (1, 5, 'Fire Shock', "After dealing [dark] and [lightning] damage, deals [fire] damage as well", [Tags.Fire], [Tags.Fire])
-		self.upgrades['shield_burn'] = (3, 4, 'Shield Burn', "Before dealing damage, removes 3 SH") # weird, replace?
-		self.upgrades['corpse'] = (1, 4, 'Corpse Construct', "If Death Shock kills one or more enemies, summon an electric zombie with hp equal to half the total hp of all slain enemies.", [Tags.Conjuration])
+		self.upgrades['fire'] = (1, 5, 'Fire Shock', "额外造成一份[fire]伤害", [Tags.Fire], [Tags.Fire])
+		self.upgrades['shield_burn'] = (3, 4, 'Shield Burn', "造成伤害之前移除 [3:shields]") # weird, replace?
+		self.upgrades['corpse'] = (1, 4, 'Corpse Construct', "如果[Death Shock:spell]击杀了至少一个敌人，召唤一个闪电僵尸，使用所有击杀敌人总生命值的一半", [Tags.Conjuration]) # ……闪电僵尸
 
 	def get_description(self):
-		return ("Deal [{damage}_lightning:lightning] damage and [{damage}_dark:dark] damage to the target.\n"
-				"If the target is slain, this effect bounces to a random enemy in line of sight up to [{cascade_range}_tiles:range] away.\n").format(**self.fmt_dict())
+		return ("对目标造成 [{damage}:lightning]和 [{damage}:dark]\n"
+				"如果目标被击杀，对目标视线范围内、距离不超过 [{cascade_range}:range]的敌人重复该伤害").format(**self.fmt_dict())
 
 	def zombie(self):
 		unit = BossSpawns.Stormtouched(Zombie())
