@@ -876,7 +876,7 @@ ring_stats = {
     "Tome": "典籍",
     "Lens": "眼镜",
     "Flag": "旗帜",
-    "Disk": "Disk", # 说实话这是啥，图看着真像块光盘，但是认真的吗
+    "Disk": "圆碟",
     "Scale": "鳞片",
     "Claw": "利爪",
     "Fang": "尖牙",
