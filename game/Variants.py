@@ -527,51 +527,6 @@ def SnakeGiant():
 	
 	return unit
 
-class SnakePhilosophy(Spell):
-
-	def on_init(self):
-		self.name = "Enlighten Serpent"
-		self.description = "Transform a snake into a dragon."
-		self.range = 9
-		self.cool_down = 3
-
-	def cast_instant(self, x, y):
-		unit = self.caster.level.get_unit_at(x, y)
-		assert(unit)
-		unit.deal_damage(25, Tags.Fire, self)
-
-		# If the snake somehow doesnt burn... ok whatever
-		if unit.is_alive():
-			return
-
-		drake = random.choice([FireDrake(), StormDrake(), VoidDrake()])
-		drake.team = self.caster.team
-		self.summon(drake, target=unit)
-
-	def can_cast(self, x, y):
-		unit = self.caster.level.get_unit_at(x, y)
-		return unit and unit.name == "Snake" and Spell.can_cast(self, x, y)
-
-	def get_ai_target(self):
-		candidates = [u for u in self.caster.level.get_units_in_los(self.caster) if u.name == "Snake"]
-		candidates = [c for c in candidates if self.can_cast(c.x, c.y)]
-
-		if candidates:
-			return random.choice(candidates)
-
-def SerpentPhilosopher():
-	unit = Unit()
-	unit.asset_name = "snake_man"
-
-	unit.name = "Slazephan, Serpent Philosopher"
-
-	unit.max_hp = 36
-
-	unit.spells.append(SnakePhilosophy())
-	unit.spells.append(SimpleRangedAttack(damage=5, damage_type=Tags.Poison, range=6))
-
-	unit.tags = [Tags.Living, Tags.Nature]
-	return unit
 
 def BoggartToxic():
 	unit = Boggart()
@@ -1511,7 +1466,7 @@ def TroublerGlass():
 	glassify = SimpleRangedAttack(damage=1, damage_type=Tags.Arcane, range=10, effect=Tags.Glassification)
 	glassify.name = "Glass Gaze"
 	glassify.description = "Glassifies target for 1 turn"
-	glassify.onhit = lambda caster, target: target.apply_buff(PetrifyBuff(), 1)
+	glassify.onhit = lambda caster, target: target.apply_buff(GlassPetrifyBuff(), 1)
 
 	unit.spells = [glassify]
 	unit.tags.append(Tags.Glass)
@@ -2969,36 +2924,6 @@ def ToadChaosSorcerer():
 
 	return unit
 
-def ToadNightmareSorcerer():
-
-	unit = HornedToad()
-	unit.max_hp = 66
-	unit.shields = 3
-	unit.name = "Toad Nightmare Sorcerer"
-	unit.asset_name = "horned_toad_mage_nightmare"
-
-	nightmare = WizardNightmare()
-
-	pnova = SimpleBurst(damage=5, damage_type=Tags.Poison, radius=6)
-	
-	pnova.cool_down = 8
-	def poison(caster, target):
-		target.apply_buff(Poison(), 7)
-
-	pnova.onhit = poison
-	pnova.extra_desc = "Applies 7 turns of poison"
-
-	voidbolt = SimpleRangedAttack(damage=4, damage_type=Tags.Arcane, range=8)
-
-	unit.spells = [MonsterTeleport(), ToadHop(), nightmare, pnova, voidbolt]
-
-	unit.resists[Tags.Arcane] = 75
-	unit.resists[Tags.Dark] = 75
-
-	unit.tags.append(Tags.Arcane)
-	unit.tags.append(Tags.Dark)
-	return unit
-
 def YetiGiant():
 	return Giant(Yeti())
 
@@ -3199,7 +3124,6 @@ variants = {
 		(GoldenSnake, 2, 5, WEIGHT_UNCOMMON),
 		(FireSnake, 2, 5, WEIGHT_UNCOMMON),
 		(DeathSnake, 2, 4, WEIGHT_RARE),
-		(SerpentPhilosopher, 1, 1, WEIGHT_RARE)
 	],
 	Boggart: [
 		(BoggartToxic, 2, 3, WEIGHT_COMMON),
@@ -3276,7 +3200,6 @@ variants = {
 		(FlameToad, 2, 4, WEIGHT_UNCOMMON),
 		(HornedToadKing, 1, 1, WEIGHT_RARE),
 		(ToadChaosSorcerer, 1, 1, WEIGHT_RARE),
-		(ToadNightmareSorcerer, 1, 1, WEIGHT_RARE)
 	],
 	Orc: [
 		(OrcBoarRider, 3, 6, WEIGHT_COMMON),
@@ -3553,7 +3476,6 @@ variants = {
 	VoidToad: [
 		(VoidToadGiant, 2, 4, WEIGHT_COMMON),
 		(VoidToadArmored, 3, 6, WEIGHT_UNCOMMON),
-		(ToadNightmareSorcerer, 1, 1, WEIGHT_UNCOMMON)
 	],
 	FlameToad: [
 		(FlameToadGiant, 2, 4, WEIGHT_COMMON),

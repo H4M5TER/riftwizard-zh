@@ -3,8 +3,11 @@ from Monsters import *
 from copy import copy
 from CommonContent import *
 import Spells
+from Spells import ShrapnelBlast
 from Variants import *
 import sys
+import BossSpawns
+import random
 
 class Dampen(Buff):
 
@@ -1020,7 +1023,7 @@ class WizardLightningFlash(Spell):
 	def on_init(self):
 		self.damage = 3
 		self.name = "Flash of Lightning"
-		self.description = "Teleports the caster.  Blinds and deals damage to all units in line of sight on arrival for 1 turn."
+		self.description = "Teleports the caster.  Blinds and deals 3 damage to all enemies in line of sight on arrival for 2 turns."
 		self.range = 20
 		self.can_target_self = True
 
@@ -1042,15 +1045,15 @@ class WizardLightningFlash(Spell):
 			unit = self.caster.level.get_unit_at(p.x, p.y)
 	
 			if unit:
-				if are_hostile(self.owner, unit):
+				if not are_hostile(self.owner, unit):
 					continue
 			
 				self.caster.level.deal_damage(p.x, p.y, self.damage, Tags.Lightning, self)
-				unit.apply_buff(BlindBuff(), 1)
+				unit.apply_buff(BlindBuff(), 2)
+				
+				self.owner.level.show_path_effect(self.caster, unit, Tags.Lightning, minor=True)
 				yield
-			elif random.random() < .05:
-				self.caster.level.deal_damage(p.x, p.y, self.damage, Tags.Lightning, self)
-				yield				
+
 
 def LightningWizard():
 	unit = Unit()
@@ -1346,6 +1349,7 @@ class ScaleWeave(Spell):
 		# Return an allied dragon in range with non immune allies in the aoe
 		potentials = [u for u in self.caster.level.get_units_in_ball(self.caster, self.get_stat('range'))]
 		potentials = [u for u in potentials if Tags.Dragon in u.tags and u != self.caster]
+		potentials = [u for u in potentials if not are_hostile(self.owner, u)]
 
 		random.shuffle(potentials)
 
@@ -1362,10 +1366,16 @@ class ScaleWeave(Spell):
 	def can_cast(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
 
-		if unit and Tags.Dragon in unit.tags:
-			return True
-		else:
+		if not unit:
 			return False
+
+		if are_hostile(self.owner, unit):
+			return False
+
+		if Tags.Dragon not in unit.tags:
+			return False
+		
+		return True
 
 	def cast_instant(self, x, y):
 		dragon = self.caster.level.get_unit_at(x, y)
@@ -1454,9 +1464,8 @@ def EarthTrollWizard():
 	def onhit(caster, target):
 		target.apply_buff(PetrifyBuff(), 4)
 
-	petrify = SimpleRangedAttack(damage=0, damage_type=Tags.Physical, range=4, cool_down=15)
+	petrify = SimpleRangedAttack(damage=0, damage_type=Tags.Physical, range=4, cool_down=15, buff=PetrifyBuff, buff_duration=4)
 	petrify.name = "Petrify"
-	petrify.description = "Petrifies the target for 4 turns"
 
 	def wolf():
 		wolf = Unit()
@@ -1816,7 +1825,7 @@ class WizardIgnitePoison(Spell):
 		unit = self.caster.level.get_unit_at(x, y)
 		if not unit:
 			return False
-		return unit.has_buff(Poison)
+		return Spell.can_cast(self, x, y) and unit.has_buff(Poison)
 
 	def cast(self, x, y):
 
@@ -2052,27 +2061,21 @@ class WizardStarfireBeam(Spell):
 			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Fire, self)
 
 class StarfireOrb(Spells.OrbSpell):
-
 	def on_init(self):
 		self.name = "Solar Orb"
-
 		self.description = ("Create a slow moving searing orb"
 							"\n\nEach turn, the orb deals damage to all enemies in line of sight."
 							"\n\nAllies in line of sight are healed instead.")
-
 		self.damage = 1
 		self.cool_down = 12
 		self.range = 12
 		self.minion_health = 8
-
 	def get_ai_target(self):
 		return self.get_corner_target(6)
-
 	def on_make_orb(self, orb):
 		orb.asset_name = "searing_orb"
 		orb.resists[Tags.Ice] = 0
 		orb.resists[Tags.Arcane] = 0
-
 	def on_orb_move(self, orb, next_point):
 		for u in orb.level.get_units_in_los(next_point):
 			if u == self.caster:
@@ -2316,6 +2319,378 @@ def TheFurnace():
 	unit.buffs.append(DamageAuraBuff(damage=1, damage_type=Tags.Fire, radius=12))
 
 	return unit
+
+def ShrapnelBeast():
+	unit = Unit()
+	unit.name = "Shrapnel Beast"
+
+	unit.radius = 1
+
+	unit.max_hp = 8000
+
+	unit.tags = [Tags.Fire, Tags.Living, Tags.Metallic]
+
+	unit.spells.append(SimpleMeleeAttack(40))
+	unit.spells[0].name = "Bite"
+
+	shrapnel_spears = ShrapnelSpears()
+	shrapnel_spears.cool_down = 7
+
+	unit.spells.insert(0, shrapnel_spears)
+
+	shrapnel_blast = ShrapnelBlast()
+	shrapnel_blast.cool_down = 3
+	shrapnel_blast.range = 30
+	shrapnel_blast.max_charges = 0
+	shrapnel_blast.cur_charges = 0
+	shrapnel_blast.puncture = True
+
+	unit.spells.insert(1, shrapnel_blast)
+
+	unit.buffs.append(HeatedMetalBuff())
+
+	unit.buffs.append(Thorns(8))
+
+	shrapnel_buff = SpikeBeastBuff()
+	shrapnel_buff.radius = 4
+	shrapnel_buff.damage = 16
+	unit.buffs.append(shrapnel_buff)
+
+	return unit
+
+class HeatedMetalBuff(Buff):
+
+	def on_init(self):
+		self.name = "Heated Metal"
+		self.global_triggers[EventOnDamaged] = self.deal_conversion_damage
+		self.conversions[Tags.Physical][Tags.Fire] = .5
+		self.description = "Redeals 50% of [physical] damage dealt to enemies as [fire] damage."
+
+class ShrapnelSpears(Spell):
+
+	def on_init(self):
+		self.name = "Shrapnel Spears"
+		self.tags = [Tags.Metallic, Tags.Fire]
+		self.range = 9
+		self.damage = 3
+
+	def get_description(self):
+		return "Each portion of the beast fires a spear of molten metal, dealing  [{damage}_physical:physical] damage to an enemy in sight.".format(**self.fmt_dict())
+
+	def cast(self, x, y):
+		cast_points = [cp for cp in self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, 1, diag=True) # grab the points in the 3x3
+						if self.caster.level.can_see(cp.x, cp.y, x, y, light_walls=self.cast_on_walls)] # only grab points that have los on the target
+
+		for cp in cast_points:
+			yield from self.cast_spear(cp, x, y)
+
+	def cast_spear(self, cp, x, y):
+
+		for p in self.caster.level.get_points_in_line(cp, Point(x, y))[1:]:
+			self.caster.level.projectile_effect(p.x, p.y, proj_name='silver_spear', proj_origin=cp, proj_dest=Point(x, y)) # throw the spear in fx
+			yield
+
+		unit = self.caster.level.get_unit_at(x, y)
+		if unit:
+			unit.deal_damage(self.get_stat('damage'), Tags.Physical, self)
+			yield
+
+def Animikii():
+	unit = Unit()
+	unit.max_hp = 800
+
+	unit.name = "Animikii"
+	unit.tags = [Tags.Living, Tags.Nature, Tags.Lightning]
+	unit.resists[Tags.Lightning] = 100
+	unit.asset_name = "thundergod"
+	unit.radius = 1
+	unit.shields = 20
+
+	unit.flying = True
+
+	claw = SimpleMeleeAttack(damage=27, damage_type=Tags.Lightning)
+	claw.name = "Lightning God Talons"
+
+	lbolt = WideBeam(name="Lightning Blast", damage=20, beam_radius=2.5, range=12, tag=[Tags.Lightning], damage_type=Tags.Lightning)
+	lbolt.cool_down = 3
+
+	summon_tbird = SimpleSummon(Thunderbird, num_summons=4, cool_down=15)
+	summon_tbird.name = "Gather Flock"
+
+	unit.spells.append(summon_tbird)
+	unit.spells.append(lbolt)
+	unit.spells.append(claw)
+
+	unit.apply_buff(LightningCaller())
+	unit.apply_buff(LightningVengeance())
+
+	return unit
+
+class WideBeam(Spell):
+
+	def __init__(self, name="Wide Beam", damage=5, beam_radius=1.5, range=9, tag=None, damage_type=None, requires_los=True):
+		super().__init__()
+		self.name = name
+		self.damage = damage
+		self.beam_radius = beam_radius
+		self.beam_width = beam_radius * 2
+		self.range = range
+		self.tags = tag
+		self.damage_type = damage_type
+		self.requires_los = requires_los
+
+	def get_description(self):
+		if self.requires_los:
+			return "Deals [%d_%s:%s] in a [%d_tile:radius] wide beam." % (self.get_stat('damage'), self.tags[0].name.lower(), self.tags[0].name.lower(), self.get_stat('beam_width'))
+		else:
+			return ("Deals [%d_%s:%s] in a [%d_tile:radius] wide beam.\n"
+					"Destroys walls in its path") % (self.get_stat('damage'), self.tags[0].name.lower(), self.tags[0].name.lower(), self.get_stat('beam_width'))
+
+	def cast(self, x, y):
+
+		if self.requires_los:
+			center_beam = self.caster.level.get_points_in_line(self.caster, Point(x, y), find_clear=True)[1:]
+		else:
+			center_beam = self.caster.level.get_points_in_line(self.caster, Point(x, y), find_clear=False)[1:]
+		outer_beam = []
+
+		for p in center_beam:
+			for q in self.caster.level.get_points_in_ball(p.x, p.y, self.beam_radius): # grab the points around the centerbeam
+				if (q.x == self.caster.x and q.y == self.caster.y) or (self.owner.level.get_unit_at(q.x, q.y) == self.owner): # dont let caster hurt themselves
+					continue
+				if (q not in center_beam) and (q not in outer_beam): # don't include already captured pts
+					outer_beam.append(q)
+
+		wide_beam = center_beam + outer_beam
+
+		for p in wide_beam:
+			unit = self.caster.level.get_unit_at(p.x, p.y)
+			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), self.damage_type, self)
+			if not self.requires_los:
+				if not self.caster.level.tiles[p.x][p.y].can_see:
+					self.caster.level.make_floor(p.x, p.y)
+
+		yield
+
+class LightningCaller(Buff):
+
+	def on_init(self):
+		self.name = "Lightning Caller"
+		self.global_triggers[EventOnDamaged] = self.on_damage
+		self.tags = [Tags.Lightning]
+		self.description = "Creates Storm Clouds when creatures take [lightning] damage."
+
+	def on_damage(self, evt):
+		if not evt.damage_type == Tags.Lightning:
+			return
+
+		cloud = StormCloud(self.owner)
+		cloud.source = self
+
+		if not self.owner.level.tiles[evt.unit.x][evt.unit.y].cloud: # if there's no cloud there
+			self.owner.level.add_obj(cloud, evt.unit.x, evt.unit.y) # put one there
+		else:
+			possible_points = self.owner.level.get_points_in_ball(evt.unit.x, evt.unit.y, 2, diag=True) # look around the unit
+
+			def can_cloud(p):
+				tile = self.owner.level.tiles[p.x][p.y]
+				if tile.cloud:
+					return False
+				if tile.is_wall():
+					return False
+				return True
+
+			possible_points = [p for p in possible_points if can_cloud(p)]
+			if possible_points: # if there's anywhere a cloud could go
+				point = random.choice(possible_points)
+				self.owner.level.add_obj(cloud, point.x, point.y) # put one there
+
+	def get_tooltip_color(self):
+		return Tags.Lightning.color
+
+class LightningVengeance(Buff):
+
+	def on_init(self):
+		self.name = "Lightning Vengeance"
+		self.global_triggers[EventOnDeath] = self.on_death
+		self.tags = [Tags.Lightning]
+		self.damage = 7
+		self.description = self.get_description()
+
+	def get_description(self):
+		return "If any Storm Clouds are in line of sight of an ally's death, one of them will shoot a [%d_damage:lightning] lightning strike at the closest enemy in sight." % (self.damage)
+
+	def on_death(self, evt):
+		if are_hostile(self.owner, evt.unit): # if an ally dies
+			return
+
+		cloud_tiles = [c
+					   for row in self.owner.level.tiles
+					   for c in row
+					   if self.owner.level.can_see(evt.unit.x, evt.unit.y, c.x, c.y)
+					   and c.cloud and isinstance(c.cloud, StormCloud)]
+
+		random.shuffle(cloud_tiles)
+		for cloud in cloud_tiles:
+			enemies = [u for u in self.owner.level.get_units_in_los(cloud) if are_hostile(self.owner, u)] # grab the units the cloud can see
+			if enemies:
+				enemies.sort(key=lambda u: distance(cloud,u))
+				closest = enemies[0] # grab the closest one
+				self.owner.level.queue_spell(self.bolts(cloud, closest))
+				return
+
+	def bolts(self, cloud, closest):
+		self.owner.level.show_beam(cloud, closest, Tags.Lightning)
+		closest.deal_damage(self.damage, Tags.Lightning, self)
+		for i in range(1):
+			yield
+
+	def get_tooltip_color(self):
+		return Tags.Lightning.color
+
+def Mothman():
+	unit = Unit()
+	unit.max_hp = 1966 # year of first reported sighting of mothman
+	unit.shields = 8
+
+	unit.name = "Mothman"
+	unit.asset_name = "giant_mothgod"
+	unit.tags = [Tags.Arcane, Tags.Lightning, Tags.Living, Tags.Demon]
+	unit.resists[Tags.Arcane] = 100
+	unit.resists[Tags.Lightning] = 100
+	unit.resists[Tags.Ice] = -50
+
+	unit.radius = 1
+
+	unit.flying = True
+
+	lbolt = WideBeam(name="Lightning Beam", damage=11, beam_radius=1.5, range=15, tag=[Tags.Lightning], damage_type=Tags.Lightning)
+	lbolt.cool_down = 3
+
+	abolt = WideBeam(name="Arcane Beam", damage=12, beam_radius=1.5, range=15, tag=[Tags.Arcane], damage_type=Tags.Arcane,requires_los=False)
+	abolt.cool_down = 3
+
+	unit.spells.append(abolt)
+	unit.spells.append(lbolt)
+	unit.spells.append(SimpleMeleeAttack(16))
+
+	shregen = ShieldRegenBuff(shield_max=8, shield_freq=1)
+
+	unit.buffs.append(TeleportyBuff())
+	unit.buffs.append(ArcaneFear())
+	unit.buffs.append(shregen)
+
+	return unit
+
+class ArcaneFear(Buff):
+
+	def on_init(self):
+		self.name = "Superstition"
+		self.duration = 1
+		self.global_triggers[EventOnDamaged] = self.on_damaged
+		self.description = "Enemies gain %d turns of fear when they take arcane damage" % self.duration
+
+	def get_description(self):
+		self.description = "Enemies gain %d turns of fear when they take arcane damage" % self.duration
+
+	def on_damaged(self, evt):
+		if not are_hostile(evt.unit, self.owner):
+			return
+		if evt.damage_type == Tags.Arcane:
+			evt.unit.apply_buff(FearBuff(), self.duration)
+
+	def get_tooltip_color(self):
+		return Tags.Arcane.color
+
+def UltimateTroubler():
+	unit = Unit()
+	unit.name = "Ultimate Troubler"
+
+	unit.max_hp = 1
+	unit.shields = 99
+	unit.tags = [Tags.Arcane]
+	unit.resists[Tags.Arcane] = 100
+
+	unit.add_spell(TroublerBarrage())
+
+	unit.radius = 1
+	unit.flying = True
+	unit.stationary = True
+
+	unit.buffs.append(TeleportyBuff(chance=.5, radius=18))
+
+	return unit
+
+class TroublerBarrage(Spell):
+
+	def on_init(self):
+		self.name = "Troubler Barrage"
+		self.tags = [Tags.Arcane]
+		self.range = 12
+		self.damage = 3
+
+	def get_description(self):
+		return "Shoots 9 missiles which teleport the victims randomly up to 9 tiles away."
+
+	def cast(self, x, y):
+		cast_points = [cp for cp in self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, 1, diag=True)] # grab the points in the 3x3
+
+		for cp in cast_points:
+			target = self.get_ai_target() # grab a new target for each bolt.
+			if target:
+				yield from self.cast_bolt(cp, target)
+
+	def cast_bolt(self, cp, target):
+		self.caster.level.show_beam(cp, target, Tags.Arcane)
+		yield
+
+		target_u = self.caster.level.get_unit_at(target.x, target.y)
+		if target_u and target_u.is_alive():
+			target_u.deal_damage(self.get_stat('damage'), Tags.Arcane, self)
+			randomly_teleport(target_u, 9)
+			yield
+
+def CrystalGolem():
+	unit = Golem()
+	unit.name = "Crystal Golem"
+	unit.max_hp *= 4
+	unit.spells[0].damage *= 3
+	unit.add_spell(SimpleRangedAttack(name="Crystal Shot", damage=16, damage_type=Tags.Physical, range=3, cool_down=3))
+	unit.description = "An evolved golem of refracting crystal."
+
+	for tag in damage_tags:
+		if tag != Tags.Physical:
+			unit.resists[tag] = 100
+
+	unit.apply_buff(PrismaticBuff())
+
+	return unit
+
+class PrismaticBuff(Buff):
+
+	def on_init(self):
+		self.name = "Prismatic"
+		self.description = "Each turn, changes element. Immune to all damage except for current element"
+		self.current = 1 # don't want physical in rotation
+
+	def on_advance(self):
+		self.owner.level.show_effect(self.owner.x, self.owner.y, damage_tags[self.current]) # signifying type change - unsure how to change spritecolor post unit creation.
+		self.owner.recolor_primary = damage_tags[self.current].color
+		self.owner.Anim = None
+
+		for spell in self.owner.spells: # change all spells' damage
+			spell.damage_type = damage_tags[self.current]
+
+		for dtype in damage_tags: # set all resists to 100 every turn
+			if dtype == Tags.Physical:
+				continue
+			self.owner.resists[dtype] = 100
+		self.owner.resists[damage_tags[self.current]] = -100 # except the current color!
+
+		if self.current < len(damage_tags) - 1: # go to end of list
+			self.current +=1
+		else:
+			self.current = 1 # then set back to beginning, don't want to include physical
 
 def PillarOfBone():
 	unit = Unit()
@@ -3057,15 +3432,15 @@ class IdolOfFiendsBuff(Buff):
 		self.fiend_counter += evt.damage
 
 		while self.tormentor_counter > self.tormentor_counter_max:
+			self.tormentor_counter -= self.tormentor_counter_max
 			unit = random.choice([FieryTormentor, DarkTormentor, IcyTormentor])()
 			if self.summon(unit, radius=60, sort_dist=False):
-				self.tormentor_counter -= self.tormentor_counter_max
 				self.owner.level.show_path_effect(self.owner, unit, Tags.Dark, minor=True)
 		
 		while self.fiend_counter > self.fiend_counter_max:
-			unit = random.choice([RedFiend, IronFiend, YellowFiend])()
+			self.fiend_counter -= self.fiend_counter_max
+			unit = random.choice([RedFiend, IronFiend, YellowFiend])()	
 			if self.summon(unit, radius=60, sort_dist=False):
-				self.fiend_counter -= self.fiend_counter_max
 				self.owner.level.show_path_effect(self.owner, unit, Tags.Chaos, minor=True)
 
 def IdolOfFiends():
@@ -3081,6 +3456,9 @@ def GiantFleshFiend():
 	unit.radius = 1
 	unit.asset_name = "3x3_fleshfiend"
 	unit.name = "Flesh Colossus"
+	unit.spells[0].damage = 66
+
+	unit.buffs.append(DamageAuraBuff(damage=1, damage_type=[Tags.Poison, Tags.Dark], radius=5))
 	return unit
 
 def GiantBoneShambler():
@@ -3641,7 +4019,7 @@ def RotSapling():
 	unit.resists[Tags.Fire] = -100
 	unit.resists[Tags.Ice] = -50
 
-	unit.tags = [Tags.Arcane, Tags.Nature]
+	unit.tags = [Tags.Dark, Tags.Nature]
 
 
 	unit.spells.append(SimpleMeleeAttack(1, damage_type=Tags.Dark))
@@ -3668,6 +4046,149 @@ def RotBush():
 	unit.stationary = True
 	return unit
 
+def Thunderbones():
+	unit = Unit()
+	unit.name = "Old Thunderbones"
+	unit.asset_name = "ogre_shaman"
+
+	unit.max_hp = 212
+
+	unit.resists[Tags.Dark] = 50
+	unit.resists[Tags.Lightning] = 50
+
+	summon = SimpleSummon(SparkSpirit, num_summons=2, cool_down=5, duration=20)
+	ball = SimpleRangedAttack(damage=10, damage_type=Tags.Dark, range=7, radius=2, buff=FearBuff, buff_duration=3, cool_down=5)
+	melee = SimpleMeleeAttack(damage=25, damage_type=Tags.Physical, buff=Stun, buff_duration=1)
+
+	unit.spells = [summon, ball, melee]
+
+	def thunder_shambler():
+		unit = BoneShambler(32)
+		BossSpawns.apply_modifier(BossSpawns.Stormtouched, unit)
+		return unit
+
+	unit.buffs.append(RespawnAs(thunder_shambler))
+
+	unit.tags = [Tags.Living, Tags.Dark, Tags.Lightning]
+
+	return unit
+
+class SnakePhilosophy(Spell):
+
+	def on_init(self):
+		self.name = "Enlighten Serpent"
+		self.description = "Transform a snake into a dragon."
+		self.range = 9
+		self.cool_down = 5
+
+	def cast_instant(self, x, y):
+		unit = self.caster.level.get_unit_at(x, y)
+		assert(unit)
+		unit.deal_damage(25, Tags.Fire, self)
+
+		# If the snake somehow doesnt burn... ok whatever
+		if unit.is_alive():
+			return
+
+		drake, path_type = random.choice([(FireDrake(), Tags.Fire), (StormDrake(), Tags.Lightning), (VoidDrake(), Tags.Arcane)])
+		drake.team = self.caster.team
+		drake = self.summon(drake, target=unit)
+		if drake:
+			self.owner.level.show_path_effect(self.caster, drake, path_type, minor=True)
+
+	def can_cast(self, x, y):
+		unit = self.caster.level.get_unit_at(x, y)
+		return unit and unit.name == "Snake" and Spell.can_cast(self, x, y)
+
+	def get_ai_target(self):
+		candidates = [u for u in self.caster.level.get_units_in_los(self.caster) if u.name == "Snake"]
+		candidates = [c for c in candidates if self.can_cast(c.x, c.y)]
+
+		if candidates:
+			return random.choice(candidates)
+
+def SerpentPhilosopher():
+	unit = Unit()
+	unit.asset_name = "snake_man"
+
+	unit.name = "Slazephan the Philosopher"
+
+	unit.max_hp = 94
+
+	unit.spells.append(SimpleSummon(Snake, num_summons=15, cool_down=20))
+	unit.spells.append(SnakePhilosophy())
+	heal = HealAlly(50, range=10)
+	heal.cool_down = 8
+	unit.spells.append(heal)
+	unit.spells.append(SimpleRangedAttack(damage=5, damage_type=Tags.Poison, range=6))
+
+	unit.resists[Tags.Fire] = 50
+	unit.resists[Tags.Poison] = 100
+
+	unit.tags = [Tags.Living, Tags.Nature]
+	return unit
+
+class NightmareToadDefense(Buff):
+
+	def on_init(self):
+		self.color = Tags.Arcane.color
+		self.description = "On taking damage, stuns the source for 2 turns."
+		self.owner_triggers[EventOnDamaged] = self.on_damage
+
+	def on_damage(self, evt):
+		if evt.source.owner and are_hostile(self.owner, evt.source.owner):
+			evt.source.owner.apply_buff(Stun(), 2)
+			self.owner.level.show_path_effect(self.owner, evt.source.owner, Tags.Arcane, minor=True)
+
+def ToadNightmareSorcerer():
+
+	unit = HornedToad()
+	unit.max_hp = 109
+	unit.name = "Shru the Toad Sorcerer"
+	unit.asset_name = "horned_toad_mage_nightmare"
+
+	nightmare = WizardNightmare()
+
+	pnova = SimpleBurst(damage=5, damage_type=Tags.Poison, radius=6)
+	
+	pnova.cool_down = 8
+	def poison(caster, target):
+		target.apply_buff(Poison(), 7)
+
+	pnova.onhit = poison
+	pnova.extra_desc = "Applies 7 turns of poison"
+
+	voidbolt = SimpleRangedAttack(damage=4, damage_type=Tags.Arcane, range=16)
+
+	unit.spells = [MonsterTeleport(), nightmare, pnova, voidbolt]
+	unit.buffs = [NightmareToadDefense()]
+
+
+	unit.resists[Tags.Arcane] = 75
+	unit.resists[Tags.Dark] = 75
+
+	unit.tags.append(Tags.Arcane)
+	unit.tags.append(Tags.Dark)
+	return unit
+
+def GiantGiantSpiderQueen():
+	unit = Unit()
+	unit.radius = 1
+	unit.asset_name = '3x3_spider_queen'
+	unit.name = "Mother of Spiders"
+
+	unit.max_hp = 3500
+	unit.tags = [Tags.Spider, Tags.Living, Tags.Nature]
+
+	queen_spawn = SimpleSummon(GiantSpiderQueen, cool_down=13)
+	spider_spawn = SimpleSummon(GiantSpider, num_summons=4, cool_down=4)
+	bite = SimpleMeleeAttack(20, buff=Poison, buff_duration=50)
+
+	unit.spells = [queen_spawn, spider_spawn, bite]
+	unit.buffs = [SpiderBuff()]
+
+	return unit
+
 
 DIFF_EASY = 1
 DIFF_MED = 2
@@ -3679,6 +4200,7 @@ rare_monsters = [
 	#(lambda: DampenerIdol('Foolish', 'range', 1), DIFF_EASY, 1, 4, None),
 	#(lambda: DampenerIdol('Fickle', 'duration', 3), DIFF_EASY, 1, 4, None),
 	#(WarBanner, DIFF_EASY, 1, 3, None),
+
 	(Watcher, DIFF_EASY, 3, 7, None),
 	(VoidWatcher, DIFF_MED, 3, 7, None),
 	
@@ -3766,7 +4288,7 @@ rare_monsters = [
 
 	(GiantBoneShambler, DIFF_HARD, 1, 1, None),
 	(GiantFleshFiend, DIFF_HARD, 1, 1, None),
-	(GiantMindMaggotQueen, DIFF_MED, 1, 1, None),
+	(GiantMindMaggotQueen, DIFF_EASY, 1, 1, None),
 	(GiantNightmareTurtle, DIFF_HARD, 1, 1, None),
 	(GiantMassOfEyes, DIFF_HARD, 1, 1, None),
 	(GiantGorgon, DIFF_HARD, 1, 1, None),
@@ -3775,6 +4297,11 @@ rare_monsters = [
 	(GiantSackOfFilth, DIFF_MED, 1, 1, None),
 	(GreaterLamasu, DIFF_MED, 1, 1, None),
 	(GreaterDragon, DIFF_MED, 1, 1, None),
+	(GiantGiantSpiderQueen, DIFF_MED, 1, 1, None),
+	(ShrapnelBeast, DIFF_HARD, 1, 1, None),
+	(Mothman, DIFF_MED, 1, 1, None),
+	(Animikii, DIFF_HARD, 1, 1, None),
+	(UltimateTroubler, DIFF_MED, 1, 1, None),
 
 	(MoonMage, DIFF_MED, 1, 1, None),
 	(BloodWizard, DIFF_MED, 1, 1, None),
@@ -3783,7 +4310,11 @@ rare_monsters = [
 
 	(BrainBush, DIFF_MED, 5, 9, None),
 	(RotBush, DIFF_MED, 5, 9, None),
+	(CrystalGolem, DIFF_EASY, 3, 7, None),
 
+	(Thunderbones, DIFF_MED, 1, 1, None),
+	(SerpentPhilosopher, DIFF_EASY, 1, 1, None),
+	(ToadNightmareSorcerer, DIFF_EASY, 1, 1, None)
 ]
 
 all_wizards = [
@@ -3810,16 +4341,21 @@ all_wizards = [
 	(Enchanter, DIFF_EASY, 1, 1, None),
 	(VampireNecromancer, DIFF_MED, 1, 1, None),
 	(Translocator, DIFF_EASY, 1, 1, None),
-	(Mechanomancer, DIFF_EASY, 1, 1, Tags.Construct)
+	(Mechanomancer, DIFF_EASY, 1, 1, Tags.Construct),
+	(MoonMage, DIFF_MED, 1, 1, None),
+	(BloodWizard, DIFF_MED, 1, 1, None),
+	(DeathchillWizard, DIFF_MED, 1, 1, None),
+	(Thunderbones, DIFF_MED, 1, 1, None),
+	(SerpentPhilosopher, DIFF_EASY, 1, 1, None),
+	(ToadNightmareSorcerer, DIFF_EASY, 1, 1, None)
 ]
 
-
-big_monsters = [s for s, _, _, _, _ in rare_monsters if s().radius]
+big_monsters = [s for s, _, _, _, _ in rare_monsters if s().radius and not "Idol" in s.__name__]
 
 for o in rare_monsters:
 	assert(isinstance(o[0](), Unit))
 
-def roll_rare_spawn(difficulty,min_level=None, max_level=None, prng=None):
+def roll_rare_spawn(difficulty, min_level=None, max_level=None, prng=None):
 
 	if not prng:
 		prng = random

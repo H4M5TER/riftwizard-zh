@@ -38,6 +38,8 @@ TILE_TYPE_FLOOR = 0
 TILE_TYPE_WALL = 1
 TILE_TYPE_CHASM = 2
 
+DAMAGE_INSTANCE_CAP = 1000
+
 visual_mode = False
 def set_visual_mode(val):
 	global visual_mode
@@ -135,10 +137,11 @@ def get_cast_point(x1, y1, x2, y2):
 			adjacents.append(Point(x1 + xmod, y1 + ymod))
 	return min(adjacents, key=lambda p: distance(p, Point(x2, y2)))
 
-EventOnSpellCast = namedtuple("EventOnSpellCast", "spell caster x y")
+EventOnSpellCast = namedtuple("EventOnSpellCast", "spell caster x y pay_costs")
+EventOnItemUsed = namedtuple("EventOnItemUsed", "unit item")
 EventOnDeath = namedtuple("EventOnDeath", "unit damage_event")
 EventOnPropEnter = namedtuple("EventOnPropEnter", "unit prop")
-EventOnPreDamaged = namedtuple("EventOnPreDamaged", "unit damage damage_type source")
+EventOnPreDamaged = namedtuple("EventOnPreDamaged", "unit damage unresisted_damage damage_type source")
 EventOnDamaged = namedtuple("EventOnDamaged", "unit damage damage_type source")
 EventOnHealed = namedtuple("EventOnHealed", "unit heal source")
 EventOnItemPickup = namedtuple("EventOnItemPickup", "item")
@@ -149,6 +152,9 @@ EventOnUnitAdded = namedtuple("EventOnUnitAdded", "unit")
 EventOnUnitPreAdded = namedtuple("EventOnUnitPreAdded", "unit")
 EventOnPass = namedtuple("EventOnPass", "unit")
 EventOnSpendHP = namedtuple("EventOnSpendHP", "unit hp")
+EventOnShieldRemoved = namedtuple("EventOnShieldRemoved", "unit")
+EventOnLevelComplete = namedtuple("EventOnLevelComplete", "level")
+EventOnReroll = namedtuple("EventOnReroll", "level")
 
 class EventHandler():
 	# A system for dynamically registering and unregistering from global or entity scoped events
@@ -355,7 +361,7 @@ class Cloud():
 	def __init__(self):
 		self.is_player_controlled = False
 		self.is_alive = True
-		self.asset_name = None
+		self.asset = None
 		pass
 
 	def advance(self):
@@ -406,7 +412,6 @@ stat_names = [
 			'duration',
 			'minion_duration',
 			'minion_damage',
-			'breath_damage',
 			'minion_health',
 			'minion_range',
 			'heal',
@@ -581,7 +586,9 @@ class Spell(object):
 
 	# Return true if we shuold shade the tile red when alt is held
 	def can_threaten(self, x, y):
-		# By default can cast on xy <=> can threaten, but for some fancy aoes it might not be the same
+		# By default do corner threat if have radius else just test if can cast
+		if hasattr(self, 'radius') and not self.get_stat('radius')==0:
+			return self.can_threaten_corner(x, y, self.get_stat('radius'))
 		return self.can_cast(x, y)
 
 	def can_threaten_corner(self, x, y, radius):
@@ -622,6 +629,8 @@ class Spell(object):
 			if bool(self.target_allies) == bool(self.caster.level.are_hostile(u, self.caster)):
 				return False
 			if hasattr(self, 'damage_type'):
+				if not self.can_harm(u):
+					return False
 				if isinstance(self.damage_type, list):
 					if all(u.resists[dtype] >= 100 for dtype in self.damage_type):
 						return False
@@ -674,7 +683,7 @@ class Spell(object):
 		potentials = []
 		for p in possible_cast_points:
 			for e in nearby_enemies:
-				if distance(p, e, diag=False, euclidean=False) < radius:
+				if distance(p, e, diag=False, euclidean=False) <= radius:
 					potentials.append(p)
 					break
 
@@ -706,6 +715,10 @@ class Spell(object):
 		# Can always cast items
 		if self.item:
 			return True
+
+		# Silence prevents casting of any non melee spells
+		if self.caster.is_silenced() and not self.melee:
+			return False
 
 		if self.caster.cool_downs.get(self, 0) > 0:
 			return False
@@ -748,10 +761,10 @@ class Spell(object):
 		if self.must_target_empty and self.caster.level.get_unit_at(x, y):
 			return False
 
-		if self.caster.is_blind() and distance(Point(x, y), self.caster, diag=True) > 1:
+		if self.caster.is_blind() and distance(Point(x, y), self.caster, diag=True) > 1 + self.owner.radius:
 			return False
 
-		if not distance(Point(x, y), Point(self.caster.x, self.caster.y), diag=self.melee or self.diag_range) <= self.get_stat('range') + self.owner.radius:
+		if not distance(Point(x, y), Point(self.caster.x, self.caster.y), diag=self.melee or self.diag_range) <= (self.get_stat('range')+ (self.owner.radius if self.melee else 0)): # this was messing up ranged attacks for 3x3, as if they were casting from their outer tiles
 			return False
 
 		if self.get_stat('requires_los'):
@@ -778,6 +791,7 @@ class Spell(object):
 			self.caster.level.combat_log.debug("%s pays %d HP to cast %s" % (self.caster.name, self.hp_cost, self.name))
 			self.caster.level.event_manager.raise_event(EventOnSpendHP(self.caster, self.get_stat('hp_cost')), self.caster)
 			self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Blood, minor = self.get_stat('hp_cost') < 11)
+			# take this out, make it its own function pay_hp, which can be called for blood shield
 
 	def get_description(self):
 		return self.description
@@ -787,7 +801,7 @@ class Spell(object):
 		#  but never actually pay or print negative numbers
 		return max(0, self.mana_cost)
 
-	def summon(self, unit, target=None, radius=4, team=None, sort_dist=True):
+	def summon(self, unit, target=None, radius=5, team=None, sort_dist=True):
 		if not unit.source:
 			unit.source = self
 		if not target:
@@ -797,6 +811,20 @@ class Spell(object):
 	def refund_charges(self, charges):
 		self.cur_charges += charges
 		self.cur_charges = min(self.cur_charges, self.get_stat('max_charges'))
+
+	def can_harm(self, target_unit):
+		if any(buff.name == "Soul Jarred" for buff in target_unit.buffs) and target_unit.cur_hp == 1:
+			return False
+		if not hasattr(self, 'damage_type'):
+			return True
+		if isinstance(self.damage_type, list):
+			for d in self.damage_type:
+				if target_unit.resists[d] < 100:
+					return True
+		else:
+			if target_unit.resists[self.damage_type] < 100:
+				return True
+		return False
 
 
 MoveAction = namedtuple("MoveAction", "x y")
@@ -882,7 +910,9 @@ class Buff(object):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.show_effect = True
 
-		self.transform_asset_name = None
+		self.freeze_animation = False
+
+		self.transform_asset = None
 
 		self.on_init()
 		if self.conversions or self.spell_conversions:
@@ -991,9 +1021,9 @@ class Buff(object):
 					self.owner.add_spell(spell)
 
 		# Modify sprite on transforms
-		if self.transform_asset_name:
+		if self.transform_asset:
 			assert(self.stack_type == STACK_TYPE_TRANSFORM)
-			self.owner.transform_asset_name = self.transform_asset_name
+			self.owner.transform_asset = self.transform_asset
 
 		# Update spells whos max charges have changed
 		for spell in self.owner.spells:
@@ -1055,10 +1085,10 @@ class Buff(object):
 			self.unmodify_spell(spell)
 
 		# Modify sprite on transforms
-		if self.transform_asset_name:
+		if self.transform_asset:
 			assert(self.stack_type == STACK_TYPE_TRANSFORM)
-			assert(self.transform_asset_name == self.owner.transform_asset_name)
-			self.owner.transform_asset_name = None
+			assert(self.transform_asset == self.owner.transform_asset)
+			self.owner.transform_asset = None
 			self.owner.Transform_Anim = None
 
 		self.unsubscribe()
@@ -1149,7 +1179,7 @@ class Buff(object):
 	def get_extra_examine_tooltips(self):
 		return []
 
-	def summon(self, unit, target=None, radius=3, team=None, sort_dist=True):
+	def summon(self, unit, target=None, radius=5, team=None, sort_dist=True):
 		unit.source = self
 		if not target:
 			target = Point(self.owner.x, self.owner.y)
@@ -1189,7 +1219,11 @@ class Upgrade(Buff):
 
 class Equipment(Buff):
 
-	def __init__(self):
+	def __init__(self, *args, **kwargs):
+
+		# stored for clone use
+		self._init_args = args
+		self._init_kwargs = kwargs
 
 		self.slot = -1
 		self.level = 0
@@ -1225,6 +1259,12 @@ class Equipment(Buff):
 
 	def get_extra_examine_tooltips(self):
 		return None
+
+	def clone(self):
+		if self._init_args or self._init_kwargs:
+			return type(self)(*self._init_args, **self._init_kwargs)
+		else:
+			return type(self)()
 
 ABORT_CHANNEL = 99
 class ChannelBuff(Buff):
@@ -1349,6 +1389,7 @@ class Stun(Buff):
 		self.color = Color(220, 220, 220)
 		self.asset = ['status', 'stun']
 		self.description = "Cannot move or cast spells."
+		self.freeze_animation = True
 
 	def on_attempt_advance(self):
 		return False
@@ -1365,6 +1406,51 @@ class Stun(Buff):
 	def on_applied(self, owner):
 		if owner.has_buff(StunImmune):
 			return ABORT_BUFF_APPLY
+
+class Silence(Buff):
+
+	def on_init(self):
+		self.buff_type = BUFF_TYPE_CURSE
+		self.stack_type = STACK_NONE
+		self.name = "Silenced"
+		self.asset = ['status', 'silence']
+		self.description = "Cannot cast spells"
+
+	def on_attempt_apply(self, owner):
+		if owner.gets_clarity and owner.has_buff(Stun):
+			return False
+		return True
+
+	def on_unapplied(self):
+		if self.owner.gets_clarity:
+			self.owner.apply_buff(StunImmune(), 1)
+
+	def on_applied(self, owner):
+		if owner.has_buff(StunImmune):
+			return ABORT_BUFF_APPLY
+
+# Its stun but you do a coward move each turn
+class FearBuff(Stun):
+
+	def __init__(self):
+		Stun.__init__(self)
+		self.name = "Fear"
+		self.color = Tags.Dark.color
+		self.asset = ['status', 'fear']
+		self.freeze_animation = False
+
+	def on_advance(self):
+
+		# Dont move if you are also stunned frozen slept ect
+		other_stuns = [b for b in self.owner.buffs if isinstance(b, Stun) and b != self]
+		if other_stuns:
+			return
+
+		# Flee one square
+		p = self.owner.get_flee_target()
+		if p is not None and not self.owner.stationary:
+			self.owner.level.act_move(self.owner, p.x, p.y, force_swap=True)
+
 
 class StunImmune(Buff):
 
@@ -1432,7 +1518,7 @@ class Unit(object):
 		self.is_boss = False
 		self.is_lair = False
 		self.asset_name = None
-		self.transform_asset_name = None
+		self.transform_asset = None
 
 		self.killed = False
 
@@ -1475,6 +1561,8 @@ class Unit(object):
 
 		self.melee_spell = None # Autospell to cast when the player melees something.  Only used by elephant form but could bring back flaming sword or something.
 
+		self.quick_cast_used = False
+
 	def iter_occupied_points(self):
 		for i in range(-self.radius, self.radius+1):
 			for j in range(-self.radius, self.radius+1):
@@ -1510,7 +1598,7 @@ class Unit(object):
 
 		isint = type(base) == int
 
-		value = (base + bonus_total) * (pct_total / 100.0)
+		value = base * (pct_total / 100.0) + bonus_total
 		if isint:
 			value = int(math.ceil(value))
 
@@ -1578,12 +1666,44 @@ class Unit(object):
 			self.items.remove(item)
 
 	def get_skills(self):
-		return sorted((b for b in self.buffs if b.buff_type == BUFF_TYPE_PASSIVE and b.prereq == None), key=lambda b: b.name)
+		return sorted((b for b in self.buffs if b.buff_type == BUFF_TYPE_PASSIVE and b.prereq == None and hasattr(b, 'tags')), key=lambda b: b.name)
+
+	def get_spell_upgrades(self):
+		return sorted((b for b in self.buffs if b.buff_type == BUFF_TYPE_PASSIVE and b.prereq != None),key=lambda d: d.name) # only spell upgrades have prereqs, that is to have learned the spell
+
+	def get_equipment(self):
+		equipment_list = []
+		#sorted to match equipment display in character panel
+		for slot in [ITEM_SLOT_STAFF, ITEM_SLOT_ROBE, ITEM_SLOT_HEAD, ITEM_SLOT_GLOVES, ITEM_SLOT_BOOTS]:
+			equipment = self.equipment.get(slot)
+			if equipment:
+				equipment_list.append(equipment)
+
+		equipment_list.extend(self.trinkets)
+
+		return equipment_list
+
+	def get_mastery(self, tag):
+		mastery = 0
+		for spell in self.spells:  # for each spell in the wizard's spell list
+			if tag in spell.tags:  # if the spell has the ice tag
+				mastery += spell.level  # add the spell's level to mastery
+
+		for upgrade in self.get_spell_upgrades():
+			if tag in upgrade.tags:
+				mastery += upgrade.level
+
+		for skill in self.get_skills():
+			if tag in skill.tags:
+				mastery += skill.level
+		return mastery
 
 	def try_enter(self, other):
 		return False
 
 	def pre_advance(self):
+		self.quick_cast_used = False
+		
 		# Pre turn effects
 		self.cool_downs = { spell : (cooldown - 1) for (spell, cooldown) in self.cool_downs.items() if cooldown > 1}
 
@@ -1600,6 +1720,7 @@ class Unit(object):
 					stun_duration = 1 if not isinstance(self.last_action, StunnedAction) else self.last_action.duration + 1
 					self.last_action = StunnedAction(b, stun_duration)
 					self.level.requested_action = None
+					self.level.combat_log.debug("[Wizard:wizard] is %s" % b.name)
 
 		if can_act:
 			# Take an action
@@ -1614,12 +1735,17 @@ class Unit(object):
 			assert(action is not None)
 
 			if isinstance(action, MoveAction):
+				if self.is_player_controlled:
+					self.level.combat_log.debug("[Wizard:wizard] takes a step")
 				self.level.act_move(self, action.x, action.y)
 			elif isinstance(action, CastAction):
 				self.level.act_cast(self, action.spell, action.x, action.y)
-				if action.spell.get_stat('quick_cast'):
+				if action.spell.get_stat('quick_cast') and not self.quick_cast_used:
+					self.quick_cast_used = True
 					return False
 			elif isinstance(action, PassAction):
+				if self.is_player_controlled:
+					self.level.combat_log.debug("[Wizard:wizard] stands still")
 				self.level.event_manager.raise_event(EventOnPass(self), self)
 
 
@@ -1665,17 +1791,24 @@ class Unit(object):
 		
 		return False
 
+	def is_silenced(self):
+		# Cannot cast spells if silenced
+		for b in self.buffs:
+			if isinstance(b, Silence):
+				return True
+
+		return False
+
+	def anim_is_frozen(self):
+		for b in self.buffs:
+			if b.freeze_animation:
+				return True
+		return False
+
 	def can_harm(self, other):
 		for s in self.spells:
-			if not hasattr(s, 'damage_type'):
+			if s.can_harm(other):
 				return True
-			if isinstance(s.damage_type, list):
-				for d in s.damage_type:
-					if other.resists[d] < 100:
-						return True
-			else:
-				if other.resists[s.damage_type] < 100:
-					return True
 		return False
 
 	def get_ai_action(self):
@@ -1702,10 +1835,18 @@ class Unit(object):
 			if not spell.can_pay_costs():
 				continue
 
-			spell_target = spell.get_ai_target()
-			if spell_target and not spell.can_cast(spell_target.x, spell_target.y):
+			spell_target = spell.get_ai_target() # this gets overwritten in many cases, so changing the base version won't fix everything
+
+			if not spell_target:
+				continue
+
+			target_unit = self.level.get_unit_at(spell_target.x, spell_target.y)
+
+			if target_unit and not target_unit == self and not spell.can_harm(target_unit):  # double check since get_ai_target gets overwritten sometimes. some spells target the caster, with damage they are immune to
+				continue
+
+			if spell_target and not spell.can_cast(spell_target.x, spell_target.y): # error logging
 				# Should not happen ever but sadly it does alot
-				target_unit = self.level.get_unit_at(spell_target.x, spell_target.y)
 				if target_unit:
 					target_str = target_unit.name
 					if target_unit == self:
@@ -1714,8 +1855,8 @@ class Unit(object):
 					target_str = "empty tile"
 				print("%s wants to cast %s on invalid target (%s)" % (self.name, spell.name, target_str))
 				continue
-			if spell_target:
-				return CastAction(spell, spell_target.x, spell_target.y)
+
+			return CastAction(spell, spell_target.x, spell_target.y)
 
 		# Stationary monsters pass if they cant cast
 		if self.stationary:
@@ -1735,47 +1876,9 @@ class Unit(object):
 
 		# Cowards move away from closest enemy, swapping if neccecary
 		else:
-			enemies = [u for u in self.level.units if self.level.are_hostile(self, u)]
-			if enemies:
-				enemies.sort(key = lambda u: distance(self, u))
-				closest = enemies[0]
-
-				def can_flee_to(p):
-					unit = self.level.get_unit_at(p.x, p.y)
-					if unit and are_hostile(self, unit):
-						return False
-					# Don't let cowards continually swap with each other- looks like no one is moving at all when that happens
-					if unit and unit.is_coward:
-						return False
-					# Don't flee through a player, its confusing
-					if unit and unit.is_player_controlled:
-						return False
-					# Don't swap with stationary units
-					if unit and unit.stationary:
-						return False
-					# Must be able to walk on the tile
-					if not self.level.can_stand(p.x, p.y, self, check_unit=False):
-						return False
-					# Cannot swap with 3x3s
-					if unit and unit.radius:
-						return False
-					# If there is a unit, *it* must be able to walk on the tile I am currently on
-					if unit and not self.level.can_stand(self.x, self.y, unit, check_unit=False):
-						return False
-					return True
-
-				best_flee_points = [p for p in self.level.get_adjacent_points(self, filter_walkable=False) if can_flee_to(p)]
-				choices = [(p, distance(p, closest)) for p in best_flee_points]
-				if best_flee_points:
-					best_flee_points.sort(key = lambda p: distance(p, closest), reverse=True)
-
-					best_dist = distance(best_flee_points[0], closest)
-					best_flee_points = [p for p in best_flee_points if distance(p, closest) >= best_dist]
-
-					p = random.choice(best_flee_points)
-					return MoveAction(p.x, p.y)
-				else:
-					possible_movement_targets = None
+			p = self.get_flee_target()
+			if p:
+				return MoveAction(p.x, p.y)
 			else:
 				possible_movement_targets = None
 
@@ -1804,6 +1907,68 @@ class Unit(object):
 
 		# If you cant do anything then pass
 		return PassAction()
+
+	def is_fleeing(self):
+		return self.is_coward or self.has_buff(FearBuff)
+
+	def get_flee_target(self):
+
+		# Try to find 
+		enemies = [u for u in self.level.units if self.level.are_hostile(self, u)]
+		if enemies:
+			enemies.sort(key = lambda u: distance(self, u))
+			closest = enemies[0]
+
+			def can_flee_to(p):
+				
+				# Must be able to walk on the tile
+				if not self.level.can_stand(p.x, p.y, self, check_unit=False):
+					return False
+
+				# 3x3s cannot swap
+				if self.radius > 0:
+					if not self.level.can_stand(p.x, p.y, self, check_unit=True):
+						return False
+
+				unit = self.level.get_unit_at(p.x, p.y)
+
+				# Dont block yourself (aka for 3x3s)
+				if unit == self:
+					unit = None
+
+				if unit and are_hostile(self, unit):
+					return False
+				# Don't let cowards continually swap with each other- looks like no one is moving at all when that happens
+				# TODO- also look at fear buff?
+				if unit and unit.is_fleeing():
+					return False
+				# Don't flee through a player, its confusing
+				if unit and unit.is_player_controlled:
+					return False
+				# Don't swap with stationary units
+				if unit and unit.stationary:
+					return False
+				# Cannot swap with 3x3s
+				if unit and unit.radius:
+					return False
+				# If there is a unit, *it* must be able to walk on the tile I am currently on
+				if unit and not self.level.can_stand(self.x, self.y, unit, check_unit=False):
+					return False
+				return True
+
+			best_flee_points = [p for p in self.level.get_adjacent_points(self, filter_walkable=False) if can_flee_to(p)]
+
+			if best_flee_points:
+				best_flee_points.sort(key = lambda p: distance(p, closest), reverse=True)
+
+				best_dist = distance(best_flee_points[0], closest)
+				best_flee_points = [p for p in best_flee_points if distance(p, closest) >= best_dist]
+
+				p = random.choice(best_flee_points)
+				return p
+
+		# If there are no enemies, or if none of the flee points are movable, return None		
+		return None
 
 	def is_alive(self):
 		return self.cur_hp > 0 and not self.killed
@@ -1866,10 +2031,12 @@ class Unit(object):
 		#assert(self.level)
 		# For now unstackable = stack_type stack duration
 
-		# Do not refresh stuns on clarity havers
+		# Do not refresh stuns or silences on clarity havers
 		# Otherwise they can get stunlocked by anything with 2 or more duration
 		# Which defeats the purpose of clarity
 		if self.gets_clarity and isinstance(buff, Stun) and self.is_stunned():
+			return
+		if self.gets_clarity and isinstance(buff, Silence) and self.is_silenced():
 			return
 
 		def same_buff(b1, b2):
@@ -1911,7 +2078,13 @@ class Unit(object):
 				if self.debuff_immune:
 					return
 				self.level.show_effect(self.x, self.y, Tags.Debuff_Apply, buff.color)
-		
+
+			if buff.buff_type in (BUFF_TYPE_BLESS, BUFF_TYPE_CURSE):
+				if self.level.player_unit:
+					unit_log_color = 'wizard' if self.is_player_controlled else 'ally' if not are_hostile(self, self.level.player_unit) else 'enemy' 
+				else:
+					unit_log_color = 'enemy'
+				self.level.combat_log.debug("%s applied to [%s:%s] for [%d_turns:duration]" % (buff.name, self.name.replace(' ', '_'), unit_log_color, duration))
 
 		self.level.event_manager.raise_event(EventOnBuffApply(buff, self), self)
 
@@ -1980,7 +2153,7 @@ class Unit(object):
 
 		self.level.show_effect(self.x, self.y, Tags.Blood)
 
-		source_name = "%s's %s" % (source.owner.name, source.name) if source.owner else source.name
+		source_name = "%s %s" % (source.owner.name, source.name) if source.owner else source.name
 		self.level.combat_log.debug("%s lost %d life from %s" % (self.name, amount, source_name))
 
 		return amount
@@ -2033,18 +2206,25 @@ class Unit(object):
 
 		self.killed = False
 
-	# Used by things other than the unit to make the unit cast a spell
 	def get_spell(self, spell_class):
 		spells = [s for s in self.spells if isinstance(s, spell_class)]
 		if not spells:
 			return None
+		if len(spells) == 1:
+			return spells[0]
+
+		desired_name = spell_class().name
+		for s in spells:
+			if s.name == desired_name:
+				return s
 
 		return spells[0]
+
 		
 	# Get the spell if it exists in the units spell list, make it up if it doesnt
 	def get_or_make_spell(self, spell_class):
 		spell = self.get_spell(spell_class)
-		if spell:
+		if spell and spell.name == spell_class().name: # check against name to prevent annihilate->megaannihilate shenanigans
 			return spell
 
 		spell = spell_class()
@@ -2747,6 +2927,7 @@ class Level(object):
 
 		self.damage_taken_sources = defaultdict(lambda: 0)
 		self.damage_dealt_sources = defaultdict(lambda: 0)
+		self.damage_instances = defaultdict(int)
 
 		self.turn_no = 0
 
@@ -2790,6 +2971,12 @@ class Level(object):
 		#if self.turn_no:
 		#	self.next_log_turn()
 
+		# Set up logging for any already unlocked portals- prevents weird crash causing states when reloading a finished level
+		for p in self.props:
+			if not isinstance(p, Portal):
+				continue
+			if p.level_gen_params.level:
+				p.level_gen_params.level.setup_logging(logdir, level_num+1)
 
 	def next_log_turn(self):
 		if self.turn_log_handler:
@@ -2850,7 +3037,7 @@ class Level(object):
 			if not force_swap:
 
 				# Only coward units and players can do non forced swap movement
-				if not unit.is_coward and not unit.is_player_controlled:
+				if not unit.is_fleeing() and not unit.is_player_controlled:
 					return False
 
 				# Enemies can only swap via spells
@@ -2969,7 +3156,11 @@ class Level(object):
 			else:
 				self.spell_counts[spell.name] += 1
 
-		self.combat_log.debug("%s uses %s" % (unit.name, spell.name))
+		if self.player_unit:
+			unit_color = 'wizard' if unit.is_player_controlled else 'ally' if not are_hostile(unit, self.player_unit) else 'enemy'
+		else:
+			unit_color = 'enemy'
+		self.combat_log.debug("[%s:%s] uses %s" % (unit.name.replace(' ', '_'), unit_color, spell.name))
 
 		# flip sprite if needed
 		if x < unit.x:
@@ -2992,7 +3183,10 @@ class Level(object):
 		else:
 			rval = spell.cast(x, y)
 
-		self.event_manager.raise_event(EventOnSpellCast(spell, unit, x, y), unit)
+		if not spell.item:
+			self.event_manager.raise_event(EventOnSpellCast(spell, unit, x, y, pay_costs), unit)
+		if spell.item:
+			self.event_manager.raise_event(EventOnItemUsed(unit, spell.item), unit)
 
 		return rval
 
@@ -3099,7 +3293,7 @@ class Level(object):
 						else:
 							cost += unit_penalty
 					if not blocker_unit:
-						if tile.prop:
+						if tile.prop and unit_penalty != 0: # only care if there's a unit penalty, not for spells and such
 							# player pathing avoids props unless prop is the target
 							if (isinstance(tile.prop, Portal) or isinstance(tile.prop, Shop)) and pythonize and not (xTo == target.x and yTo == target.y):
 								return False
@@ -3177,6 +3371,8 @@ class Level(object):
 
 		# An iterator representing the order of turns for all game objects
 		while True:
+
+			self.damage_instances.clear() # reset the damage dict
 
 			# Yield once per iteration if there are no units to prevent infinite loop
 			if not self.units:
@@ -3258,11 +3454,11 @@ class Level(object):
 			return None
 		return self.tiles[x][y].unit
 
-	def get_connected_group_from_point(self, x, y, avoid_tags=[], required_tags=[], ignored_units=[], check_hostile=False, num_targets=-1):
+	def get_connected_group_from_point(self, x, y, avoid_tags=[], required_tags=[], ignored_units=[], check_hostile=None, check_friendly=None, num_targets=-1):
 		#Avoid Tags: If a unit has these tags, it will be ignored.
 		#Required Tags: If a unit does not have these tags, it will be ignored.
 		#Ignored Units: Add units you want to be ignored, e.g. the player.
-		#Check Hostile: Determines whether or not to check if units are player-controlled.
+		#Check Hostile: Only add units hostile to the given unit.
 		candidates = set([Point(x, y)])
 		unit_group = set()
 
@@ -3287,7 +3483,10 @@ class Level(object):
 				if skip:
 					continue
 
-				if check_hostile and unit.is_player_controlled:
+				if check_hostile and not are_hostile(check_hostile, unit):
+					continue
+
+				if check_friendly and are_hostile(check_friendly, unit):
 					continue
 
 				if num_targets > -1 and len(unit_group) >= num_targets:
@@ -3295,7 +3494,7 @@ class Level(object):
 
 				unit_group.add(unit)
 
-				for p in self.get_adjacent_points(Point(unit.x, unit.y), filter_walkable=False):
+				for p in self.get_adjacent_points(Point(unit.x, unit.y), filter_walkable=False, r=unit.radius):
 					candidates.add(p)
 
 		return list(unit_group)
@@ -3352,8 +3551,8 @@ class Level(object):
 			for y in range(ymin, ymax):
 				yield Point(x, y)
 
-	def get_adjacent_points(self, point, filter_walkable=True, check_unit=False):
-		adjacent = (p for p in self.get_points_in_rect(point.x - 1, point.y - 1, point.x + 1, point.y + 1) if p != point)
+	def get_adjacent_points(self, point, filter_walkable=True, check_unit=False, r=0):
+		adjacent = (p for p in self.get_points_in_rect(point.x - (r+1), point.y - (r+1), point.x + (r+1), point.y + (r+1)) if p != point)
 		if filter_walkable:
 			return (p for p in adjacent if self.can_walk(p.x, p.y, check_unit=check_unit))
 		else:
@@ -3436,7 +3635,7 @@ class Level(object):
 		for p in points:
 			self.show_effect(p.x, p.y, dtype, minor=minor)
 
-	def get_points_in_line(self, start, end, two_pass=True, find_clear=False, no_diag=False):
+	def get_points_in_line(self, start, end, two_pass=True, find_clear=False, no_diag=False, prng=random):
 		steep = abs(end.y - start.y) > abs(end.x - start.x);
 
 		# Orient the line so that it is going left to right with slope between 1 and -1
@@ -3512,7 +3711,7 @@ class Level(object):
 					p = result[i]
 					q = result[i+1]
 					if p.x != q.x and p.y != q.y:
-						if random.random() > .5:
+						if prng.random() > .5:
 							insertions.append((Point(p.x, q.y), i))
 						else:
 							insertions.append((Point(q.x, p.y), i))
@@ -3529,7 +3728,7 @@ class Level(object):
 		return []
 		#return self.get_points_in_line(start, end, find_clear=False)
 
-	def set_default_resitances(self, unit):
+	def set_default_resistances(self, unit):
 
 		if Tags.Demon in unit.tags:
 			unit.resists.setdefault(Tags.Holy, -100)
@@ -3609,7 +3808,7 @@ class Level(object):
 				spell.caster = obj
 				spell.owner = obj
 
-			self.set_default_resitances(obj)
+			self.set_default_resistances(obj)
 
 			for buff in list(obj.buffs):
 				# Apply unapplied buffs- these can come from Content on new units
@@ -3689,6 +3888,21 @@ class Level(object):
 		self.props.remove(prop)
 		self.tiles[prop.x][prop.y].prop = None 
 
+	def portal_mercy(self):
+		for tile in self.iter_tiles():
+			if isinstance(tile.prop, Portal):
+				return # do nothing if a portal is found
+
+		tiles = [tile for tile in self.get_tiles_in_ball(self.player_unit.x, self.player_unit.y, 1.5)]
+		for tile in tiles:
+			self.make_floor(tile.x, tile.y)
+
+		exit_loc = random.choice(tiles)
+		portal = Portal(self.gen_params.make_child_generator())
+		portal.unlock()
+		self.show_effect(exit_loc.x, exit_loc.y, Tags.Translocation)
+		self.add_prop(portal, exit_loc.x, exit_loc.y)
+
 	def spawn_player(self, player_unit):
 		self.player_unit = player_unit
 		self.add_obj(player_unit, self.start_pos.x, self.start_pos.y)
@@ -3697,7 +3911,7 @@ class Level(object):
 		if prop:
 			prop.on_player_enter(player_unit)
 
-	def summon(self, owner, unit, target=None, radius=3, team=None, sort_dist=True):
+	def summon(self, owner, unit, target=None, radius=5, team=None, sort_dist=True):
 		if not target:
 			target = owner
 			
@@ -3732,27 +3946,50 @@ class Level(object):
 		if not unit.is_alive():
 			return 0
 
+		unit_id = id(unit)
+		if self.damage_instances[unit_id] >= DAMAGE_INSTANCE_CAP:
+			return 0
 
 		# Raise pre damage event (for conversions)
-		pre_damage_event = EventOnPreDamaged(unit, amount, damage_type, source)
-		self.event_manager.raise_event(pre_damage_event, unit)
+		orig_amount = amount
 
 		# Factor in shields and resistances after raising the raw pre damage event
-		resist_amount = unit.resists.get(damage_type, 0)
+		resist = unit.resists.get(damage_type, 0)
 
 		# Cap effective resists at 100- shenanigans ensue if we do not
-		resist_amount = min(resist_amount, 100)
+		resist = min(resist, 100)
 
-		if resist_amount:
-			multiplier = (100 - resist_amount) / 100.0
+		if resist:
+			multiplier = (100 - resist) / 100.0
 			amount = int(math.ceil(amount * multiplier))
 
-		source_name = "%s's %s" % (source.owner.name, source.name) if source.owner else source.name
+		pre_damage_event = EventOnPreDamaged(unit, orig_amount, amount, damage_type, source)
+		self.event_manager.raise_event(pre_damage_event, unit)
 
+		# Logging strings
+		unit_log_name = unit.name.replace(' ', '_')
+
+		if self.player_unit:
+			unit_log_color = 'wizard' if unit.is_player_controlled else 'ally' if not are_hostile(unit, self.player_unit) else 'enemy'
+		else:
+			unit_log_color = 'enemy'
+
+		source_str = source.name
+		"%s %s" % (source.owner.name, source.name) if source.owner else source.name
+		if source.owner:
+			if self.player_unit:
+				source_color = 'wizard' if source.owner.is_player_controlled else 'ally' if not are_hostile(source.owner, self.player_unit) else 'enemy'
+			else:
+				source_color = 'enemy'
+					
+			source_owner_str = "[%s:%s]" % (source.owner.name.replace(' ', '_'), source_color)			
+		
 		if amount > 0 and unit.shields > 0:
 			unit.shields = unit.shields - 1
-			self.combat_log.debug("%s blocked %d %s damage from %s" % (unit.name, amount, damage_type.name, source_name))
-			self.show_effect(unit.x, unit.y, Tags.Shield_Expire)				
+			self.combat_log.debug("[%s:%s] blocked [%d_%s:%s] damage from %s" % (unit_log_name, unit_log_color, amount, damage_type.name, damage_type.name, source_str))
+			self.show_effect(unit.x, unit.y, Tags.Shield_Expire)
+			evt = EventOnShieldRemoved(unit)
+			self.event_manager.raise_event(evt)		
 			return 0
 
 		# Cap damage to current hp, cap healing to missing hp
@@ -3763,11 +4000,26 @@ class Level(object):
 
 		unit.cur_hp = unit.cur_hp - amount
 
+		unit_str = "[%s:%s]" % (unit_log_name, unit_log_color)
+		dmg_str = "[%d_%s:%s]" % (amount, damage_type.name, damage_type.name)
+
+		is_temp_buff = isinstance(source, Buff) and source.buff_type in (BUFF_TYPE_BLESS, BUFF_TYPE_CURSE)
+
 		# Logging
 		if amount > 0:
-			self.combat_log.debug("%s took %d %s damage from %s" % (unit.name, amount, damage_type.name, source_name))
+			# Case 1, damage by spells or buffs with owners
+			if source.owner and not is_temp_buff:
+				self.combat_log.debug("%s deals %s damage to %s with %s" % (source_owner_str, dmg_str, unit_str, source.name))
+
+			# Case 2, damage by spells or buffs without owners (aka: storm clouds, poison, ect)
+			else:
+				self.combat_log.debug("%s takes %s damage from %s" % (unit_str, dmg_str, source.name))
+		
 		elif amount < 0:
-			self.combat_log.debug("%s healed %d from %s" % (unit.name, -amount, source_name))
+			if not is_temp_buff:
+				self.combat_log.debug("%s heals %s for [%d:heal] with %s" % (source_owner_str, unit_str, -amount, source.name))
+			else:
+				self.combat_log.debug("%s is healed for [%d:heal] from %s" % (unit_str, -amount, source.name))
 
 		# Processing
 		if amount < 0:
@@ -3820,6 +4072,10 @@ class Level(object):
 
 		if (unit.cur_hp > unit.max_hp):
 			unit.cur_hp = unit.max_hp
+
+		self.damage_instances[unit_id] += 1
+		if self.damage_instances[unit_id] == DAMAGE_INSTANCE_CAP:
+			self.combat_log.debug("%s has reached the per unit damage instances cap for the turn." % unit_str)
 
 		return amount
 
@@ -3876,11 +4132,16 @@ class Level(object):
 		return are_hostile(unit1, unit2)
 
 	def get_units_in_ball(self, center, radius, diag=False):
-		return [u for u in self.units if distance(Point(u.x, u.y), center, diag=diag) <= radius]
+		return [u for u in self.units if distance(Point(u.x, u.y), center, diag=diag) <= radius + u.radius]
 
 	def get_units_in_los(self, point):
-		return [u for u in self.units if self.can_see(u.x, u.y, point.x, point.y)]
-
+		units = set()
+		for t in self.get_points_in_los(point):
+			u = self.get_unit_at(*t)
+			if u:
+				units.add(u)
+		return units
+		
 	def get_points_in_los(self, point):
 		for i in range(0, len(self.tiles)):
 			for j in range(0, len(self.tiles[i])):
@@ -4238,7 +4499,6 @@ attr_colors = {
 	'range': COLOR_RANGE,
 	'minion_health': Tags.Conjuration.color,
 	'minion_damage': Tags.Conjuration.color,
-	'breath_damage': Tags.Conjuration.color,
 	'minion_duration': Tags.Conjuration.color,
 	'minion_range': COLOR_RANGE,
 	'duration': Tags.Enchantment.color,
@@ -4251,5 +4511,6 @@ attr_colors = {
 	'strikechance': Tags.Sorcery.color,
 	'cooldown': Tags.Enchantment.color,
 	'cascade_range': COLOR_CHARGES,
+	'heal' : Tags.Heal.color
 }
 

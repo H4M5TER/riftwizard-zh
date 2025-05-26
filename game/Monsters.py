@@ -176,9 +176,7 @@ class HolyBreath(BreathWeapon):
 	def per_square_effect(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
 		if unit and not are_hostile(self.caster, unit):
-			# Dont heal or hurt friendly players.
-			if not unit.is_player_controlled:
-				self.caster.level.deal_damage(x, y, -self.damage, Tags.Heal, self)
+			self.caster.level.deal_damage(x, y, -self.damage, Tags.Heal, self)
 		else:
 			self.caster.level.deal_damage(x, y, self.damage, self.damage_type, self)
 
@@ -226,7 +224,7 @@ class SpiritBuff(Buff):
 
 
 	def get_tooltip(self):
-		return "Gain 5 max HP whenever witnessing %s spell" % self.tag.name
+		return "Gain 5 max HP whenever a %s spell is cast in line of sight" % self.tag.name
 
 class LifeDrain(Spell):
 
@@ -236,7 +234,6 @@ class LifeDrain(Spell):
 		self.range = 4
 		self.damage = 7
 		self.damage_type = Tags.Dark
-		self.tags = [Tags.Dark]
 
 	def cast(self, x, y):
 		damage = self.caster.level.deal_damage(x, y, self.damage, Tags.Dark, self)
@@ -312,7 +309,7 @@ class SpikeBeastBuff(Buff):
 	def heal_burst(self):
 		for stage in Burst(self.owner.level, Point(self.owner.x, self.owner.y), self.radius):
 			for p in stage:
-				if p.x == self.owner.x and p.y == self.owner.y:
+				if (p.x == self.owner.x and p.y == self.owner.y) or (self.owner.level.get_unit_at(p.x, p.y) == self.owner):
 					continue
 				self.owner.level.deal_damage(p.x, p.y, self.damage, Tags.Physical, self)
 			yield
@@ -1171,6 +1168,22 @@ def Orc():
 	unit.tags = [Tags.Living]
 	return unit
 
+def FlameMaw():
+	unit = Unit()
+	unit.max_hp = 36
+
+	unit.tags = [Tags.Arcane, Tags.Fire]
+
+	unit.resists[Tags.Fire] = 100
+	unit.resists[Tags.Arcane] = 100
+	unit.resists[Tags.Ice] = -50
+
+	unit.name = "Flame Maw"
+	unit.asset_name = 'flamemouth'
+
+	firespell = SimpleRangedAttack(damage=5, damage_type=Tags.Fire, beam=True, range=11, max_channel=4, cool_down=9)
+	unit.spells.insert(0, firespell)
+	return unit
 
 class SatyrWineSpell(Spell):
 
@@ -1233,7 +1246,7 @@ class MindMaggotBuff(Buff):
 		self.owner.flying = True
 		self.owner.Anim = None # Clear the anim
 		self.owner.asset_name = "mind_maggot_winged"
-		self.owner.name = "Mind Maggot Drone"
+		self.owner.name += " Drone"
 
 		dive = LeapAttack(damage=3, range=4, is_leap=True)
 		dive.name = "Dive Attack"
@@ -1338,6 +1351,46 @@ def StormTroll():
 	unit.resists[Tags.Lightning] = 100
 	unit.buffs.append(CloudGeneratorBuff(StormCloud, radius=3, chance=.1))
 	unit.tags = [Tags.Living, Tags.Lightning]
+	return unit
+
+def Gremlin():
+	unit = Unit()
+	unit.name = "Gremlin"
+	unit.max_hp = 17
+	unit.tags = [Tags.Demon, Tags.Dark]
+
+	melee = SimpleMeleeAttack(4)
+	wail = SimpleRangedAttack(damage=1, damage_type=Tags.Dark, range=7, buff=FearBuff, buff_duration=1, cool_down=4)
+	wail.name = 'Fear Bolt'
+
+	unit.spells = [wail, melee]
+
+	return unit
+
+class BansheeFearAura(DamageAuraBuff):
+
+	def __init__(self):
+		DamageAuraBuff.__init__(self, damage=0, damage_type=Tags.Dark, radius=5)
+		self.description = "Each turn, apply Fear for 1 turn to all enemies within a 5 tile radius"
+
+	def on_hit(self, unit):
+		unit.apply_buff(FearBuff(), 1)
+
+	def get_tooltip(self):
+		return self.description
+
+def Banshee():
+	unit = Unit()
+	unit.name = "Wailing Banshee"
+
+	unit.max_hp = 81
+
+	unit.tags = [Tags.Undead, Tags.Dark]
+	unit.asset_name = 'banshee'
+	
+	unit.spells.append(SimpleMeleeAttack(9, damage_type=Tags.Dark))
+	unit.buffs.append(BansheeFearAura())
+
 	return unit
 
 def Ghost():
@@ -1521,7 +1574,14 @@ class GeneratorBuff(Buff):
 
 	def on_advance(self):
 		if random.random() < self.spawn_chance:
-			self.summon(self.spawner())
+			unit = self.spawner()
+
+			# Propogate minion bonuses if this summoner was itself summoned from a spell
+			unit.source = self.owner.source
+			if unit.source:
+				apply_minion_bonuses(self.owner.source, unit)
+
+			self.summon(unit)			
 			
 	def get_tooltip(self):
 		return "Has a %d%% chance each turn to spawn a %s" % (int(100 * self.spawn_chance), self.example_monster.name)
@@ -1717,6 +1777,7 @@ def WormBallGhostly(HP=10):
 		unit.buffs.append(SplittingBuff(spawner=lambda : WormBallGhostly(unit.max_hp // 2), children=2))
 
 	unit.buffs.append(RegenBuff(3))
+	unit.buffs.append(TeleportyBuff())
 	unit.spells.append(SimpleMeleeAttack(HP // 2, damage_type=Tags.Dark))
 
 	unit.resists[Tags.Physical] = 100
@@ -2820,7 +2881,8 @@ class Regrow(Spell):
 		self.range = 0
 
 	def can_cast(self, x, y):
-		return self.caster.cur_hp < self.caster.max_hp
+		if Spell.can_cast(self, x, y):
+			return self.caster.cur_hp < self.caster.max_hp
 
 	def cast_instant(self, x, y):
 		self.caster.deal_damage(-12, Tags.Heal, self)
@@ -3045,9 +3107,7 @@ def FloatingEye():
 def FlamingEye():
 	unit = FloatingEye()
 	unit.name = "Flaming Eyeball"
-	unit.spells[0].radius = 1
-	unit.spells[0].damage_type = Tags.Fire
-	unit.spells[0].damage = 4
+	unit.spells = [SimpleRangedAttack(damage=4, range=99, radius=1, damage_type=Tags.Fire)]
 	unit.tags.append(Tags.Fire)
 	unit.resists[Tags.Arcane] = 50
 	unit.resists[Tags.Fire] = 100
@@ -3188,8 +3248,7 @@ class MonsterChainLightning(Spell):
 	def on_init(self):
 		self.name = "Chain Lightning"
 		self.range = 9
-		self.tags = [Tags.Lightning, Tags.Sorcery]
-		self.level = 4
+
 		self.damage = 7
 		self.element = Tags.Lightning
 		self.arc_range = 4
@@ -3605,6 +3664,26 @@ def Troubler():
 
 	return unit
 
+def Fearface():
+	unit = Troubler()
+	unit.name = "Fearface"
+	unit.asset_name = 'fearface'
+
+	unit.resists[Tags.Dark] = 100
+	unit.tags = [Tags.Arcane, Tags.Undead]
+
+	fearbolt = SimpleRangedAttack(damage=2, range=10, damage_type=Tags.Dark)
+	fearbolt.onhit = lambda caster, target: randomly_teleport(target, 3)
+	fearbolt.name = "Fear Bolt"
+	fearbolt.buff = FearBuff
+	fearbolt.buff_duration = 2
+	fearbolt.description = "Teleports victims randomly up to 3 tiles away and inflicts fear for 2 turns"
+
+	unit.spells = [fearbolt]
+
+	return unit
+
+
 def Witch():
 
 	unit = Unit()
@@ -3807,11 +3886,11 @@ class GreenGorgonBreath(BreathWeapon):
 		self.angle = math.pi / 6.0
 
 	def get_description(self):
-		return "Breathes poison gas, poisoning living enemies"
+		return "Applies 15 turns of poison"
 
 	def per_square_effect(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
-		if unit and Tags.Living in unit.tags:
+		if unit:
 			self.caster.level.deal_damage(x, y, 0, self.damage_type, self)
 			unit.apply_buff(Poison(), self.get_stat('duration'))
 		else:
@@ -3847,12 +3926,12 @@ class GreyGorgonBreath(BreathWeapon):
 		self.duration = 2
 
 	def get_description(self):
-		return "Breathes a petrifying gas dealing %d physical damage and petrifying living creatures" % self.damage
+		return "Applies petrify for 2 turns"
 
 	def per_square_effect(self, x, y):
 		self.caster.level.show_effect(x, y, Tags.Petrification)
 		unit = self.caster.level.get_unit_at(x, y)
-		if unit and Tags.Living in unit.tags:
+		if unit:
 			self.caster.level.deal_damage(x, y, self.damage, self.damage_type, self)
 			unit.apply_buff(PetrifyBuff(), self.get_stat('duration'))
 
@@ -5459,7 +5538,8 @@ def Aesir():
 
 def FleshFiend():
 	unit = Unit()
-	unit.name = "Fleshy Mass"
+	unit.name = "Flesh Fiend"
+	unit.asset_name = 'fleshy_mass'
 	unit.max_hp = 431
 
 	unit.buffs.append(RegenBuff(21))
@@ -6046,6 +6126,84 @@ def Warlock():
 
 	return unit
 
+def BreathStealer():
+	unit = DisplacerBeast()
+
+	unit.asset_name = 'breathstealer'
+	unit.name = "Breathstealer"
+
+	unit.spells[0] = SimpleMeleeAttack(3, buff=Silence, buff_duration=3)
+
+	return unit
+
+def FaeSniper():
+	unit = Unit()
+	unit.name = "Fae Huntsman"
+	unit.asset_name = "fae_marksman"
+	unit.max_hp = 9
+
+	unit.shields = 1
+	unit.tags = [Tags.Arcane, Tags.Living]
+	unit.resists[Tags.Arcane] = 50
+
+	bow = SimpleRangedAttack(damage=1, range=10, proj_name="kobold_arrow", buff=Silence, buff_duration=3)
+	unit.spells = [bow]
+
+	return unit
+
+class SilenceAura(DamageAuraBuff):
+ 
+	def __init__(self):
+		DamageAuraBuff.__init__(self, damage=0, damage_type=Tags.Dark, radius=5)
+		self.description = "Each turn, apply Silence for 2 turns to all enemies within a 3 tile radius"
+
+
+	def on_hit(self, unit):
+		unit.apply_buff(Silence(), 2)
+
+	def get_tooltip(self):
+		return self.description
+
+def SilentSpecter():
+	unit = Ghost()
+	unit.name = "Silent Specter"
+	unit.max_hp = 16
+	unit.asset_name = 'silent_specter'
+
+	unit.buffs.append(SilenceAura())
+
+	return unit
+
+class WaterElementalRegenBuff(Buff):
+
+	def on_init(self):
+		self.color = Tags.Nature.color
+		self.description = "Regenerates 15 hp per turn while soaked, otherwise dies"
+
+	def on_advance(self):
+		if self.owner.has_buff(SoakedBuff):
+			self.owner.heal(15, self)
+		else:
+			self.owner.kill()
+
+def WaterElemental():
+	unit = Unit()
+	unit.tags = [Tags.Nature]
+	unit.name = 'Water Elemental'
+
+	unit.max_hp = 40
+
+	trample = SimpleMeleeAttack(9, trample=True, buff=SoakedBuff, buff_duration=3)
+
+	unit.resists[Tags.Fire] = 50
+	unit.resists[Tags.Ice] = 50
+	unit.resists[Tags.Physical] = 75
+
+	unit.spells.append(trample)
+	unit.buffs = [WaterElementalRegenBuff()]
+
+	return unit
+
 
 spawn_options = [
 	(Goblin, 1),
@@ -6081,6 +6239,8 @@ spawn_options = [
 	(BlackCat, 3),
 	(Cultist, 3),
 	(TwoHeadedSnake, 3),
+	(BreathStealer, 3),
+	(Gremlin, 4),
 	(Centaur, 4),
 	(Ogre, 4),
 	(SporeBeast, 4),
@@ -6098,7 +6258,9 @@ spawn_options = [
 	(PolarBear, 4),
 	(HellHound, 4),
 	(Werewolf, 4),
+	(SilentSpecter, 4),
 	(BlizzardBeast, 4),
+	(FlameMaw, 5),
 	(ChaosChimera, 5),
 	(Mycobeast, 5),
 	(Thunderbird, 5),
@@ -6112,6 +6274,7 @@ spawn_options = [
 	(EarthTroll, 5),
 	(StoneFish, 5),
 	(DancingBlade, 5),
+	(FaeSniper, 5),
 	#(OrcFireShaman, 5),
 	(FireBelcher, 5),
 	(PhaseSpider, 5),
@@ -6120,8 +6283,8 @@ spawn_options = [
 	(RedSlime, 5),
 	(IceSlime, 5),
 	(BloodBear, 5),
-	(LivingLightningScroll, 5),
-	(LivingFireballScroll, 5),
+	#(LivingLightningScroll, 5),
+	#(LivingFireballScroll, 5),
 	(Dwarf, 5),
 	(FieryTormentor, 5),
 	(DarkTormentor, 5),
@@ -6132,6 +6295,7 @@ spawn_options = [
 	(SpikeBall, 6),
 	#(Necromancer, 6),
 	(FloatingEye, 6),
+	(Fearface, 6),
 	(StormDrake, 6),
 	(FireDrake, 6),
 	(BoneShambler, 6),
@@ -6153,6 +6317,7 @@ spawn_options = [
 	(DeathchillChimera, 6),
 	(GlassGolem, 6),
 	(IceBelcher, 6),
+	(Banshee, 7),
 	(BarkLord, 7),
 	(StarfireChimera, 7),
 	(MindVampire, 7),

@@ -200,7 +200,7 @@ class FrogPopeDefense(Buff):
 
 	def on_init(self):
 		self.name = "Pope Armor"
-		self.description = "Cannot take more than 700 damage in one turn"
+		self.description = "Cannot lose more than 700 HP in one turn"
 		self.owner_triggers[EventOnDamaged] = self.on_damaged
 		self.damage_counter = 0
 
@@ -208,24 +208,18 @@ class FrogPopeDefense(Buff):
 		self.damage_counter = 0
 
 	def on_damaged(self, evt):
-
-		# Total invincibility above 700
-		if self.damage_counter > 700:
-			self.owner.add_shields(1)
-			return
-
 		self.damage_counter += evt.damage
 
-		# Heal remainder if overdamaged
+		# revert remainder if overdamaged
 		if self.damage_counter > 700:
-			self.owner.heal(self.damage_counter - 700, self)
+			self.owner.cur_hp += (self.damage_counter - 700)
 			self.damage_counter = 700
 
 class FrogPopeSoulTax(Spell):
 
 	def on_init(self):
 		self.name = "Blood Tax"
-		self.description = "Steals 30% of the target's current HP and redistributes equally amonst allies of the Frog Pope.  This does not count as damage, and this never kills the target."
+		self.description = "Steals 30% of the target's current HP and redistributes equally amongst allies of the Frog Pope.  This does not trigger on damage effects, and it never kills the target."
 		self.range = 99
 		self.cool_down = 15
 
@@ -354,6 +348,8 @@ def FrogPope():
 	unit.radius = 2
 	unit.asset_name = 'frog_prophet'
 	unit.spells = [SimpleMeleeAttack(1)]
+
+	unit.tags = [Tags.Living, Tags.Dark, Tags.Holy]
 
 	frog_summon = SimpleSummon(FrogPopeRandomFrog, num_summons=7, radius=5, sort_dist=False, cool_down=6)
 	frog_summon.name = "Toad Horde"
@@ -534,6 +530,10 @@ class OphanDefense(Buff):
 		self.owner_triggers[EventOnPreDamaged] = self.on_damaged
 
 	def on_damaged(self, evt):
+		# Do not trigger on cosmetic (0) damage, resisted damage, or healing
+		if evt.unresisted_damage <= 0:
+			return
+
 		allies = [u for u in self.owner.level.units if not are_hostile(self.owner, u) and u != self.owner]
 		if not allies:
 			return
@@ -604,6 +604,8 @@ def Ophan():
 	unit.shields = 7
 	unit.max_hp = 7
 
+	unit.tags = [Tags.Holy, Tags.Dark]
+
 	unit.flying = True
 	unit.stationary = True
 
@@ -620,8 +622,10 @@ def Ophan():
 	unit.buffs = [OphanDefense(), ReincarnationBuff(1), ShieldRegenBuff(7)]
 	return unit
 
-def roll_final_boss():
-	unit = random.choice([Apep(), Ophan(), FrogPope(), ApocalypseBeatle()])
+final_bosses = [Apep, Ophan, FrogPope, ApocalypseBeatle]
+
+def roll_final_boss(prng):
+	unit = prng.choice(final_bosses)()
 	unit.is_boss = True
 	return unit
 
@@ -631,3 +635,5 @@ if __name__ == '__main__':
 	Ophan()
 	FrogPope()
 	ApocalypseBeatle()
+	for i in range(10):
+		roll_final_boss(random)

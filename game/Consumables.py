@@ -26,6 +26,8 @@ class TeleporterSpell(Teleport):
 		return "Teleport to target tile"
 
 	def can_cast(self, x, y):
+		if self.caster.flying:
+			return self.caster.level.tiles[x][y].can_fly and not self.caster.level.get_unit_at(x, y) and Spell.can_cast(self, x, y)
 		return self.caster.level.can_walk(x, y, check_unit=True) and Spell.can_cast(self, x, y)
 
 	def cast_instant(self, x, y):

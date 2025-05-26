@@ -50,7 +50,7 @@ victory_text = """The Dark Wizard is slain.
 
 His beasts have been broken and made tame.
 
-The beauty of avalon will be built again.
+The beauty of Avalon will be built again.
 
 Your soul is permitted to sleep and dream once more.
 
@@ -120,11 +120,14 @@ advanced_tips = """STATUS EFFECTS
 
 Stunned: Cannot act.
 Poisoned: Take 1 poison damage per turn and cannot heal.
+Fear: Cannot willingly act. Automatically attempt to move away from enemies each turn for the duration.
 Petrified: Cannot act, gain 100 ice and lightning resist, gain 75 physical and fire resist.
 Glassified: Cannot act, gain 100 ice and lightning resist, 75 fire resist, lose 100 physical resist.
 Frozen: Cannot act.  Ends upon taking fire or physical damage.  Cannot affect units with 100 ice resist.
+Soaked: Gain 50 fire resist. Lose 50 ice and lightning resist.
 Berserked: Become hostile to all other units.  Will attack and be attacked by allies.
 Blind: All spell ranges reduced to 1.
+Silenced: Cannot cast spells.
 Channeling: Will continue to cast previous spell with same target if no other action is taken.
 Shield (SH): If a unit with SH would be dealt damage, it loses 1 SH instead.
 """

@@ -11,7 +11,7 @@ from collections import OrderedDict, defaultdict
 import dill as pickle
 import random
 
-BUILD_NUM = 3
+BUILD_NUM = 4
 
 def safe_int(f):
 	if f.isdigit():
@@ -220,6 +220,8 @@ class Game():
 
 		self.run_number = self.get_run_number()
 
+		self.max_spells = 20
+		self.free_spells = False
 
 		self.all_player_spells = make_player_spells()
 		self.all_player_skills = make_player_skills()
@@ -298,7 +300,7 @@ class Game():
 		player.sprite.color = Color(128, 255, 0)
 		player.is_player_controlled = True
 		player.mana = 250
-		player.name = "The Wizard"
+		player.name = "Wizard"
 		player.asset_name = 'player'
 		player.team = TEAM_PLAYER
 
@@ -394,6 +396,8 @@ class Game():
 		else:
 			return
 
+		self.cur_level.event_manager.raise_event(EventOnReroll(self.cur_level))
+
 		# Delete existing portals
 		num_gates = 0
 		for tile in self.cur_level.iter_tiles():
@@ -408,11 +412,22 @@ class Game():
 		candidate_tiles = [t for t in self.cur_level.iter_tiles() if not t.prop and t.can_walk]
 		random.shuffle(candidate_tiles)
 
-		for t in candidate_tiles[:num_gates]:
+		created = 0
+		for t in candidate_tiles:
+			path = self.cur_level.find_path(self.p1, Point(t.x, t.y), self.p1, pythonize=True, unit_penalty=0)
+			if not path: # if no way to for the wizard to walk there, try again
+				continue
 			gate = Portal(self.cur_level.gen_params.make_child_generator())
 			gate.unlock()
 			self.cur_level.add_obj(gate, t.x, t.y)
 			self.cur_level.show_effect(t.x, t.y, Tags.Translocation)
+			created += 1
+
+			if created >= num_gates:
+				break
+
+		if created == 0: # if they can't path to any of the candidate tiles on the level
+			self.cur_level.portal_mercy() # give them a portal
 
 	def try_pass(self):
 		self.cur_level.set_order_pass()
@@ -438,6 +453,9 @@ class Game():
 	def get_upgrade_cost(self, upgrade):
 		level = upgrade.level
 		if level == 0:
+			return 0
+
+		if self.free_spells and isinstance(upgrade, Spell):
 			return 0
 			
 		if self.p1.discount_tag in upgrade.tags:
@@ -476,7 +494,7 @@ class Game():
 	def can_buy_upgrade(self, upgrade):
 
 		# Limit 20 spells
-		if isinstance(upgrade, Spell) and len(self.p1.spells) >= 20:
+		if isinstance(upgrade, Spell) and len(self.p1.spells) >= self.max_spells:
 			return False
 
 		if self.has_upgrade(upgrade):
@@ -494,14 +512,6 @@ class Game():
 
 		if self.p1.xp < self.get_upgrade_cost(upgrade):
 			return False
-
-		if hasattr(upgrade, 'exc_class') and upgrade.exc_class:
-			# Non shrine upgrades- check name, prereq pair
-			if any(isinstance(b, Upgrade) and getattr(b, 'exc_class', None) == upgrade.exc_class and b.prereq == upgrade.prereq for b in self.p1.buffs):
-				return False
-
-		#if self.get_upgrade_distance(upgrade) > 0:
-		#	return False
 
 		return True
 
@@ -551,6 +561,8 @@ class Game():
 				self.victory_evt = True
 				self.finalize_level(victory=True)
 				self.p1.refresh()
+				self.cur_level.portal_mercy()
+				self.cur_level.event_manager.raise_event(EventOnLevelComplete(self.cur_level), self.cur_level)
 
 		if self.p1.cur_hp <= 0:
 			self.gameover = True

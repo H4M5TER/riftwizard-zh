@@ -138,10 +138,7 @@ class SimpleRangedAttack(Spell):
 		self.damage = damage
 		self.damage_type = damage_type
 		self.range = range
-		if isinstance(damage_type, list):
-			self.tags = damage_type
-		else:
-			self.tags = [damage_type]
+		
 		self.beam = beam
 		self.onhit = onhit
 		self.radius = radius
@@ -415,11 +412,20 @@ class SimpleSummon(Spell):
 					target = random.choice(targets)
 					x = target.x
 					y = target.y
+				else:
+					return # abort summon if there are no valid targets for global summoning
 
-			self.summon(unit, Point(x, y), sort_dist=self.sort_dist, radius=self.radius)
+			summoned_unit = self.summon(unit, Point(x, y), sort_dist=self.sort_dist, radius=self.radius)
+
+			if not summoned_unit:
+				return # abort if self.summon returns None
+
 			if self.path_effect:
-				self.owner.level.show_path_effect(self.owner, unit, self.path_effect, minor=True)
+				self.owner.level.show_path_effect(self.owner, summoned_unit, self.path_effect, minor=True)
+
 			yield
+	def can_threaten(self, x, y):
+		return False
 
 
 class PullAttack(Spell):
@@ -490,10 +496,6 @@ class HealAlly(Spell):
 		if self.tag:
 			self.description = "Heals one %s ally for %d" % (self.tag.name, self.heal)
 
-		# For tooltips
-		self.damage = heal
-		self.damage_type = Tags.Heal
-
 	def get_ai_target(self):
 		units_in_range = self.caster.level.get_units_in_ball(Point(self.caster.x, self.caster.y), self.range)
 		units_in_range = [u for u in units_in_range if not self.caster.level.are_hostile(self.caster, u)]
@@ -530,7 +532,8 @@ class StormCloud(Cloud):
 		self.strikechance = .5
 		self.name = "Storm Cloud"
 		self.source = None
-		self.asset_name = 'thunder_cloud'
+		self.asset = ['tiles', 'clouds', 'thunder_cloud']
+
 
 	def get_description(self):
 		return "Each turn, has a %d%% chance of dealing [%d_lightning:lightning] damage to any unit standing inside of it.\nExpires in %d turns." % (int(self.strikechance*100), self.damage, self.duration)
@@ -548,7 +551,7 @@ class BlizzardCloud(Cloud):
 		self.damage = damage
 		self.color = Color(100, 100, 100)
 		self.name = "Blizzard"
-		self.asset_name = 'ice_cloud'
+		self.asset = ['tiles', 'clouds', 'ice_cloud']
 		self.source = None
 		self.spellcast = None
 
@@ -590,6 +593,49 @@ class FireCloud(Cloud):
 	def on_advance(self):
 		self.level.deal_damage(self.x, self.y, self.damage, Tags.Fire, self)
 
+class SoakedBuff(Buff):
+
+	def on_init(self):
+		self.name = "Soaked"
+		self.resists[Tags.Ice] = -50
+		self.resists[Tags.Lightning] = -50
+		self.resists[Tags.Fire] = 50
+		self.stack_type = STACK_DURATION
+
+class RainCloud(Cloud):
+
+	def __init__(self, owner, spell=None):
+		Cloud.__init__(self)
+		self.asset= ['tiles', 'clouds', 'rainstorm_cloud']
+		self.name = "Rain Cloud"
+		self.description = ("Every turn, applies Soaked to any unit standing within for 2 turns, reducing [ice] and [lightning] resistance by 50 but increasing [fire] resistance by 50.\n"
+							"On taking [fire] damage, dissapears.\n")
+		self.owner = owner
+
+		self.spell = spell
+
+	def get_description(self):
+		return ("Every turn, applies Soaked to any unit standing within for 2 turns, reducing [ice] and [lightning] resistance by 50 but increasing [fire] resistance by 50.\n"
+				"On taking [fire] damage, disappears.\n"
+				"Expires in %d turns" % self.duration)
+		
+	def on_advance(self):
+		unit = self.owner.level.get_unit_at(self.x, self.y)
+		if unit:
+			unit.apply_buff(SoakedBuff(), 2)
+
+			if self.spell:
+				if self.spell.get_stat('healing') and not are_hostile(self.spell.caster, unit):
+					unit.heal(10, self.spell)
+
+				if self.spell.get_stat('poison'):
+					unit.deal_damage(9, Tags.Poison, self)
+
+	def on_damage(self, dtype):
+		if dtype == Tags.Fire:
+			self.kill()
+
+
 class CloudGeneratorBuff(Buff):
 
 	def __init__(self, cloud_func, radius, chance):
@@ -619,7 +665,7 @@ class SpiderWeb(Cloud):
 		self.description = "Any non-spider unit entering the web is stunned for 1 turn.  This destroys the web.\n\nFire damage destroys webs."
 		self.duration = 12
 
-		self.asset_name = 'web'
+		self.asset = ['tiles', 'clouds', 'web']
 
 	def on_unit_enter(self, unit):
 		if Tags.Spider not in unit.tags:
@@ -741,6 +787,7 @@ class FrozenBuff(Stun):
 		self.owner.level.event_manager.raise_event(EventOnUnfrozen(self.owner, self.break_dtype), self.owner)		
 		Stun.on_unapplied(self)
 
+
 class TrollRegenBuff(Buff):
 
 	def on_init(self):
@@ -776,6 +823,8 @@ class DamageAuraBuff(Buff):
 		self.friendly_fire = friendly_fire
 		self.source = None
 
+		Buff.__init__(self)
+
 		if custom_name:
 			self.name = custom_name
 		elif isinstance(self.damage_type, Tag):
@@ -787,8 +836,7 @@ class DamageAuraBuff(Buff):
 		self.damage_dealt = 0
 
 		self.melt_walls = melt_walls
-		Buff.__init__(self)
-
+		
 	def on_hit(self, unit):
 		# For derived to override
 		pass
@@ -906,13 +954,13 @@ class LeapAttack(Spell):
 
 	def get_leap_dest(self, x, y):
 		potential_targets = []
-		target_points = list(self.caster.level.get_adjacent_points(Point(x, y), check_unit=True))
+		target_points = list(self.caster.level.get_adjacent_points(Point(x, y), check_unit=True, filter_walkable=not self.caster.flying))
 
 		# Be willing to leap next to 3x3 or 5x5 monsters
 		target_unit = self.owner.level.get_unit_at(x, y)
 		if target_unit and target_unit.radius:
 			for p in target_unit.iter_occupied_points():
-				target_points.extend(self.caster.level.get_adjacent_points(p, check_unit=True))
+				target_points.extend(self.caster.level.get_adjacent_points(p, check_unit=True, filter_walkable=not self.caster.flying))
 
 		random.shuffle(target_points)
 		for point in target_points:
@@ -929,7 +977,8 @@ class LeapAttack(Spell):
 			elif not self.is_ghost:
 				if not self.caster.level.can_see(point.x, point.y, self.caster.x, self.caster.y):
 					continue
-			# Ghost: just check destination
+
+			# In all cases, demand that we are able to move to the leap dest
 			if not self.caster.level.can_move(self.caster, point.x, point.y, teleport=True):
 				continue
 
@@ -1243,7 +1292,7 @@ class ReincarnationBuff(Buff):
 	def on_death(self, evt):
 		if self.lives >= 1:
 
-			to_remove = [b for b in self.owner.buffs if b.buff_type != BUFF_TYPE_PASSIVE]
+			to_remove = [b for b in self.owner.buffs if b.buff_type != BUFF_TYPE_PASSIVE and b.buff_type != BUFF_TYPE_ITEM]
 			for b in to_remove:
 				self.owner.remove_buff(b)
 
@@ -1374,6 +1423,7 @@ class Soulbound(Buff):
 		if not self.guardian.is_alive():
 			self.owner.remove_buff(self)
 
+
 	def on_self_damage(self, damage):
 		# Do not protect if guardian is gone.  This can happen if the guardian is banished by mordred.
 		if not self.guardian.is_alive():
@@ -1386,7 +1436,6 @@ class Soulbound(Buff):
 	def on_death(self, evt):
 		if evt.unit == self.guardian:
 			self.owner.remove_buff(self)
-
 
 class BloodrageBuff(Buff):
 	
@@ -1449,6 +1498,7 @@ class Thorns(Buff):
 
 	def on_init(self):
 		self.global_triggers[EventOnSpellCast] = self.on_spell
+		self.stack_type = STACK_INTENSITY
 
 	def on_spell(self, evt):
 		if evt.x != self.owner.x or evt.y != self.owner.y:
@@ -1526,6 +1576,9 @@ class ChanceToBecome(Buff):
 		new_unit = self.spawner()
 		new_unit.team = self.owner.team
 		new_unit.source = self.owner.source
+		if new_unit.source:
+			apply_minion_bonuses(self.owner.source, new_unit)
+
 		p = self.owner.level.get_summon_point(self.owner.x, self.owner.y, radius_limit=8, flying=new_unit.flying)
 		if p:
 			self.owner.level.add_obj(new_unit, p.x, p.y)
@@ -1545,6 +1598,10 @@ class MatureInto(Buff):
 			new_unit = self.spawner()
 			new_unit.team = self.owner.team
 			new_unit.source = self.owner.source
+
+			if new_unit.source:
+				apply_minion_bonuses(self.owner.source, new_unit)
+			
 			p = self.owner.level.get_summon_point(self.owner.x, self.owner.y, radius_limit=8, flying=new_unit.flying)
 			if p:
 				self.owner.level.add_obj(new_unit, p.x, p.y)
@@ -1593,7 +1650,10 @@ class RespawnAs(Buff):
 		self.owner_triggers[EventOnDamaged] = self.on_damage
 
 	def on_damage(self, evt):
+
 		if self.owner.cur_hp <= 0:
+			if self.owner.has_buff(Soulbound):
+				return
 			# Supress death events- this creature isn't really dying, its respawning
 			self.owner.kill(trigger_death_event=False)
 
@@ -1712,7 +1772,7 @@ class SimpleBurst(Spell):
 def spawn_webs(unit):
 
 	adj = unit.level.get_points_in_ball(unit.x, unit.y, 1.5)
-	candidates = [p for p in adj if unit.level.get_unit_at(p.x, p.y) is None and unit.level.tiles[p.x][p.y].can_see]
+	candidates = [p for p in adj if unit.level.get_unit_at(p.x, p.y) is None and unit.level.tiles[p.x][p.y].can_see and not isinstance(unit.level.tiles[p.x][p.y].cloud, SpiderWeb)]
 
 	if candidates:
 		p = random.choice(candidates)
