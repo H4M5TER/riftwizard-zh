@@ -297,11 +297,11 @@ class Game():
     player.name = "Player"
     player.team = TEAM_PLAYER
  
-		player.tags = [Tags.Living] 
+    player.tags = [Tags.Living] 
  
-		player.xp = 1 
-		player.discount_tag = None 
-		player.scroll_discounts = {} 
+    player.xp = 1 
+    player.discount_tag = None 
+    player.scroll_discounts = {} 
  
     # player only fields
     player.knowledges = OrderedDict()

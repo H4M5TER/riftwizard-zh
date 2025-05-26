@@ -44,6 +44,10 @@ names = {
   # "Petrification": "Petrification",
   # "Glassification": "Glassification",
 }
+# 属性 4 点xx伤害
+# 治疗 x 点血量
+# radius 半径 x 格
+# duration 持续 x 回合
 names.update([(k.lower(), v) for (k, v) in names.items()])
 names.update(dict_school.names)
 names.update({

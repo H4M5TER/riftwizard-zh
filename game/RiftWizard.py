@@ -3,10 +3,6 @@ import sys
 import re
 import webbrowser
 
-import dict_school
-import dict_attr
-import dict_monsters
-
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 
 # Make all the relative file accesses work
@@ -3814,12 +3810,13 @@ class PyGameView(object):
     surface.blit(string_surface, (x, y))
 
   # 汉化
-  def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False):
+  def draw_wrapped_string(self, string: str, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False):
     lines = string.split('\n')
 
+    cur_color = color
     cur_y = y # start y pos
     num_lines = 0
-    linesize = self.linesize # font linesize +2
+    linesize = self.linesize # font line size +2
     max_width = width
 
     for line in lines:
@@ -3827,42 +3824,43 @@ class PyGameView(object):
       # 这个正则用来决定哪些文本被视为不会被切断的整块
       # 对于中文来说似乎不是很需要
       # 改动后优先匹配颜色块和英文单词
-      exp = "\[[^]]+\]|[a-zA-Z]+| |."
-      words = re.findall(exp, line)
-      words.reverse()
+      attr_exp = re.compile(r'\[[^[]+]')
+      word_exp = re.compile(r'\w+')
+      num_exp = re.compile(r'\d+')
+      punc_exp = re.compile(r'[,，.。?？:：!！]')
 
-      while words:
-        cur_color = color
-
-        word = words.pop()
-
-        if re.match(r'^[ ,.:!，、。：！]$', word):
-          self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
-          cur_x += self.font.size(word)[0]
+      i = 0
+      while i < len(line):
+        if punc_exp.match(line, i):
+          self.draw_string(line[i], surface, cur_x, cur_y, cur_color, content_width=max_width)
+          cur_x += self.font.size(line[i])[0]
+          continue
+        if res := attr_exp.match(line, i):
+          [attr, word] = reversed(res.group()[1:-1].rsplit(':', 1))
+          attr = attr.lower()
+          if attr in tooltip_colors:
+            cur_color = tooltip_colors[attr].to_tup()
+          if word:
+            if num_exp.match(word):
+              word = "%s 点%s伤害" % word, dict_attr.names.get(attr, attr)
+          else:
+            word = dict_attr.names.get(attr, attr)
+          i = res.end()
+        elif res := word_exp.match(line, i):
+          word = res.group()
+          i = res.end()
         else:
-          if word and word[0] == '[' and word[-1] == ']':
-            tokens = word[1:-1].rsplit(':', 1)
-            word = dict_attr.names.get(tokens[0], tokens[0])
-            if len(tokens) == 1:
-              tooltip = tokens[0].lower()
-            else:
-              tooltip = tokens[1].lower()
-            word = word.replace('_', ' ')
-            if (tooltip in tooltip_colors):
-              cur_color = tooltip_colors[tooltip].to_tup()
-
-          # check exceed max width
-          word_width = self.font.size(word)[0]
-          if cur_x + word_width > x + max_width:
-            # 避免行首标点
-            if (word != ',' and word != '。' and word != ':' and word != '、'):
-              cur_y += linesize
-              num_lines += 1
-              # Indent by one for next line
-              cur_x = x + self.space_width * 2
-
-          self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
-          cur_x += word_width
+          word = line[i]
+          i += 1
+        # check exceed max width
+        word_width = self.font.size(word)[0]
+        if cur_x + word_width > x + max_width:
+          cur_y += linesize
+          num_lines += 1
+          # Indent by one for next line
+          cur_x = x + self.space_width * 2
+        self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=max_width)
+        cur_x += word_width
 
       cur_y += linesize
       num_lines += 1
