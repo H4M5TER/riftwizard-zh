@@ -1,4 +1,4 @@
-# import steamworks
+import steamworks
 import dill as pickle
 import os
 
@@ -14,6 +14,8 @@ stats_log.addHandler(stats_log_handler)
 
 from LevelGen import all_monster_names
 
+import Mutators
+
 default_vals = {
 	'w': 0,
 	'r': 0,
@@ -23,6 +25,7 @@ default_vals = {
 	'trials': set(), # Set of strings of names of finished trials
 	'bestiary': set(), # Set of strings of defeated monster names
 	'purchases': set(), # Set of strings of spells and skills ever purchased
+	'victories': set(), # Set of strings of spells and skills ever won with
 }
 
 
@@ -44,20 +47,6 @@ def try_get_sw():
 	except:
 		stats_log.debug("Steamworks failed to initialize or connect")
 		pass
-
-	# If steam has never been contacted, add in steams stats to current stats
-	#if _sw and not stats['steam_contact']:
-	#	stats_log.debug("Steamworks initialized for first time in this installation, pushing local values (%s)" % stats)
-	#	stats['steam_contact'] = True
-	#	set_stat('w', stats['w'] + _sw.GetStatInt('w'.encode('ascii')))
-	#	set_stat('l', stats['l'] + _sw.GetStatInt('l'.encode('ascii')))
-	#	set_stat('r', max(stats['r'], _sw.GetStatInt('r'.encode('ascii'))))
-#
-#
-#		# Streak is just going to be your local streak, as you may have lost games on local machine
-#		#  Cant we look at local 'l' to verify or falsify this?
-#		#  Sure but its too complex to be worth it.
-#	return _sw
 
 def init():
 
@@ -81,30 +70,23 @@ def init():
 
 
 def get_stat(stat):
-
 	# Disable for now
-	if False:
-		# Try to init sw- updating stats dict if needed
-		try_get_sw()
-		stats_log.debug("Fetching %s, result %s" % (stat, stats[stat]))
-		return stats[stat]
-	else:
-		return 0
-
+	# Try to init sw- updating stats dict if needed
+	try_get_sw()
+	stats_log.debug("Fetching %s, result %s" % (stat, stats[stat]))
+	return stats[stat]
+	
 def set_stat(stat, val):
+	stats_log.debug("Setting %s to %s" % (stat, val))
+	stats[stat] = val
 
-		stats_log.debug("Setting %s to %s" % (stat, val))
-		stats[stat] = val
+	with open('stats.dat', 'wb') as stats_file:
+		pickle.dump(stats, file=stats_file)
 
-		with open('stats.dat', 'wb') as stats_file:
-			pickle.dump(stats, file=stats_file)
-
-		# Disable for now
-		if False:
-			s = try_get_sw()
-			if s:
-				s.SetStatInt(stat.encode('ascii'), val)
-				s.StoreStats()
+	s = try_get_sw()
+	if s:
+		s.SetStatInt(stat.encode('ascii'), val)
+		s.StoreStats()
 
 def set_presence_menu():
 	s = try_get_sw()
@@ -131,7 +113,50 @@ def set_trial_complete(trial_name):
 	
 	s = try_get_sw()
 	if s:
+		if trial_name.startswith("weekly"):
+			trial_name = "WEEKLY"
 		s.SetAchievement(trial_name.upper().replace(' ', '_').encode('ascii'))
+
+		# Check ARCHMAGE ach (all trials completed)
+		if all(t.name in stats["trials"] for t in Mutators.all_trials):
+			name = "ARCHMAGE"
+			s.SetAchievement(name.encode('ascii'))
+
+
+
+def record_level_turns(num_turns):
+	s = try_get_sw()
+	if not s:
+		return
+
+	name = "INSTANT_WIN"
+	if num_turns <= 1:
+		s.SetAchievement(name.encode('ascii'))
+
+def record_damage_dealt(damage):
+	s = try_get_sw()
+	if not s:
+		return
+	
+	name = "BIG_DAMAGE_TURN"
+	if damage > 15000:
+		s.SetAchievement(name.encode('ascii'))
+
+def record_total_turns(num_turns):
+
+	s = try_get_sw()
+	if not s:
+		return
+
+	pairs = [(1000, "BRISK_GAME"),
+			 (500, "FAST_GAME"),
+			 (250, "TURBO_GAME")
+			]
+
+
+	for (t, name) in pairs:
+		if num_turns < t:
+			s.SetAchievement(name.encode('ascii'))
 
 def record_purchase(spell_name):
 	if spell_name not in stats["purchases"]:
@@ -143,6 +168,16 @@ def record_purchase(spell_name):
 def has_been_purchased(spell_name):
 	return spell_name in stats["purchases"]
 
+def record_victory(spell_name):
+	if spell_name not in stats["victories"]:
+		stats["victories"].add(spell_name)
+		
+		with open('stats.dat', 'wb') as stats_file:
+			pickle.dump(stats, file=stats_file)
+
+def has_been_victoried(spell_name):
+	return spell_name in stats["victories"]
+
 def unlock_bestiary(monster_name):
 	if monster_name not in stats["bestiary"]:
 		stats["bestiary"].add(monster_name)
@@ -150,6 +185,16 @@ def unlock_bestiary(monster_name):
 		with open('stats.dat', 'wb') as stats_file:
 			pickle.dump(stats, file=stats_file)
 	
+		check_bestiary_ach()
+
+def check_bestiary_ach():
+	s = try_get_sw()
+	if not s:
+		return
+
+	if get_num_slain() >= len(all_monster_names):
+		name = "BESTIARY"
+		s.SetAchievement(name.encode('ascii'))
 
 def has_slain(monster_name):
 	return monster_name in stats["bestiary"]

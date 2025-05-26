@@ -3,10 +3,14 @@ import random
 import sys
 import datetime
 import RareMonsters
+import BossSpawns
+
 from Level import *
 from CommonContent import *
 from Monsters import *
 from LevelGen import *
+from Equipment import *
+
 
 class Mutator(object):
 
@@ -61,7 +65,7 @@ class NumPortals(Mutator):
 		self.description = "All levels contain %d rifts" % self.num
 
 	def on_levelgen_pre(self, levelgen):
-		levelgen.num_exits = 1
+		levelgen.num_exits = self.num
 
 
 class MonsterHPMult(Mutator):
@@ -211,7 +215,6 @@ class OnlySpell(Mutator):
 		spells.clear()
 		spells.append(allowed[0])
 
-
 class NoSkills(Mutator):
 
 	def __init__(self):
@@ -221,6 +224,127 @@ class NoSkills(Mutator):
 	def on_generate_skills(self, skills):
 		skills.clear()
 
+
+class Amnesiac(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = ("Your spells, spell upgrades, and skills, are removed and no longer available after you complete a level.\n"
+							"Spent SP is refunded")
+		self.global_triggers[EventOnLevelComplete] = self.on_level_complete
+		self.restricted_spells = []
+		self.restricted_skills = []
+		self.game = None
+
+	def on_level_complete(self, _level):
+
+		if self.game.p1: # if there's a wizard
+			wizard = self.game.p1 # grab wizard unit
+
+			for upgrade in wizard.get_spell_upgrades(): # for each spell upgrade the wizard has
+				wizard.xp += upgrade.level # refund
+				wizard.remove_buff(upgrade) # unlearn the upgrade
+
+			for spell in wizard.spells: # for each of their spells
+				self.restricted_spells.append(spell) # add the spell to the restricted list
+				wizard.xp += spell.level # refund
+				wizard.remove_spell(spell) # unlearn the spell
+
+			for skill in wizard.get_skills(): # for each skill the wizard has
+				self.restricted_skills.append(skill) # add the skill to the restricted list
+				wizard.xp += skill.level # refund
+				wizard.remove_buff(skill) # unlearn the skill
+
+			self.game.all_player_spells = [spell for spell in self.game.all_player_spells if not spell in self.restricted_spells] # make restricted spells unavailable
+			self.game.all_player_skills = [skill for skill in self.game.all_player_skills if not skill in self.restricted_skills] # make restricted skills unavailable
+
+	def on_game_begin(self, game):
+		self.game = game # grab the game instance
+
+class WildMagic(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = ("After you complete a level or reroll rifts, your spells and skills are randomly rerolled.\n"
+							"Levels have no SP.")
+		self.global_triggers[EventOnLevelComplete] = self.on_level_complete
+		self.global_triggers[EventOnReroll] = self.on_level_complete # rerolls spells/skills on rift reroll
+		self.game = None
+
+	def on_level_complete(self, _evt):
+		if not self.game.p1: # if there's no wizard
+			return
+
+		wizard = self.game.p1 # grab wizard unit
+
+		for buff in wizard.buffs[:]:
+			if buff.buff_type == BUFF_TYPE_PASSIVE: # covers Skills and SpellUpgrades
+				wizard.remove_buff(buff)
+
+		wizard.spells.clear() # get rid of spells
+
+		wizard_spell_tags = set() # set up for skill synergy mercy
+
+		spells = all_player_spell_constructors # grab all the spells
+		random.shuffle(spells) # shuffle em up
+
+		level_num = self.game.cur_level.level_no
+		min_spells = max(3, (level_num * 1) // 3)
+		max_spells = min(12, (level_num * 2) // 3)
+
+		if min_spells > max_spells:
+			num_spells = 3
+		else:
+			num_spells = random.randint(min_spells, max_spells) # average is half the level's number of spells
+
+		while len(wizard.spells) < num_spells:
+			for spell in spells: # for each one
+				new_spell = spell() # instantiate
+
+				if new_spell.hp_cost >= wizard.max_hp: # don't want spells they can't pay for
+					continue
+
+				wizard.add_spell(new_spell) # give it to the wizard
+				wizard_spell_tags.update(new_spell.tags) # track what tags the wizard has for this level
+
+				if new_spell.spell_upgrades: # if the spell has upgrades
+					wizard.apply_buff(random.choice(new_spell.spell_upgrades)) # give it an upgrade
+
+				if len(wizard.spells) >= num_spells: # get out if we have the right number of spells
+					break
+
+		wizard.spells.sort(key=lambda s: s.level) # QoL sort spells so lowest level spells at the top
+
+		skills = [s for s in skill_constructors if any(tag in wizard_spell_tags for tag in s().tags)] # only grab skills with tags matching our spells
+		random.shuffle(skills) # shuffle em up
+
+		num_skills = random.randint((level_num  // 2), level_num) # average num_skills = level_num * .75
+		num_skills += ((level_num // 2) - num_spells) # more or less spells than average grants more or less skills
+		num_skills = max(1, num_skills) # don't want negative slicing for early levels giving a boatload of skills
+
+		skills = skills[:num_skills] # only take as many as we want
+		for skill in skills: # for each skill
+			new_skill = skill() # instantiate it
+			wizard.apply_buff(new_skill) # give it to the wizard
+
+
+
+	def on_game_begin(self, game):
+		self.game = game # grab the game instance
+		game.p1.xp = 0
+		game.p1.add_spell(self.get_random_cantrip())
+
+	def get_random_cantrip(self):
+		cantrips = [s for s in all_player_spell_constructors if s().level == 1]
+		return random.choice(cantrips)()
+
+	def on_levelgen_pre(self, levelgen):
+		levelgen.num_xp = 0 # no SP
+
+		if levelgen.shrine and levelgen.shrine.name == "Scroll of Spells": # replace spell scrolls since they'd be forgotten anyway
+			levelgen.shrine = exotic_pet_chest(levelgen.difficulty, levelgen.random, player=None)
+		if levelgen.shrine and levelgen.shrine.name == "Scroll of Skills": # replace skill scrolls since they'd be forgotten anyway
+			levelgen.shrine = HeartDot(25)
 
 class SpawnWizards(Mutator):
 
@@ -247,6 +371,16 @@ class SpPerLevel(Mutator):
 	def on_levelgen_pre(self, levelgen):
 		levelgen.num_xp = self.num
 
+class SpPenalty(Mutator):
+
+	def __init__(self, num):
+		Mutator.__init__(self)
+		self.num = num
+		self.description = "Levels have %d fewer SP orbs" % num
+
+	def on_levelgen_pre(self, levelgen):
+		levelgen.num_xp -= 1
+
 class Trial():
 
 	def __init__(self, name, mutators):
@@ -270,7 +404,7 @@ class ExtraElites(Mutator):
 
 	def on_levelgen_pre(self, levelgen):
 		for i in range(self.num):
-			unit = levelgen.get_elites(levelgen.difficulty)[0]
+			unit = levelgen.get_elites()[0]
 			levelgen.bosses.append(unit)
 
 class SpellChargeMultiplier(Mutator):
@@ -305,20 +439,177 @@ class ExtraSpawns(Mutator):
 			spawn_point = levelgen.empty_spawn_points.pop()
 			levelgen.level.add_obj(obj, spawn_point.x, spawn_point.y)
 
+class AllwaysExoticPet(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "All levels have an exotic pet reward"
+
+	def on_levelgen_pre(self, levelgen):
+		levelgen.shrine = exotic_pet_chest(levelgen.difficulty, levelgen.random, player=None)
+
+class OneSpell(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "Spells are free, but only one can be purchased"
+
+	def on_game_begin(self, game):
+		game.max_spells = 1
+		game.free_spells = True
+
+	def on_levelgen_pre(self, levelgen):
+
+		# Replace all spell scrolls with heartdots
+		# Spell scrolls are just shops so have to compare name
+		if levelgen.shrine and levelgen.shrine.name == "Scroll of Spells":
+			levelgen.shrine = HeartDot(25)
+
+
+class ExtraVariants(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "Each level has additional variant boss monsters"
+
+	def on_levelgen_pre(self, levelgen):
+		spawn = levelgen.get_spawns()[0]
+
+		if not spawn:
+			return
+
+		unit = BossSpawns.roll_bosses(levelgen.difficulty, spawn)
+		if not unit:
+			return
+
+		levelgen.bosses.extend(unit)
+
+class GiantSlayer(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "Each level beyond the 4th has an additional giant monster"
+
+	def on_levelgen_pre(self, levelgen):
+		if levelgen.difficulty <= 4:
+			return
+
+		unit = random.choice(RareMonsters.big_monsters)()
+		print(unit.name)
+		levelgen.bosses.append(unit)
+
+class OnlyHearts(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "Every level has a Ruby Heart"
+
+	def on_levelgen_pre(self, levelgen):
+		levelgen.shrine = HeartDot(25)
+
+class BloodRites(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = ("Each time you cast a spell, increase its HP cost by its spell level.\n"
+							"If it doesn't have an HP cost, it gains one.\n"
+							"Resets at the end of each level")
+		self.global_triggers[EventOnSpellCast] = self.on_cast
+		self.global_triggers[EventOnLevelComplete] = self.on_level_complete
+		self.game = None
+
+	def on_cast(self, evt):
+		if evt.caster.is_player_controlled and hasattr(evt.spell, 'level'):
+			evt.spell.hp_cost += evt.spell.level
+
+	def on_level_complete(self, evt):
+		for spell in self.game.p1.spells:
+			spell.hp_cost = type(spell)().hp_cost
+
+	def on_game_begin(self, game):
+		self.game = game
+
+class Flawless(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "You have 1 HP."
+
+	def on_levelgen_pre(self, levelgen):
+		if levelgen.shrine and levelgen.shrine.name == "Ruby Heart":
+			while levelgen.shrine.name == "Ruby Heart":
+				levelgen.shrine = roll_shrine(levelgen.difficulty, levelgen.random, levelgen.game.p1)
+
+	def on_game_begin(self, game):
+		game.p1.max_hp = 1
+		game.p1.cur_hp = 1
+
+
+def superchest():
+	items = [s() for s in (Staves)]
+	
+	shop = Shop()
+
+	shop.name = "Staff Chest"
+	shop.items = items
+	shop.asset = ['tiles', 'chest', 'wand_chest']
+
+	return shop
+
+def megachest():
+	staves = [s() for s in (Staves)]
+	hats = [h() for h in Hats] + all_damage_hats()
+	robes = [r() for r in Robes]
+	boots = [b() for b in Boots]
+	amulets = [a() for a in Amulets]
+
+	equipment = staves + hats + robes + boots + amulets
+
+	shop = Shop()
+
+	shop.name = "Mega Chest"
+	shop.items = equipment
+	shop.asset = ['tiles', 'chest', 'chest']
+
+	return shop
+
+class LevelOneSuperChest(Mutator):
+
+	def __init__(self):
+		Mutator.__init__(self)
+		self.description = "The first level contains a super chest"
+
+	def on_levelgen_pre(self, levelgen):
+		if levelgen.difficulty == 1:
+			levelgen.shrine = superchest()
+
 all_trials = [Trial(n, m) for n, m in [
-	("Limited Spellbook", [RandomSpellRestriction(.85)]),
-	("Improviser", [RandomSpellRestriction(.85), RandomSkillRestriction(.7)]),
-	("Menagerie", [ExtraElites(6)]),
-	("Trollpath", [NumPortals(1), EnemyBuff(TrollRegenBuff)]),
-	("Sorcerer Ascetic", [SpellChargeMultiplier(.5), SpellTagRestriction(Tags.Sorcery)]),
-	("Thrifty Wizard", [StackLimit(1), RandomSpellRestriction(.9)]),
-	("Wizard Warlords", [SpawnWizards(), LairMultiplier(2)]),
-	("Humble Horde", [SpPerLevel(2), SpellTagRestriction(Tags.Conjuration)]),
-	("Giantslayer", [MonsterHPMult(3)]),
-	("Danger Brigade", [EnemyBuff(lambda: DamageAuraBuff(1, Tags.Poison, 4)), EnemyShields(2)]),
-	("Flamefest", [MonsterHPMult(2), SpellTagRestriction(Tags.Fire)]),
-	("Wolfer", OnlySpell("Wolf")),
-	("Vampire Hunter", [EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"), SpellTagRestriction(Tags.Holy)]),
+	("Limited Spellbook", [RandomSpellRestriction(.80)]),
+	("Improviser", [RandomSpellRestriction(.75), RandomSkillRestriction(.75)]),
+	
+	("Pyromancer", SpellTagRestriction(Tags.Fire)),
+	("Electromancer", SpellTagRestriction(Tags.Lightning)),
+	("Cryomancer", SpellTagRestriction(Tags.Ice)),
+	("Necromancer", SpellTagRestriction(Tags.Dark)),
+	("Phytomancer", SpellTagRestriction(Tags.Nature)),
+	("Manamancer", SpellTagRestriction(Tags.Arcane)),
+	("Sanctumancer", SpellTagRestriction(Tags.Holy)),
+	("Ferromancer", SpellTagRestriction(Tags.Metallic)),
+	("Hemomancer", SpellTagRestriction(Tags.Blood)),
+
+	("Menagerist", AllwaysExoticPet()),
+	("Oner", OneSpell()),
+
+	("Mutant Masher", ExtraVariants()),
+	("Giant Slayer", GiantSlayer()),
+
+	("Ogre Mage", [RandomSkillRestriction(1.0), OnlyHearts()]),
+
+	("Staff Abuser", [SpPenalty(1), LevelOneSuperChest()]),
+	("Amnesiac", Amnesiac()),
+	("Wild Magic", WildMagic()),
+	("Blood Rites", BloodRites()),
+	("Flawless", Flawless())
 ]]
 
 def get_weekly_seed():
@@ -343,10 +634,6 @@ weekly_mods = [
 	StackLimit(1),
 	SpawnWizards(),
 	MonsterHPMult(2),
-	EnemyBuff(lambda: RespawnAs(VampireBat), exclude_named="Vampire Bat"),
-	EnemyBuff(lambda: RespawnAs(GreenSlime), exclude_named="Green Slime"),
-	EnemyBuff(lambda: RespawnAs(Troubler), exclude_named="Troubler"),
-	EnemyBuff(lambda: RespawnAs(Gnome), exclude_named="Gnome"),
 	ExtraSpawns(Troubler, 6),
 	ExtraSpawns(Gnome, 5),
 	ExtraSpawns(GreyMushboom, 10),
@@ -363,18 +650,31 @@ weekly_mods = [
 	EnemyBuff(lambda: HealAuraBuff(1, 4)),
 	#EnemyBuff(ReincarnationBuff),
 	EnemyShields(1),
-	EnemyShields(2)
+	EnemyShields(2),
+	OneSpell(),
 ]
 
+respawn_opts = [
+	VampireBat,
+	GreenSlime,
+	Troubler,
+	Gnome,
+	FireLizard,
+	MindMaggot,
+	SparkImp,
+	Boggart,
+	Ghost,
+	Snake,
+	BlackCat
+]
 
-
-
-def get_weekly_mutators():
-
-	seed = get_weekly_seed()
+def get_random_mutators(seed=None, weekly=False):
 
 	r = random.Random()
-	r.seed(seed)
+	
+	if weekly:
+		seed = get_weekly_seed()
+		r.seed(seed)
 
 	spell_restriction_roll = r.random()
 	restriction_pct = r.choice([.5, .6, .7, .8, .8, .9, .9, .95])
@@ -397,14 +697,19 @@ def get_weekly_mutators():
 	else:
 		num_extras += 1
 
+	# 10% chance of using one respawn mod (dont use two, it makes the game impossible)
+	if r.random() < 1.1:
+		opt = r.choice(respawn_opts)
+		respawn_mod = EnemyBuff(lambda: RespawnAs(opt), exclude_named=opt().name)
+		modifiers.append(respawn_mod)
+		num_extras -= 1
+
 	for i in range(num_extras):
 		cur_mod = r.choice(weekly_mods)
 		modifiers.append(cur_mod)
 		# seed rng of this mutator
 
 	return modifiers
-
-
 if __name__ == "__main__":
 	print(get_weekly_mutators())
 

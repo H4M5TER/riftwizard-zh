@@ -6,7 +6,6 @@ from Equipment import *
 from Shrines import *
 from RareMonsters import *
 from Variants import roll_variant
-from Equipment import roll_equipment
 import random
 from collections import namedtuple
 from BossSpawns import *
@@ -136,12 +135,77 @@ def make_scroll_shop():
 	
 	return shop
 
+def horde_level(levelgen):
+	levelgen.bosses = []
+	levelgen.num_generators *= 3
+	levelgen.num_monsters *= 5
+	levelgen.num_monsters += 8
+
+def wizard_level(levelgen):
+	levelgen.num_monsters = 0
+	levelgen.num_generators = 0
+	levelgen.primary_spawn = None
+	levelgen.secondary_spawn = None
+	levelgen.bosses.clear()
+	
+	wizards = [levelgen.random.choice(all_wizards)[0] for i in range(3)]
+
+	numwizards = (levelgen.difficulty // 2) + levelgen.random.randint(0, 3)
+
+	for i in range(numwizards):
+		wizard = levelgen.random.choice(wizards)()
+		levelgen.bosses.append(wizard)
+
+def beast_level(levelgen):
+	levelgen.num_monsters = 0
+	levelgen.num_generators = 0
+	levelgen.primary_spawn = None
+	levelgen.secondary_spawn = None
+	levelgen.bosses.clear()
+	
+	options = []
+
+	numwizards = (levelgen.difficulty // 5) + levelgen.random.randint(0, 1)
+	for i in range(numwizards):
+		beast = levelgen.random.choice(big_monsters)()
+		levelgen.bosses.append(beast)
+
+def mutant_level(levelgen):
+
+	spawn_level = get_spawn_min_max(levelgen.difficulty)[0] - 1
+	spawn_level = max(spawn_level, 1)
+	
+	levelgen.primary_spawn = levelgen.random.choice([m for m, l, in spawn_options if l == spawn_level])
+	levelgen.secondary_spawn = levelgen.random.choice([m for m, l, in spawn_options if l == spawn_level])
+
+	modifier = BossSpawns.roll_modifiers(levelgen.difficulty, levelgen.primary_spawn, prng=levelgen.random)[0]
+
+	spawn_func_p = levelgen.primary_spawn
+	spawn_func_s = levelgen.secondary_spawn
+
+	levelgen.primary_spawn = lambda : BossSpawns.apply_modifier(modifier, spawn_func_p(), apply_hp_bonus=True)
+	levelgen.secondary_spawn = lambda : BossSpawns.apply_modifier(modifier, spawn_func_s(), apply_hp_bonus=True)
+
+	levelgen.bosses = []
+	levelgen.add_elites()
+
+	for b in levelgen.bosses:
+		BossSpawns.apply_modifier(modifier, b, apply_hp_bonus=True)
+	
+
+level_mutators = [
+	horde_level,
+	wizard_level,
+	beast_level,
+	mutant_level
+]
+
 class LevelGenerator():
 
 	def __init__(self, difficulty, game=None, seed=None, corrupted=False):
 		
 		self.difficulty = difficulty
-
+		self.level = None
 
 		self.next_level_seeds = None			
 		self.random = random.Random()
@@ -208,11 +272,17 @@ class LevelGenerator():
 		if self.difficulty >= 2:
 			self.add_elites()
 
+
+
 		# As we go up in diff, add more stuff to the board
 		# Add difficulty modifiers
 		num_challenge_mods = 0 if difficulty <= 4 else 1 if difficulty < 8 else 2
 		for i in range(num_challenge_mods):
 			self.add_challenge_mod()
+
+		if difficulty > 6 and difficulty < 21 and self.random.random() < .2:
+			modifier = self.random.choice(level_mutators)
+			modifier(self)
 
 		if difficulty >= 14:
 			self.add_super_challenge()
@@ -236,7 +306,7 @@ class LevelGenerator():
 			self.num_exits = 2
 
 		if difficulty == LAST_LEVEL - 1:
-			self.bosses.append(roll_final_boss())
+			self.bosses.append(roll_final_boss(self.random))
 			self.num_exits = 1 # We will generate one later
 
 		if difficulty == LAST_LEVEL:
@@ -265,6 +335,7 @@ class LevelGenerator():
 				m.on_levelgen_pre(self)
 
 		self.description = self.get_description()
+
 
 	def get_elites(self):
 		_, level = get_spawn_min_max(self.difficulty)
@@ -299,9 +370,9 @@ class LevelGenerator():
 			forcedspawn_name = sys.argv[sys.argv.index('forcespawn') + 1]
 			forced_spawn_options = [(spawn, cost) for (spawn, cost) in spawn_options if forcedspawn_name.lower() in spawn.__name__.lower()]
 			assert(len(forced_spawn_options) > 0)
-			spawner = random.choice(forced_spawn_options)[0]
+			spawner = self.random.choice(forced_spawn_options)[0]
 		
-		self.bosses.extend(roll_bosses(self.difficulty, spawner))
+		self.bosses.extend(roll_bosses(self.difficulty, spawner, prng=self.random))
 
 	def add_boss(self):
 		spawns = roll_rare_spawn(self.difficulty, prng=self.random)
@@ -313,18 +384,18 @@ class LevelGenerator():
 
 	def add_challenge_mod(self):
 		challenges = [self.add_boss, self.add_variant]
-		random.choice(challenges)()
+		self.random.choice(challenges)()
 
 	def add_boss_wizard(self):
-		wizard = random.choice(all_wizards)[0]()
-		boss_mod = random.choice(modifiers)[0]
+		wizard = self.random.choice(all_wizards)[0]()
+		boss_mod = self.random.choice(modifiers)[0]
 		apply_modifier(boss_mod, wizard, apply_hp_bonus=True)
 		self.bosses.append(wizard)
 
 	def add_boss_spawner(self):
 		monster, _ = self.get_spawns(-1)
 		
-		boss_mod = random.choice(modifiers)[0]
+		boss_mod = self.random.choice(modifiers)[0]
 		spawn_fn = lambda: BossSpawns.apply_modifier(boss_mod, monster(), apply_hp_bonus=True)
 		
 		spawner = MonsterSpawner(spawn_fn)
@@ -333,26 +404,26 @@ class LevelGenerator():
 		self.bosses.append(spawner)
 
 	def add_giant_monster(self):
-		monster = random.choice(big_monsters)()
+		monster = self.random.choice(big_monsters)()
 		self.bosses.append(monster)
 
 	def add_super_challenge(self):
 		challenges = [self.add_boss_wizard, self.add_boss_spawner, self.add_giant_monster]
-		random.choice(challenges)()
+		self.random.choice(challenges)()
 
 	def get_spawns(self, level_mod=0):
-		min_level, max_level = get_spawn_min_max(self.difficulty)
+		min_level, max_level = get_spawn_min_max(self.difficulty + level_mod)
 
-		primary = random.choice([m for m, l, in spawn_options if l == max_level])
+		primary = self.random.choice([m for m, l, in spawn_options if l == max_level])
 
 		if 'forcespawn' in sys.argv:
 			forcedspawn_name = sys.argv[sys.argv.index('forcespawn') + 1]
 			forced_spawn_options = [(spawn, cost) for (spawn, cost) in spawn_options if forcedspawn_name.lower() in spawn.__name__.lower()]
 			assert(len(forced_spawn_options) > 0)
-			primary = random.choice(forced_spawn_options)[0]
+			primary = self.random.choice(forced_spawn_options)[0]
 
 		if self.difficulty > 2:
-			secondary = random.choice([m for m, l in spawn_options if l == min_level])
+			secondary = self.random.choice([m for m, l in spawn_options if l == min_level])
 		else:
 			secondary = None
 
@@ -599,18 +670,21 @@ class LevelGenerator():
 		# Sort first to derandomize initial ordering
 		labels_left.sort()
 		self.random.shuffle(labels_left)
-		
+
+		def tile_key(t):
+			return t.x + 1000*t.y
+
 		while len(labels_left) > 1:
 			cur_label = labels_left.pop()
 			best_dist = 100000
 			best_inner = None
 			best_outer = None
-			for cur_inner in tile_labels.keys():
+			for cur_inner in sorted(tile_labels.keys(), key=tile_key):
 				
 				if tile_labels[cur_inner] != cur_label:
 					continue
 
-				for cur_outer in tile_labels.keys():
+				for cur_outer in sorted(tile_labels.keys(), key=tile_key):
 					if tile_labels[cur_outer] not in labels_left:
 						continue
 
@@ -621,7 +695,7 @@ class LevelGenerator():
 						best_inner = cur_inner
 						best_outer = cur_outer
 
-			for p in self.level.get_points_in_line(best_inner, best_outer, no_diag=True):
+			for p in self.level.get_points_in_line(best_inner, best_outer, no_diag=True, prng=self.random):
 				make_path(p.x, p.y)
 
 	def corrupt(self):
@@ -637,33 +711,33 @@ class LevelGenerator():
 		self.corrupted_tiles = []
 
 
-		cor_type = random.choice([2, 5])
+		cor_type = self.random.choice([2, 5])
 
 		# White Noise
 		if cor_type == 1:
 			for i in range(LEVEL_SIZE):
 				for j in range(LEVEL_SIZE):
-					if random.random() > chance:
+					if self.random.random() > chance:
 						self.corrupted_tiles.append((i, j))
 
 		# Border
 		elif cor_type == 2:
-			border_width = random.randint(2, 6)
+			border_width = self.random.randint(2, 6)
 			self.corrupted_tiles = [(t.x, t.y) for t in self.level.iter_tiles() if not is_in_rect(t.x, t.y, border_width, subgen.level)]
 
 		# Circle
 		elif cor_type == 3:
-			border_width = random.randint(0, 5)
+			border_width = self.random.randint(0, 5)
 			self.corrupted_tiles = [(t.x, t.y) for t in self.level.iter_tiles() if not is_in_circle(t.x, t.y, border_width, subgen.level)]
 
 		# Diamond
 		elif cor_type == 4:
-			border_width = random.randint(2, 6)
+			border_width = self.random.randint(2, 6)
 			self.corrupted_tiles = [(t.x, t.y) for t in self.level.iter_tiles() if not is_in_diamond(t.x, t.y, border_width, subgen.level)]		
 
 		# Lump
 		elif cor_type == 5:
-			lump_size = random.randint(50, 500)
+			lump_size = self.random.randint(50, 500)
 			self.corrupted_tiles.extend(self.level.get_random_lump(lump_size, self.random))
 
 
@@ -725,8 +799,8 @@ class LevelGenerator():
 				mutator = self.random.choice(seed_mutators)
 				mutator(self)
 
-				if random.random() < brush_shift_chance:
-					new_tileset = random.choice(all_biomes).tileset
+				if self.random.random() < brush_shift_chance:
+					new_tileset = self.random.choice(all_biomes).tileset
 					self.level.set_brush_tileset(new_tileset)
 
 			# Mutate
@@ -737,8 +811,8 @@ class LevelGenerator():
 				mutator = self.random.choice(mutator_table)
 				mutator(self)
 
-				if random.random() < brush_shift_chance:
-					new_tileset = random.choice(all_biomes).tileset
+				if self.random.random() < brush_shift_chance:
+					new_tileset = self.random.choice(all_biomes).tileset
 					self.level.set_brush_tileset(new_tileset)
 
 		else:
@@ -766,8 +840,8 @@ class LevelGenerator():
 				level_logger.debug("Trying to fix boring level:")
 				mutator = self.random.choice(seed_mutators)
 				mutator(self)
-				if random.random() < brush_shift_chance:
-					new_tileset = random.choice(all_biomes).tileset
+				if self.random.random() < brush_shift_chance:
+					new_tileset = self.random.choice(all_biomes).tileset
 					self.level.set_brush_tileset(new_tileset)
 				self.log_level()
 			else:
@@ -896,7 +970,7 @@ class LevelGenerator():
 				possible_spawn_points = [p for p in possible_spawn_points if all(self.level.get_unit_at(q.x, q.y) is None for q in self.level.get_points_in_ball(p.x, p.y, boss.radius, diag=True))]
 
 			assert(possible_spawn_points)
-			spawn_point = random.choice(possible_spawn_points)
+			spawn_point = self.random.choice(possible_spawn_points)
 
 			self.empty_spawn_points.remove(spawn_point)
 			self.level.add_obj(boss, spawn_point.x, spawn_point.y)
@@ -957,6 +1031,9 @@ class LevelGenerator():
 
 		for i in range(self.num_monsters):
 			if not self.empty_spawn_points:
+				break
+
+			if not self.primary_spawn and not self.secondary_spawn:
 				break
 
 			if self.secondary_spawn:
@@ -1068,11 +1145,8 @@ def make_bestiary():
 	for r in rare_monsters:
 		record(r[0]())
 
-
-	all_monsters.append(Apep())
-	all_monsters.append(Ophan())
-	all_monsters.append(FrogPope())
-	all_monsters.append(ApocalypseBeatle())
+	for b in final_bosses:
+		record(b())
 
 	all_monsters.append(Mordred())
 

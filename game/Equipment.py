@@ -1,6 +1,9 @@
+from BossSpawns import Hivemind
 from Level import *
 from CommonContent import *
 import random
+
+from Spells import WordOfChaos
 from Variants import *
 from Monsters import *
 import BossSpawns
@@ -17,7 +20,7 @@ class StaffOfLesserTag(Equipment):
 
 	def __init__(self, tag):
 		self.tag = tag
-		Equipment.__init__(self)
+		Equipment.__init__(self, tag)
 
 	def on_init(self):
 		self.slot = ITEM_SLOT_STAFF
@@ -31,46 +34,29 @@ class BladeStaff(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "The Bladestaff"
-		self.global_bonuses['damage'] = 4
+		self.global_bonuses['damage'] = 6
 
 class GeometerStaff(Equipment):
 
 	def on_init(self):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "Geometer's Staff"
-		self.global_bonuses['radius'] = 1
+		self.global_bonuses['radius'] = 2
 		self.global_bonuses['range'] = 1
-
-class ConjurersStaff(Equipment):
-
-	def on_init(self):
-		self.slot = ITEM_SLOT_STAFF
-		self.name = "Summoner's Staff"
-		self.global_bonuses_pct['minion_health'] = 25
-		self.global_bonuses_pct['minion_duration'] = 25
-
-class EnchantmentStaff(Equipment):
-
-	def on_init(self):
-		self.slot = ITEM_SLOT_STAFF
-		self.name = "Enchanter's Staff"
-		self.tag_bonuses_pct[Tags.Enchantment]['damage'] = 25
-		self.tag_bonuses[Tags.Enchantment]['max_charges'] = 1
-		self.tag_bonuses_pct[Tags.Enchantment]['duration'] = 25
 
 class StaffOfMemory(Equipment):
 
 	def on_init(self):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "Memory Staff"
-		self.global_bonuses['max_charges'] = 1
+		self.global_bonuses_pct['max_charges'] = 100
 
 class HordeLordStaff(Equipment):
 
 	def on_init(self):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "Banner of the Horde"
-		self.global_bonuses['num_summons'] = 1
+		self.global_bonuses['num_summons'] = 2
 
 class StaffOfWinter(Equipment):
 
@@ -133,7 +119,7 @@ class SeasonCrown(Equipment):
 		self.major_summon = major_summon
 		self.major_summon_name = major_summon().name
 		self.num_major_summons = num_major_summons
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, minor_summon, num_minor_summons, major_summon, num_major_summons, tag)
 		self.name = name
 		self.resists[tag] = 30
 
@@ -148,10 +134,10 @@ class SeasonCrown(Equipment):
 		if self.counter == 25:
 			for i in range(self.num_minor_summons):
 				unit = self.minor_summon()
-				self.summon(unit, sort_dist=False, radius=2)
+				self.summon(unit, sort_dist=False, radius=4)
 			for i in range(self.num_major_summons):
 				unit = self.major_summon()
-				self.summon(unit, sort_dist=False, radius=6)
+				self.summon(unit, sort_dist=False, radius=7)
 
 	def on_enter(self, evt):
 		self.counter = 0
@@ -173,7 +159,7 @@ class GenericOculusEquip(Equipment):
 
 	def __init__(self, name, tags):
 		self.tags = tags
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, tags)
 		self.global_triggers[EventOnDamaged] = self.on_damage
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "%s Oculus" % name
@@ -487,7 +473,7 @@ class BasiliskScaleMail(Equipment):
 		self.resists[Tags.Physical] = 25
 
 		self.owner_triggers[EventOnDamaged] = self.on_damaged
-		self.description = "On taking damage, the source is petrified for 1 turn"
+		self.description = "On taking damage from another unit, the source is petrified for 1 turn"
 
 	def on_damaged(self, evt):
 		if not evt.source:
@@ -559,19 +545,34 @@ class SilkenSandals(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_BOOTS
 		self.name = "Silken Sandals"
-		self.tag_bonuses[Tags.Holy]['max_charges'] = 1
-		self.tag_bonuses[Tags.Holy]['minion_duration'] = 5
+		self.description = "Whenever you take a step, you gain 1 SH"
+		self.owner_triggers[EventOnMoved] = self.on_move
 
-		self.tag_bonuses_pct[Tags.Holy]['damage'] = 25
+	def on_move(self, evt):
+		if evt.teleport:
+			return
+
+		self.owner.add_shields(1)
+
 
 class SnowShoes(Equipment):
 
 	def on_init(self):
 		self.slot = ITEM_SLOT_BOOTS
 		self.name = "Snow Shoes"
-		self.tag_bonuses[Tags.Ice]['max_charges'] = 1
-		self.tag_bonuses[Tags.Ice]['range'] = 1
-		self.tag_bonuses[Tags.Ice]['damage'] = 6
+		self.description = "Whenever a unit is frozen, you heal for 2 HP"
+		self.global_triggers[EventOnBuffApply] = self.on_buff
+
+	def on_buff(self, evt):
+		if not isinstance(evt.buff, FrozenBuff):
+			return
+
+		self.owner.level.queue_spell(self.do_heal())
+
+	def do_heal(self):
+		self.owner.heal(2, self)
+		yield
+
 
 class ThunderingHooves(Equipment):
 
@@ -607,7 +608,7 @@ class SummonShoes(Equipment):
 	def __init__(self, steps, spawn_fn, name):
 		self.spawn_fn = spawn_fn
 		self.steps = steps
-		Equipment.__init__(self)
+		Equipment.__init__(self, steps, spawn_fn, name)
 		self.name = name
 
 	def on_init(self):
@@ -670,6 +671,69 @@ class TimeStriders(Equipment):
 			if are_hostile(self.owner, u):
 				u.apply_buff(Stun(), 1)
 
+class CodexOfSacrifice(Equipment):
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Codex of Sacrifice"
+		self.global_triggers[EventOnLevelComplete] = self.on_complete
+
+	def get_description(self):
+		return ("When you complete a level, permanently sacrifice 25 HP to activate the Codex.\n"
+				"When you activate the Codex, learn a [word] spell. \n"
+				"If you know every [word] spell, this item ceases to function. \n")
+
+	def on_complete(self, _level):
+		if not self.owner: # no wizard? do nothing
+			return
+
+		words = [s() for s in Spells.all_player_spell_constructors if Tags.Word in s().tags] # grab all the word spells
+		words = [w for w in words if not self.owner.get_spell(type(w))] # remove any word spells the wizard already knows
+
+		if not words: # if there are no unknown word spells, set to expended, do nothing
+			return
+
+		self.owner.max_hp = max(self.owner.max_hp - 25, 1) # sacrifice operation
+		self.owner.cur_hp = self.owner.max_hp
+
+		random.shuffle(words)
+		self.owner.add_spell(words.pop()) # teach a word spell
+
+class CrisisCharm(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Crisis Charm"
+		self.owner_triggers[EventOnDamaged] = self.on_damage
+		self.description = "Restores all life and protects you for one turn if you would die. Broken after use."
+		self.used = False # used this turn
+		self.broken = False
+
+	def on_damage(self, evt):
+		if self.broken: # do nothing if it's broken
+			return
+
+		for buff in self.owner.buffs: # look at the player's buffs
+			if isinstance(buff, CrisisCharm) and buff != self: # if it's a crisis charm but not this one
+					if buff.used: # and is flagged used
+						return # exit, don't use more than one crisis charm a turn
+
+		if evt.damage >= self.owner.cur_hp: # if the damage dealt is greater than the user's current hp
+			for buff in list(self.owner.buffs): # list all buffs
+				if buff.buff_type == BUFF_TYPE_CURSE: # for each debuff
+					self.owner.remove_buff(buff) # remove the debuff
+
+			self.owner.cur_hp = self.owner.max_hp # set hp to max
+			self.used = True # indicate that it's been used, will catch on turn advance and become broken
+
+			self.name = "Broken Charm"
+			self.description = "A broken charm, although it saved your life once, it's of no use now"
+
+	def on_advance(self):
+		if self.used:
+			self.broken = True # waits until the end of the turn to stop working.
+			self.used = False # set to false, as it is no longer 'used' for this turn
+
+
 class FingerSix(Equipment):
 
 	def on_init(self):
@@ -684,10 +748,20 @@ class Ankh(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_AMULET
 		self.name = "Ankh"
-		self.tag_bonuses[Tags.Holy]['minion_health'] = 10
-		self.tag_bonuses[Tags.Dark]['minion_health'] = 10
-		self.tag_bonuses[Tags.Holy]['minion_duration'] = 2
-		self.tag_bonuses[Tags.Dark]['minion_duration'] = 2
+		self.description = "Each turn, each of your minions deals [1_holy:holy] damage to a random adjacent enemy"
+
+	def on_advance(self):
+		for u in self.owner.level.units:
+			if are_hostile(u, self.owner):
+				continue
+			if u == self.owner:
+				continue
+
+			for w in self.owner.level.get_units_in_ball(u, 1, diag=True):
+				if not are_hostile(w, self.owner):
+					continue
+
+				w.deal_damage(1, Tags.Holy, self)
 
 class Drakentooth(Equipment):
 
@@ -704,7 +778,7 @@ class Drakenstaff(Equipment):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "Drakenstaff"
 
-		self.tag_bonuses[Tags.Dragon]['breath_damage'] = 12
+		self.tag_bonuses[Tags.Dragon]['minion_damage'] = 12
 		self.tag_bonuses[Tags.Dragon]['minion_range'] = 1
 		self.tag_bonuses_pct[Tags.Dragon]['minion_health'] = 25
 
@@ -751,7 +825,21 @@ class SkullNecklace(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_AMULET
 		self.name = "Skull Necklace"
-		self.tag_bonuses[Tags.Dark]['minion_damage'] = 4
+		self.description = "Whenever you cast a [dark] spell, all [undead] allies gain +1 damage for 25 turns."
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+
+	def on_cast(self, evt):
+		if Tags.Dark not in evt.spell.tags:
+			return
+
+		for u in self.owner.level.units:
+			if are_hostile(u, self.owner) or u == self.owner:
+				continue
+
+			if Tags.Undead not in u.tags:
+				continue
+
+			u.apply_buff(BloodrageBuff(1), 25)
 
 class RedObsidianShard(Equipment):
 
@@ -803,6 +891,117 @@ class JadeShard(Equipment):
 		for u in targets:
 			u.apply_buff(Poison(), 3)
 
+class FangedAmulet(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Fanged Amulet"
+		self.description = "Each turn, an adjacent unit takes 3 [physical] damage and you are healed for the damage dealt."
+		self.global_triggers[EventOnDamaged] = self.on_damage
+
+	def on_advance(self):
+		targets = []
+		# Build a list of units adjacent to the wizard
+
+		for unit in self.owner.level.get_units_in_ball(self.owner, radius=1, diag=True):
+			if not unit == self.owner:
+				targets.append(unit)
+		if targets:
+			target = random.choice(targets)
+			target.deal_damage(3, Tags.Physical, self)
+
+	def on_damage(self, evt):
+		if not evt.source == self:
+			return
+		if not evt.damage:
+			return
+		self.owner.heal(evt.damage, self)
+
+class StoneeaterAmulet(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Stoneeater Amulet"
+		self.description = "Each turn, eat an adjacent wall. Gain 1 HP if you do."
+
+	def on_advance(self):
+		targets = []
+
+		for tile in self.owner.level.get_tiles_in_ball(self.owner.x, self.owner.y, 1.5):
+			if tile.is_wall():
+				targets.append(tile)
+		if targets:
+			target = random.choice(targets)
+			self.owner.level.make_floor(target.x, target.y)
+			self.owner.level.show_effect(target.x, target.y, Tags.Physical)
+			self.owner.heal(1, self)
+
+class StormeaterAmulet(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Stormeater Amulet"
+		self.description = "Each turn, consume all adjacent lightning storms. When you do, you regain a charge of your highest level lightning spell of level equal to or less than the number of storms eaten."
+
+	def on_advance(self):
+		count = 0
+
+		for tile in self.owner.level.get_tiles_in_ball(self.owner.x, self.owner.y, 1.5):
+			if tile.cloud and type(tile.cloud) == StormCloud:
+				self.owner.level.remove_obj(tile.cloud)
+				count += 1
+
+		if count:
+			self.restore_charge(count)
+
+	def restore_charge(self, count):
+		candidates = []
+		highest = 0 # QoL always recharges highest possible spell.
+
+		for spell in self.owner.spells:
+			if Tags.Lightning in spell.tags and spell.level <= count and spell.cur_charges < spell.get_stat('max_charges'):
+				if spell.level > highest:
+					candidates.clear()
+					candidates.append(spell)
+					highest = spell.level
+
+				elif spell.level == highest:
+					candidates.append(spell)
+
+		if candidates:
+			spell = random.choice(candidates)
+			spell.cur_charges += 1
+			self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Lightning)
+
+class BlizzardBeacon(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Blizzard Beacon"
+		self.description = "Each turn, summons a random number of blizzards across the level. The maximum number summoned each turn is the sum of all SP spent on [ice] magic."
+
+	def get_description(self):
+		if self.owner:
+			return self.description + "\n Maximum Blizzards: [%d:ice]" % (self.owner.get_mastery(Tags.Ice))
+
+
+	def on_advance(self):
+		if self.owner.level.all_enemies_dead():
+			return
+		mastery = self.owner.get_mastery(Tags.Ice)
+		if mastery:
+			num_blizzard_summons = random.randint(0, mastery)
+			self.create_blizzard(num_blizzard_summons)
+
+	def create_blizzard(self, num_blizzard_summons):
+		tiles = [tile for tile in self.owner.level.iter_tiles() if not tile.cloud and not tile.is_wall() and (tile.x, tile.y) != (self.owner.x, self.owner.y)]
+
+		random.shuffle(tiles)
+		for t in tiles[:num_blizzard_summons]:
+			tile = tiles.pop()
+			cloud = BlizzardCloud(self.owner)
+			self.owner.level.add_obj(cloud, tile.x, tile.y)
+
 class RealityAnchor(Equipment):
 
 	def on_init(self):
@@ -841,6 +1040,67 @@ class VialOfAmbrosia(Equipment):
 	def on_unit_added(self, evt):
 		self.owner.apply_buff(StunImmune(), 10)
 
+class DracoAntiphonyScepter(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_STAFF
+		self.name = "Draco Antiphony Scepter"
+		self.owner_triggers[EventOnSpellCast] = self.on_spell
+		self.description = "When you cast a level 4 or lower [sorcery] spell, your [dragon] allies with matching types will attempt to cast that spell also."
+
+	def copy_spell(self, evt):
+		if Tags.Sorcery in evt.spell.tags:
+			target_point = Point(evt.x, evt.y)
+			casters = self.get_dragons(evt, target_point)
+			if casters:
+				for dragon in casters:
+					spell = type(evt.spell)() # create an instance of the class FireBallSpell()
+					spell.caster = dragon # assign the caster and the owner to be the dragon
+					spell.owner = dragon
+					spell.statholder = self.owner # make sure that the spell is the wizard's version of the spell
+					if spell.can_cast(evt.x, evt.y): # if they have los or are in range or w/e
+						for _ in self.owner.level.act_cast(dragon, spell, evt.x, evt.y, pay_costs=False, queue=False):
+							yield
+					elif (evt.x, evt.y) == (self.owner.x, self.owner.y): # for self-cast sorceries like flameburst/stormburst
+						for _ in self.owner.level.act_cast(dragon, spell, dragon.x, dragon.y, pay_costs=False, queue=False):
+							yield
+
+	def on_spell(self, evt):
+		if evt.spell.level > 4:
+			return
+		self.owner.level.queue_spell(self.copy_spell(evt))
+
+	def get_dragons(self, evt, target_point):
+		dragon_allies = []
+		for unit in self.owner.level.units:
+			if are_hostile(self.owner, unit): # don't want enemies
+				continue
+			if not (Tags.Dragon in unit.tags and any(tag in unit.tags for tag in evt.spell.tags)):
+				continue
+			dragon_allies.append(unit)
+		return dragon_allies
+
+class AnnihilatorStaff(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_STAFF
+		self.name = "Annihilator Staff"
+		self.global_triggers[EventOnPreDamaged] = self.on_damage
+		self.description = "Deals 2 [physical], 2 [fire], and 2 [lightning] damage to creatures before they would be damaged by your [sorcery] spells."
+
+	def on_damage(self, evt):
+		if not isinstance(evt.source, Spell): # if the source isn't a spell
+			return
+		if evt.source.caster != self.owner: # and the caster isn't the wizard
+			return
+		if Tags.Sorcery not in evt.source.tags: # and it's not a sorcery spell
+			return
+
+		evt.unit.deal_damage(2, Tags.Physical, self)
+		evt.unit.deal_damage(2, Tags.Fire, self)
+		evt.unit.deal_damage(2, Tags.Lightning, self)
+
+
 class IceCrystalStaff(Equipment):
 
 	def on_init(self):
@@ -874,7 +1134,10 @@ class ArcaneAmplifier(Equipment):
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def on_damage(self, evt):
-		if not isinstance(evt.source, Spell):
+		if not evt.source:
+			return
+
+		if not hasattr(evt.source, "tags"):
 			return
 
 		if Tags.Sorcery not in evt.source.tags:
@@ -1059,6 +1322,87 @@ class BootsOfDramaticArrival(Equipment):
 
 		self.owner.level.act_cast(self.owner, choice, self.owner.x, self.owner.y, pay_costs=False)
 
+class BootsOfImminentDoom(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_BOOTS
+		self.name = "Boots of Imminent Doom"
+		self.description = "Upon entering a rift, immediately cast your [Seal:dark] [Fate:dark] on all enemies in a four tile radius."
+
+		self.owner_triggers[EventOnUnitAdded] = self.on_enter
+
+	def on_enter(self, evt):
+		enemies = [u for u in self.owner.level.get_units_in_ball(self.owner, 4, True) if are_hostile(self.owner, u)]
+		spell = self.owner.get_or_make_spell(Spells.SealFate)
+		for enemy in enemies:
+			self.owner.level.act_cast(self.owner, spell, enemy.x, enemy.y, pay_costs=False)
+
+
+class BootsOfHeavensAssault(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_BOOTS
+		self.name = "Boots of Heaven's Assault"
+		self.description = "Upon entering a rift, immediately cast your [Heavenly_Blast:holy] on all demons and undead in line of sight."
+		self.owner_triggers[EventOnUnitAdded] = self.on_enter
+
+	def on_enter(self, evt):
+		p = Point(self.owner.x, self.owner.y)
+		enemies = [u for u in self.owner.level.get_units_in_los(p) if are_hostile(self.owner, u) and (Tags.Demon in u.tags or Tags.Undead in u.tags)]
+		spell = self.owner.get_or_make_spell(Spells.HolyBlast)
+		for enemy in enemies:
+			self.owner.level.act_cast(self.owner, spell, enemy.x, enemy.y, pay_costs=False)
+
+class StaffOfHeavensVengeance(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_STAFF
+		self.name = "Staff of Heaven's Vengeance"
+		self.description = "When you or one of your [living] or [holy] allies takes damage from an enemy, this staff deals 7 [holy] damage to the source of that damage."
+		self.global_triggers[EventOnDamaged] = self.on_damage
+
+	def on_damage(self, evt):
+		if not are_hostile(self.owner, evt.unit): # if the damaged unit is an ally
+			if evt.source: # and the damage has a source
+				if evt.source.owner: # and the source has an owner
+					if are_hostile(evt.source.owner, self.owner): # and that owner is hostile to the wizard
+						if Tags.Living in evt.unit.tags or Tags.Holy in evt.unit.tags: # and the ally is Living or Holy
+							self.owner.level.queue_spell(self.vengeance(evt)) # queue up the spell
+
+	def vengeance(self, evt):
+		evt.source.owner.deal_damage(7, Tags.Holy, self) # deal 7 holy damage to the source of damage
+		self.owner.level.show_effect(evt.source.owner.x, evt.source.owner.y, Tags.Holy)
+		yield
+
+class RingOfMagneticCharisma(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Ring of Magnetic Charisma"
+		self.description = "When you enter a level, turns the nearest enemy spawner or construct into an ally"
+		self.owner_triggers[EventOnUnitAdded] = self.on_enter
+
+	def on_enter(self, evt):
+		targets = [u for u in self.owner.level.units if are_hostile(u, self.owner) and (Tags.Construct in u.tags or u.is_lair)] # get hostile units that are constructs
+		if targets: # some level's have no lairs or constructs
+			random.shuffle(targets)
+			targets.sort(key=lambda u: distance(self.owner, u)) # sort them by distance
+			target = targets[0] # grab the closest one
+			target.team = self.owner.team # switch their team to wizard's team
+
+class HallucinogenicSporeStaff(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_STAFF
+		self.name = "Hallucinogenic Spore Staff"
+		self.description = "Whenever [poison] is inflicted on an enemy, they are berserked for three turns."
+		self.global_triggers[EventOnBuffApply] = self.on_poison
+
+	def on_poison(self, evt):
+		if isinstance(evt.buff, Poison): # if the buff is poison
+			if are_hostile(self.owner, evt.unit): # and the unit is an enemy
+				evt.unit.apply_buff(BerserkBuff(), 3) # make them berserk for three turns
+
 class TricksterStaff(Equipment):
 
 	def on_init(self):
@@ -1207,7 +1551,7 @@ class FreeCastStaff(Equipment):
 		self.tag = tag
 		self.counter_max = counter_max
 		self.spell = free_spell_class()
-		Equipment.__init__(self)	
+		Equipment.__init__(self, name, tag, counter_max, free_spell_class)
 		self.name = name
 		self.counter = 0
 		
@@ -1257,10 +1601,11 @@ class FreeCastStaff(Equipment):
 
 class RandomLittleRing(Equipment):
 
-	def __init__(self, forced_tag_tup=None, forced_stat_tup=None):
+	def __init__(self, prng, forced_tag_tup=None, forced_stat_tup=None):
 		self.forced_stat_tup = forced_stat_tup
 		self.forced_tag_tup = forced_tag_tup
-		Equipment.__init__(self)
+		self.prng = prng
+		Equipment.__init__(self, self.prng, forced_tag_tup, forced_stat_tup)
 
 	def on_init(self):
 		
@@ -1269,12 +1614,12 @@ class RandomLittleRing(Equipment):
 		if self.forced_tag_tup:
 			tag, tag_name = self.forced_tag_tup
 		else:
-			tag, tag_name, _ = random.choices(ring_tags, weights=ring_tag_weights, k=1)[0]
+			tag, tag_name, _ = self.prng.choices(ring_tags, weights=ring_tag_weights, k=1)[0]
 		
 		if self.forced_stat_tup:
 			stat, stat_name, stat_amt = self.forced_stat_tup
 		else:
-			stat, stat_name, stat_amt, _ = random.choices(ring_stats, weights=ring_stat_weights, k=1)[0]
+			stat, stat_name, stat_amt, _ = self.prng.choices(ring_stats, weights=ring_stat_weights, k=1)[0]
 
 		self.name = "%s %s" % (tag_name, stat_name.capitalize())
 
@@ -1291,9 +1636,13 @@ class RandomLittleRing(Equipment):
 
 class RandomSheild(Equipment):
 
+	def __init__(self, prng):
+		self.prng = prng
+		Equipment.__init__(self, self.prng)
+
 	def on_init(self):
 
-		self.tag = random.choice(damage_tags)
+		self.tag = self.prng.choice(damage_tags)
 
 		self.name = "%s Shield" % self.tag.name
 		self.resists[self.tag] = 25
@@ -1301,15 +1650,25 @@ class RandomSheild(Equipment):
 
 class ConversionHat(Equipment):
 
+	def __init__(self, prng, from_tag=None, from_name=None, to_tag=None, to_name=None):
+		self.prng = prng
+		if from_tag is None or from_name is None or to_tag is None or to_name is None:
+			tags = prng.sample(hat_tag_names, k=2)
+			self.from_tag, self.from_name = tags[0]
+			self.to_tag, self.to_name = tags[1]
+		else:
+			self.from_tag = from_tag
+			self.from_name = from_name
+			self.to_tag = to_tag
+			self.to_name = to_name
+
+		Equipment.__init__(self, self.prng, self.from_tag, self.from_name, self.to_tag, self.to_name)
+
 	def on_init(self):
 
 		self.slot = ITEM_SLOT_HEAD
 
-		tags = random.sample(hat_tag_names, k=2)
-		self.from_tag, from_name = tags[0]
-		self.to_tag, to_name = tags[1]
-
-		self.name = ("%s%s Cap" % (from_name, to_name)).capitalize()
+		self.name = ("%s%s Cap" % (self.from_name, self.to_name)).capitalize()
 
 		self.description = "Redeal 50%% of [%s] damage dealt to enemies as [%s] damage" % (self.from_tag.name, self.to_tag.name)
 		self.conversions[self.from_tag][self.to_tag] = .5
@@ -1318,42 +1677,127 @@ class ConversionHat(Equipment):
 		self.recolor_primary = self.from_tag.color
 		self.recolor_secondary = self.to_tag.color
 
-
-class RandomWand(Equipment):
-
-	def roll_bonus(self, mult):
-
-		stat, _, stat_amt, _ = random.choices(ring_stats, weights=ring_stat_weights)[0]
-
-		if isinstance(stat_amt, int):
-			self.tag_bonuses[self.tag][stat] += mult*stat_amt
-		else:
-			self.tag_bonuses_pct[self.tag][stat] += mult*stat_amt*100
+class FireWand(Equipment):
 
 	def on_init(self):
-
+		self.name = "Fire Staff"
 		self.slot = ITEM_SLOT_STAFF
-		self.tag = random.choice(ring_tags)[0]
+		self.asset_name = 'fire_wand'
 
-		self.roll_bonus(2)
-		if random.random() < .5:	
-			self.roll_bonus(1)
-			self.roll_bonus(1)
-			self.roll_bonus(1)
-		else:
-			self.roll_bonus(2)
+		self.tag_bonuses_pct[Tags.Fire]['damage'] = 50
+		self.tag_bonuses_pct[Tags.Fire]['minion_damage'] = 50
+		self.tag_bonuses[Tags.Fire]['radius'] = 1
 
-		if random.random() < .25:
-			self.roll_bonus(1)
+class IceWand(Equipment):
 
-		self.name = "%s Wand" % self.tag.name
+	def on_init(self):
+		self.name = "Ice Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'ice_wand'
+
+		self.tag_bonuses_pct[Tags.Ice]['damage'] = 50
+		self.tag_bonuses[Tags.Ice]['minion_duration'] = 3
+		self.tag_bonuses_pct[Tags.Ice]['duration'] = 50
+
+class LightningWand(Equipment):
+
+	def on_init(self):
+		self.name = "Lightning Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'lightning_wand'
+
+		self.tag_bonuses[Tags.Lightning]['damage'] = 7
+		self.tag_bonuses[Tags.Lightning]['range'] = 2
+		self.tag_bonuses[Tags.Lightning]['num_targets'] = 1
+		self.tag_bonuses[Tags.Lightning]['minion_damage'] = 4
+
+class NatureWand(Equipment):
+
+	def on_init(self):
+		self.name = "Nature Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'nature_wand'
+
+		self.tag_bonuses[Tags.Nature]['max_charges'] = 1
+		self.tag_bonuses_pct[Tags.Nature]['minion_damage'] = 50
+		self.tag_bonuses[Tags.Nature]['duration'] = 3
+
+class DarkWand(Equipment):
+
+	def on_init(self):
+		self.name = "Dark Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'dark_wand'
+
+		self.tag_bonuses[Tags.Dark]['max_charges'] = 1
+		self.tag_bonuses_pct[Tags.Dark]['minion_health'] = 50
+		self.tag_bonuses_pct[Tags.Dark]['damage'] = 50
+
+class HolyWand(Equipment):
+
+	def on_init(self):
+		self.name = "Holy Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'holy_wand'
+
+		self.tag_bonuses[Tags.Holy]['max_charges'] = 1
+		self.tag_bonuses_pct[Tags.Holy]['minion_duration'] = 50
+		self.tag_bonuses_pct[Tags.Holy]['duration'] = 50
+		self.tag_bonuses[Tags.Holy]['minion_range'] = 2
+
+class ArcaneWand(Equipment):
+
+	def on_init(self):
+		self.name = "Arcane Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'arcane_wand'
+
+		self.tag_bonuses[Tags.Arcane]['max_charges'] = 1
+		self.tag_bonuses_pct[Tags.Arcane]['damage'] = 50
+		self.tag_bonuses_pct[Tags.Arcane]['minion_damage'] = 50
+		self.tag_bonuses[Tags.Arcane]['range'] = 2
+
+class SorceryWand(Equipment):
+
+	def on_init(self):
+		self.name = "Sorcery Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'sorcery_wand'
+
+		self.tag_bonuses_pct[Tags.Sorcery]['damage'] = 50
+		self.tag_bonuses[Tags.Sorcery]['range'] = 2
+		self.tag_bonuses[Tags.Sorcery]['radius'] = 1
+		self.tag_bonuses[Tags.Sorcery]['num_targets'] = 1
+
+class ConjurationWand(Equipment):
+
+	def on_init(self):
+		self.name = "Conjuration Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'conjuration_wand'
+
+		self.tag_bonuses_pct[Tags.Conjuration]['minion_damage'] = 25
+		self.tag_bonuses_pct[Tags.Conjuration]['minion_health'] = 25
+		self.tag_bonuses_pct[Tags.Conjuration]['minion_duration'] = 25
+		self.tag_bonuses[Tags.Conjuration]['num_summons'] = 1
+
+class EnchantmentWand(Equipment):
+
+	def on_init(self):
+		self.name = "Enchantment Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.asset_name = 'enchantment_wand'
+
+		self.tag_bonuses_pct[Tags.Enchantment]['duration'] = 50 
+		self.tag_bonuses_pct[Tags.Enchantment]['damage'] = 25 
+		self.tag_bonuses[Tags.Enchantment]['max_charges'] = 1
 
 class SummonOnDeathStaff(Equipment):
 
 	def __init__(self, monster, name, monster_name=None, duration=None):
 		self.monster = monster
 		self.monster_name = monster_name
-		Equipment.__init__(self)
+		Equipment.__init__(self, monster, name, monster_name, duration)
 		self.name = name
 		self.duration = duration
 
@@ -1391,15 +1835,39 @@ class SummonOnDeathStaff(Equipment):
 	def get_extra_examine_tooltips(self):
 		return [self.monster()]
 
+###### First Solo Item Attempt: RiftKey Staff #######
+## It works! ##
+
+class RiftKeyStaff(Equipment):
+
+	cur_level = 0
+
+	def on_init(self):
+		self.name = "Rift Key Staff"
+		self.slot = ITEM_SLOT_STAFF
+		self.description = "Creates a Rift at the wizard's location upon level victory." # cool because it's anti-softlock tech. 1/lair was too many portals.
+
+	def on_advance(self):
+		if self.cur_level == self.owner.level: # fast return if it already went off this level
+			return
+		if self.owner.level.tiles[self.owner.x][self.owner.y].prop: # fast return if you're on a prop
+			return
+		if self.owner.level.all_enemies_dead(): # check all the units are dead or not, could be faster if there was a level finished global event?
+			portal = Portal(self.owner.level.gen_params.make_child_generator())
+			self.owner.level.add_prop(portal, self.owner.x, self.owner.y)
+			self.cur_level = self.owner.level
+
+####################
+
 class Crackledark(Equipment):
 
 	def on_init(self):
 		self.name = "Crackledarkener"
 		self.slot = ITEM_SLOT_STAFF
-		self.num_targets = 2
-		self.radius = 6
+		self.num_targets = 3
+		self.radius = 3
 		self.global_triggers[EventOnDamaged] = self.on_damage
-		self.description = "Whenever an enemy takes [dark] damage, deal that much [lightning] damage to up to 2 enemy units in a 6 tile burst."
+		self.description = "Whenever an enemy takes [dark] damage, deal that much [lightning] damage to up to 3 units in a 3 tile burst."
 
 
 	def on_damage(self, evt):
@@ -1420,7 +1888,7 @@ class Crackledark(Equipment):
 	def send_bolts(self, source, damage):
 
 		targets = self.owner.level.get_units_in_ball(source, self.radius)
-		targets = [t for t in targets if are_hostile(t, self.owner) and t != source and self.owner.level.can_see(t.x, t.y, source.x, source.y)]
+		targets = [t for t in targets if t != source and (t.x, t.y) != (source.x, source.y) and self.owner.level.can_see(t.x, t.y, source.x, source.y)]
 		random.shuffle(targets)
 
 		bolts = [self.bolt(damage, source, t) for t in targets[:self.num_targets]]
@@ -1432,7 +1900,7 @@ class Crackledark(Equipment):
 class CoilOfCharging(Equipment):
 
 	def __init__(self, name, hightag, lowtag):
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, hightag, lowtag)
 		self.name = name
 		self.hightag = hightag
 		self.lowtag = lowtag
@@ -1565,7 +2033,7 @@ class ThornItem(Equipment):
 
 	def __init__(self, name, dtype):
 		self.dtype = dtype
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, dtype)
 		self.name = name
 
 	def on_init(self):
@@ -1581,7 +2049,7 @@ class ThornItem(Equipment):
 			return
 
 		buff = Thorns(6, dtype=self.dtype)
-		buff.buff_type = BUFF_TYPE_PASSIVE
+		buff.name = "%ss" % self.name
 		evt.unit.apply_buff(buff)
 
 class MaskOfIcyChill(Equipment):
@@ -1630,6 +2098,16 @@ class EyeHelm(Equipment):
 		if Tags.Eye in evt.spell.tags:
 			self.owner.add_shields(3)
 
+class TalkingHat(Equipment):
+
+	def on_init(self):
+		self.name = "Talking Hat"
+		self.slot = ITEM_SLOT_HEAD
+		self.description = "Your [Enchantment] spells gain quickcast (the first one cast each turn does not conclude the turn)."
+		self.buff_type = BUFF_TYPE_BLESS
+		self.tag_bonuses[Tags.Enchantment]['quick_cast'] = 1
+
+
 class GenericFrenzyStack(Buff):
 
 	def __init__(self, tag, damage):
@@ -1643,7 +2121,7 @@ class GenericFrenzyMask(Equipment):
 
 	def __init__(self, tag):
 		self.tag = tag
-		Equipment.__init__(self)
+		Equipment.__init__(self, tag)
 
 	def on_init(self):
 		self.slot = ITEM_SLOT_HEAD
@@ -1723,6 +2201,266 @@ class QuillStaff(Equipment):
 
 		target.deal_damage(8, Tags.Physical, self)
 
+
+class VolcanicLance(Equipment):
+
+	def on_init(self):
+		self.name = "Volcanic Lance"
+		self.slot = ITEM_SLOT_STAFF
+		self.description = "When you cast a [fire] spell targeting an enemy, send out a destructive beam toward the target, destroying walls and dealing [fire] damage equal to the sum of all SP spent on [fire] magic."
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.tag_bonuses[Tags.Fire]['range'] = 3
+
+	def get_description(self):
+		if self.owner:
+			return self.description + "\n Lance Damage: [%d:fire]" % self.owner.get_mastery(Tags.Fire)
+
+	def on_cast(self, evt):
+		if Tags.Fire in evt.spell.tags:
+			target_unit = self.owner.level.get_unit_at(evt.x, evt.y) # grab the unit there
+			if target_unit and are_hostile(self.owner, target_unit): # check if the target was actually a unit and if it's an enemy
+				self.owner.level.queue_spell(self.beam(target_unit)) # queue up the lancing beam
+
+	def beam(self, target_unit):
+		self.owner.level.show_beam(self.owner, target_unit, Tags.Fire)  # show the beam
+		damage = self.owner.get_mastery(Tags.Fire) # set beam's damage equal to Fire Mastery
+		path = self.owner.level.get_points_in_line(self.owner, target_unit, two_pass=False, find_clear=False) # get the path
+		path = path[1:] # skip the first point
+		for point in path: # for each point along the path
+			cur_tile = self.owner.level.tiles[point.x][point.y] # grab the tile
+
+			if not cur_tile.can_see: # Kill walls
+				self.owner.level.make_floor(point.x, point.y)
+
+			if cur_tile.cloud: # Kill clouds
+				cur_tile.cloud.kill()
+
+			unit = self.owner.level.get_unit_at(point.x, point.y) # try to grab a unit at the tile
+			if unit: # if there is one there
+				self.owner.level.deal_damage(unit.x, unit.y, damage, Tags.Fire, self, flash=True) # Deal damage
+
+			yield
+
+class ErebusLance(Equipment):
+
+	def on_init(self):
+		self.name = "Erebus Lance"
+		self.slot = ITEM_SLOT_STAFF
+		self.description = "When you cast a [dark] spell targeting an enemy, send out a destructive beam toward the target, destroying walls and dealing [dark] damage equal to the sum of all SP spent on [dark] magic."
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.tag_bonuses[Tags.Dark]['range'] = 3
+
+	def get_description(self):
+		if self.owner:
+			return self.description + "\n Lance Damage: [%d:dark]" % self.owner.get_mastery(Tags.Dark)
+
+	def on_cast(self, evt):
+		if Tags.Dark in evt.spell.tags:
+			target_unit = self.owner.level.get_unit_at(evt.x, evt.y) # grab the unit there
+			if target_unit and are_hostile(self.owner, target_unit): # check if the target was actually a unit and if it's an enemy
+				self.owner.level.queue_spell(self.beam(target_unit)) # queue up the lancing beam
+
+	def beam(self, target_unit):
+		self.owner.level.show_beam(self.owner, target_unit, Tags.Dark)  # show the beam
+		damage = self.owner.get_mastery(Tags.Dark) # set beam's damage equal to Dark Mastery
+		path = self.owner.level.get_points_in_line(self.owner, target_unit, two_pass=False, find_clear=False) # get the path
+		path = path[1:] # skip the first point
+		for point in path: # for each point along the path
+			cur_tile = self.owner.level.tiles[point.x][point.y] # grab the tile
+
+			if not cur_tile.can_see: # Kill walls
+				self.owner.level.make_floor(point.x, point.y)
+
+			if cur_tile.cloud: # Kill clouds
+				cur_tile.cloud.kill()
+
+			unit = self.owner.level.get_unit_at(point.x, point.y) # try to grab a unit at the tile
+			if unit: # if there is one there
+				self.owner.level.deal_damage(unit.x, unit.y, damage, Tags.Dark, self, flash=True) # Deal damage
+
+			yield
+
+class Heavenrender(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_STAFF
+		self.name = "Heavenrender"
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.description = ("Whenever you cast a [holy] spell, deal [fire] and [lightning] damage to all enemies in a 2 tile burst around the target.\n"
+			"The damage dealt is equal to the sum of all SP spent on [fire] and [lightning] magics, respectively.")
+
+	def get_description(self):
+		if self.owner:
+			return self.description + "\n [fire] damage : [%d:fire] \n [lightning] damage : [%d:lightning]" % (self.owner.get_mastery(Tags.Fire), self.owner.get_mastery(Tags.Lightning))
+
+
+	def on_cast(self, evt):
+		if Tags.Holy in evt.spell.tags:
+			ball = [p for p in self.owner.level.get_points_in_ball(evt.x, evt.y, 2, True)] # grab ball locations
+
+			targets = [u for u in ball if self.owner.level.get_unit_at(u.x, u.y) and are_hostile(self.owner, self.owner.level.get_unit_at(u.x, u.y))] # get the unit locations
+
+			l_mastery = self.owner.get_mastery(Tags.Lightning)
+			f_mastery = self.owner.get_mastery(Tags.Fire)
+
+			for t in targets:
+				t = self.owner.level.get_unit_at(t.x, t.y) # grab the unit there
+				self.owner.level.queue_spell(self.wrath(t, l_mastery, f_mastery))
+
+	def wrath(self, target, l_mastery, f_mastery):
+		target.deal_damage(l_mastery, Tags.Lightning, self)
+		target.level.show_effect(target.x, target.y, Tags.Lightning)
+
+		target.deal_damage(f_mastery, Tags.Fire, self)
+		target.level.show_effect(target.x, target.y, Tags.Fire)
+		yield
+
+class BannerStaff(Equipment):
+
+	def __init__(self, name, tag, food, boss_mod):
+		self.food = food # lightning cloud, blizzard cloud, wall, chasm, wizard
+		self.boss_mod = boss_mod
+		self.tag = tag
+		Equipment.__init__(self)
+		self.name = "%s Legion's Banner" % name
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_STAFF
+		self.global_triggers[EventOnUnitPreAdded] = self.on_summon
+		self.description = "Whenever an ally is summoned, if it is on or adjacent to a %s, the summon consumes it, and gains the %s modifier." % (self.food, BossSpawns.get_boss_mod_name(self.boss_mod))
+
+	def eat(self, tiles): # placeholder, to be overridden by subclass
+		return False
+
+	def on_summon(self, evt):
+		if not evt.unit.is_player_controlled: # not the wizard
+			if not are_hostile(self.owner, evt.unit): # allies only
+				tiles = [t for t in self.owner.level.get_tiles_in_ball(evt.unit.x, evt.unit.y, 1.5)] # get the tiles
+				random.shuffle(tiles) # shuffle em up
+				if self.eat(tiles): # if you can eat
+					BossSpawns.apply_modifier(self.boss_mod, evt.unit) # become a boss
+					self.owner.level.show_effect(evt.unit.x, evt.unit.y, self.tag) # show fx
+
+class StormLegionsBanner(BannerStaff):
+
+	def __init__(self):
+		BannerStaff.__init__(self, "Storm", Tags.Lightning,"Storm Cloud", BossSpawns.Stormtouched)
+
+	def eat(self, tiles):
+		for tile in tiles:
+			if tile.cloud and type(tile.cloud) == StormCloud:
+				self.owner.level.remove_obj(tile.cloud)
+				return True
+		return False
+
+class BlizzardLegionsBanner(BannerStaff):
+
+	def __init__(self):
+		BannerStaff.__init__(self, "Blizzard", Tags.Ice, "Blizzard", BossSpawns.Icy)
+
+	def eat(self, tiles):
+		for tile in tiles:
+			if tile.cloud and type(tile.cloud) == BlizzardCloud:
+				self.owner.level.remove_obj(tile.cloud)
+				return True
+		return False
+
+class DeathLegionsBanner(BannerStaff):
+
+	def __init__(self):
+		BannerStaff.__init__(self, "Death", Tags.Dark, "Chasm", BossSpawns.Ghostly)
+		del self.global_triggers[EventOnUnitPreAdded] # apply_buff isn't working with pre-added
+		self.global_triggers[EventOnUnitAdded] = self.on_summon
+
+	def eat(self, tiles):
+		for tile in tiles:
+			if tile.is_chasm:
+				self.owner.level.make_floor(tile.x, tile.y)
+				return True
+		return False
+
+class TerraCottaLegionsBanner(BannerStaff):
+
+	def __init__(self):
+		BannerStaff.__init__(self, "Terracotta", Tags.Physical, "Wall", BossSpawns.Claytouched)
+		del self.global_triggers[EventOnUnitPreAdded] # apply_buff isn't working with pre-added
+		self.global_triggers[EventOnUnitAdded] = self.on_summon
+
+	def eat(self, tiles):
+		for tile in tiles:
+			if tile.is_wall():
+				self.owner.level.make_floor(tile.x, tile.y)
+				return True
+		return False
+
+class BloodLegionsBanner(BannerStaff):
+
+	def __init__(self):
+		BannerStaff.__init__(self, "Blood", Tags.Blood, "Wizard", BossSpawns.Hivemind)
+		del self.global_triggers[EventOnUnitPreAdded] # Hivemind is weird and doesn't work with preadded
+		self.global_triggers[EventOnUnitAdded] = self.on_summon
+
+	def get_description(self):
+		self.description = "Whenever you summon a unit with a spell or skill, if it is summoned adjacent to yourself or another Fleshbound unit, the summon gains the Fleshbound modifier."
+
+	def eat(self, tiles):
+		for tile in tiles:  # for each tile
+			unit = self.owner.level.get_unit_at(tile.x, tile.y) # store the unit there
+			if unit:  # if there's a unit there
+				if not are_hostile(self.owner, unit):  # if the unit isn't hostile
+					if unit.is_player_controlled:  # if it's the Wizard
+						return True
+					# Check if the unit has any buff that is an instance of HivemindBuff.
+					if any(isinstance(buff, BossSpawns.HivemindBuff) for buff in unit.buffs):
+						return True
+		return False
+
+
+class RechargingChalice(Equipment):
+
+	def __init__(self, name, tag):
+		self.tag = tag
+		Equipment.__init__(self)
+		self.name = "Chalice of %s" % name
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.global_triggers[EventOnItemPickup] = self.on_sp_pickup
+		self.description = "Whenever you pick up an SP orb, each of your %s spells regains one charge." % self.tag.name
+		self.effect_tag = self.tag
+
+	def on_sp_pickup(self, evt):
+		if isinstance(evt.item, ManaDot):
+			self.owner.level.show_effect(self.owner.x, self.owner.y, self.effect_tag) # show an effect of the appropriate color
+			for spell in self.owner.spells: # for each of the wizard's spells
+				if self.tag in spell.tags: # if the spell has the tag of this item
+					spell.refund_charges(1) # grant the spell a charge
+
+class ChaliceOfLight(RechargingChalice):
+
+	def __init__(self):
+		RechargingChalice.__init__(self, 'Light', Tags.Holy)
+
+class ChaliceOfIron(RechargingChalice):
+
+	def __init__(self):
+		RechargingChalice.__init__(self, 'Iron', Tags.Metallic)
+		self.effect_tag = Tags.Physical
+
+
+class ChaliceOfWarp(RechargingChalice):
+
+	def __init__(self):
+		RechargingChalice.__init__(self, 'Warp', Tags.Translocation)
+
+
+class ChaliceOfDragons(RechargingChalice):
+
+	def __init__(self):
+		RechargingChalice.__init__(self, 'Dragons', Tags.Dragon)
+		self.effect_tag = Tags.Conjuration
+
+
 class TwoElementShotRobe(Equipment):
 
 	def __init__(self, name, tag1, tag2):
@@ -1794,6 +2532,38 @@ class RobeOfCrystals(TwoElementShotRobe):
 	def __init__(self):
 		TwoElementShotRobe.__init__(self, 'Crystals', Tags.Arcane, Tags.Ice)
 
+class RaimentOfEyes(Equipment):
+
+	def on_init(self):
+		self.name = "Raiment of Eyes"
+		self.slot = ITEM_SLOT_ROBE
+		self.global_triggers[EventOnUnitAdded] = self.teach_eye_spells
+		self.owner_triggers[EventOnUnitAdded] = self.on_enter
+		self.counter = 0
+		self.description = ("When allies are summoned, grants them your [eye] [enchantment] spells that they have matching tags for. \n"
+					"Each level, a number of allies may be granted these spells equal to the sum of all SP spent on [eye] magic.")
+
+	def get_description(self):
+		if self.owner:
+			return self.description +  "\n Eyes Remaining : [%d:eye]" % (self.owner.get_mastery(Tags.Eye) - self.counter)
+
+	def on_enter(self, evt):
+		self.counter = 0 # reset counter on level entry
+
+	def teach_eye_spells(self, evt):
+		if self.counter < self.owner.get_mastery(Tags.Eye): # if you haven't granted all your eyes yet
+			if not are_hostile(self.owner, evt.unit): # and an allied unit is spawned
+				for unit_tag in evt.unit.tags: # for each of its tags
+					for spell in self.owner.spells: # for each of the wizard's spells
+						if Tags.Enchantment in spell.tags and Tags.Eye in spell.tags: # if it's an eye enchantment spell
+							if unit_tag in spell.tags : # if the unit's tag matches one of they eye's tags
+								spell_class = type(spell) # grab the class of the spell
+								if any(s for s in evt.unit.spells if s.name == spell.name): # don't dupe eyes, armorer skill problems
+									return
+								grant_minion_spell(spell_class, evt.unit, self.owner, cool_down=30)
+								self.counter += 1
+
+
 class DamageToPetsAmulet(Equipment):
 
 	def __init__(self, name, counter_max, dtype, spawn_fn):
@@ -1801,7 +2571,7 @@ class DamageToPetsAmulet(Equipment):
 		self.dtype = dtype
 		self.counter_max = counter_max
 		self.counter = 0
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, counter_max, dtype, spawn_fn)
 		self.name = name
 
 	def on_init(self):
@@ -1838,7 +2608,7 @@ class PrinceOfRuinLike(Equipment):
 
 	def __init__(self, name, tags):
 		self.tags = tags
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, tags)
 		self.name = name
 
 	def on_init(self):
@@ -1874,7 +2644,7 @@ class JarOfBossness(Equipment):
 		self.boss_type = boss_type
 		self.tag = tag
 
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, boss_type, tag)
 		self.slot = ITEM_SLOT_AMULET
 		self.name = name
 		
@@ -1887,7 +2657,7 @@ class JarOfBossness(Equipment):
 		if self.tag:
 			return ("Each non-%s ally you summon has a one in three chance to be %s.\n") % (self.tag.name, BossSpawns.get_boss_mod_name(self.boss_type))
 		else:
-			return ("Each ally you summon as a one in three chance to be %s.\n") % BossSpawns.get_boss_mod_name(self.boss_type)
+			return ("Each ally you summon has a one in three chance to be %s.\n") % BossSpawns.get_boss_mod_name(self.boss_type)
 
 	def on_spell_cast(self, evt):
 		if self.tag in evt.spell.tags:
@@ -1924,7 +2694,7 @@ class JarOfBossness(Equipment):
 class CursePipe(Equipment):
 
 	def __init__(self, name, buff_t, duration, num_targets, cool_down, visual_tag):
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, buff_t, duration, num_targets, cool_down, visual_tag)
 		self.name = name
 		self.slot = ITEM_SLOT_AMULET
 		self.buff_t = buff_t
@@ -1956,7 +2726,7 @@ class CursePipe(Equipment):
 class BloodspikeHelm(Equipment):
 
 	def on_init(self):
-		self.name = "Bloodspike Crown"
+		self.name = "Bloodspike Helm"
 		self.slot = ITEM_SLOT_HEAD
 		self.num_targets = 3
 		self.owner_triggers[EventOnSpendHP] = self.on_spend
@@ -1981,7 +2751,7 @@ class BloodspikeHelm(Equipment):
 class CurseDoll(Equipment):
 
 	def __init__(self, name, tag, spell):
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, tag, spell)
 		self.name = "%s Curse Doll" % name
 		self.tag = tag
 		self.spell = spell
@@ -2012,7 +2782,7 @@ class CurseDoll(Equipment):
 		if not source_unit:
 			return
 
-		s = self.owner.get_or_make_spell(self.spell)
+		s = self.spell()
 		s.statholder = self.owner
 		s.caster = evt.unit
 		s.owner = evt.unit
@@ -2022,7 +2792,7 @@ class CurseDoll(Equipment):
 class TagHelm(Equipment):
 
 	def __init__(self, tag):
-		Equipment.__init__(self)
+		Equipment.__init__(self, tag)
 		self.tag = tag
 		self.slot = ITEM_SLOT_HEAD
 		self.name = "%s Helm" % self.tag.name
@@ -2041,7 +2811,7 @@ class SpellBoots(Equipment):
 		self.spell = spell
 		self.steps = steps
 
-		Equipment.__init__(self)
+		Equipment.__init__(self, name, spell, steps)
 
 		self.name = name
 		self.spell_name = self.spell().name
@@ -2064,24 +2834,311 @@ class SpellBoots(Equipment):
 	def get_description(self):
 		return "Every %s steps, casts your %s spell.\n%d steps until cast." % (self.steps, self.spell_name, self.counter)
 
+class CrownOfRagnarok(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_HEAD
+		self.name = "Crown of Ragnarok"
+		self.description = "Nine turns after you enter a realm, cast Earthquake, Flameburst, Stormburst, and Word of Chaos"
+		self.counter = 0
+		self.owner_triggers[EventOnUnitAdded] = self.reset
+		self.r = [Spells.EarthquakeSpell, Spells.FlameBurstSpell, Spells.StormNova, Spells.WordOfChaos]
+
+	def on_advance(self):
+		self.counter += 1
+		if self.counter == 8:
+			for s in self.r:
+				s = self.owner.get_or_make_spell(s)
+				self.owner.level.act_cast(self.owner, s, self.owner.x, self.owner.y, pay_costs=False)
+
+	def reset(self, _evt):
+		self.counter = 0
+
+class BloodstoneDiadem(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_HEAD
+		self.name = "Bloodstone Diadem"
+		self.description = "Your summoned allies are [Fleshbound:blood]."
+		self.global_triggers[EventOnUnitAdded] = self.on_summon
+
+	def on_summon(self, evt):
+		if not are_hostile(self.owner, evt.unit): # if it's an ally
+			if not evt.unit == self.owner: # and not the wizard
+					BossSpawns.apply_modifier(Hivemind, evt.unit) # Make it fleshbound
+
+class BloodShield(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+		self.name = "Blood Shield"
+		self.description = "When you cast a spell, lose 1 HP and gain 1 [SH:shield]."
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+
+	def on_cast(self, evt):
+		self.owner.level.queue_spell(self.on_cast_effects())
+
+	def on_cast_effects(self):
+		if self.owner.cur_hp < 2:
+			return
+
+		self.owner.cur_hp -= 1
+		self.owner.level.event_manager.raise_event(EventOnSpendHP(self.owner, 1), self.owner)
+		yield
+		self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Blood)
+		yield
+		self.owner.add_shields(1)
+		yield
+
+
+class MinionCastHat(Equipment):
+
+	def __init__(self, name, spell, tag):
+		self.spell = spell
+		self.tag = tag
+		Equipment.__init__(self, name, spell, tag)
+		self.name = name
+	
+		self.description = "Each turn, one of your %s minions instantly casts %s on a random enemy." % (self.tag.name, self.spell().name)
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_HEAD
+
+	def on_advance(self):
+		# Cast the spell from one random minion that has a valid target on a random valid target
+		has_cast = False
+		potential_casters = [u for u in self.owner.level.units if not are_hostile(self.owner, u) and self.tag in u.tags]
+
+		random.shuffle(potential_casters)
+
+		for c in potential_casters:
+			spell = self.spell()
+			spell.statholder = self.owner
+			spell.caster = c
+			spell.owner = c
+
+			def is_good_target(p):
+				unit = self.owner.level.get_unit_at(p.x, p.y)
+				if not unit:
+					return False
+				if not are_hostile(self.owner, unit):
+					return False
+				return spell.can_cast(p.x, p.y)
+
+			# Problem is this gets a list of units and then we try to cast deathtouch on the unit's center which is not a valid target, only its corner is (for 3x3s)
+			potential_targets = [p for p in self.owner.level.get_points_in_ball(c.x, c.y, spell.get_stat('range')) if is_good_target(p)]
+
+			if not potential_targets:
+				continue
+
+			else:
+				target = random.choice(potential_targets)
+				self.owner.level.act_cast(c, spell, target.x, target.y, pay_costs=False)
+				return
+
+class DebuffDamager(Equipment):
+
+	def __init__(self, name, debuff, damage_type):
+		self.debuff = debuff
+		self.damage_type = damage_type
+		Equipment.__init__(self, name, debuff, damage_type)
+		self.name = name
+		self.damage = 15
+		self.description = "Each turn, deal %d %s damage to one random enemy currently afflicted with %s" % (self.damage, damage_type.name, debuff().name)
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_AMULET
+
+	def on_advance(self):
+		candidates = [u for u in self.owner.level.units if are_hostile(self.owner, u) and u.has_buff(self.debuff)]
+
+		if not candidates:
+			return
+
+		target = random.choice(candidates)
+		target.deal_damage(self.damage, self.damage_type, self)
+
+class Mathamabacus(Equipment):
+
+	def on_init(self):
+		self.name = "Mathamabacus"
+		self.slot = ITEM_SLOT_STAFF
+		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+		self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
+		self.last_spell = None
+
+	def get_description(self):
+		desc = "Whenever you cast a spell, if your most recently cast spell was exactly one level lower, casts a random known cantrip on one random enemy in your line of sight.\n"
+		if self.last_spell:
+			desc += "\nLast spell level: %d" % self.last_spell.level
+		return desc
+
+	def on_spell_cast(self, evt):
+
+		if not evt.pay_costs:
+			return
+
+		# cast a random cantrip on a random target
+		if self.last_spell and evt.spell.level == self.last_spell.level + 1:	
+			self.owner.level.queue_spell(self.do_freecast())
+
+		self.last_spell = evt.spell
+
+	def do_freecast(self):
+		known_cantrips = [s for s in self.owner.spells if s.level == 1]
+		targets = [u for u in self.owner.level.get_units_in_los(self.owner) if are_hostile(self.owner, u)]
+			
+		if known_cantrips and targets:
+			target = random.choice(targets)
+			to_cast = random.choice(known_cantrips)
+			self.owner.level.act_cast(self.owner, to_cast, target.x, target.y, pay_costs=False)
+
+		yield
+
+	def on_unit_added(self, evt):
+		self.last_spell = None
+
+class MulticoloredRageRod(Equipment):
+
+	def on_init(self):
+		self.name = "Multicolored Rage Rod"
+		self.slot = ITEM_SLOT_STAFF
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.owner_triggers[EventOnUnitAdded] = self.on_add
+		self.owner_triggers[EventOnBuffRemove] = self.on_remove
+
+		self.tags_seen = set()
+		self.description = "All spells and skills gain +1 damage for each unique tag amongst all the spells you have cast this level."
+
+	def on_cast(self, evt):
+		for t in evt.spell.tags:
+			if t not in self.tags_seen:
+				rage = BloodrageBuff(1) # make a buff that does the same thing but is an item type and then remove it on level enter?
+				rage.buff_type = BUFF_TYPE_BLESS
+				rage.name = t.name + " Rage"
+				rage.color = t.color
+				rage.tag = t
+				self.owner.apply_buff(rage)
+				self.tags_seen.add(t)
+
+	def on_add(self, evt):
+		self.tags_seen.clear()
+
+	def on_remove(self, evt):
+		if not isinstance(evt.buff, BloodrageBuff):
+			return
+		if hasattr(evt.buff, "tag") and evt.buff.tag:
+			self.tags_seen.discard(evt.buff.tag)
+
+class Kettlestaff(Equipment):
+
+	def on_init(self):
+		self.name = "The Boiler"
+		self.slot = ITEM_SLOT_STAFF
+		self.description = "Each turn, all soaked enemies take [9_fire:fire] damage."
+
+	def on_advance(self):
+		for u in self.owner.level.units:
+			if are_hostile(self.owner, u) and u.has_buff(SoakedBuff):
+				u.deal_damage(9, Tags.Fire, self)
+
+class Jormancrown(Equipment):
+
+	def on_init(self):
+		self.name = "Jormancrown"
+		self.slot = ITEM_SLOT_HEAD
+		self.description = "Whenever an allied dragon dies, it spawns a two headed flametouched, stormtouched, chaos touched, or metallic snake."
+
+		self.global_triggers[EventOnDeath] = self.on_death
+
+	def make_snake(self):
+		snake = TwoHeadedSnake()
+		modifier = random.choice([BossSpawns.Metallic, BossSpawns.Flametouched, BossSpawns.Stormtouched, BossSpawns.Chaostouched])
+		BossSpawns.apply_modifier(modifier, snake)
+		return snake
+
+	def on_death(self, evt):
+		if are_hostile(self.owner, evt.unit):
+			return
+
+		if not Tags.Dragon in evt.unit.tags:
+			return
+
+		self.owner.level.queue_spell(self.do_summon(evt.unit))
+
+	def do_summon(self, target):
+		unit = self.make_snake()
+		self.summon(unit, target=target)
+		yield
+
+class EvermeltingIcecube(Equipment):
+
+	def on_init(self):
+		self.name = "Evermelting Cube"
+		self.asset_name = "evermelting_icecube"
+		self.slot = ITEM_SLOT_AMULET
+		self.description = "Whenever an enemy is unfrozen, it is soaked for 3 turns"
+		self.global_triggers[EventOnUnfrozen] = self.on_unfrozen
+
+	def on_unfrozen(self, evt):
+		if are_hostile(self.owner, evt.unit):
+			evt.unit.apply_buff(SoakedBuff(), 3)
+
+class DwarfHat(Equipment):
+
+	def on_init(self):
+		self.name = "Dwarf Hat"
+		self.slot = ITEM_SLOT_HEAD
+
+		self.description = "Each level, when you cast your seventh unique spell, summon 7 duergar."
+
+		self.spell_list = set()
+
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.owner_triggers[EventOnUnitAdded] = self.on_enter
+
+
+	def on_cast(self, evt):
+		
+		if evt.spell in self.spell_list:
+			return
+
+		self.spell_list.add(evt.spell)
+		
+		if len(self.spell_list) == 7:
+			self.owner.level.queue_spell(self.do_summon())
+
+	def do_summon(self):
+		for i in range(7):
+			dwarf = Dwarf()
+			self.summon(dwarf)
+			yield
+
+	def on_enter(self, evt):
+		self.spell_list.clear()
 
 Staves = [
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
-	RandomWand,
+	FireWand,
+	IceWand,
+	LightningWand,
+	NatureWand,
+	DarkWand,
+	HolyWand,
+	ArcaneWand,
+	SorceryWand,
+	EnchantmentWand,
+	ConjurationWand,
 
 	BladeStaff,
 	GeometerStaff,
 	StaffOfMemory,
 	HordeLordStaff,
-	
+	StormLegionsBanner,
+	BlizzardLegionsBanner,
+	DeathLegionsBanner,
+	TerraCottaLegionsBanner,
+	BloodLegionsBanner,
+
 	lambda: GenericOculusEquip("Storm", [Tags.Ice, Tags.Lightning]),
 	lambda: GenericOculusEquip("Void", [Tags.Dark, Tags.Arcane]),
 	lambda: GenericOculusEquip("Pyrostatic", [Tags.Fire, Tags.Lightning]),
@@ -2102,6 +3159,10 @@ Staves = [
 	TricksterStaff,
 
 	Drakenstaff,
+	DracoAntiphonyScepter,
+	AnnihilatorStaff,
+	Heavenrender,
+	StaffOfHeavensVengeance,
 
 	lambda : FreeCastStaff("The Purifier", Tags.Holy, 50, Spells.ImmolateSpell),
 	lambda : FreeCastStaff("Silvermelt", Tags.Fire, 60, Spells.MercurizeSpell),
@@ -2119,10 +3180,18 @@ Staves = [
 	lambda : SummonOnDeathStaff(Spriggan, "Sprigganmaker"),
 	lambda : SummonOnDeathStaff(RandomImp, "Impmaker", monster_name="random imp", duration=5),
 
+	RiftKeyStaff,
 	Crackledark,
 	ScepterOfSorrows,
 	GlassAnimaStaff,
 	QuillStaff,
+	VolcanicLance,
+	ErebusLance,
+	HallucinogenicSporeStaff,
+
+	Mathamabacus,
+	MulticoloredRageRod,
+	Kettlestaff
 ]
 
 Robes = [
@@ -2142,7 +3211,8 @@ Robes = [
 	RobeOfTwilight,
 	RobeOfAgony,
 	RobeOfFrostfire,
-	RobeOfCrystals
+	RobeOfCrystals,
+	RaimentOfEyes
 ]
 
 Hats = [
@@ -2157,6 +3227,9 @@ Hats = [
 	MaskOfIcyChill,
 	StoneMask,
 	EyeHelm,
+	TalkingHat,
+	CrownOfRagnarok,
+	# BloodstoneDiadem,
 
 	lambda : TagHelm(Tags.Fire),
 	lambda : TagHelm(Tags.Ice),
@@ -2176,7 +3249,14 @@ Hats = [
 	lambda : SeasonCrown("Spring Crown", Gnome, 7, Mycobeast, 2, Tags.Arcane),
 	lambda : SeasonCrown("Autumn Crown", Raven, 7, Witch, 4, Tags.Dark),
 
-	BloodspikeHelm
+	BloodspikeHelm,
+
+	lambda : MinionCastHat("Chaos Scale Crown", Spells.AnnihilateSpell, Tags.Dragon),
+	lambda : MinionCastHat("Crown of Bony Fingers", Spells.TouchOfDeath, Tags.Undead),
+	lambda : MinionCastHat("Moon Crown", Spells.VoidBeamSpell, Tags.Holy),
+
+	Jormancrown,
+	DwarfHat
 ]
 
 Boots = [
@@ -2191,6 +3271,8 @@ Boots = [
 	WingedBoots,
 
 	#BootsOfDramaticArrival  # Disabling until I can figure out why it crashes, cool idea tho
+	BootsOfImminentDoom,
+	BootsOfHeavensAssault,
 
 	SilkenSandals,
 	SnowShoes,
@@ -2203,10 +3285,17 @@ Boots = [
 	lambda : SummonShoes(4, Ghost, "Ghost Slippers"),
 
 	lambda : SpellBoots("Storm Boots", Spells.StormNova, 15),
-	lambda : SpellBoots("Exploding Boots", Spells.FlameBurstSpell, 15)
+	lambda : SpellBoots("Exploding Boots", Spells.FlameBurstSpell, 15),
+	lambda : SpellBoots("Earthquake Boots", Spells.EarthquakeSpell, 8)
 ]
 
 Amulets = [
+	ChaliceOfLight,
+	ChaliceOfIron,
+	ChaliceOfWarp,
+	ChaliceOfDragons,
+	CodexOfSacrifice,
+	CrisisCharm,
 	FingerSix,
 	Ankh,
 	Drakentooth,
@@ -2215,21 +3304,18 @@ Amulets = [
 	SkullNecklace,
 	RedObsidianShard,
 	JadeShard,
+	FangedAmulet,
+	StoneeaterAmulet,
+	StormeaterAmulet,
+	BlizzardBeacon,
 	RealityAnchor,
 	AmuletOfUndeath,
 	VialOfAmbrosia,
 	AmuletOfEmeraldFlame,
 	MonkeySkull,
 	Bloodruby,
-
-	# Sometimes these come in normal chests
-	RandomLittleRing,
-	RandomLittleRing,
-	RandomLittleRing,
-
-	RandomSheild,
-	RandomSheild,
-	RandomSheild,
+	BloodShield,
+	RingOfMagneticCharisma,
 
 	lambda : ThornItem("Bramblethorn", Tags.Physical),
 	lambda : ThornItem("Toadthorn", Tags.Poison),
@@ -2262,7 +3348,13 @@ Amulets = [
 
 	lambda : CurseDoll("Purple", Tags.Arcane, Spells.MagicMissile),
 	lambda : CurseDoll("Ugly", Tags.Holy, Spells.CallSpirits),
-	lambda : CurseDoll("Red", Tags.Demon, Spells.AnnihilateSpell)
+	lambda : CurseDoll("Red", Tags.Demon, Spells.AnnihilateSpell),
+	lambda : CurseDoll("Scaly", Tags.Dragon, Spells.DeathShock),
+
+	lambda : DebuffDamager("Fae Toxin Pouch", Poison, Tags.Arcane),
+	lambda : DebuffDamager("Icy Cruciform", FrozenBuff, Tags.Holy),
+
+	EvermeltingIcecube,
 ]
 
 class PetCollar(Equipment):
@@ -2270,7 +3362,7 @@ class PetCollar(Equipment):
 	def __init__(self, spawn_fn):
 		self.spawn_fn = spawn_fn
 		self.example = spawn_fn()
-		Equipment.__init__(self)
+		Equipment.__init__(self, spawn_fn)
 
 
 	def on_init(self):
@@ -2292,7 +3384,7 @@ class PetSigil(Equipment):
 	def __init__(self, spawn_fn):
 		self.spawn_fn = spawn_fn
 		self.example = spawn_fn()
-		Equipment.__init__(self)
+		Equipment.__init__(self, spawn_fn)
 
 	def on_init(self):
 		self.name = "%s Sigil" % self.example.name
@@ -2350,20 +3442,20 @@ def ring_chest(difficulty, prng=random):
 
 	# Fixed attr
 	if roll < .5:
-		stat, stat_name, stat_amt, _ = random.choices(ring_stats, weights=ring_stat_weights, k=1)[0]
+		stat, stat_name, stat_amt, _ = prng.choices(ring_stats, weights=ring_stat_weights, k=1)[0]
 		shop.name = "%s Chest" % stat_name.capitalize()
 
-		tag_tups = random.sample(ring_tags, k=num_rings)
+		tag_tups = prng.sample(ring_tags, k=num_rings)
 
-		items = [RandomLittleRing(forced_stat_tup=(stat, stat_name, stat_amt), forced_tag_tup=tag_tup[:2]) for tag_tup in tag_tups]
+		items = [RandomLittleRing(prng, forced_stat_tup=(stat, stat_name, stat_amt), forced_tag_tup=tag_tup[:2]) for tag_tup in tag_tups]
 
 	# Fixed tag
 	else:
-		tag, tag_name, _ = random.choices(ring_tags, weights=ring_tag_weights, k=1)[0]
+		tag, tag_name, _ = prng.choices(ring_tags, weights=ring_tag_weights, k=1)[0]
 		shop.name = "%s Trinket Chest" % tag_name
 
-		stat_tups = random.sample(ring_stats, k=num_rings)
-		items = [RandomLittleRing(forced_tag_tup=(tag, tag_name), forced_stat_tup=stat_tup[:3]) for stat_tup in stat_tups]
+		stat_tups = prng.sample(ring_stats, k=num_rings)
+		items = [RandomLittleRing(prng, forced_tag_tup=(tag, tag_name), forced_stat_tup=stat_tup[:3]) for stat_tup in stat_tups]
 		
 	content_str = '\n'.join(" %s" % i.name for i in items)
 	shop.description = "Obtain one of:\n%s" % content_str
@@ -2385,12 +3477,25 @@ hat_tag_names = [
 	(Tags.Arcane, "star"),
 ]
 
+def all_damage_hats():
+	possible_conversion_hats = []
+	n = len(hat_tag_names)
+	for i in range(n):
+		for j in range(n):
+			if i != j:
+				from_tag, from_name = hat_tag_names[i]
+				to_tag, to_name = hat_tag_names[j]
+				hat = ConversionHat(1, from_tag, from_name, to_tag, to_name)
+				possible_conversion_hats.append(hat)
+	return possible_conversion_hats
+
+
 def damage_hat_chest(level, prng):
 
 	shop = Shop()
 	shop.name = "Box of Wizard Caps"
 
-	shop.items = [ConversionHat() for i in range(4)]
+	shop.items = [ConversionHat(prng) for i in range(4)]
 	content_str = '\n'.join(" %s" % i.name for i in shop.items)
 	shop.description = "Obtain one of:\n%s" % content_str
 
@@ -2413,11 +3518,6 @@ def get_forced_equip():
 	# Crash if the item isnt found, its debug anyway
 	assert(False)
 
-
-def roll_equipment(difficulty):
-	category = random.choice([Staves, Robes, Hats, Boots, Amulets])
-	return random.choice(category)()
-
 def roll_staff(difficulty, prng=random):
 	# For now return random staff.  Maybe break them out into freeproc staves, attr staffs, random wands, ect later.
 	return prng.choice(Staves)()
@@ -2437,16 +3537,16 @@ def roll_trinket(difficulty, prng=random):
 	if roll < .5:
 		return prng.choice(Amulets)()
 	elif roll < .60:
-		return RandomSheild()
+		return RandomSheild(prng)
 	elif roll < .65:
 		return roll_crown(difficulty, prng)
 	else:
-		return RandomLittleRing()
+		return RandomLittleRing(prng)
 
 def roll_crown(difficulty, prng=random):
 	min_level, max_level = get_spawn_min_max(difficulty+2)
 	cur_options = [s for (s, l) in spawn_options if min_level <= l <= max_level]
-	return PetSigil(random.choice(cur_options))
+	return PetSigil(prng.choice(cur_options))
 
 # Create a random hat for a hat box or treasure chest
 def roll_hat(difficulty, prng=random):
@@ -2454,10 +3554,10 @@ def roll_hat(difficulty, prng=random):
 
 	# 35% chance of damage cap
 	if roll < .35:
-		return ConversionHat()
+		return ConversionHat(prng)
 	# 30% random chance named hat
 	else:
-		return random.choice(Hats)()
+		return prng.choice(Hats)()
 
 # Chest full of crowns
 def crown_chest(difficulty, prng):
@@ -2602,19 +3702,19 @@ def mini_treasure_chest(difficulty, prng=random):
 	shop.asset = ['tiles', 'chest', 'chest']
 	return shop
 
-def exotic_pet_chest(difficulty, prng):
+def exotic_pet_chest(difficulty, prng, player):
 	min_level, max_level = get_spawn_min_max(difficulty + 2)
 	pet_level = max_level
 	cur_options = [s for (s, l) in spawn_options if pet_level <= l <= pet_level]
 	k = CHEST_SIZE
 
-	random.shuffle(cur_options)
+	prng.shuffle(cur_options)
 	monster_opts = cur_options[:k]
 
 	final_opts = []
 
 	for m in monster_opts:
-		v = random.choice(BossSpawns.modifiers)[0]
+		v = prng.choice(BossSpawns.modifiers)[0]
 		final_opts.append(lambda m=m, v=v: BossSpawns.apply_modifier(v, m(), apply_hp_bonus=True))
 
 	items = [PetCollar(o) for o in final_opts]

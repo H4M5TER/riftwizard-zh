@@ -58,13 +58,16 @@ def test_buff_spells():
 	assert(test_spell not in test_unit2.spells)
 
 def test_cast(spell, upg=False):
-	level = Level(6, 6)
+	level = Level(9, 9)
 	player = Unit()
 	player.max_hp = 6000
 	player.team = TEAM_PLAYER
 	# The 'player' will use this each turn instead of spell
 	player.add_spell(SimpleMeleeAttack(1))
 	player.add_spell(spell)
+
+	# For logging stuff
+	level.player_unit = player
 
 	# Add a spent flameburst for mystic memory or other 0 charge things
 	fb = FlameBurstSpell()
@@ -94,6 +97,12 @@ def test_cast(spell, upg=False):
 		if tile.unit:
 			continue
 
+		# Leave empty space from indices 5 to 8
+		if tile.x > 5:
+			continue
+		if tile.y > 5:
+			continue
+
 		if ((tile.x + tile.y) % 2 == 0):
 			unit = Unit()
 			unit.cur_hp = 39
@@ -118,6 +127,7 @@ def test_cast(spell, upg=False):
 			assert(targets)
 		target = targets[-1]
 	
+	print(target)
 	level.act_cast(player, spell, target.x, target.y)
 	for i in range(10):
 		# This only channels for one turn- thats fine?
@@ -129,7 +139,7 @@ def test_each_player_spell():
 	for upg in [False, True]:
 		# To remake skills spells ect
 		game = Game()
-		for spell in game.all_player_spells:
+		for spell in reversed(game.all_player_spells):
 			print(spell.name)
 			test_cast(spell, upg)
 
@@ -289,6 +299,8 @@ def test_cyclops():
 	player.max_hp = 100
 	player.team = TEAM_PLAYER
 	player.stationary = True
+
+	level.player_unit = player
 
 	goblin = Goblin()
 
@@ -520,11 +532,11 @@ def test_seeded_levelgen():
 
 	for diff, seed in [(10, .5234), (1, 3), (1, 5), (20, .123123), (25, .135599)]:
 
-		generator = LevelGenerator(difficulty=diff, seed=seed)
-		l1 = generator.make_level()
+		generator1 = LevelGenerator(difficulty=diff, seed=seed)
+		l1 = generator1.make_level()
 
-		generator = LevelGenerator(difficulty=diff, seed=seed)
-		l2 = generator.make_level()
+		generator2 = LevelGenerator(difficulty=diff, seed=seed)
+		l2 = generator2.make_level()
 		print("Comparing levelgen for difficutly %d seed %f" % (diff, seed))
 
 		for i in range(LEVEL_SIZE-1):
@@ -534,6 +546,8 @@ def test_seeded_levelgen():
 
 				if t1.can_walk != t2.can_walk or t1.can_see != t2.can_see:
 					print("Tile discrepency at %d, %d" % (i, j))
+					print("Tile1: Walkable %d, Visible %d" % (t1.can_walk, t1.can_see))
+					print("Tile2: Walkable %d, Visible %d" % (t2.can_walk, t2.can_see))
 					assert(False)
 				
 				if t1.prop:
@@ -591,28 +605,32 @@ def test_sprites():
 		assert(os.path.exists(path))
 
 
+	
 def run_tests():
-	test_sprites()
 
-	# Seeded levels are currently broken, trials are temp, fix this later
-	#test_weekly_mods()
-	#test_trials()
-	#test_seeded_levelgen()
+	test_predictable_fight()
+	test_levelgen()
 
-	test_each_player_spell()
-	test_rare_monsters()
-
-	#test_variant_monsters() 
-
-	test_spell_modifier_buffs()
-	test_cyclops()
 	test_cat()
 	test_buff_spells()
 	test_stairs_with_buff()
 	test_battle_royale()
 	test_long_mordred()
-	test_predictable_fight()
-	test_levelgen()
+	
+
+	test_each_player_spell()
+
+	test_sprites()
+	test_cyclops()
+	test_trials()
+	test_weekly_mods()
+
+	test_rare_monsters()
+	
+	test_spell_modifier_buffs()
+	
+	test_seeded_levelgen()
+
 
 if __name__ == "__main__":
 	run_tests()

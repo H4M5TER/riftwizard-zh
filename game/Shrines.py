@@ -20,7 +20,7 @@ def random_spell_tag():
 	else:
 		return random.choice([Tags.Word, Tags.Dragon, Tags.Translocation, Tags.Eye, Tags.Chaos, Tags.Orb, Tags.Metallic, Tags.Blood])
 
-def hp_shrine(difficulty, prng):
+def hp_shrine(difficulty, prng, _):
 	shrine = HeartDot(25)
 	return shrine
 
@@ -942,7 +942,7 @@ class DragonHeartShrine(Shrine):
 	def on_init(self):
 		self.name = "Dragon Heart"
 		self.attr_bonuses['minion_range'] = 2
-		self.attr_bonuses['breath_damage'] = 10
+		self.attr_bonuses['minion_damage'] = 10
 		self.attr_bonuses['minion_health'] = .5
 		self.tags = [Tags.Dragon]
 
@@ -2083,9 +2083,9 @@ def shrine(player):
 	shrine = random.choices([s[0] for s in new_shrines], [s[1] for s in new_shrines])[0]()
 	return make_shrine(shrine, player)
 
-def skill_scroll(level, player):
+def skill_scroll(level, prng=random, player=None):
 	skill_opts = [s for s in player.game.all_player_skills if not player.game.has_upgrade(s)]
-	random.shuffle(skill_opts)
+	prng.shuffle(skill_opts)
 	skill_opts = skill_opts[:CHEST_SIZE]
 
 	shop = Shop()
@@ -2096,7 +2096,7 @@ def skill_scroll(level, player):
 
 	return shop
 
-def scroll(level, player):
+def scroll(level, prng=random, player=None):
 	max_spell_level = 2
 	if level >= 5:
 		max_spell_level = 3
@@ -2117,7 +2117,7 @@ def scroll(level, player):
 		spell_opts = [s for s in player.game.all_player_spells if min_spell_level <= s.level <= max_spell_level and s not in player.spells]
 	else:
 		spell_opts = make_player_spells()
-	random.shuffle(spell_opts)
+	prng.shuffle(spell_opts)
 	spell_opts = spell_opts[:CHEST_SIZE+1]
 
 	shop = Shop()
@@ -2128,9 +2128,7 @@ def scroll(level, player):
 
 	return shop
 
-
-def roll_chest(level, prng=random):
-	opts = [
+chest_opts = [
 		(treasure_chest, .5),
 		(crown_chest, .08),
 		(damage_hat_chest, .04),
@@ -2141,37 +2139,37 @@ def roll_chest(level, prng=random):
 		(armor_chest, .05),
 		(trinket_chest, .15),
 		#(mini_treasure_chest, .08)
-	]
+]
 
-	return prng.choices([o[0] for o in opts], weights=[o[1] for o in opts])[0](level, prng)
+def roll_chest(level, prng=random, player=None):
+	return prng.choices([o[0] for o in chest_opts], weights=[o[1] for o in chest_opts])[0](level, prng)
+
+# (Reward Function(level, rng, player), Weight, Min Level)
+reward_table = [
+	(roll_chest, 1.3),
+	(hp_shrine, 1),
+	(exotic_pet_chest, .25),
+	(scroll, .2),
+	(skill_scroll, .3, 13)
+]
 
 def roll_shrine(level, prng=None, player=None):
 
-	# Level 2 always a circle or an item- something that directs the player towards some specific build ideas
-	opts = [
-		(roll_chest, 1.3),
-		(hp_shrine, 1),
-		(exotic_pet_chest, .25),
-		(lambda level, prng : scroll(level, player), .2)
-		# Miniaturization Shrine
-		# Refund Shrine
-		# Circle Replacement
-		# Item bonanza?  (9 portal disruptors baby!)
-		# other weird shit ect. (maybe put below too)
-	]
+	def can_roll(o):
+		if len(o) < 3:
+			return True
+		return o[2] <= level
 
-	if level > 13:
-		opts.append((lambda level, prng: skill_scroll(level, player), .3))
+	opts = [o for o in reward_table if can_roll(o)]
 
 	if not prng:
 		prng = random
 
-	return prng.choices([o[0] for o in opts], weights=[o[1] for o in opts])[0](level, prng)
+	return prng.choices([o[0] for o in opts], weights=[o[1] for o in opts])[0](level, prng, player)
 
 def roll_circle():
 	return 
 
 if __name__ == "__main__":
 	for i in range(200):
-		roll_shrine(2)
-	#Print loot odds
+		print(roll_shrine(2))
