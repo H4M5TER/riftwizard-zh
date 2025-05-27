@@ -3,7 +3,7 @@ from Level import *
 from CommonContent import *
 import random
 
-from Spells import WordOfChaos
+from Spells import WordOfChaos, IgnitePoison
 from Variants import *
 from Monsters import *
 import BossSpawns
@@ -680,13 +680,23 @@ class CodexOfSacrifice(Equipment):
 	def get_description(self):
 		return ("When you complete a level, permanently sacrifice 25 HP to activate the Codex.\n"
 				"When you activate the Codex, learn a [word] spell. \n"
-				"If you know every [word] spell, this item ceases to function. \n")
+				"If you know every available [word] spell, this item ceases to function. \n")
 
 	def on_complete(self, _level):
 		if not self.owner: # no wizard? do nothing
 			return
 
-		words = [s() for s in Spells.all_player_spell_constructors if Tags.Word in s().tags] # grab all the word spells
+		self.owner.level.queue_spell(self.teach_word())
+
+	def teach_word(self):
+		for _ in range(6):
+			yield
+
+		game = getattr(self.owner, 'game', None)
+		if not game:
+			return
+
+		words = [s for s in game.all_player_spells if Tags.Word in s.tags] # grab all the word spells
 		words = [w for w in words if not self.owner.get_spell(type(w))] # remove any word spells the wizard already knows
 
 		if not words: # if there are no unknown word spells, set to expended, do nothing
@@ -697,6 +707,96 @@ class CodexOfSacrifice(Equipment):
 
 		random.shuffle(words)
 		self.owner.add_spell(words.pop()) # teach a word spell
+
+class MacrophagicMask(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_HEAD
+		self.name = "Macrophagic Mask"
+		self.global_triggers[EventOnDamaged] = self.on_damaged
+		self.description = "When a [living] or [slime] ally deals damage to an enemy, they gain 1 max HP"
+
+	def on_damaged(self, evt):
+		if not evt.source:
+			return
+		if not evt.source.owner:
+			return
+		if are_hostile(evt.source.owner, self.owner):
+			return
+		if Tags.Living not in evt.source.owner.tags and Tags.Slime not in evt.source.owner.tags:
+			return
+		if evt.source.owner.is_player_controlled:
+			return
+		evt.source.owner.max_hp += 1
+
+class OozingScaleArmor(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_ROBE
+		self.resists[Tags.Physical] = 50
+		self.resists[Tags.Poison] = 100
+		self.name = "Oozing Scale Armor"
+		self.description = ("Spawn a slime of a matching type when you take damage from an enemy.\n"
+							"If there is no slime which matches the damage type, spawns a random slime")
+		self.owner_triggers[EventOnDamaged] = self.on_damaged
+
+	def on_damaged(self, evt):
+		if evt.damage <= 0:
+			return
+		if not evt.damage_type:
+			return
+		if not evt.source:
+			return
+		if not evt.source.owner:
+			return
+		if not are_hostile(self.owner, evt.source.owner):
+			return
+		summon = self.get_damage_matched_slime(evt.damage_type)
+		self.summon(summon, self.owner)
+
+	def get_damage_matched_slime(self, dtype):
+		dtype_to_slime = {
+			Tags.Fire: RedSlime,
+			Tags.Ice: IceSlime,
+			Tags.Lightning: ElectricSlime,
+			Tags.Poison: GreenSlime,
+			Tags.Arcane: VoidSlime,
+			Tags.Dark: BloodSlime,
+		}
+
+		slime = dtype_to_slime.get(dtype)
+		if slime:
+			return slime()
+
+		return random.choice([RedSlime(), IceSlime(), ElectricSlime(), GreenSlime(), BloodSlime(), VoidSlime()])
+
+class SlimyVoodooMantle(Equipment):
+
+	def on_init(self):
+		self.slot = ITEM_SLOT_ROBE
+		self.name = "Slimy Voodoo Mantle"
+		self.description = "If you would take damage, deal that much damage to an adjacent slime ally instead."
+		self.owner_triggers[EventOnPreDamaged] = self.on_damaged
+		self.tag_bonuses[Tags.Slime]['max_charges'] = 2
+		self.tag_bonuses[Tags.Slime]['minion_health'] = 10
+
+	def on_damaged(self, evt):
+		if evt.damage <= 0:
+			return
+		if not evt.source:
+			return
+		if isinstance(evt.source, SlimyVoodooMantle):
+			return
+		adj_slime_allies = [u for u in self.owner.level.get_units_in_ball(self.owner, 1, diag=True)
+							if u.cur_hp>0 and not are_hostile(u, self.owner) and Tags.Slime in u.tags and not u==self.owner] # look for a friendly, still alive slime. don't let slimes redirect onto themselves via armorer shenanigans
+		if not adj_slime_allies:
+			return
+		self.owner.add_shields(1)
+		self.owner.level.queue_spell(self.dist_damage(evt, adj_slime_allies))
+
+	def dist_damage(self, evt, adj_slime_allies):
+		random.choice(adj_slime_allies).deal_damage(evt.damage, evt.damage_type, self) # damage is sourced to the robe to prevent inf recursion via armorer
+		yield
 
 class CrisisCharm(Equipment):
 
@@ -724,6 +824,10 @@ class CrisisCharm(Equipment):
 
 			self.owner.cur_hp = self.owner.max_hp # set hp to max
 			self.used = True # indicate that it's been used, will catch on turn advance and become broken
+
+			# Log explicitly to item_counts and message log for more transparency
+			self.owner.level.item_counts[self.name] += 1
+			self.owner.level.combat_log.debug("[%s:wizard] used a %s" % (self.owner.name, self.name))
 
 			self.name = "Broken Charm"
 			self.description = "A broken charm, although it saved your life once, it's of no use now"
@@ -896,8 +1000,12 @@ class FangedAmulet(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_AMULET
 		self.name = "Fanged Amulet"
-		self.description = "Each turn, an adjacent unit takes 3 [physical] damage and you are healed for the damage dealt."
+		self.description = "Each turn, deal [physical] damage equal to the sum of all SP spent on [blood] magic to an adjacent unit and heal for the damage dealt. "
 		self.global_triggers[EventOnDamaged] = self.on_damage
+
+	def get_description(self):
+		if self.owner:
+			return self.description + "\n Amulet Damage: [%d:physical]" % self.owner.get_mastery(Tags.Blood)
 
 	def on_advance(self):
 		targets = []
@@ -908,7 +1016,8 @@ class FangedAmulet(Equipment):
 				targets.append(unit)
 		if targets:
 			target = random.choice(targets)
-			target.deal_damage(3, Tags.Physical, self)
+			dmg = self.owner.get_mastery(Tags.Blood)
+			target.deal_damage(dmg, Tags.Physical, self)
 
 	def on_damage(self, evt):
 		if not evt.source == self:
@@ -1086,9 +1195,13 @@ class AnnihilatorStaff(Equipment):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "Annihilator Staff"
 		self.global_triggers[EventOnPreDamaged] = self.on_damage
-		self.description = "Deals 2 [physical], 2 [fire], and 2 [lightning] damage to creatures before they would be damaged by your [sorcery] spells."
+		self.description = "Deals 2 [physical], 2 [fire], and 2 [lightning] damage to units before they would be damaged by your [sorcery] spells."
 
 	def on_damage(self, evt):
+		if evt.damage < 1:
+			return
+		if evt.unit.resists[evt.damage_type] >= 100:
+			return
 		if not isinstance(evt.source, Spell): # if the source isn't a spell
 			return
 		if evt.source.caster != self.owner: # and the caster isn't the wizard
@@ -1327,13 +1440,13 @@ class BootsOfImminentDoom(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_BOOTS
 		self.name = "Boots of Imminent Doom"
-		self.description = "Upon entering a rift, immediately cast your [Seal:dark] [Fate:dark] on all enemies in a four tile radius."
-
+		self.description = "Upon entering a rift, cast your [Seal:dark] [Fate:dark] on all enemies within the spell's range."
 		self.owner_triggers[EventOnUnitAdded] = self.on_enter
 
 	def on_enter(self, evt):
-		enemies = [u for u in self.owner.level.get_units_in_ball(self.owner, 4, True) if are_hostile(self.owner, u)]
 		spell = self.owner.get_or_make_spell(Spells.SealFate)
+		spell.requires_los = False
+		enemies = [u for u in self.owner.level.units if spell.can_cast(u.x, u.y) and are_hostile(self.owner, u)]
 		for enemy in enemies:
 			self.owner.level.act_cast(self.owner, spell, enemy.x, enemy.y, pay_costs=False)
 
@@ -1395,7 +1508,7 @@ class HallucinogenicSporeStaff(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "Hallucinogenic Spore Staff"
-		self.description = "Whenever [poison] is inflicted on an enemy, they are berserked for three turns."
+		self.description = "Whenever [poison] is inflicted on an unpoisoned enemy, they are berserked for three turns."
 		self.global_triggers[EventOnBuffApply] = self.on_poison
 
 	def on_poison(self, evt):
@@ -1615,11 +1728,13 @@ class RandomLittleRing(Equipment):
 			tag, tag_name = self.forced_tag_tup
 		else:
 			tag, tag_name, _ = self.prng.choices(ring_tags, weights=ring_tag_weights, k=1)[0]
+			self.forced_tag_tup = tag, tag_name
 		
 		if self.forced_stat_tup:
 			stat, stat_name, stat_amt = self.forced_stat_tup
 		else:
 			stat, stat_name, stat_amt, _ = self.prng.choices(ring_stats, weights=ring_stat_weights, k=1)[0]
+			self.forced_stat_tup = stat, stat_name, stat_amt
 
 		self.name = "%s %s" % (tag_name, stat_name.capitalize())
 
@@ -1634,19 +1749,27 @@ class RandomLittleRing(Equipment):
 		self.asset_name = 'trinket_%s' % stat_name
 		self.recolor_primary = tag.color
 
+	def clone(self):
+		return type(self)(self.prng, forced_tag_tup=self.forced_tag_tup, forced_stat_tup=self.forced_stat_tup)
+
 class RandomSheild(Equipment):
 
-	def __init__(self, prng):
+	def __init__(self, prng, tag=None):
 		self.prng = prng
-		Equipment.__init__(self, self.prng)
+		self.tag = tag
+		Equipment.__init__(self, self.prng, tag)
 
 	def on_init(self):
 
-		self.tag = self.prng.choice(damage_tags)
+		if not self.tag:
+			self.tag = self.prng.choice(damage_tags)
 
 		self.name = "%s Shield" % self.tag.name
 		self.resists[self.tag] = 25
 		self.slot = ITEM_SLOT_AMULET
+
+	def clone(self):
+		return type(self)(self.prng, self.tag)
 
 class ConversionHat(Equipment):
 
@@ -2349,7 +2472,7 @@ class StormLegionsBanner(BannerStaff):
 	def eat(self, tiles):
 		for tile in tiles:
 			if tile.cloud and type(tile.cloud) == StormCloud:
-				self.owner.level.remove_obj(tile.cloud)
+				tile.cloud.kill()
 				return True
 		return False
 
@@ -2361,7 +2484,7 @@ class BlizzardLegionsBanner(BannerStaff):
 	def eat(self, tiles):
 		for tile in tiles:
 			if tile.cloud and type(tile.cloud) == BlizzardCloud:
-				self.owner.level.remove_obj(tile.cloud)
+				tile.cloud.kill()
 				return True
 		return False
 
@@ -2426,7 +2549,7 @@ class RechargingChalice(Equipment):
 	def on_init(self):
 		self.slot = ITEM_SLOT_AMULET
 		self.global_triggers[EventOnItemPickup] = self.on_sp_pickup
-		self.description = "Whenever you pick up an SP orb, each of your %s spells regains one charge." % self.tag.name
+		self.description = "Whenever you pick up an SP orb, your %s spells regain all charges." % self.tag.name
 		self.effect_tag = self.tag
 
 	def on_sp_pickup(self, evt):
@@ -2434,7 +2557,7 @@ class RechargingChalice(Equipment):
 			self.owner.level.show_effect(self.owner.x, self.owner.y, self.effect_tag) # show an effect of the appropriate color
 			for spell in self.owner.spells: # for each of the wizard's spells
 				if self.tag in spell.tags: # if the spell has the tag of this item
-					spell.refund_charges(1) # grant the spell a charge
+					spell.cur_charges = spell.get_stat('max_charges') # grant the spell all charges
 
 class ChaliceOfLight(RechargingChalice):
 
@@ -2537,7 +2660,7 @@ class RaimentOfEyes(Equipment):
 	def on_init(self):
 		self.name = "Raiment of Eyes"
 		self.slot = ITEM_SLOT_ROBE
-		self.global_triggers[EventOnUnitAdded] = self.teach_eye_spells
+		self.global_triggers[EventOnUnitAdded] = self.on_added
 		self.owner_triggers[EventOnUnitAdded] = self.on_enter
 		self.counter = 0
 		self.description = ("When allies are summoned, grants them your [eye] [enchantment] spells that they have matching tags for. \n"
@@ -2550,18 +2673,22 @@ class RaimentOfEyes(Equipment):
 	def on_enter(self, evt):
 		self.counter = 0 # reset counter on level entry
 
-	def teach_eye_spells(self, evt):
+	def on_added(self, evt):
 		if self.counter < self.owner.get_mastery(Tags.Eye): # if you haven't granted all your eyes yet
 			if not are_hostile(self.owner, evt.unit): # and an allied unit is spawned
-				for unit_tag in evt.unit.tags: # for each of its tags
-					for spell in self.owner.spells: # for each of the wizard's spells
-						if Tags.Enchantment in spell.tags and Tags.Eye in spell.tags: # if it's an eye enchantment spell
-							if unit_tag in spell.tags : # if the unit's tag matches one of they eye's tags
-								spell_class = type(spell) # grab the class of the spell
-								if any(s for s in evt.unit.spells if s.name == spell.name): # don't dupe eyes, armorer skill problems
-									return
-								grant_minion_spell(spell_class, evt.unit, self.owner, cool_down=30)
-								self.counter += 1
+				self.owner.level.queue_spell(self.teach_eye_spells(evt))
+
+	def teach_eye_spells(self, evt):
+		for tag in evt.unit.tags:  # for each of its tags
+			for spell in self.owner.spells:  # for each of the wizard's spells
+				if Tags.Enchantment in spell.tags and Tags.Eye in spell.tags:  # if it's an eye enchantment spell
+					if tag in spell.tags:  # if the unit's tag matches one of the eye's tags
+						spell_class = type(spell)  # grab the class of the spell
+						if any(s for s in evt.unit.spells if  s.name == spell.name):  # don't dupe eyes, armorer skill problems
+							return
+						grant_minion_spell(spell_class, evt.unit, self.owner, cool_down=30)
+						self.counter += 1
+						yield
 
 
 class DamageToPetsAmulet(Equipment):
@@ -2782,12 +2909,16 @@ class CurseDoll(Equipment):
 		if not source_unit:
 			return
 
+		self.owner.level.queue_spell(self.retributive_cast(evt.unit, source_unit)) # double queuing to make sure the location of the killer is captured correctly
+
+	def retributive_cast(self, killed, killer_unit):
+		yield
 		s = self.spell()
 		s.statholder = self.owner
-		s.caster = evt.unit
-		s.owner = evt.unit
-
-		self.owner.level.act_cast(evt.unit, s, source_unit.x, source_unit.y, pay_costs=False)
+		s.caster = killed
+		s.owner = killed
+		self.owner.level.act_cast(killed, s, killer_unit.x, killer_unit.y, pay_costs=False)
+		yield
 
 class TagHelm(Equipment):
 
@@ -2846,7 +2977,7 @@ class CrownOfRagnarok(Equipment):
 
 	def on_advance(self):
 		self.counter += 1
-		if self.counter == 8:
+		if self.counter == 9:
 			for s in self.r:
 				s = self.owner.get_or_make_spell(s)
 				self.owner.level.act_cast(self.owner, s, self.owner.x, self.owner.y, pay_costs=False)
@@ -2876,6 +3007,8 @@ class BloodShield(Equipment):
 		self.owner_triggers[EventOnSpellCast] = self.on_cast
 
 	def on_cast(self, evt):
+		if evt.spell.name == "look" or evt.spell.name == "walk": # hacky, but don't want those granting shields obv
+			return
 		self.owner.level.queue_spell(self.on_cast_effects())
 
 	def on_cast_effects(self):
@@ -3035,12 +3168,12 @@ class Kettlestaff(Equipment):
 	def on_init(self):
 		self.name = "The Boiler"
 		self.slot = ITEM_SLOT_STAFF
-		self.description = "Each turn, all soaked enemies take [9_fire:fire] damage."
+		self.description = "Each turn, all soaked enemies take [25_fire:fire] damage."
 
 	def on_advance(self):
 		for u in self.owner.level.units:
 			if are_hostile(self.owner, u) and u.has_buff(SoakedBuff):
-				u.deal_damage(9, Tags.Fire, self)
+				u.deal_damage(25, Tags.Fire, self)
 
 class Jormancrown(Equipment):
 
@@ -3117,6 +3250,211 @@ class DwarfHat(Equipment):
 	def on_enter(self, evt):
 		self.spell_list.clear()
 
+class FastHandGloves(Equipment):
+
+	def on_init(self):
+		self.name = "Fast Hand Gloves"
+		self.tag_bonuses[Tags.Consumable]['quick_cast'] = 1
+		self.slot = ITEM_SLOT_AMULET
+
+class HelmOfHexes(Equipment):
+
+	def on_init(self):
+		self.name = "Helm of Hexes"
+		self.description = ("When an enemy receives a debuff, there is a 50% chance they will receive another random debuff for the same duration up to a maximum of 10 turns.\n"
+							"This item can apply any of the following:\nBlind, Poison, Frozen, Petrified, Feared, Silenced")
+		self.slot = ITEM_SLOT_HEAD
+		self.global_triggers[EventOnBuffApply] = self.on_debuff
+		self.debuffs =[BlindBuff, Poison, FrozenBuff, PetrifyBuff, FearBuff, Silence]
+
+	def on_debuff(self, evt):
+		if not evt.buff.buff_type == BUFF_TYPE_CURSE: # if it's a curse
+			return
+		if not are_hostile(self.owner, evt.unit): # and they are hostile
+			return
+		if random.random() > .5: # and luck prevails
+			return
+		dur = min(evt.buff.turns_left, 10)
+		if dur < 1 : dur = 10
+		evt.unit.apply_buff(buff=self.roll_debuff(evt.unit.buffs)(), duration=dur)
+
+	def roll_debuff(self, buffs):
+		existing_types = {type(b) for b in buffs if b.buff_type == BUFF_TYPE_CURSE}
+		applicable = [b for b in self.debuffs if b not in existing_types]
+		if applicable:
+			return random.choice(applicable)
+		else:
+			return random.choice(self.debuffs)
+
+class CausticSprig(Equipment):
+
+	def on_init(self):
+		self.name = "Caustic Sprig"
+		self.description = "Poisoned enemies lose one temporary buff each turn."
+		self.slot = ITEM_SLOT_AMULET
+
+	def on_advance(self):
+		for u in list(self.owner.level.units):
+			if not are_hostile(self.owner, u):
+				continue
+			if not u.get_buff(Poison):
+				continue
+			temp_buffs = [b for b in u.buffs if b.turns_left and b.buff_type != BUFF_TYPE_CURSE]
+			if not temp_buffs:
+				continue
+			buff = random.choice(temp_buffs)
+			u.remove_buff(buff)
+
+class MaskOfWoe(Equipment):
+
+	def on_init(self):
+		self.name = "Mask of Woe"
+		self.description = "At the end of your turn, increase the duration of debuffs on enemies in a 3 tile radius by 1."
+		self.slot = ITEM_SLOT_HEAD
+
+	def on_advance(self):
+		for u in self.owner.level.get_units_in_ball(self.owner, 3):
+			if not are_hostile(self.owner, u):
+				continue
+			for b in u.buffs:
+				if b.turns_left and b.turns_left > 0:
+					if b.buff_type == BUFF_TYPE_CURSE:
+						b.turns_left += 1
+
+class WoundRotAmulet(Equipment):
+
+	def on_init(self):
+		self.name = "Wound Rot Amulet"
+		self.description = "Enemies receive 3 turns of [poison] when they take [physical] damage."
+		self.slot = ITEM_SLOT_AMULET
+		self.global_triggers[EventOnDamaged] = self.on_damaged
+
+	def on_damaged(self, evt):
+		if not evt.unit.is_alive():
+			return
+		if not evt.damage_type == Tags.Physical:
+			return
+		if not are_hostile(self.owner, evt.unit):
+			return
+		evt.unit.apply_buff(Poison(), 3)
+
+class VeilpiercersMonocle(Equipment):
+
+	def on_init(self):
+		self.name = "Veilpiercer's Monocle"
+		self.asset_name = 'veilpiercers_monocle'
+		self.description = "Gain clarity when you cast a [translocation] spell.\nThe buff's duration is equal to the spell's level."
+		self.slot = ITEM_SLOT_HEAD
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+		self.tag_bonuses[Tags.Translocation]['range'] = 3
+
+	def on_cast(self, evt):
+		if not Tags.Translocation in evt.spell.tags:
+			return
+		if not evt.spell.level:
+			return
+		self.owner.apply_buff(StunImmune(), evt.spell.level)
+
+class ExplosiveSporeManual(Equipment):
+
+	def on_init(self):
+		self.name = "Explosive Spore Manual"
+		self.description = "Casts your Combust Poison for free at the end of each turn."
+		self.slot = ITEM_SLOT_AMULET
+
+	def on_advance(self):
+		s = self.owner.get_or_make_spell(IgnitePoison)
+		s.animate = False
+		self.owner.level.act_cast(self.owner, s, self.owner.x, self.owner.y, pay_costs=False)
+
+class TundraMantle(Equipment):
+
+	def on_init(self):
+		self.name = "Tundra Mantle"
+		self.description = "Each turn, soaked enemies in a 5 tile radius are [frozen] for 3 turns."
+		self.slot = ITEM_SLOT_ROBE
+		self.tag_bonuses[Tags.Ice]['max_charges'] = 2
+		self.resists[Tags.Ice] = 75
+
+	def on_advance(self):
+		for u in self.owner.level.get_units_in_ball(self.owner, 5):
+			if not are_hostile(self.owner, u):
+				continue
+			if not u.get_buff(SoakedBuff):
+				continue
+			u.apply_buff(FrozenBuff(), 3)
+
+class BalorsEyeStaff(Equipment):
+
+	def on_init(self):
+		self.name = "Balor's Eye Staff"
+		self.description = "When you deal damage with an [eye] spell, deal that much damage again but in a beam to the target, destroying walls and clouds in the way."
+		self.slot = ITEM_SLOT_STAFF
+		self.global_triggers[EventOnDamaged] = self.on_damaged
+
+	def on_damaged(self, evt):
+		if not evt.source:
+			return
+		if not hasattr(evt.source, 'tags'):
+			return
+		if Tags.Eye not in evt.source.tags: # eye's only
+			return
+		if not evt.source.owner:
+			return
+		if evt.source.owner != self.owner: # only your eye spells
+			return
+		self.owner.level.queue_spell(self.do_beam(evt))
+
+	def do_beam(self, evt):
+		start = Point(self.owner.x, self.owner.y)
+		target = Point(evt.unit.x, evt.unit.y)
+		for point in Bolt(self.owner.level, start, target, two_pass=False, find_clear=False):
+			self.owner.level.deal_damage(point.x, point.y, evt.damage, evt.damage_type, self)
+			if not self.owner.level.tiles[point.x][point.y].can_see:
+				self.owner.level.make_floor(point.x, point.y)
+			cloud = self.owner.level.tiles[point.x][point.y].cloud
+			if cloud:
+				cloud.kill()
+			yield
+
+class WyrmSpiritArmorBuff(Buff):
+
+	def __init__(self, tag):
+		Buff.__init__(self)
+		self.buff_type = BUFF_TYPE_BLESS
+		self.name = tag.name + " Wyrm Spirit Armor"
+		self.color = tag.color
+		self.resists[tag] = 10
+		self.stack_type = STACK_INTENSITY
+
+class WyrmSpiritArmor(Equipment):
+
+	def on_init(self):
+		self.name = "Wyrm Spirit Armor"
+		self.description = "When a [Dragon] ally dies, gain 10% resistance to damage types matching their tags until the end of the realm."
+		self.slot = ITEM_SLOT_ROBE
+		self.tag_bonuses[Tags.Dragon]['max_charges'] = 2
+		self.global_triggers[EventOnDeath] = self.on_death
+
+	def on_death(self, evt):
+		if are_hostile(evt.unit, self.owner): # allies only
+			return
+		if not Tags.Dragon in evt.unit.tags: # dragons only
+			return
+		for tag in evt.unit.tags:
+			if tag in damage_tags: # if you can have resistances to it and its in the dragon's tags
+				self.owner.apply_buff(WyrmSpiritArmorBuff(tag))
+
+class NeanderthalsTooth(Equipment):
+
+	def on_init(self):
+		self.name = "Neanderthal's Tooth"
+		self.asset_name = 'neanderthals_tooth'
+		self.slot = ITEM_SLOT_AMULET
+		self.tag_bonuses[Tags.Metallic]['requires_los'] = -1
+		self.tag_bonuses[Tags.Slime]['quick_cast'] = 1
+		self.tag_bonuses[Tags.Blood]['radius'] = 1
+
 Staves = [
 	FireWand,
 	IceWand,
@@ -3191,7 +3529,8 @@ Staves = [
 
 	Mathamabacus,
 	MulticoloredRageRod,
-	Kettlestaff
+	Kettlestaff,
+	BalorsEyeStaff
 ]
 
 Robes = [
@@ -3212,7 +3551,11 @@ Robes = [
 	RobeOfAgony,
 	RobeOfFrostfire,
 	RobeOfCrystals,
-	RaimentOfEyes
+	RaimentOfEyes,
+	OozingScaleArmor,
+	SlimyVoodooMantle,
+	TundraMantle,
+	WyrmSpiritArmor
 ]
 
 Hats = [
@@ -3229,6 +3572,7 @@ Hats = [
 	EyeHelm,
 	TalkingHat,
 	CrownOfRagnarok,
+	MacrophagicMask,
 	# BloodstoneDiadem,
 
 	lambda : TagHelm(Tags.Fire),
@@ -3256,7 +3600,10 @@ Hats = [
 	lambda : MinionCastHat("Moon Crown", Spells.VoidBeamSpell, Tags.Holy),
 
 	Jormancrown,
-	DwarfHat
+	DwarfHat,
+	HelmOfHexes,
+	MaskOfWoe,
+	VeilpiercersMonocle
 ]
 
 Boots = [
@@ -3278,11 +3625,11 @@ Boots = [
 	SnowShoes,
 	TranslocationBoots,
 
-	lambda : SummonShoes(8, Gnome, "Gnome Shoes"),
-	lambda : SummonShoes(6, GreenSlime, "Slime Shoes"),
-	lambda : SummonShoes(4, Kobold, "Kobold Clogs"),
-	lambda : SummonShoes(11, Ogre, "Ogre Boots"),
-	lambda : SummonShoes(4, Ghost, "Ghost Slippers"),
+	lambda : SummonShoes(6, Gnome, "Gnome Shoes"),
+	lambda : SummonShoes(4, GreenSlime, "Slime Shoes"),
+	lambda : SummonShoes(3, Kobold, "Kobold Clogs"),
+	lambda : SummonShoes(8, Ogre, "Ogre Boots"),
+	lambda : SummonShoes(3, Ghost, "Ghost Slippers"),
 
 	lambda : SpellBoots("Storm Boots", Spells.StormNova, 15),
 	lambda : SpellBoots("Exploding Boots", Spells.FlameBurstSpell, 15),
@@ -3313,6 +3660,7 @@ Amulets = [
 	VialOfAmbrosia,
 	AmuletOfEmeraldFlame,
 	MonkeySkull,
+	NeanderthalsTooth,
 	Bloodruby,
 	BloodShield,
 	RingOfMagneticCharisma,
@@ -3355,6 +3703,10 @@ Amulets = [
 	lambda : DebuffDamager("Icy Cruciform", FrozenBuff, Tags.Holy),
 
 	EvermeltingIcecube,
+	FastHandGloves,
+	CausticSprig,
+	WoundRotAmulet,
+	ExplosiveSporeManual
 ]
 
 class PetCollar(Equipment):
@@ -3370,6 +3722,7 @@ class PetCollar(Equipment):
 		self.description = "Start each level with a %s" % self.example.name
 		self.owner_triggers[EventOnUnitAdded] = self.on_add
 		self.slot = ITEM_SLOT_AMULET
+		self.is_pet = True
 
 	def on_add(self, evt):
 		monster = self.spawn_fn()
@@ -3392,11 +3745,15 @@ class PetSigil(Equipment):
 		self.owner_triggers[EventOnUnitAdded] = self.on_add
 		self.slot = ITEM_SLOT_AMULET
 		self.asset_name = "trinket_sigil"
+		self.is_pet = True
 
 	def on_add(self, evt):
 		monster = MonsterSpawner(self.spawn_fn)
+		monster.burrowing = True
+		monster.get_spell(SimpleSummon).radius = 6
+		monster.max_hp = 80
 		apply_minion_bonuses(self, monster)
-		self.summon(monster)
+		self.summon(monster, sort_dist=False)
 
 	def get_extra_examine_tooltips(self):
 		return [self.spawn_fn()]
@@ -3456,13 +3813,18 @@ def ring_chest(difficulty, prng=random):
 
 		stat_tups = prng.sample(ring_stats, k=num_rings)
 		items = [RandomLittleRing(prng, forced_tag_tup=(tag, tag_name), forced_stat_tup=stat_tup[:3]) for stat_tup in stat_tups]
-		
-	content_str = '\n'.join(" %s" % i.name for i in items)
-	shop.description = "Obtain one of:\n%s" % content_str
 
 	shop.items = items
 	shop.asset = ['tiles', 'chest', 'trinket_chest']
 	return shop
+
+def all_rings(prng=random):
+	rings = []
+	for tag, tag_name, _ in ring_tags:
+		for stat, stat_name, stat_amt, _ in ring_stats:
+			ring = RandomLittleRing(prng, forced_tag_tup=(tag, tag_name), forced_stat_tup=(stat, stat_name, stat_amt))
+			rings.append(ring)
+	return rings
 
 all_items = Staves + Robes + Hats + Boots + Amulets
 
@@ -3495,10 +3857,13 @@ def damage_hat_chest(level, prng):
 	shop = Shop()
 	shop.name = "Box of Wizard Caps"
 
-	shop.items = [ConversionHat(prng) for i in range(4)]
-	content_str = '\n'.join(" %s" % i.name for i in shop.items)
-	shop.description = "Obtain one of:\n%s" % content_str
+	items = []
+	while len(items) < 4:
+		item = ConversionHat(prng)
+		if item.name not in [i.name for i in items]:
+			items.append(item)
 
+	shop.items = items
 	shop.asset = ['tiles', 'chest', 'wizard_hat_chest']
 
 	return shop
@@ -3536,15 +3901,13 @@ def roll_trinket(difficulty, prng=random):
 
 	if roll < .5:
 		return prng.choice(Amulets)()
-	elif roll < .60:
-		return RandomSheild(prng)
 	elif roll < .65:
-		return roll_crown(difficulty, prng)
+		return RandomSheild(prng)
 	else:
 		return RandomLittleRing(prng)
 
 def roll_crown(difficulty, prng=random):
-	min_level, max_level = get_spawn_min_max(difficulty+2)
+	min_level, max_level = get_spawn_min_max(difficulty+4)
 	cur_options = [s for (s, l) in spawn_options if min_level <= l <= max_level]
 	return PetSigil(prng.choice(cur_options))
 
@@ -3559,8 +3922,8 @@ def roll_hat(difficulty, prng=random):
 	else:
 		return prng.choice(Hats)()
 
-# Chest full of crowns
-def crown_chest(difficulty, prng):
+# Chest full of crowns, more similar to exotic pets, so putting them separate from chests
+def crown_chest(difficulty, prng, player=None):
 
 	items = []
 	while len(items) < CHEST_SIZE:
@@ -3655,13 +4018,10 @@ def trinket_chest(difficulty, prng=random):
 	shop.name = "Trinket Box"
 	shop.items = items
 
-	# TODO- shoe box asset
 	shop.asset = ['tiles', 'chest', 'chest']
 
 	return shop
-# Chest full of completely random stuff
-# TODO- controlled chances per slot?
-#  Maybe make a staff chest, armor chest, hat chest, boot chest, and amulet chest, and sample from each with % chance?
+
 def treasure_chest(difficulty, prng=random):
 	items = Staves + Robes + Hats + Boots + Amulets
 	k = CHEST_SIZE + 1
@@ -3671,36 +4031,13 @@ def treasure_chest(difficulty, prng=random):
 
 	shop = Shop()
 	shop.name = "Treasure Chest"
-	content_str = '\n'.join(" %s" % i.name for i in items)
-	shop.description = "Obtain one of:\n%s" % content_str
 
 	shop.items = items
 	shop.asset = ['tiles', 'chest', 'chest']
 	return shop
 
-def mini_treasure_chest(difficulty, prng=random):
-
-	items = []
-	while len(items) < CHEST_SIZE:
-		roll = prng.random()
-		if roll < .25:
-			item = roll_hat(difficulty, prng)
-		elif roll < .5:
-			item = roll_staff(difficulty, prng)
-		elif roll < .85:
-			item = roll_armor(difficulty, prng)
-		else:
-			item = roll_shoes(difficulty, prng)
-		if item.name not in [i.name for i in items]:
-			item.slot = ITEM_SLOT_AMULET
-			item.name = "Mini %s" % item.name
-			items.append(item)
-
-	shop = Shop()
-	shop.name = "Miniature Treasure Chest"
-	shop.items = items
-	shop.asset = ['tiles', 'chest', 'chest']
-	return shop
+def mini_shrine(_level, _prng, _player):
+	return MiniShop()
 
 def exotic_pet_chest(difficulty, prng, player):
 	min_level, max_level = get_spawn_min_max(difficulty + 2)
@@ -3714,15 +4051,13 @@ def exotic_pet_chest(difficulty, prng, player):
 	final_opts = []
 
 	for m in monster_opts:
-		v = prng.choice(BossSpawns.modifiers)[0]
+		v = BossSpawns.roll_modifiers(difficulty, m, prng=prng)[0]
 		final_opts.append(lambda m=m, v=v: BossSpawns.apply_modifier(v, m(), apply_hp_bonus=True))
 
 	items = [PetCollar(o) for o in final_opts]
 
 	shop = Shop()
-	shop.name = "Exotic Pet Shop"	
-	content_str = '\n'.join(" %s" % i().name for i in monster_opts)
-	shop.description = "Obtain one of:\n%s" % content_str
+	shop.name = "Exotic Pet Shop"
 	shop.items = items
 	shop.asset = ['tiles', 'chest', 'menagerie_icon']
 

@@ -130,6 +130,7 @@ Blind: All spell ranges reduced to 1.
 Silenced: Cannot cast spells.
 Channeling: Will continue to cast previous spell with same target if no other action is taken.
 Shield (SH): If a unit with SH would be dealt damage, it loses 1 SH instead.
+Clarity: Removes and makes the owner immune to Stunned/Fear/Petrified/Glassified/Frozen/Silenced.
 """
 
 endings = ["Utopia", "Nirvana", "Ragnarok"]

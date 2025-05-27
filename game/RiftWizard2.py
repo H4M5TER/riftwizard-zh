@@ -91,6 +91,8 @@ STATE_COMBAT_LOG = 9
 STATE_PICK_MODE = 10
 STATE_PICK_TRIAL = 11
 STATE_SETUP_CUSTOM = 12
+STATE_PICK_MUTATOR_PARAMS = 13
+STATE_ENTER_MUTATOR_VALUE = 14
 
 SHOP_TYPE_SPELLS = 0
 SHOP_TYPE_UPGRADES = 1
@@ -170,6 +172,9 @@ class SpellCharacterWrapper(object):
 			return False
 		return self.spell == other.spell
 
+	def get_extra_examine_tooltips(self):
+		return self.spell.get_extra_examine_tooltips()
+
 class TooltipExamineTarget(object):
 
 	def __init__(self, desc):
@@ -229,7 +234,7 @@ GAME_MODE_TRIALS = 1
 GAME_MODE_WEEKLY = 2
 GAME_MODE_RANDOM = 3
 GAME_MODE_CUSTOM = 4
-GAME_MODE_MAX = GAME_MODE_RANDOM
+GAME_MODE_MAX = GAME_MODE_CUSTOM
 
 COLOR_XP = (229, 191, 0)
 
@@ -253,6 +258,7 @@ tooltip_colors['blinded'] = tooltip_colors['blind']
 tooltip_colors['glassify'] = Tags.Glass.color
 tooltip_colors['glassified'] = Tags.Glass.color
 tooltip_colors['quick_cast'] = Color(255, 255, 255)
+tooltip_colors['requires_los'] = Tags.Translocation.color
 tooltip_colors['wizard'] = Color(2, 136, 209)
 tooltip_colors['enemy'] = tooltip_colors['damage']
 tooltip_colors['ally'] = Tags.Conjuration.color
@@ -309,6 +315,7 @@ tag_keys = {
 	'r': Tags.Dragon,
 	'o': Tags.Orb,
 	'k': Tags.Chaos,
+	'z': Tags.Slime,
 	'w': Tags.Word,
 	't': Tags.Translocation
 }
@@ -485,9 +492,10 @@ class LookSpell(Spell):
 		self.requires_los = False
 		self.show_tt = False
 		self.quick_cast = True
+		self.name = "look"
 
 	def can_cast(self, x, y):
-		return True
+		return False
 
 	def cast_instant(self, x, y):
 		pass
@@ -504,6 +512,7 @@ class WalkSpell(Spell):
 		self.range = 99
 		self.requires_los = False
 		self.show_tt = False
+		self.name = "walk"
 
 	def can_cast(self, x, y):
 		return not any(are_hostile(u, self.caster) for u in self.caster.level.units)
@@ -1445,6 +1454,13 @@ class PyGameView(object):
 		self.combat_log_turn = 0
 		self.combat_log_level = 0
 
+		# Mutator parameter selection state (for custom run UI)
+		self.pending_mutator_class = None  # class being configured
+		self.pending_param = None # selected param to be configured with a value
+		self.pending_value_buffer = ''  # raw string input for number entry
+		self.custom_mutators = []  # finalized list of configured mutator instances
+		self.custom_mutator_args = [] # store the list of configured mutator args for display
+
 		self.confirm_text = None
 		self.confirm_yes = None
 		self.confirm_no = None
@@ -2385,6 +2401,16 @@ class PyGameView(object):
 					if p:
 						self.game.cur_level.add_obj(unit, p.x, p.y)
 
+				if evt.key == pygame.K_F4 and self.game.p1.is_alive(): # clear spells/spellupgrades/skills
+					wizard = self.game.p1
+					for buff in wizard.buffs:  # get rid of upgrades and spells
+						if type(buff) is Upgrade or SpellUpgrade:
+							wizard.remove_buff(buff)
+					wizard.spells.clear()  # clear spells
+					for buff in wizard.buffs:  # run twice to cleanup leftovers
+						if type(buff) is Upgrade or SpellUpgrade:
+							wizard.remove_buff(buff)
+
 				if evt.key == pygame.K_p:
 					import pdb
 					pdb.set_trace()
@@ -2401,6 +2427,16 @@ class PyGameView(object):
 
 				if evt.key == pygame.K_F1 and level_point:
 					self.game.cur_level.add_prop(megachest(), level_point.x, level_point.y)
+
+				if evt.key == pygame.K_F2 and level_point:
+					self.game.cur_level.add_prop(mini_shrine(None, None, None), level_point.x, level_point.y)
+
+				if evt.key == pygame.K_F3 and level_point:
+					self.game.cur_level.add_prop(amnesia_shrine(None, None, None), level_point.x, level_point.y)
+
+				if evt.key == pygame.K_F5 and level_point:
+					self.game.cur_level.add_prop(duplicator_shrine(None, None, None), level_point.x, level_point.y)
+
 
 		if movedir:
 			repeats = 1
@@ -2630,7 +2666,9 @@ class PyGameView(object):
 			attr = self.chosen_purchase.name.replace(self.chosen_purchase.shrine_name + ' ', '').lower()
 			self.confirm_text = "Use %s on %s?" % (self.game.cur_level.cur_shop.name, self.chosen_purchase.prereq.name)
 		else:
-			if self.shop_type == SHOP_TYPE_SHOP:
+			if isinstance(self.game.cur_level.cur_shop, AmnesiaShop) and isinstance(item, Spell):
+				self.confirm_text = "Unlearn %s?" % self.chosen_purchase.name
+			elif self.shop_type == SHOP_TYPE_SHOP:
 				self.confirm_text = "Learn %s?" % (self.chosen_purchase.name)
 			else:
 				cost = self.game.get_upgrade_cost(self.chosen_purchase)
@@ -3340,16 +3378,18 @@ class PyGameView(object):
 			self.draw_string("Upgrade %s:" % self.shop_upgrade_spell.name, self.middle_menu_display, cur_x, cur_y)
 		if self.shop_type == SHOP_TYPE_SHOP:
 			self.draw_string(self.get_display_level().cur_shop.name, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
+			cur_y += self.linesize
+			self.draw_string(self.get_display_level().cur_shop.description, self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 		if self.shop_type == SHOP_TYPE_BESTIARY:
 			self.draw_string("Bestiary: %d of %d Monsters Slain" % (SteamAdapter.get_num_slain(), len(all_monsters)), self.middle_menu_display, cur_x, cur_y)
 
 
 		cur_y += self.linesize
 		cur_y += self.linesize
-		
+
 		if not shoptions:
 			if self.shop_type == SHOP_TYPE_SHOP:
-				self.draw_string("None of your spells can be improved at this shrine", self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
+				self.draw_string("No eligible spells or equipment", self.middle_menu_display, 0, cur_y, content_width=self.middle_menu_display.get_width(), center=True)
 			elif self.shop_type in [SHOP_TYPE_SPELLS, SHOP_TYPE_SPELLS]:
 				self.draw_string("No spells fit these filters", self.middle_menu_display, cur_x, cur_y, HIGHLIGHT_COLOR)
 
@@ -3402,7 +3442,7 @@ class PyGameView(object):
 			if self.shop_type in [SHOP_TYPE_SPELLS, SHOP_TYPE_UPGRADES]:
 				tag_x = cur_x + tag_offset
 				for tag in Tags:
-					if tag not in opt.tags:
+					if tag not in opt.tags or tag == Tags.Consumable:
 						continue
 					self.draw_string(self.reverse_tag_keys[tag], self.middle_menu_display, tag_x, cur_y, tag.color.to_tup())
 					tag_x += self.font.size(tag.name[0])[0]
@@ -3422,6 +3462,8 @@ class PyGameView(object):
 			cur_y += self.linesize
 
 			for tag in self.game.spell_tags:
+				if tag == Tags.Consumable:
+					continue
 
 				color = tag.color.to_tup() if tag in self.tag_filter else (150, 150, 150)
 				self.draw_string(tag.name, self.middle_menu_display, cur_x, cur_y, color, mouse_content=tag, content_width=tag_width)
@@ -4066,9 +4108,9 @@ class PyGameView(object):
 		highlighted_unit = None
 		mouse_point = self.get_mouse_level_point()
 
-		if isinstance(self.examine_target, Unit):
+		if isinstance(self.examine_target, Unit) and hasattr(self.examine_target, 'x') and hasattr(self.examine_target, 'y'):
 			highlighted_unit = self.examine_target
-		
+
 		if highlighted_unit and highlighted_unit.is_player_controlled:
 			highlighted_unit = None
 		
@@ -4226,13 +4268,13 @@ class PyGameView(object):
 
 		if hasattr(self.examine_target, 'level') and hasattr(self.examine_target, 'x') and hasattr(self.examine_target, 'y'):
 			if isinstance(self.examine_target, Unit) and self.examine_target.cur_hp > 0:
-
-				if self.examine_target.has_buff(Soulbound):
-					b = self.examine_target.get_buff(Soulbound)
-
-					rect = (b.guardian.x * SPRITE_SIZE, b.guardian.y * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE)
-					color = (60, 0, 0)
-					pygame.draw.rect(self.level_display, color, rect)
+				for b in self.examine_target.buffs:
+					if hasattr(b, 'connected_unit'):
+						u = b.connected_unit
+						if u and u.is_alive():
+							rect = (u.x * SPRITE_SIZE, u.y * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE)
+							color = (60, 0, 0)
+							pygame.draw.rect(self.level_display, color, rect)
 
 				if self.examine_target.has_buff(ChannelBuff):
 					b = self.examine_target.get_buff(ChannelBuff)
@@ -4406,27 +4448,23 @@ class PyGameView(object):
 		string_surface = font.render(string, True, color)
 		surface.blit(string_surface, (x, y))
 
-	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=False, extra_space=False):
+	def draw_wrapped_string(self, string, surface, x, y, width, color=(255, 255, 255), center=False, indent=True, extra_space=False):
 		lines = [l for l in string.split('\n') if l]
 
 		cur_x = x
 		cur_y = y
 		linesize = self.linesize
 		num_lines = 0
-
 		char_width = self.font.size('w')[0]
 		chars_per_line = width // char_width
-		for line in lines:
-			#words = line.split(' ')
-			# This regex separates periods, spaces, com`, and tokens
-			exp = '[\[\]:|\w\|\'|%|-]+|.| |,'
-			words = re.findall(exp, line)
-			words.reverse()
-			cur_line = "" 
-			chars_left = chars_per_line
 
-			# Start each line all the way to the left
+		for line in lines: # pre separated by \n
+			exp = '[\[\]:|\w\|\'|%|-]+|.| |,' # This regex separates periods, spaces, com`, and tokens
+			words = re.findall(exp, line) # words is now all the words in the line
+			words.reverse() # get them in reverse order so we can pop the first ones from the end (faster than pop(0))
+			chars_left = chars_per_line
 			cur_x = x
+
 			assert(all(len(word) < chars_per_line) for word in words)
 
 			while words:
@@ -4449,9 +4487,13 @@ class PyGameView(object):
 					if len(word) > max_size:
 						cur_y += linesize
 						num_lines += 1
-						# Indent by one for next line
-						cur_x = x + char_width
 						chars_left = chars_per_line
+
+						# Indent by one for next line
+						if indent:
+							cur_x = x + char_width
+						else:
+							cur_x = x
 
 					self.draw_string(word, surface, cur_x, cur_y, cur_color, content_width=width)               
 									
@@ -4762,8 +4804,11 @@ class PyGameView(object):
 		if cheats_enabled:
 			self.draw_string("Cheats Enabled", self.character_display, cur_x, cur_y - self.linesize, color=(255, 0, 0))
 
-		if self.game.rift_rerolls:
-			self.draw_string("Reroll Rifts (R)", self.character_display, cur_x, cur_y, mouse_content=REROLL_PORTALS_TARGET)
+		if getattr(self.game, 'rift_rerolls', 0): # blocks a crash that came from trying to load a save that resulted in a crash
+			if self.game.rift_rerolls == 1:
+				self.draw_string("Reroll Rifts (R)", self.character_display, cur_x, cur_y, mouse_content=REROLL_PORTALS_TARGET)
+			else:
+				self.draw_string("Reroll Rifts (R) (%d)" % self.game.rift_rerolls, self.character_display, cur_x, cur_y, mouse_content=REROLL_PORTALS_TARGET)
 		cur_y += linesize
 
 		self.draw_string("Menu (ESC)", self.character_display, cur_x, cur_y, mouse_content=OPTIONS_TARGET)
@@ -4952,7 +4997,7 @@ class PyGameView(object):
 			cur_y += self.linesize
 
 		if getattr(self.examine_target, 'level', None):
-			self.draw_string("level %d" % self.examine_target.level, self.examine_display, cur_x, cur_y)
+			self.draw_string("Level %d" % self.examine_target.level, self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
 		cur_y += self.linesize
@@ -5140,7 +5185,7 @@ class PyGameView(object):
 			self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
-		if spell.quick_cast:
+		if spell.get_stat('quick_cast'):
 			self.draw_string("Quick Cast", self.examine_display, cur_x, cur_y)
 			cur_y += self.linesize
 
@@ -5330,6 +5375,12 @@ class PyGameView(object):
 
 		self.examine_display.blit(scaledimage, (self.examine_display.get_width() - self.border_margin - 64, 0))
 
+		if not self.examine_target.items: # for shrines
+			cur_y += self.linesize * 2
+			desc_len = self.draw_wrapped_string(self.examine_target.description, self.examine_display, cur_x, cur_y,
+												width=self.examine_display.get_width() - cur_x - self.border_margin)
+			cur_y += self.linesize * desc_len
+
 		for item in self.examine_target.items:
 			self.draw_string(item.name, self.examine_display, cur_x+38, cur_y)
 			icon = self.get_equipment_icon(item)
@@ -5423,7 +5474,8 @@ class PyGameView(object):
 				if hasattr(spell, 'damage_type') and isinstance(spell.damage_type, Tag):
 					fmt = ' %d %s damage' % (spell.get_stat('damage'), spell.damage_type.name)
 				elif hasattr(spell, 'damage_type') and isinstance(spell.damage_type, list):
-					fmt = ' %d %s damage' % (spell.damage, ' and '.join([t.name for t in spell.damage_type]))
+					connector = 'or' if getattr(spell, 'damage_type_random', False) else 'and'
+					fmt = ' %d %s damage' % (spell.get_stat('damage'), (' %s ' % connector).join([t.name for t in spell.damage_type]))
 				else:
 					fmt = ' %d damage' % spell.get_stat('damage')
 				lines = self.draw_wrapped_string(fmt, self.examine_display, cur_x, cur_y, self.examine_display.get_width() - 2*border_margin, color=COLOR_DAMAGE.to_tup())
@@ -5435,20 +5487,20 @@ class PyGameView(object):
 				cur_y += linesize
 				hasattrs = True
 			if hasattr(spell, 'radius') and spell.get_stat('radius') > 0:
-				fmt = ' %d radius' % spell.radius
+				fmt = ' %d radius' % spell.get_stat('radius')
 				self.draw_string(fmt, self.examine_display, cur_x, cur_y, attr_colors['radius'].to_tup())
 				cur_y += linesize
 				hasattrs = True
-			if spell.cool_down > 0:
+			if spell.get_stat('cool_down') > 0:
 				
 				rem_cd = 0
 				if spell.caster:
 					rem_cd = spell.caster.cool_downs.get(spell, 0)
 
 				if not rem_cd:
-					fmt = ' %d turn cooldown' % spell.cool_down
+					fmt = ' %d turn cooldown' % spell.get_stat('cool_down')
 				else:
-					fmt = ' %d turn cooldown (%d)' % (spell.cool_down, rem_cd)
+					fmt = ' %d turn cooldown (%d)' % (spell.get_stat('cool_down'), rem_cd)
 				self.draw_string(fmt, self.examine_display, cur_x, cur_y)
 				cur_y += linesize
 				hasattrs = True
@@ -5696,7 +5748,8 @@ class PyGameView(object):
 		opts = [("NORMAL GAME", GAME_MODE_NORMAL),
 				("ARCHMAGE TRIALS", GAME_MODE_TRIALS),
 				("WEEKLY RUN", GAME_MODE_WEEKLY),
-				("MUTATED RUN", GAME_MODE_RANDOM)]
+				("MUTATED RUN", GAME_MODE_RANDOM),
+				("CUSTOM RUN", GAME_MODE_CUSTOM)]
 
 		rect_w = self.font.size("Archmage Trials")[0]
 		cur_x = self.screen.get_width() // 2 - (self.font.size("Archmage Trials")[0] // 2)
@@ -5779,7 +5832,484 @@ class PyGameView(object):
 			self.new_game(mutators=get_random_mutators(weekly=True), trial_name=get_weekly_name(), seed=get_weekly_seed())
 		if selection == GAME_MODE_RANDOM:
 			self.new_game(mutators=get_random_mutators(), trial_name="MUTATED_RUN")
+		if selection == GAME_MODE_CUSTOM:
+			self.state = STATE_SETUP_CUSTOM
+			self.examine_target = all_mutators[0]
 
+	def draw_setup_custom(self):
+		self.ui_rects = []
+		col_w = self.screen.get_width() // 5
+		line_height = self.linesize
+
+		# Draw all mutators (column 2)
+		x_all = col_w
+		y = self.linesize * 4
+		for mut in all_mutators:
+			name = mut.name if not isinstance(mut, type) else mut.__name__
+			w = self.font.size(name)[0]
+			x = x_all
+			self.draw_string(name, self.screen, x, y, (255, 255, 255), mouse_content=mut, content_width=w)
+			self.ui_rects.append((pygame.Rect(x, y, w, line_height), mut))
+			y += line_height
+
+		# Draw Play Button (column 3)
+		x_play = col_w * 2 + col_w // 2
+		label = "Play"
+		label_w = self.font.size(label)[0]
+		x = x_play - label_w // 2
+		y = self.screen.get_height() - line_height * 4
+
+		self.draw_string(label, self.screen, x, y, (255, 255, 255), mouse_content="play")
+		self.ui_rects.append((pygame.Rect(x, y, label_w, self.linesize), "play"))
+
+		# Draw configured mutators (column 4)
+		x_custom = col_w * 4
+		y = self.linesize * 4
+
+		for mut, args in zip(self.custom_mutators, self.custom_mutator_args):
+			arg_strs = [self.format_param_value(arg) for arg in args]
+			name = f"{mut.__class__.__name__} " + " ".join(f"({s})" for s in arg_strs)
+
+			w = self.font.size(name)[0]
+			x = x_custom - w
+			self.draw_string(name, self.screen, x, y, (255, 255, 255), mouse_content=mut, content_width=w)
+			self.ui_rects.append((pygame.Rect(x, y, w, line_height), mut))
+			y += line_height
+
+		# Draw description (center column)
+		if self.examine_target in self.custom_mutators or self.examine_target in all_mutators:
+			if self.examine_target in self.custom_mutators:
+				desc_lines = getattr(self.examine_target, 'description', '').split('\n')
+			else:
+				desc_lines = self.get_placeholder_description(self.examine_target).split('\n')
+
+			if SIZE == SIZE_SMALL:
+				y = self.screen.get_height() // 2
+			else:
+				y = self.screen.get_height() - line_height * 8
+
+			for line in desc_lines:
+				if SIZE == SIZE_SMALL:
+					x = col_w * 2
+					num_lines = self.draw_wrapped_string(line, self.screen, x, y, col_w, indent=False, center=True)
+					y += line_height * (num_lines + 1)
+				else:
+					x = (self.screen.get_width() // 2) - (self.font.size(line)[0] // 2)
+					self.draw_string(line, self.screen, x, y)
+					y += line_height
+
+	def get_placeholder_description(self, mutator_class):
+		temp_instance = self.create_placeholder_instance(mutator_class)
+		if mutator_class in mutators_with_no_args:
+			return getattr(temp_instance, "description", "No Description")
+
+
+		raw_description = getattr(temp_instance, "description", "")
+
+		if mutator_class in mutators_with_vals or mutator_class in mutators_with_params_and_vals:
+			dummy_val = 25
+			if str(dummy_val) in raw_description:
+				raw_description = raw_description.replace(str(dummy_val), 'X')
+
+		if mutator_class in mutators_with_params:
+			dummy_param = self.get_dummy_param(mutator_class)
+			if dummy_param is not None:
+				if callable(dummy_param):
+					try:
+						dummy_instance = dummy_param()
+						param_str = getattr(dummy_instance, 'name', str(dummy_instance))
+					except Exception:
+						param_str = None
+				else:
+					param_str = getattr(dummy_param, 'name', str(dummy_param))
+				if param_str:
+					raw_description = raw_description.replace(str(param_str), 'X')
+
+		return raw_description
+
+	def create_placeholder_instance(self, mutator_class):
+		if mutator_class in mutators_with_no_args:
+			return mutator_class()
+		elif mutator_class in mutators_with_vals:
+			return mutator_class(25)
+		elif mutator_class in mutators_with_params:
+			dummy_param = self.get_dummy_param(mutator_class)
+
+			if mutator_class in [EnemyBuff, RespawnAsMutator]: # callable params
+				return mutator_class(dummy_param)
+
+			if mutator_class in mutators_with_params_and_vals:
+				if mutator_class in [ExtraSpawns]: # callable + val params
+					return mutator_class(dummy_param, 25)
+				else:
+					param_val = dummy_param() if callable(dummy_param) else dummy_param
+					return mutator_class(param_val, 25)
+
+			param_val = dummy_param() if callable(dummy_param) else dummy_param
+			return mutator_class(param_val)
+		return None
+
+	def get_dummy_param(self, mutator_class):
+		opts = mutator_param_options.get(mutator_class)
+		if not opts:
+			return None
+		return opts[0]
+
+	def process_setup_custom_input(self):
+		selection = None
+		m_loc = self.get_mouse_pos()
+
+		for evt in self.events:
+			if evt.type == pygame.KEYDOWN:
+				if evt.key in [pygame.K_RETURN, pygame.K_KP_ENTER]:
+					self.play_sound('menu_confirm')
+					selection = self.examine_target
+
+				elif evt.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+					self.play_sound('menu_abort')
+					self.clear_custom_mutator()
+					self.state = STATE_TITLE
+					return
+
+				elif evt.key in [pygame.K_UP, pygame.K_KP8]:
+					self.play_sound('menu_confirm')
+					if self.examine_target in all_mutators:
+						i = all_mutators.index(self.examine_target)
+						self.examine_target = all_mutators[max(i - 1, 0)]
+					elif self.custom_mutators and self.examine_target in self.custom_mutators:
+						i = self.custom_mutators.index(self.examine_target)
+						self.examine_target = self.custom_mutators[max(i - 1, 0)]
+					else:
+						self.examine_target = all_mutators[0]
+
+				elif evt.key in [pygame.K_DOWN, pygame.K_KP2]:
+					self.play_sound('menu_confirm')
+					if self.examine_target in all_mutators:
+						i = all_mutators.index(self.examine_target)
+						self.examine_target = all_mutators[min(i +1, len(all_mutators) - 1)]
+					elif self.custom_mutators and self.examine_target in self.custom_mutators:
+						i = self.custom_mutators.index(self.examine_target)
+						self.examine_target = self.custom_mutators[min(i + 1, len(self.custom_mutators) - 1)]
+					else:
+						self.examine_target = all_mutators[0]
+
+				elif evt.key in [pygame.K_RIGHT, pygame.K_KP6]:
+					self.play_sound('menu_confirm')
+					if self.examine_target in all_mutators:
+						self.examine_target = "play"
+					elif self.examine_target == "play" and self.custom_mutators:
+						self.examine_target = self.custom_mutators[0]
+					else:
+						self.examine_target = all_mutators[0]
+
+				elif evt.key in [pygame.K_LEFT, pygame.K_KP4]:
+					self.play_sound('menu_confirm')
+					if self.custom_mutators and self.examine_target in self.custom_mutators:
+						self.examine_target = "play"
+					else:
+						self.examine_target = all_mutators[0]
+
+			elif evt.type == pygame.MOUSEBUTTONDOWN:
+				if evt.button == pygame.BUTTON_LEFT:
+					for r, o in self.ui_rects:
+						if r.collidepoint(m_loc):
+							self.play_sound('menu_confirm')
+							selection = o
+							break
+					else:
+						self.play_sound('menu_abort')
+						return
+
+				elif evt.button == pygame.BUTTON_RIGHT:
+					self.play_sound('menu_abort')
+					self.clear_custom_mutator()
+					self.state = STATE_TITLE
+					return
+
+		dx, dy = self.get_mouse_rel()
+		if dx or dy:
+			for r, o in self.ui_rects:
+				if r.collidepoint(m_loc):
+					if self.examine_target != o:
+						self.play_sound('menu_confirm')
+					self.examine_target = o
+
+		if selection: # send to appropriate page, or just add the mutator if it takes no args.
+			self.play_sound('menu_confirm')
+			self.pending_mutator_class = selection
+
+			if selection in mutators_with_no_args:
+				self.custom_mutators.append(selection())
+				self.custom_mutator_args.append([])
+
+			elif selection in mutators_with_vals:
+				self.state = STATE_ENTER_MUTATOR_VALUE
+
+			elif selection in mutators_with_params:
+				options = mutator_param_options.get(selection, [])
+				if not options:
+					self.play_sound('menu_abort')
+					return
+				self.pending_param = options[0]
+				enum_vals = mutator_param_options[selection]
+				if enum_vals:
+					self.examine_target = enum_vals[0]
+				self.state = STATE_PICK_MUTATOR_PARAMS
+
+			elif selection in self.custom_mutators:
+				i = self.custom_mutators.index(selection)
+				del self.custom_mutators[i]
+				del self.custom_mutator_args[i]
+
+			elif selection == "play":
+				self.play_sound('menu_confirm')
+				self.new_game(trial_name="Custom", mutators=self.custom_mutators)
+
+			else:
+				self.play_sound('menu_abort')
+
+	def draw_pick_mutator_params(self):
+		self.ui_rects = []
+		center_x = self.screen.get_width() // 2
+		options = mutator_param_options.get(self.pending_mutator_class, [])
+
+		if options:
+			if len(options) > 20:
+				# Multi-column layout for lots of options
+				cur_y = self.screen.get_height() // 20
+				cols = 5
+				col_width = self.screen.get_width() // cols
+				max_rows = (self.screen.get_height() - cur_y - self.linesize) // self.linesize
+				per_col = max_rows
+
+				start_y = cur_y
+				for idx, opt in enumerate(options):
+					col = idx // per_col
+					row = idx % per_col
+					if col >= cols:
+						break
+
+					x = col * col_width + col_width // 2
+					y = start_y + row * self.linesize
+
+					label = self.format_param_value(opt)
+					label_w = self.font.size(label)[0]
+					self.draw_string(label, self.screen, x - label_w // 2, y, (255, 255, 255), mouse_content=opt)
+					self.ui_rects.append((pygame.Rect(x - label_w // 2, y, label_w, self.linesize), opt))
+
+			else:
+				# Center vertically
+				total_height = len(options) * self.linesize
+				start_y = (self.screen.get_height() - total_height) // 4
+				rect_w = max(self.font.size(self.format_param_value(opt))[0] for opt in options)
+				cur_x = center_x - rect_w // 2
+
+				# Mutator Name
+				mut_name = self.pending_mutator_class.__name__
+				title_x = center_x - self.font.size(mut_name)[0] // 2
+				self.draw_string(mut_name, self.screen, title_x, start_y, (255, 255, 255))
+				start_y += self.linesize
+
+				# Mutator Dummy Description
+				desc_lines = self.get_placeholder_description(self.pending_mutator_class).split('\n')
+				for line in desc_lines:
+					line_w = self.font.size(line)[0]
+					line_x = center_x - line_w // 2
+					self.draw_string(line, self.screen, line_x, start_y, (255, 255, 255))
+					start_y += self.linesize
+
+				start_y += self.linesize * 3
+
+				for opt in options:
+					label = self.format_param_value(opt)
+					self.draw_string(label, self.screen, cur_x, start_y, (255, 255, 255), mouse_content=opt, content_width=rect_w)
+					self.ui_rects.append((pygame.Rect(cur_x, start_y, rect_w, self.linesize), opt))
+					start_y += self.linesize
+
+	def process_pick_mutator_params_input(self):
+		selection = None
+		m_loc = self.get_mouse_pos()
+		options = mutator_param_options.get(self.pending_mutator_class, [])
+
+		for evt in self.events:
+			if evt.type == pygame.KEYDOWN:
+				if evt.key in [pygame.K_RETURN, pygame.K_KP_ENTER]:
+					self.play_sound('menu_confirm')
+					selection = self.examine_target
+
+				elif evt.key in [pygame.K_ESCAPE, pygame.K_BACKSPACE]:
+					self.clear_custom_mutator()
+					return
+
+				elif evt.key in [pygame.K_UP, pygame.K_KP8]:
+					self.play_sound('menu_confirm')
+					if not self.examine_target or self.examine_target not in options:
+						self.examine_target = options[0]
+					else:
+						idx = options.index(self.examine_target)
+						self.examine_target = options[max(0, idx -1)]
+
+				elif evt.key in [pygame.K_DOWN, pygame.K_KP2]:
+					self.play_sound('menu_confirm')
+					if not self.examine_target or self.examine_target not in options:
+						self.examine_target = options[0]
+					else:
+						idx = options.index(self.examine_target)
+						self.examine_target = options[min(len(options) - 1, idx + 1)]
+
+			elif evt.type == pygame.MOUSEBUTTONDOWN:
+				if evt.button == pygame.BUTTON_LEFT:
+					for r, o in self.ui_rects:
+						if r.collidepoint(m_loc):
+							self.play_sound('menu_confirm')
+							selection = o
+							break
+
+				elif evt.button == pygame.BUTTON_RIGHT:
+					self.clear_custom_mutator()
+					return
+
+		dx, dy = self.get_mouse_rel()
+		if dx or dy:
+			for r, o in self.ui_rects:
+				if r.collidepoint(m_loc):
+					if self.examine_target != o:
+						self.play_sound('menu_confirm')
+					self.examine_target = o
+
+		if selection:
+			self.pending_param = selection
+
+			if self.pending_mutator_class in mutators_with_params_and_vals:
+				self.play_sound('menu_confirm')
+				self.state = STATE_ENTER_MUTATOR_VALUE
+			else:
+				self.finalize_custom_mutator()
+
+	def format_param_value(self, val):
+		if callable(val):
+			# Handle lambdas or factory functions
+			try:
+				instance = val()
+				return getattr(instance, 'name', str(instance))
+			except:
+				return "<invalid>"
+
+		if hasattr(val, 'name'):
+			# Tags, units, buffs, etc.
+			return val.name
+
+		if isinstance(val, str):
+			return val
+
+		return str(val)
+
+	def draw_enter_mutator_value(self):
+		self.ui_rects = []
+
+		center_x = self.screen.get_width() // 2
+		start_y = self.screen.get_height() // 4
+
+		# Mutator Name
+		mut_name = self.pending_mutator_class.__name__
+		title_x = center_x - self.font.size(mut_name)[0] // 2
+		self.draw_string(mut_name, self.screen, title_x, start_y, (255, 255, 255))
+		start_y += self.linesize
+
+		#Mutator Dummy Description
+		desc_lines = self.get_placeholder_description(self.pending_mutator_class).split('\n')
+		for line in desc_lines:
+			line_w = self.font.size(line)[0]
+			line_x = center_x - line_w // 2
+			self.draw_string(line, self.screen, line_x, start_y, (255, 255, 255))
+			start_y += self.linesize
+
+		start_y += self.linesize * 3
+
+		# Title
+		title = "Enter Value"
+		title_x = center_x - self.font.size(title)[0] // 2
+		self.draw_string(title, self.screen, title_x, start_y, (255, 255, 255))
+		start_y += self.linesize * 2
+
+		# Input box
+		val = getattr(self, 'pending_value_buffer', "")
+		input_text = f"> {val}_"
+		text_w = self.font.size(input_text)[0]
+		text_x = center_x - text_w // 2
+		input_rect = pygame.Rect(text_x, start_y, text_w, self.linesize)
+		self.draw_string(input_text, self.screen, text_x, start_y, (255, 255, 255), mouse_content="input_box")
+		self.ui_rects.append((input_rect, "input_box"))
+		start_y += self.linesize * 2
+
+		# Confirm button
+		confirm = "Confirm"
+		confirm_w = self.font.size(confirm)[0]
+		confirm_x = center_x - confirm_w // 2
+		confirm_rect = pygame.Rect(confirm_x, start_y, confirm_w, self.linesize)
+		self.draw_string(confirm, self.screen, confirm_x, start_y, (255, 255, 255), mouse_content="confirm")
+		self.ui_rects.append((confirm_rect, "confirm"))
+
+	def process_enter_mutator_value_input(self):
+		m_loc = self.get_mouse_pos()
+
+		for evt in self.events:
+			if evt.type == pygame.KEYDOWN:
+				if evt.key in [pygame.K_RETURN, pygame.K_KP_ENTER]:
+					self.finalize_custom_mutator()
+					return
+
+				elif evt.key == pygame.K_BACKSPACE:
+					self.pending_value_buffer = self.pending_value_buffer[:-1]
+
+				elif evt.key == pygame.K_ESCAPE:
+					self.clear_custom_mutator()
+					return
+
+				elif hasattr(evt, "unicode") and evt.unicode.isdigit():
+					self.pending_value_buffer += evt.unicode
+
+			elif evt.type == pygame.MOUSEBUTTONDOWN:
+				if evt.button == pygame.BUTTON_LEFT:
+					for r, o in self.ui_rects:
+						if r.collidepoint(m_loc):
+							if o == "confirm":
+								self.finalize_custom_mutator()
+								return
+
+				elif evt.button == pygame.BUTTON_RIGHT:
+					self.clear_custom_mutator()
+
+	def finalize_custom_mutator(self):
+		args = []
+
+		if self.pending_param is not None: # if you have a selected parameter, put that first in the args
+			args.append(self.pending_param)
+
+		if self.pending_value_buffer.isdigit() and int(self.pending_value_buffer) != 0:
+			args.append(int(self.pending_value_buffer))
+		elif self.pending_mutator_class in (mutators_with_vals + mutators_with_params_and_vals):
+			self.play_sound('menu_abort')
+			self.clear_custom_mutator()
+			return
+
+		# Add to custom list and reset
+		self.custom_mutators.append(self.pending_mutator_class(*args))
+		self.custom_mutator_args.append(args)
+		self.play_sound('menu_confirm')
+		self.pending_mutator_class = None
+		self.pending_param = None
+		self.pending_value_buffer = ''
+		self.examine_target = all_mutators[0]
+		self.state = STATE_SETUP_CUSTOM
+
+	def clear_custom_mutator(self):
+		self.play_sound('menu_abort')
+		self.pending_mutator_class = None
+		self.pending_param = None
+		self.pending_value_buffer = ''
+		self.examine_target = all_mutators[0]
+		self.state = STATE_SETUP_CUSTOM
 
 	def draw_pick_trial(self):
 
@@ -6521,6 +7051,12 @@ class PyGameView(object):
 				self.draw_pick_mode()
 			elif self.state == STATE_PICK_TRIAL:
 				self.draw_pick_trial()
+			elif self.state == STATE_SETUP_CUSTOM:
+				self.draw_setup_custom()
+			elif self.state == STATE_PICK_MUTATOR_PARAMS:
+				self.draw_pick_mutator_params()
+			elif self.state == STATE_ENTER_MUTATOR_VALUE:
+				self.draw_enter_mutator_value()
 			elif self.state == STATE_OPTIONS:
 				self.draw_options_menu()
 			elif self.state == STATE_REBIND:
@@ -6615,6 +7151,12 @@ class PyGameView(object):
 				self.process_pick_mode_input()
 			elif self.state == STATE_PICK_TRIAL:
 				self.process_pick_trial_input()
+			elif self.state == STATE_SETUP_CUSTOM:
+				self.process_setup_custom_input()
+			elif self.state == STATE_PICK_MUTATOR_PARAMS:
+				self.process_pick_mutator_params_input()
+			elif self.state == STATE_ENTER_MUTATOR_VALUE:
+				self.process_enter_mutator_value_input()
 			elif self.state == STATE_OPTIONS:
 				self.process_options_input()
 			elif self.state == STATE_REBIND:

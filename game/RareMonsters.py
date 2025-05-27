@@ -968,6 +968,7 @@ def AvianWizard():
 	unit.resists[Tags.Holy] = 100
 
 	unit.tags = [Tags.Living, Tags.Nature, Tags.Lightning]
+	unit.is_wizard = True
 	return unit
 
 class WizardThunderStrike(Spell):
@@ -1075,7 +1076,7 @@ def LightningWizard():
 	unit.resists[Tags.Lightning] = 50
 
 	unit.spells = [insulate, thunderstrike, lflash, electrocute]
-
+	unit.is_wizard = True
 	return unit
 
 def FireWizard():
@@ -1092,6 +1093,7 @@ def FireWizard():
 	unit.spells = [firedrake, fireprot, fireball]
 
 	unit.resists[Tags.Fire] = 100
+	unit.is_wizard = True
 
 	return unit
 
@@ -1208,6 +1210,7 @@ def MountainWizard():
 	unit.spells = [stoneskin, earthele, wolves, quake, spikes]
 
 	unit.tags = [Tags.Living, Tags.Nature]
+	unit.is_wizard = True
 	return unit
 
 def MaskWizard():
@@ -1238,6 +1241,7 @@ def MaskWizard():
 	unit.tags = [Tags.Arcane]
 
 	unit.spells = [voidbeam, disperse, teleport, warptouch]
+	unit.is_wizard = True
 	return unit
 
 def ArachnidWizard():
@@ -1272,6 +1276,7 @@ def ArachnidWizard():
 
 	unit.buffs.append(SpiderBuff())
 	unit.buffs.append(TeleportyBuff(chance=.5, radius=7))
+	unit.is_wizard = True
 
 	return unit
 
@@ -1430,6 +1435,7 @@ def DragonWizard():
 	unit.resists[Tags.Arcane] = 50
 	
 	unit.tags = [Tags.Dragon, Tags.Living]
+	unit.is_wizard = True
 
 	return unit
 
@@ -1494,6 +1500,7 @@ def EarthTrollWizard():
 	unit.spells = [petrify, wolves, bloodboil, regen, melee]
 
 	unit.tags.append(Tags.Nature)
+	unit.is_wizard = True
 	return unit
 
 class WizardMaw(Spells.VoidMaw):
@@ -1534,6 +1541,7 @@ def VoidWizard():
 	unit.resists[Tags.Dark] = 50
 
 	unit.tags = [Tags.Arcane]
+	unit.is_wizard = True
 	return unit
 
 def GlassWizard():
@@ -1571,6 +1579,7 @@ def GlassWizard():
 	unit.resists[Tags.Ice] = 50
 
 	unit.tags = [Tags.Glass, Tags.Living]
+	unit.is_wizard = True
 
 	return unit
 
@@ -1686,7 +1695,7 @@ def IceLich():
 	unit.resists[Tags.Arcane] = 50
 	unit.resists[Tags.Ice] = 75
 	unit.resists[Tags.Fire] = -100
-
+	unit.is_wizard = True
 	return unit
 
 class WizardFireEye(Spell):
@@ -1730,6 +1739,7 @@ def FireLich():
 	unit.resists[Tags.Ice] = -100
 
 	unit.tags = [Tags.Undead, Tags.Dark, Tags.Fire]
+	unit.is_wizard = True
 	return unit
 
 
@@ -1810,7 +1820,7 @@ def IceWizard():
 	unit.resists[Tags.Ice] = 75
 
 	unit.tags = [Tags.Ice, Tags.Living]
-
+	unit.is_wizard = True
 	return unit
 
 class WizardIgnitePoison(Spell):
@@ -1874,7 +1884,7 @@ def GoblinWizard():
 	unit.spells = [spiders, ignitepoison, swap, sting]
 
 	unit.tags = [Tags.Arcane, Tags.Nature, Tags.Living]
-
+	unit.is_wizard = True
 	return unit
 
 class TwilightProtection(Spell):
@@ -2025,6 +2035,7 @@ def FrostfireWizard():
 	unit.resists[Tags.Fire] = 50
 	unit.resists[Tags.Ice] = 50
 	unit.tags = [Tags.Fire, Tags.Ice, Tags.Living]
+	unit.is_wizard = True
 	return unit
 
 class WizardStarfireBeam(Spell):
@@ -2070,12 +2081,20 @@ class StarfireOrb(Spells.OrbSpell):
 		self.cool_down = 12
 		self.range = 12
 		self.minion_health = 8
+
 	def get_ai_target(self):
 		return self.get_corner_target(6)
+
 	def on_make_orb(self, orb):
 		orb.asset_name = "searing_orb"
 		orb.resists[Tags.Ice] = 0
 		orb.resists[Tags.Arcane] = 0
+		buff = orb.get_buff(Spells.OrbBuff)
+		if buff:
+			buff.description = ("Advances towards the target each turn.\n\n"
+							"Each turn, deal [1:damage] [fire] damage to all enemies in line of sight.\n\n"
+							"Allies in line of sight are healed for 1 instead. ")
+
 	def on_orb_move(self, orb, next_point):
 		for u in orb.level.get_units_in_los(next_point):
 			if u == self.caster:
@@ -2104,6 +2123,7 @@ def StarfireWizard():
 	unit.tags = [Tags.Arcane, Tags.Fire, Tags.Living]
 	unit.resists[Tags.Arcane] = 50
 	unit.resists[Tags.Fire] = 50
+	unit.is_wizard = True
 	return unit
 
 class TideOfSin(Spell):
@@ -2373,6 +2393,7 @@ class ShrapnelSpears(Spell):
 		self.tags = [Tags.Metallic, Tags.Fire]
 		self.range = 9
 		self.damage = 3
+		self.damage_type = [Tags.Physical]
 
 	def get_description(self):
 		return "Each portion of the beast fires a spear of molten metal, dealing  [{damage}_physical:physical] damage to an enemy in sight.".format(**self.fmt_dict())
@@ -2626,6 +2647,7 @@ class TroublerBarrage(Spell):
 	def on_init(self):
 		self.name = "Troubler Barrage"
 		self.tags = [Tags.Arcane]
+		self.damage_type = [Tags.Arcane]
 		self.range = 12
 		self.damage = 3
 
@@ -2670,27 +2692,36 @@ class PrismaticBuff(Buff):
 
 	def on_init(self):
 		self.name = "Prismatic"
-		self.description = "Each turn, changes element. Immune to all damage except for current element"
-		self.current = 1 # don't want physical in rotation
+		self.description = "Each turn, changes element. Spell damage type, unit tags, and resistances shift to match."
+		self.rotation_tags = [t for t in damage_tags if t != Tags.Physical]
+		self.current = 0
+		self.previous = None
+		self.original_tags = []
+
+	def on_applied(self, owner):
+		self.original_tags = owner.tags.copy()  # Capture original tags
 
 	def on_advance(self):
-		self.owner.level.show_effect(self.owner.x, self.owner.y, damage_tags[self.current]) # signifying type change - unsure how to change spritecolor post unit creation.
-		self.owner.recolor_primary = damage_tags[self.current].color
+		cur_tag = self.rotation_tags[self.current]
+
+		self.owner.level.show_effect(self.owner.x, self.owner.y, cur_tag) # signifying type change - unsure how to change spritecolor post unit creation.
+		self.owner.recolor_primary = cur_tag.color
 		self.owner.Anim = None
 
 		for spell in self.owner.spells: # change all spells' damage
-			spell.damage_type = damage_tags[self.current]
+			spell.damage_type = cur_tag
 
-		for dtype in damage_tags: # set all resists to 100 every turn
-			if dtype == Tags.Physical:
-				continue
-			self.owner.resists[dtype] = 100
-		self.owner.resists[damage_tags[self.current]] = -100 # except the current color!
+		if self.previous:
+			self.owner.resists[self.previous] += 200
+			if self.previous in self.owner.tags and self.previous not in self.original_tags:
+				self.owner.tags.remove(self.previous)
 
-		if self.current < len(damage_tags) - 1: # go to end of list
-			self.current +=1
-		else:
-			self.current = 1 # then set back to beginning, don't want to include physical
+		self.owner.resists[cur_tag] -= 200
+		if cur_tag not in self.owner.tags:
+			self.owner.tags.append(cur_tag)
+
+		self.previous = cur_tag
+		self.current = (self.current + 1) % len(self.rotation_tags)
 
 def PillarOfBone():
 	unit = Unit()
@@ -2815,6 +2846,7 @@ def TwilightSeer():
 	unit.tags = [Tags.Living, Tags.Dark, Tags.Holy]
 
 	unit.buffs.append(ReincarnationBuff(1))
+	unit.is_wizard = True
 	return unit
 
 def Enchanter():
@@ -2840,6 +2872,7 @@ def Enchanter():
 
 	unit.spells = [regenaura, nightmare, freeze, shieldally]
 	unit.tags = [Tags.Living, Tags.Enchantment]
+	unit.is_wizard = True
 	return unit
 
 def Translocator():
@@ -2868,7 +2901,7 @@ def Translocator():
 	unit.spells = [teleport, swap, phasebolt]
 
 	unit.tags = [Tags.Arcane, Tags.Translocation]
-
+	unit.is_wizard = True
 	return unit
 
 
@@ -2932,6 +2965,7 @@ def Mechanomancer():
 	unit.buffs.append(ConstructShards())
 
 	unit.tags = [Tags.Construct]
+	unit.is_wizard = True
 	return unit
 
 def GoldenBull():
@@ -3152,6 +3186,10 @@ class IdolOfSlimeBuff(Buff):
 			slime_options.append(IceSlime())
 		if Tags.Arcane in evt.unit.tags:
 			slime_options.append(VoidSlime())
+		if Tags.Lightning in evt.unit.tags:
+			slime_options.append(ElectricSlime())
+		if Tags.Blood in evt.unit.tags:
+			slime_options.append(BloodSlime())
 			
 		slime = random.choice(slime_options)
 		self.summon(slime, target=evt.unit)
@@ -3768,6 +3806,7 @@ def MoonMage():
 	dispersion.description = "Teleports units in radius to random locations"
 
 	unit.spells = [dispersion, lamasu_pet, moon_crown, moon_beam]
+	unit.is_wizard = True
 	return unit
 
 class MassBloodrageSpell(Spell):
@@ -3821,6 +3860,7 @@ def BloodWizard():
 	mass_bloodrage = MassBloodrageSpell()
 
 	unit.spells = [hounds, mass_bloodrage, life_drain, bone_spear]
+	unit.is_wizard = True
 	return unit
 
 class WizardIcyVengeance(Buff):
@@ -3887,6 +3927,7 @@ def DeathchillWizard():
 
 	unit.spells = [deathchill_calling, iceball, dbolt]
 	unit.buffs.append(WizardIcyVengeance())
+	unit.is_wizard = True
 	return unit
 
 class WizardImpPrison(Spell):
@@ -4005,6 +4046,7 @@ def ChaosWizard():
 	demonic_promotion = WizardDemonicPromotion()
 
 	unit.spells = [imp_prison, demonic_promotion, wizard_annihilate]
+	unit.is_wizard = True
 	return unit
 
 
@@ -4070,7 +4112,7 @@ def Thunderbones():
 	unit.buffs.append(RespawnAs(thunder_shambler))
 
 	unit.tags = [Tags.Living, Tags.Dark, Tags.Lightning]
-
+	unit.is_wizard = True
 	return unit
 
 class SnakePhilosophy(Spell):
@@ -4126,6 +4168,7 @@ def SerpentPhilosopher():
 	unit.resists[Tags.Poison] = 100
 
 	unit.tags = [Tags.Living, Tags.Nature]
+	unit.is_wizard = True
 	return unit
 
 class NightmareToadDefense(Buff):
@@ -4169,6 +4212,7 @@ def ToadNightmareSorcerer():
 
 	unit.tags.append(Tags.Arcane)
 	unit.tags.append(Tags.Dark)
+	unit.is_wizard = True
 	return unit
 
 def GiantGiantSpiderQueen():
@@ -4189,6 +4233,213 @@ def GiantGiantSpiderQueen():
 
 	return unit
 
+class FortressShot(Spell):
+
+	def __init__(self, shot):
+		self.shot = shot
+		Spell.__init__(self)
+
+	def on_init(self):
+		self.name = self.shot.name + " Barrage"
+		self.description = "Each tile of the fortress shoots at a target in range of that tile."
+		self.range = self.shot.range
+		self.damage = self.shot.damage
+		self.damage_type = self.shot.damage_type
+		self.cool_down = self.shot.cool_down
+
+	def get_cast_point_target(self, cp):
+		targets = []
+		for u in self.caster.level.units:
+			if not are_hostile(self.caster, u):
+				continue
+			if not u.is_alive():
+				continue
+			if distance(cp, u) > (self.range - 1):
+				continue
+			if not self.caster.level.can_see(cp.x, cp.y, u.x, u.y):
+				continue
+			if not self.can_harm(u):
+				continue
+			targets.append(u)
+
+		if not targets:
+			return None
+
+		return random.choice(targets)
+
+	def cast(self, x, y):
+		cast_points = [p for p in self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, 1, diag=True)]
+		random.shuffle(cast_points)
+		for cp in cast_points:
+			target = self.get_cast_point_target(cp)  # grab a new legal target for each bolt.
+			if target:
+				yield from self.cast_bolt(cp, target)
+
+	def cast_bolt(self, cp, target):
+		start = cp
+		end = target
+
+		for point in Bolt(self.caster.level, start, end, find_clear=True):
+			self.caster.level.projectile_effect(point.x, point.y, proj_name=self.shot.proj_name, proj_origin=start, proj_dest=end)
+			yield
+
+		target_u = self.caster.level.get_unit_at(target.x, target.y)
+		if target_u and target_u.is_alive():
+			target_u.deal_damage(self.shot.damage, self.shot.damage_type, self)
+			if hasattr(self.shot, 'onhit') and self.shot.onhit:
+				self.shot.onhit(self.caster, target_u)
+			yield
+
+class FortressBuild(Spell):
+
+	def __init__(self, spawner, cool_down=0, build_count=1):
+		Spell.__init__(self)
+		self.spawner = spawner
+		self.cool_down = cool_down
+		self.build_count = build_count
+
+	def on_init(self):
+		self.name = "Expand Fortress"
+		self.range = 0
+		self.max_charges = 0
+
+	def get_description(self):
+		if self.build_count > 1:
+			return "Build %d %s spawners on connected tiles" % (self.build_count, self.spawner().name)
+		else:
+			return "Build a %s spawners on connected tile" % self.spawner().name
+
+	def cast(self, x, y):
+		created = 0
+		city = self.get_city()
+		while created < self.build_count:
+			placed = False
+			random.shuffle(city)
+			for u in city:
+				adj = list(self.caster.level.get_adjacent_points(u, filter_walkable=True, check_unit=True, r=u.radius))
+				if not adj:
+					continue
+				random.shuffle(adj)
+				for p in adj:
+					lair = MonsterSpawner(self.spawner)
+					self.summon(lair, Point(p.x, p.y), radius=0)
+					created += 1
+					placed = True
+					yield
+
+					city.append(lair)
+					if created == self.build_count:
+						break
+				if created == self.build_count:
+					break
+
+			if not placed:
+				break # couldn't build
+
+	def get_city(self):
+		candidates = {self.caster}
+		unit_group = set()
+
+		while candidates:
+			unit = candidates.pop()
+			if unit in unit_group:
+				continue
+			if unit.tags:
+				continue
+
+			unit_group.add(unit)
+
+			for p in self.caster.level.get_adjacent_points(Point(unit.x, unit.y), filter_walkable=True, r=unit.radius):
+				adj_unit = self.caster.level.get_unit_at(p.x, p.y)
+				if adj_unit and adj_unit not in unit_group:
+					candidates.add(adj_unit)
+
+		return list(unit_group)
+
+
+def DuergarFortress():
+	u = Unit()
+	u.radius = 1
+	u.name = "Duergar Fortress"
+
+	u.max_hp = 2000
+	u.stationary = True
+
+	summon_fort = FortressBuild(Dwarf, cool_down=7, build_count=7)
+
+	duergar_shot = SimpleRangedAttack(damage=8, range=18, damage_type=Tags.Physical, proj_name="duergar_bolt")
+	duergar_shot.name = "Crossbow"
+	duergar_shot.caster = u
+	shot = FortressShot(duergar_shot)
+
+	u.spells = [shot, summon_fort]
+
+	u.buffs.append(SpawnOnDeath(Dwarf, 9))
+	return u
+
+def GnomeCastle():
+	u = Unit()
+	u.radius = 1
+	u.name = "Gnome Castle"
+
+	u.max_hp = 1200
+	u.stationary = True
+
+	summon_fort = FortressBuild(Gnome, cool_down=0, build_count=1)
+
+	def summon_thorn(caster, target):
+		thorn = FaeThorn()
+		p = caster.level.get_summon_point(target.x, target.y, 1.5)
+		if p:
+			caster.level.summon(caster, thorn, p)
+
+	attack = SimpleRangedAttack(damage=1, range=8, damage_type=Tags.Physical, onhit=summon_thorn)
+	attack.description = "Summons a fae thorn adjacent to the target"
+	attack.name = 'Thorn Bolt'
+	shot = FortressShot(attack)
+
+	u.spells = [shot, summon_fort]
+
+	u.buffs.append(SpawnOnDeath(Gnome, 9))
+	return u
+
+def KoboldCamp():
+	u = Unit()
+	u.radius = 1
+	u.name = "Kobold Camp"
+
+	u.max_hp = 600
+	u.stationary = True
+
+	summon_fort = FortressBuild(Kobold, cool_down=3, build_count=3)
+
+	bow = SimpleRangedAttack(damage=1, range=10, proj_name="kobold_arrow")
+	bow.name = "Arrow"
+	shot = FortressShot(bow)
+
+	u.spells = [shot, summon_fort]
+
+	u.buffs.append(SpawnOnDeath(Kobold, 9))
+	return u
+
+def GoblinCave():
+	u = Unit()
+	u.radius = 1
+	u.name = "Goblin Cave"
+
+	u.max_hp = 300
+	u.stationary = True
+
+	summon_fort = FortressBuild(Goblin, cool_down=5, build_count=1)
+
+	rock = SimpleRangedAttack(damage=2, range=5)
+	rock.name = "Rock"
+	shot = FortressShot(rock)
+
+	u.spells = [shot, summon_fort]
+
+	u.buffs.append(SpawnOnDeath(Goblin, 9))
+	return u
 
 DIFF_EASY = 1
 DIFF_MED = 2
@@ -4314,7 +4565,12 @@ rare_monsters = [
 
 	(Thunderbones, DIFF_MED, 1, 1, None),
 	(SerpentPhilosopher, DIFF_EASY, 1, 1, None),
-	(ToadNightmareSorcerer, DIFF_EASY, 1, 1, None)
+	(ToadNightmareSorcerer, DIFF_EASY, 1, 1, None),
+
+	(DuergarFortress, DIFF_MED, 1, 1, None),
+	(GnomeCastle, DIFF_MED, 1, 1, None),
+	(KoboldCamp, DIFF_EASY, 1, 1, None)
+	# (GoblinCave, DIFF_EASY, 1, 1, None)
 ]
 
 all_wizards = [
@@ -4366,7 +4622,7 @@ def roll_rare_spawn(difficulty, min_level=None, max_level=None, prng=None):
 		chosen_opt = [o for o in rare_monsters if forced.lower() in o[0]().name.lower().replace(' ', '')][0]
 
 	if not max_level:
-		max_level = DIFF_EASY if difficulty < 10 else DIFF_MED if difficulty < 19 else DIFF_HARD
+		max_level = DIFF_EASY if difficulty < 9 else DIFF_MED if difficulty < 17 else DIFF_HARD
 
 	def can_spawn(opt):
 		if min_level is not None and opt[1] < min_level:
