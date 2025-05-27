@@ -41,6 +41,141 @@ class UnblinkingEye(Upgrade):
 
 		self.level = 7
 
+class ChaosLord(Upgrade):
+
+	def on_init(self):
+		self.name = "Chaos Lord"
+		self.tags = [Tags.Chaos]
+		self.level = 7
+
+		stats = ['max_charges',
+				 'damage',
+				 'range',
+				 'num_targets',
+				 'num_summons',
+				 'minion_damage',
+				 'minion_range']
+
+		for stat in stats:
+			self.tag_bonuses_pct[Tags.Chaos][stat] = 33
+
+class SlimeLord(Upgrade):
+
+	def on_init(self):
+		self.name = "Slime Lord"
+		self.tags = [Tags.Slime]
+		self.level = 7
+
+		self.tag_bonuses[Tags.Slime]['max_charges'] = 3
+		self.tag_bonuses[Tags.Slime]['range'] = 3
+		self.tag_bonuses[Tags.Slime]['minion_health'] = 10
+		self.tag_bonuses[Tags.Slime]['minion_range'] = 2
+
+class SlimeTime(Upgrade):
+
+	def on_init(self):
+		self.name = "Slime Time"
+		self.tags = [Tags.Slime, Tags.Arcane]
+		self.level = 5
+		self.global_triggers[EventOnUnitAdded] = self.on_added
+
+	def on_added(self, evt):
+		if are_hostile(evt.unit, self.owner): # allies only
+			return
+		if not Tags.Slime in evt.unit.tags: # slimes only
+			return
+		buff = None
+		for buff_type in (SlimeBuff, SlimyBuff):
+			if evt.unit.has_buff(buff_type):
+				buff = evt.unit.get_buff(buff_type)
+				break
+		if buff:
+			buff.growth_chance = .75 # increase the growth chance from 50% to 75%
+			buff.description = buff.description.replace("50%", "75%") # hacky but works for now.
+
+	def get_description(self):
+		return "Whenever an allied slime is summoned, their chance to grow is set to 75% rather than the base 50%."
+
+class EcophagyBuff(Buff):
+
+	def on_init(self):
+		self.name = "Ecophagy"
+		self.description = "Ecophagy\nEach turn, eat all adjacent walls. Gain 1 max HP per wall consumed."
+		self.buff_type = BUFF_TYPE_PASSIVE
+
+	def on_advance(self):
+		targets = []
+
+		for tile in self.owner.level.get_tiles_in_ball(self.owner.x, self.owner.y, 1.5):
+			if tile.is_wall():
+				targets.append(tile)
+		if targets:
+			for target in targets:
+				self.owner.level.make_floor(target.x, target.y)
+				self.owner.level.show_effect(target.x, target.y, Tags.Physical)
+				self.owner.max_hp += 1
+				self.owner.heal(1, self)
+
+class GreyGoo(Upgrade):
+
+	def on_init(self):
+		self.name = "Grey Goo"
+		self.tags = [Tags.Slime, Tags.Metallic]
+		self.level = 5
+		self.global_triggers[EventOnUnitAdded] = self.on_added
+
+	def on_added(self, evt):
+		if are_hostile(evt.unit, self.owner): # allies only
+			return
+		if not Tags.Slime in evt.unit.tags: # slimes only
+			return
+		evt.unit.apply_buff(EcophagyBuff())  # make them eat the whole level.
+		if Tags.Metallic in evt.unit.tags: # do nothing to already metallic units
+			return
+		evt.unit.recolor_primary = None # override boss mod protections
+		apply_modifier(Metallic, evt.unit) # make them metallic
+
+
+	def get_description(self):
+		return "Slimes you summon receive the [Metallic] boss modifier and the Ecophagy buff.\nEcophagy causes slimes to eat any adjacent walls at the end of their turn.\nThe slime gains 1 maximum and current health for each wall consumed this way."
+
+class SlimeBirthCantromancy(Upgrade):
+
+	def on_init(self):
+		self.name = "Slimebirth Cantromancy"
+		self.tags = [Tags.Arcane, Tags.Slime]
+		self.level = 5
+		self.global_triggers[EventOnUnitAdded] = self.on_added
+
+	def on_added(self, evt):
+		if are_hostile(evt.unit, self.owner): # allies only
+			return
+		if not Tags.Slime in evt.unit.tags: # slimes only
+			return
+		cantrips = [s for s in self.owner.spells if s.level==1]
+		if not cantrips:
+			return
+		candidates = []
+		for tag in evt.unit.tags:
+			for c in cantrips:
+				for ctag in c.tags:
+					if tag == ctag:
+						candidates.append(c)
+		if not candidates:
+			return
+		s = random.choice(candidates)
+		spell = type(s)()
+		spell.caster = evt.unit
+		spell.owner = evt.unit
+		spell.statholder = self.owner
+		target = spell.get_ai_target()
+		if not target:
+			return
+		self.owner.level.act_cast(evt.unit, spell, target.x, target.y, pay_costs=False)
+
+	def get_description(self):
+		return ("When an allied [slime:slime] is spawned, it casts a random cantrip you know that shares a tag with it.")
+
 class DragonLord(Upgrade):
 
 	def on_init(self):
@@ -442,13 +577,10 @@ class NaturalHealing(Upgrade):
 		return "Whenever you cast a [nature] spell, you and all [living] allies heal [{heal}_HP:heal].".format(**self.fmt_dict())
 
 	def on_spell_cast(self, evt):
-		if Tags.Nature in evt.spell.tags:
-			self.owner.deal_damage(-self.get_stat('heal'), Tags.Heal, self)
+		if not Tags.Nature in evt.spell.tags:
+			return
 
 		for u in self.owner.level.units:
-			if u == self.owner:
-				continue
-
 			if are_hostile(self.owner, u):
 				continue
 
@@ -1312,23 +1444,22 @@ class SpiderSpawning(Upgrade):
 		self.name = "Spider Spawning"
 		self.level = 4
 		self.tags = [Tags.Nature]
-		self.description = "Whenever an enemy dies to poison damage, summon a friendly spider nearby"
 		self.global_triggers[EventOnDeath] = self.on_death
-
-		spider_default = GiantSpider()
-		self.minion_health = spider_default.max_hp
-		self.minion_damage = spider_default.spells[0].damage
-		self.duration = spider_default.spells[0].buff_duration
+		self.minion_health = 14
+		self.minion_damage = 2
+		self.duration = 10
 
 	def get_extra_examine_tooltips(self):
-		return [GiantSpider()]
+		return [self.make_spider()]
 
 	def get_description(self):
-		return ("Whenever an enemy dies to [poison] damage, summon a friendly spider nearby.\n"
-				"Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
-			 	"Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [5_turns:duration] of [poison].\n"
-			 	"Webs [stun] non spider units which step on them for [1_turn:duration].\n"
-			 	+ text.poison_desc + text.stun_desc).format(**self.fmt_dict())
+		return "Whenever an enemy dies to [poison] damage, summon a friendly spider nearby."
+
+	def make_spider(self):
+		u = GiantSpider()
+		u.spells[0].buff_duration = self.get_stat('duration')
+		apply_minion_bonuses(self, u)
+		return u
 
 	def on_death(self, evt):
 		if not evt.damage_event:
@@ -1339,11 +1470,7 @@ class SpiderSpawning(Upgrade):
 		if not are_hostile(self.owner, evt.unit):
 			return
 
-		spider = GiantSpider()
-		spider.max_hp = self.get_stat('minion_health')
-		spider.spells[0].damage = self.get_stat('minion_damage')
-		spider.spells[0].buff_duration = self.get_stat('duration')
-		self.summon(spider, target=evt.unit)
+		self.summon(self.make_spider(), target=evt.unit)
 
 class ParalyzingVenom(Upgrade):
 
@@ -1370,11 +1497,11 @@ class ParalyzingVenom(Upgrade):
 class VenomSpitSpell(SimpleRangedAttack):
 
 	def __init__(self):
-		def apply_poison(caster, target):
-			target.apply_buff(Poison(), 10)
-		SimpleRangedAttack.__init__(self, damage=4, damage_type=Tags.Poison, onhit=apply_poison, cool_down=4, range=6)
-		self.description = "Applies poison for 10 turns"
+		SimpleRangedAttack.__init__(self, damage=4, damage_type=Tags.Poison, buff=Poison, buff_duration=10, cool_down=4, range=6)
 		self.name = "Venom Spit"
+
+	def get_description(self):
+		return "Applies poison for %d turns." % self.get_stat('buff_duration')
 
 class VenomSpit(Upgrade):
 
@@ -1384,13 +1511,13 @@ class VenomSpit(Upgrade):
 		self.level = 4
 		self.minion_damage = 4
 		self.minion_range = 6
-
+		self.duration = 10
 		self.global_triggers[EventOnUnitAdded] = self.on_unit_add
 
 
 	def get_description(self):
 		return ("Your summoned [living] and [nature] units gain Venom Spit.\n"
-				"Venom spit is a ranged attack which deals [{minion_damage}_poison:poison] damage and inflicts [poison] for [10_turns:duration].\n"
+				"Venom spit is a ranged attack which deals [{minion_damage}_poison:poison] damage and inflicts [poison] for [{duration}_turns:duration].\n"
 				"Venom spit has a [{minion_range}_tile:range] range, and a [4_turn:cooldown] cooldown.").format(**self.fmt_dict())
 
 	def should_grant(self, unit):
@@ -1406,16 +1533,15 @@ class VenomSpit(Upgrade):
 		spell = VenomSpitSpell()
 		spell.damage = self.get_stat('minion_damage')
 		spell.range = self.get_stat('minion_range')
-		#weird cause im trying to insert at 0
+		spell.buff_duration = self.get_stat('duration')
 		spell.caster = unit
+		spell.owner = unit
 		unit.add_spell(spell, prepend=True)
 
 	def on_advance(self):
 		for unit in self.owner.level.units:
 			spit = [s for s in unit.spells if isinstance(s, VenomSpitSpell)]
-			if spit and not self.should_grant(unit):
-				unit.remove_spell(spit[0])
-			elif not spit and self.should_grant(unit):
+			if not spit and self.should_grant(unit):
 				self.grant(unit)
 				
 class FrozenSouls(Upgrade):
@@ -2066,8 +2192,12 @@ class SilkShifter(Upgrade):
 		self.owner.level.remove_obj(cloud)
 
 		if Tags.Translocation in evt.spell.tags:
-			evt.spell.cur_charges += 1
-			evt.spell.cur_charges = min(evt.spell.get_stat('max_charges'), evt.spell.cur_charges)
+			self.owner.level.queue_spell(self.refund_spell(evt.spell))
+
+	def refund_spell(self, spell):
+		for _ in range(6):
+			yield
+		spell.refund_charges(1)
 
 class InfernoEngines(Upgrade):
 
@@ -2130,7 +2260,7 @@ class AcidFumes(Upgrade):
 		self.level = 5
 
 	def on_advance(self):
-		candidates = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not u.has_buff(Acidified)]
+		candidates = [u for u in self.owner.level.units if are_hostile(u, self.owner) and not u.has_buff(Acidified) and not getattr(u, 'turns_left', None)]
 		if candidates:
 			target = random.choice(candidates)
 			target.apply_buff(Acidified())
@@ -2196,7 +2326,7 @@ class SorcererPoet(Upgrade):
 		self.physical = 0
 
 	def get_description(self):
-		return "Each turn, if atleast 13 fire, lightning and physical damage were dealt to enemies, summon a Chaos Quill."
+		return "Each turn, if at least 13 fire, lightning and physical damage were dealt to enemies, summon a Chaos Quill."
 
 	def get_extra_examine_tooltips(self):
 		return [ChaosQuill(), LivingLightningScroll(), LivingFireballScroll()]
@@ -2649,7 +2779,7 @@ class ToadbloodSkill(Upgrade):
 
 	def on_init(self):
 		self.name = "Toadblood Transmutation"
-		self.tags = [Tags.Nature, Tags.Blood, Tags.Conjuration]
+		self.tags = [Tags.Nature, Tags.Blood]
 		self.level = 4
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
@@ -2868,7 +2998,7 @@ class ConjuredAggression(Upgrade):
 class ChaosSerpents(Upgrade):
 	def on_init(self):
 		self.name = "Serpents of Chaos"
-		self.tags = [Tags.Conjuration, Tags.Chaos, Tags.Dragon]
+		self.tags = [Tags.Chaos, Tags.Dragon]
 		self.level = 7
 		self.description = "Whenever you deal 6 or more fire, lightning, or physical damage, summon a corresponding snake for 4 turns.  The snakes attacks deal half the dealt damage."
 		self.global_triggers[EventOnDamaged] = self.on_damage
@@ -2915,6 +3045,32 @@ class Multimancer(Upgrade):
 		self.tags = [Tags.Arcane]
 		self.level = 5
 		self.global_bonuses_pct['num_targets'] = 50
+
+class MenacingGaze(Upgrade):
+
+	def on_init(self):
+		self.name = "Menacing Gaze"
+		self.tags = [Tags.Dark, Tags.Eye]
+		self.level = 5
+		self.global_triggers[EventOnDamaged] = self.on_damage
+		self.duration = 2
+
+	def get_description(self):
+		return "When one of your [Eye] spells damages an enemy, inflict [%d:duration] turns of fear on them." % self.get_stat('duration')
+
+	def on_damage(self, evt):
+		if not evt.source:
+			return
+		if not are_hostile(evt.unit, self.owner):
+			return
+		if not isinstance(evt.source, Spell):
+			return
+		if not evt.source in self.owner.spells:
+			return
+		if not Tags.Eye in evt.source.tags:
+			return
+		evt.unit.apply_buff(FearBuff(), self.get_stat('duration'))
+
 
 class Armorer(Upgrade):
 
@@ -2988,12 +3144,14 @@ class Tremors(Upgrade):
 		self.tags = [Tags.Nature, Tags.Chaos]
 		self.radius = 8
 		self.damage = 9
-		self.description = ("Whenever you cast a [nature] or [chaos] spell, send out tremors along the ground from the target to nearby enemies.\n"
-							"Each tremor deals [9_physical:physical] damage to the target and all units in its path.\n"
-							"The base number of targets is equal to the level of the spell.\n"
-							"The tremors can target enemies up to [8:radius] tiles away.\n")
 
 		self.owner_triggers[EventOnSpellCast] = self.on_cast
+
+	def get_description(self):
+		return ("Whenever you cast a [nature] or [chaos] spell, send out tremors along the ground from the target to nearby enemies.\n"
+							"Each tremor deals [%d_physical:physical] damage to the target and all units in its path.\n"
+							"The base number of targets is equal to the level of the spell.\n"
+							"The tremors can target enemies up to [%d:radius] tiles away.\n") % (self.get_stat('damage'), self.get_stat('radius'))
 
 	def on_cast(self, evt):
 		if Tags.Chaos not in evt.spell.tags and Tags.Nature not in evt.spell.tags:
@@ -3012,7 +3170,8 @@ class Tremors(Upgrade):
 			if not are_hostile(self.owner, u):
 				continue
 
-			path = self.owner.level.find_path(evt, u, self.owner, pythonize=True, unit_penalty=0)
+			pather = Unit()
+			path = self.owner.level.find_path(evt, u, pather, cosmetic=True, pythonize=True, unit_penalty=0)
 			if not path:
 				continue
 
@@ -3120,6 +3279,26 @@ class FocusedChanneler(Upgrade):
 	def get_description(self):
 		return "Gain [{duration}_turns:duration] of Clarity when you cast a channeled spell.".format(**self.fmt_dict())
 
+class HexSpecialist(Upgrade):
+
+	def on_init(self):
+		self.name = "Hex Specialist"
+		self.color = Tags.Enchantment.color
+		self.tags = [Tags.Enchantment]
+		self.level = 5
+		self.damage = 1
+
+	def on_advance(self):
+		units = list(self.owner.level.units)
+		for u in units: # for each unit in the level
+			if are_hostile(self.owner, u): # if they are an enemy
+				for b in u.buffs: # for each of their buffs
+					if b.buff_type == BUFF_TYPE_CURSE: # if it's a curse
+						u.deal_damage(self.get_stat('damage'), Tags.Arcane, self) # deal damage to them.
+
+	def get_description(self):
+		return "Each turn, deal [{damage}:damage] [arcane] damage to enemy units for each debuff they have.".format(**self.fmt_dict())
+
 skill_constructors = [
 	ArchEnchanter,
 	ArchSorcerer,
@@ -3134,6 +3313,7 @@ skill_constructors = [
 	DragonLord,
 	OrbLord,
 	MetalLord,
+	ChaosLord,
 	UnblinkingEye,
 	Translocator,
 	PyrophiliaUpgrade,
@@ -3225,7 +3405,13 @@ skill_constructors = [
 	RazorShaper,
 	ShieldShards,
 	BloodfireSkill,
-	FocusedChanneler
+	FocusedChanneler,
+	MenacingGaze,
+	HexSpecialist,
+	SlimeLord,
+	SlimeTime,
+	GreyGoo,
+	SlimeBirthCantromancy
 ]
 
 def make_player_skills():
@@ -3237,7 +3423,28 @@ def make_player_skills():
 	all_player_skills.sort(key=lambda u: (u.level, u.name))
 	return all_player_skills
 
-spell_tags = [Tags.Fire, Tags.Ice, Tags.Dark, Tags.Holy, Tags.Nature, Tags.Lightning, Tags.Arcane]
+spell_tags = [
+	Tags.Fire,
+	Tags.Lightning,
+	Tags.Ice,
+	Tags.Nature,
+	Tags.Arcane,
+	Tags.Dark,
+	Tags.Holy,
+	Tags.Sorcery,
+	Tags.Conjuration,
+	Tags.Enchantment,
+	Tags.Word,
+	Tags.Orb,
+	Tags.Dragon,
+	Tags.Translocation,
+	Tags.Metallic,
+	Tags.Eye,
+	Tags.Chaos,
+	Tags.Blood,
+	Tags.Slime
+]
+
 if __name__ == "__main__":
 	done = set()
 	for tag1 in spell_tags:

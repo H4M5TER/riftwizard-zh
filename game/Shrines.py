@@ -2128,9 +2128,14 @@ def scroll(level, prng=random, player=None):
 
 	return shop
 
+def amnesia_shrine(_level, _prng, _player):
+	return AmnesiaShop()
+
+def duplicator_shrine(_level, _prng, _player):
+	return DuplicatorShop()
+
 chest_opts = [
 		(treasure_chest, .5),
-		(crown_chest, .08),
 		(damage_hat_chest, .04),
 		(hat_chest, .05),
 		(ring_chest, .5),
@@ -2138,7 +2143,6 @@ chest_opts = [
 		(shoe_chest, .05),
 		(armor_chest, .05),
 		(trinket_chest, .15),
-		#(mini_treasure_chest, .08)
 ]
 
 def roll_chest(level, prng=random, player=None):
@@ -2149,8 +2153,12 @@ reward_table = [
 	(roll_chest, 1.3),
 	(hp_shrine, 1),
 	(exotic_pet_chest, .25),
+	(crown_chest, .1),
 	(scroll, .2),
-	(skill_scroll, .3, 13)
+	(skill_scroll, .3, 13),
+	(mini_shrine, .03, 5),
+	(amnesia_shrine, .03, 5),
+	(duplicator_shrine, .03, 5)
 ]
 
 def roll_shrine(level, prng=None, player=None):

@@ -720,11 +720,11 @@ def FireWyrmEgg():
 	unit.max_hp = 14
 
 	unit.stationary = True
-	unit.buffs.append(RespawnAs(FireWyrm))
+	unit.buffs.append(SpawnOnDeath(FireWyrm, 1))
 
 	unit.resists[Tags.Fire] = 100
 	unit.resists[Tags.Physical] = 50
-	unit.tags = [Tags.Living, Tags.Fire]
+	unit.tags = [Tags.Living, Tags.Dragon, Tags.Fire]
 	return unit
 
 
@@ -736,11 +736,11 @@ def IceWyrmEgg():
 	unit.max_hp = 14
 
 	unit.stationary = True
-	unit.buffs.append(RespawnAs(IceWyrm))
+	unit.buffs.append(SpawnOnDeath(IceWyrm, 1))
 
 	unit.resists[Tags.Ice] = 100
 	unit.resists[Tags.Physical] = 50
-	unit.tags = [Tags.Living, Tags.Ice]
+	unit.tags = [Tags.Living, Tags.Dragon, Tags.Ice]
 	return unit
 
 def RandomImp():
@@ -1458,37 +1458,59 @@ def Bat():
 
 class SlimeBuff(Buff):
 
-	def __init__(self, spawner, name='slimes'):
+	def __init__(self, spawner, name='slimes', growth_chance=.5):
 		Buff.__init__(self)
-		self.description = "50%% chance to gain 1 hp and 1 max hp per turn.  Upon reaching double max HP, splits into 2 %s." % name
+		self.description = ("50%% chance to heal for 10%% of original max HP each turn.\n"
+							"Excess healing from this effect raises max HP.\n"
+							"Upon reaching double the original max HP, splits into 2 %s.") % name
+
 		self.name = "Slime Growth"
 		self.color = Tags.Slime.color
 		self.spawner = spawner
 		self.spawner_name = name
+		self.growth_chance = growth_chance
 
 	def on_applied(self, owner):
-		self.start_hp = self.owner.max_hp
+		self.start_hp = owner.max_hp
 		self.to_split = self.start_hp * 2
 		self.growth = self.start_hp // 10
-		self.description = "50%% chance to gain %d hp and max hp per turn.  Upon reaching %d HP, splits into 2 %s." % (self.growth, self.to_split, self.spawner_name)
-		
+		self.description = ("50%% chance to heal for %d HP each turn.\n"
+							"Excess healing from this effect raises max HP.\n"
+							"Upon reaching %d max HP, splits into 2 %s.") % (self.growth, self.to_split, self.spawner_name)
 
 	def on_advance(self):
-		if random.random() < .5:
+		if random.random() >= self.growth_chance:
 			return
 
-		if self.owner.cur_hp == self.owner.max_hp:
-			self.owner.max_hp += self.growth
-		self.owner.deal_damage(-self.growth, Tags.Heal, self)
-		if self.owner.cur_hp >= self.to_split:
+		owner = self.owner
+		growth = self.growth
+		cur = owner.cur_hp
 
-			p = self.owner.level.get_summon_point(self.owner.x, self.owner.y)
-			if p:
-				self.owner.max_hp //= 2
-				self.owner.cur_hp //= 2
-				unit = self.spawner()
-				unit.team = self.owner.team
-				self.owner.level.add_obj(unit, p.x, p.y)
+		if (cur + growth) >= self.owner.max_hp:
+			owner.max_hp = cur + growth
+
+		owner.heal(growth, self)
+
+		if owner.cur_hp >= self.to_split:
+			owner.max_hp //= 2
+			owner.cur_hp //= 2
+			self.summon(self.spawner(), owner)
+
+def get_matching_slimes(unit):
+	candidates = []
+	if Tags.Fire in unit.tags:
+		candidates.append(RedSlime)
+	if Tags.Ice in unit.tags:
+		candidates.append(IceSlime)
+	if Tags.Arcane in unit.tags:
+		candidates.append(VoidSlime)
+	if Tags.Lightning in unit.tags:
+		candidates.append(ElectricSlime)
+	if Tags.Blood in unit.tags:
+		candidates.append(BloodSlime)
+	if not candidates: # default back to greens
+		candidates.append(GreenSlime)
+	return candidates
 
 def GreenSlime():
 
@@ -1564,6 +1586,36 @@ def VoidSlime():
 
 	return unit
 
+def ElectricSlime():
+
+	unit = Unit()
+	unit.name = "Electric Slime"
+	unit.max_hp = 10
+	unit.tags = [Tags.Slime, Tags.Lightning]
+	unit.spells.append(SimpleMeleeAttack(damage=5, damage_type=Tags.Lightning))
+	unit.spells.append(LeapAttack(damage=5, damage_type=Tags.Lightning, range=5))
+	unit.buffs.append(SlimeBuff(spawner=ElectricSlime))
+
+	unit.resists[Tags.Lightning] = 100
+	unit.resists[Tags.Physical] = 50
+
+	return unit
+
+def BloodSlime():
+
+	unit = Unit()
+	unit.name = "Blood Slime"
+	unit.max_hp = 10
+	unit.tags = [Tags.Slime, Tags.Blood]
+	unit.spells.append(SimpleMeleeAttack(damage=3, damage_type=Tags.Physical, drain=True))
+	unit.spells.append(SimpleRangedAttack(damage=3, damage_type=Tags.Dark, range=3, drain=True))
+	unit.buffs.append(SlimeBuff(spawner=BloodSlime))
+
+	unit.resists[Tags.Dark] = 100
+	unit.resists[Tags.Physical] = 50
+
+	return unit
+
 class GeneratorBuff(Buff):
 
 	def __init__(self, spawn_func, spawn_chance):
@@ -1581,7 +1633,7 @@ class GeneratorBuff(Buff):
 			if unit.source:
 				apply_minion_bonuses(self.owner.source, unit)
 
-			self.summon(unit)			
+			self.owner.level.summon(self.owner, unit)
 			
 	def get_tooltip(self):
 		return "Has a %d%% chance each turn to spawn a %s" % (int(100 * self.spawn_chance), self.example_monster.name)
@@ -2106,28 +2158,30 @@ def QueenMonster(base_spawner):
 	unit = base_spawner()
 	unit.name = "%s Queen" % unit.name
 	unit.asset_name += '_mother'
+	unit.base = base_spawner
 
 	unit.max_hp = 96
 	if unit.shields:
 		unit.shields += 2
 
-	def babyspider():
-		unit = base_spawner()
-		unit.name = "Baby %s" % unit.name
-		unit.asset_name += '_child'
-		unit.max_hp = 3
-		for s in unit.spells:
-			if hasattr(s, 'damage'):
-				s.damage = 1
+	def baby():
+		u = BabyMonster(base_spawner)
+		return u
 
-		unit.is_coward = True
-		unit.buffs = [b for b in unit.buffs if not isinstance(b, SpiderBuff)]
-		unit.buffs.append(MatureInto(base_spawner, 8))
-
-		return unit
-
-	unit.spells.insert(0, SimpleSummon(babyspider, num_summons=4, cool_down=12))
+	unit.spells.insert(0, SimpleSummon(baby, num_summons=4, cool_down=12))
 	return unit
+
+def BabyMonster(base_spawner):
+	unit = base_spawner()
+	unit.name = "Baby %s" % unit.name
+	unit.asset_name += '_child'
+	unit.max_hp = 3
+	unit.is_coward = True
+	unit.buffs.append(MatureInto(base_spawner, 8)) # mature into not passing on minion buffs?
+	return unit
+
+def BabySpider():
+	return BabyMonster(GiantSpider)
 
 def GiantSpiderQueen():
 	return QueenMonster(GiantSpider)
@@ -2150,8 +2204,14 @@ def GiantSpider():
 	unit.resists[Tags.Ice] = -50
 	return unit
 
+def BabySteelSpider():
+	return BabyMonster(SteelSpider)
+
 def SteelSpiderQueen():
 	return QueenMonster(SteelSpider)
+
+def BabyPhaseSpider():
+	return BabyMonster(PhaseSpider)
 
 def PhaseSpiderQueen():
 	return QueenMonster(PhaseSpider)
@@ -2435,7 +2495,7 @@ def VampireBat():
 	unit.flying = True
 	
 	unit.resists[Tags.Dark] = 100
-	unit.tags = [Tags.Undead, Tags.Dark]
+	unit.tags = [Tags.Undead, Tags.Dark, Tags.Blood]
 	unit.is_coward = True
 
 	unit.buffs.append(MatureInto(Vampire, 20))
@@ -2459,7 +2519,7 @@ def Vampire():
 	melee.name = "Drain Life"
 	melee.get_description = lambda : "Drains life"
 	unit.spells.append(melee)
-	unit.tags = [Tags.Undead, Tags.Dark]
+	unit.tags = [Tags.Undead, Tags.Dark, Tags.Blood]
 	unit.buffs.append(RespawnAs(VampireBat))
 	return unit
 
@@ -2608,6 +2668,7 @@ def BoneWizard():
 	unit.resists[Tags.Physical] = 50
 
 	unit.tags = [Tags.Dark, Tags.Undead]
+	unit.is_wizard = True
 
 	return unit
 
@@ -2915,7 +2976,7 @@ def VampireMist():
 	unit.buffs.append(MatureInto(GreaterVampire, 20))
 	unit.is_coward = True
 
-	unit.tags = [Tags.Undead, Tags.Dark]
+	unit.tags = [Tags.Undead, Tags.Dark, Tags.Blood]
 
 	return unit
 
@@ -2946,7 +3007,7 @@ def GreaterVampire():
 
 	unit.buffs.append(RespawnAs(VampireMist))
 
-	unit.tags = [Tags.Undead, Tags.Dark]
+	unit.tags = [Tags.Undead, Tags.Dark, Tags.Blood]
 
 	return unit
 
@@ -3231,7 +3292,11 @@ def Gnome():
 
 	def summon_thorn(caster, target):
 		thorn = FaeThorn()
-		p = caster.level.get_summon_point(target.x, target.y, 1.5)
+		if getattr(target, 'radius', None):
+			r = target.radius + 1.5
+		else:
+			r = 1.5
+		p = caster.level.get_summon_point(target.x, target.y, radius_limit=r)
 		if p:
 			caster.level.summon(unit, thorn, p)
 
@@ -3780,7 +3845,7 @@ def OldBloodWitch():
 	unit.spells.append(ghosty)
 	unit.spells.append(lifedrain)
 
-	unit.tags = [Tags.Living, Tags.Dark]
+	unit.tags = [Tags.Living, Tags.Dark, Tags.Blood]
 	unit.resists[Tags.Dark] = 50
 	unit.resists[Tags.Fire] = -50
 	unit.resists[Tags.Holy] = -50
@@ -3804,7 +3869,7 @@ def YoungBloodWitch():
 	unit.spells.append(ghosty)
 	unit.spells.append(lifedrain)
 
-	unit.tags = [Tags.Living, Tags.Dark]
+	unit.tags = [Tags.Living, Tags.Dark, Tags.Blood]
 	unit.resists[Tags.Dark] = 50
 	unit.resists[Tags.Fire] = -50
 	unit.resists[Tags.Holy] = -50
@@ -4304,7 +4369,7 @@ def RavenMage():
 	unit.spells = [ravens, windride, blind, flies, deathtouch]
 
 	unit.tags = [Tags.Living, Tags.Dark]
-
+	unit.is_wizard = True
 	return unit
 
 def Raven():
@@ -4466,7 +4531,7 @@ def BloodBear():
 
 	unit = Unit()
 	unit.name = "Blood Bear"
-	unit.tags = [Tags.Nature, Tags.Demon]
+	unit.tags = [Tags.Nature, Tags.Demon, Tags.Blood]
 	unit.resists[Tags.Dark] = 75
 	unit.max_hp = 75
 
@@ -4488,6 +4553,7 @@ def Bloodghast():
 	unit.spells[0].description = "Gain +2 damage for 10 turns with each attack"
 
 	unit.tags.append(Tags.Demon)
+	unit.tags.append(Tags.Blood)
 
 	unit.resists[Tags.Poison] = 100
 	unit.resists[Tags.Dark] = 75
@@ -4509,7 +4575,7 @@ def Bloodhound():
 	unit.spells.append(melee)
 
 	unit.spells.append(LeapAttack(damage=6, damage_type=Tags.Physical, range=3))
-	unit.tags = [Tags.Demon, Tags.Nature]
+	unit.tags = [Tags.Demon, Tags.Nature, Tags.Blood]
 	unit.resists[Tags.Dark] = 75
 
 	return unit
@@ -4965,10 +5031,6 @@ class BeginConstructingSiege(Spell):
 	def cast_instant(self, x, y):
 		unit = self.siegespawn()
 		unit.cur_hp = unit.max_hp // 4
-		
-		for s in unit.spells:
-			s.siege = True
-
 		self.summon(unit, target=Point(x, y))
 
 	def get_ai_target(self):
@@ -5079,10 +5141,13 @@ class OperateSiege(Spell):
 
 	def cast_instant(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
-		spell = unit.spells[0]
+		spell = next((s for s in unit.spells if getattr(s, 'siege', False)), None)
+		if not spell:
+			return
 		target = spell.get_ai_target()
-		if target:
-			self.caster.level.act_cast(unit, spell, target.x, target.y)
+		if not target:
+			return
+		self.caster.level.act_cast(unit, spell, target.x, target.y)
 
 class RepairSiege(Spell):
 
@@ -5171,9 +5236,6 @@ class ReloadSiege(Spell):
 def SiegeOperator(siegespawn):
 	unit = Unit()
 	example_siege = siegespawn()
-	for s in example_siege.spells:
-		s.siege = True
-		
 	unit.spells = [OperateSiege(example_siege.name),
 				   RepairSiege(example_siege.name),
 				   Approach(example_siege.name),
@@ -6155,7 +6217,7 @@ class SilenceAura(DamageAuraBuff):
  
 	def __init__(self):
 		DamageAuraBuff.__init__(self, damage=0, damage_type=Tags.Dark, radius=5)
-		self.description = "Each turn, apply Silence for 2 turns to all enemies within a 3 tile radius"
+		self.description = "Each turn, apply Silence for 2 turns to all enemies within a 5 tile radius"
 
 
 	def on_hit(self, unit):
@@ -6203,6 +6265,22 @@ def WaterElemental():
 	unit.buffs = [WaterElementalRegenBuff()]
 
 	return unit
+
+class BurrowingBuff(Buff):
+
+	def on_init(self):
+		self.name = "Burrowing"
+
+	def on_applied(self, owner):
+		owner.burrowing = True
+
+class FlyingBuff(Buff):
+
+	def on_init(self):
+		self.name = "Flying"
+
+	def on_applied(self, owner):
+		owner.flying = True
 
 
 spawn_options = [
@@ -6260,6 +6338,7 @@ spawn_options = [
 	(Werewolf, 4),
 	(SilentSpecter, 4),
 	(BlizzardBeast, 4),
+	(Elf, 5),
 	(FlameMaw, 5),
 	(ChaosChimera, 5),
 	(Mycobeast, 5),
@@ -6282,6 +6361,8 @@ spawn_options = [
 	(OldWitch, 5),
 	(RedSlime, 5),
 	(IceSlime, 5),
+	(ElectricSlime, 5),
+	(BloodSlime, 5),
 	(BloodBear, 5),
 	#(LivingLightningScroll, 5),
 	#(LivingFireballScroll, 5),
@@ -6308,7 +6389,6 @@ spawn_options = [
 	(StormTroll, 6),
 	(Minotaur, 6),
 	(GreaterVampire, 6),
-	(Elf, 6),
 	(GhostMass, 6),
 	(FaeArcanist, 6),
 	(PurpleHand, 6),

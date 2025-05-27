@@ -3,7 +3,12 @@ from Spells import *
 from Monsters import *
 from CommonContent import *
 
-class HealPotSpell(Spell):
+class ConsumableSpell(Spell):
+	def __init__(self):
+		Spell.__init__(self)
+		self.tags = [Tags.Consumable]
+
+class HealPotSpell(ConsumableSpell):
 	def on_init(self):
 		self.range = 0
 
@@ -18,17 +23,16 @@ class HealPotSpell(Spell):
 
 class TeleporterSpell(Teleport):
 
+	def __init__(self):
+		Spell.__init__(self)
+		self.tags = [Tags.Consumable]
+
 	def on_init(self):
 		self.range = RANGE_GLOBAL
 		self.requires_los = False
 
 	def get_description(self):
 		return "Teleport to target tile"
-
-	def can_cast(self, x, y):
-		if self.caster.flying:
-			return self.caster.level.tiles[x][y].can_fly and not self.caster.level.get_unit_at(x, y) and Spell.can_cast(self, x, y)
-		return self.caster.level.can_walk(x, y, check_unit=True) and Spell.can_cast(self, x, y)
 
 	def cast_instant(self, x, y):
 		self.caster.level.act_move(self.caster, x, y, teleport=True)
@@ -47,7 +51,7 @@ def teleporter():
 	item.set_spell(TeleporterSpell())
 	return item
 
-class ChaosBellSpell(Spell):
+class ChaosBellSpell(ConsumableSpell):
 
 
 	def on_init(self):
@@ -71,7 +75,7 @@ def chaos_bell():
 	item.set_spell(ChaosBellSpell())
 	return item
 
-class TimeStopSpell(Spell):
+class TimeStopSpell(ConsumableSpell):
 
 
 	def on_init(self):
@@ -89,7 +93,7 @@ def golden_stopwatch():
 	item.set_spell(TimeStopSpell())
 	return item
 
-class DeathDiceSpell(Spell):
+class DeathDiceSpell(ConsumableSpell):
 
 	def on_init(self):
 		self.range = 0
@@ -114,6 +118,7 @@ class PotionSpell(Spell):
 		Spell.__init__(self)
 		self.buff = buff
 		self.duration = duration
+		self.tags = [Tags.Consumable]
 
 	def on_init(self):
 		self.range = 0
@@ -156,7 +161,7 @@ def stone_shield():
 
 
 
-class SpellCouponSpell(Spell):
+class SpellCouponSpell(ConsumableSpell):
 
 	def on_init(self):
 		self.range = 0
@@ -168,12 +173,11 @@ class SpellCouponSpell(Spell):
 def mana_potion():
 	item = Item()
 	item.name = "Mana Potion"
-	duration = 3
 	item.description = "Refresh charges for all of your spells"
 	item.set_spell(SpellCouponSpell())
 	return item
 
-class EarthquakeOrb(Spell):
+class EarthquakeOrb(ConsumableSpell):
 
 	def on_init(self):
 		self.description = "Deals 25 physical damage and destroys walls on 50% of all level tiles."
@@ -195,7 +199,7 @@ def quake_orb():
 	item.set_spell(EarthquakeOrb())
 	return item 
 
-class DragonHornSpell(Spell):
+class DragonHornSpell(ConsumableSpell):
 
 	def on_init(self):
 		self.range = 0
@@ -226,7 +230,7 @@ def dragon_horn():
 	item.set_spell(DragonHornSpell())
 	return item
 
-class DisruptPortalsSpell(Spell):
+class DisruptPortalsSpell(ConsumableSpell):
 
 
 	def on_init(self):
@@ -248,7 +252,7 @@ def portal_disruptor():
 	return item
 
 
-class DisruptShrinesSpell(Spell):
+class DisruptShrinesSpell(ConsumableSpell):
 
 	def on_init(self):
 		self.range = 0
@@ -271,7 +275,7 @@ def shrine_disruptor():
 	item.set_spell(DisruptShrinesSpell())
 	return item
 
-class PortalKeySpell(Spell):
+class PortalKeySpell(ConsumableSpell):
 
 	def on_init(self):
 		self.range = 0
@@ -314,6 +318,7 @@ def corruption_orb():
 	item.name = "Orb of Corruption"
 	item.description = "An evil and dangerous artifact capable of corrupting creation.  A wise Wizard would surely only use it in the most dire of circumstances."
 	spell = OrbCorruption()
+	spell.tags = [Tags.Consumable]
 	item.set_spell(spell)
 	spell.num_exits = 3
 	return item
@@ -337,7 +342,7 @@ def youth_elixer():
 	item.set_spell(PotionSpell(YouthElixerBuff, 7))
 	return item
 
-class AetherDaggerSpell(Spell):
+class AetherDaggerSpell(ConsumableSpell):
 
 	def on_init(self):
 		self.range = 0
@@ -373,7 +378,6 @@ class OculusBuff(Buff):
 	def on_init(self):
 		self.global_bonuses['requires_los'] = -1
 		self.global_bonuses['range'] = 15
-		#self.description = "May cast spells without line of sight"
 		self.name = "Oculus"
 
 def oculus():
@@ -407,6 +411,7 @@ def bag_of_spikes():
 	item.description = "Summon 8 friendly rolling spikeballs"
 	summon_spell = SimpleSummon(SpikeBall, 8)
 	summon_spell.range = 0
+	summon_spell.tags = [Tags.Consumable]
 	item.set_spell(summon_spell)
 	return item
 
@@ -416,6 +421,7 @@ def bag_of_bags():
 	item.description = "Summon 8 friendly bags of bugs"
 	summon_spell = SimpleSummon(BagOfBugs, 8)
 	summon_spell.range = 0
+	summon_spell.tags = [Tags.Consumable]
 	item.set_spell(summon_spell)
 	return item
 
@@ -425,6 +431,7 @@ def troll_crown():
 	item.description = "Creates 4 friendly troll gates"
 	summon_spell = SimpleSummon(lambda: MonsterSpawner(Troll), 4)
 	summon_spell.range = 0
+	summon_spell.tags = [Tags.Consumable]
 	item.set_spell(summon_spell)
 	return item
 
@@ -434,6 +441,7 @@ def storm_troll_crown():
 	item.description = "Creates 4 friendly storm troll gates"
 	summon_spell = SimpleSummon(lambda: MonsterSpawner(StormTroll), 4)
 	summon_spell.range = 0
+	summon_spell.tags = [Tags.Consumable]
 	item.set_spell(summon_spell)
 	return item
 
@@ -443,6 +451,7 @@ def earth_troll_crown():
 	item.description = "Creates 4 friendly earth troll gates"
 	summon_spell = SimpleSummon(lambda: MonsterSpawner(EarthTroll), 4)
 	summon_spell.range = 0
+	summon_spell.tags = [Tags.Consumable]
 	item.set_spell(summon_spell)
 	return item
 

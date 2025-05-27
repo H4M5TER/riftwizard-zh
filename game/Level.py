@@ -6,6 +6,7 @@ import bisect
 import tcod as libtcod
 import time
 import os
+from copy import copy
 
 logger = None
 
@@ -437,6 +438,8 @@ class Spell(object):
 		self.hp_cost = 0
 		self.requires_los = True
 		self.tags = []
+		self.damage_type = []
+		self.damage_type_random = False
 		self.added_by_buff = False
 		self.item = None
 
@@ -488,7 +491,8 @@ class Spell(object):
 		for attr, val in reversed(self.upgrades.items()):
 			name = None
 			desc = None
-			exc_class = None
+			added_tags = []
+			damage_type = []
 			if attr not in self.stats:
 				self.stats.append(attr)
 			
@@ -502,11 +506,17 @@ class Spell(object):
 				if len(val) > 3:
 					desc = val[3]
 				if len(val) > 4:
-					exc_class = val[4]
+					added_tags = val[4]
+					if added_tags:
+						for tag in added_tags:
+							tag_name = tag.name if hasattr(tag, 'name') else str(tag)
+							desc += "\n Adds the [%s:%s] tag." % (tag_name, tag_name)
+				if len(val) > 5:
+					damage_type = val[5]
 			else:
 				amt = val
 				level = 1
-			self.spell_upgrades.insert(0, SpellUpgrade(spell=self, attribute=attr, amount=amt, level=level, name=name, desc=desc, exc_class=exc_class))
+			self.spell_upgrades.insert(0, SpellUpgrade(spell=self, attribute=attr, amount=amt, level=level, name=name, desc=desc, added_tags=added_tags, damage_type=damage_type))
 
 		self.cur_charges = self.get_stat('max_charges')
 
@@ -514,7 +524,8 @@ class Spell(object):
 	def add_upgrade(self, upgrade):
 		assert(isinstance(upgrade, Upgrade))
 		upgrade.prereq = self
-		upgrade.tags = list(self.tags)
+		if not upgrade.tags:
+			upgrade.tags = list(self.tags)
 		self.spell_upgrades.append(upgrade)
 
 	def modify_test_level(self, level):
@@ -626,19 +637,17 @@ class Spell(object):
 			u = self.owner.level.get_unit_at(p.x, p.y)
 			if not u:
 				return False
+
 			if bool(self.target_allies) == bool(self.caster.level.are_hostile(u, self.caster)):
 				return False
-			if hasattr(self, 'damage_type'):
+
+			if getattr(self, 'damage_type', None):
 				if not self.can_harm(u):
 					return False
-				if isinstance(self.damage_type, list):
-					if all(u.resists[dtype] >= 100 for dtype in self.damage_type):
-						return False
-				else:
-					if u.resists[self.damage_type] >= 100:
-						return False
+
 			if not self.can_cast(p.x, p.y):
 				return False
+
 			return True
 
 		targets = []
@@ -655,24 +664,12 @@ class Spell(object):
 
 	def get_corner_target(self, radius, requires_los=True):
 		# Find targets possibly around corners
-		# Returns the first randomly found target which will hit atleast one enemy with a splash of the given radius
-
-		dtypes = []
-		if hasattr(self, 'damage_type'):
-			if isinstance(self.damage_type, Tag):
-				dtypes = [self.damage_type]
-			else:
-				dtypes = self.damage_type
+		# Returns the first randomly found target which will hit at least one enemy with a splash of the given radius
 		
 		def is_target(v):
-			if not are_hostile(self.caster, v):
+			if not are_hostile(self.caster, v): # corner targets are used for enemies only, so not a good target if it's not hostile
 				return False
-			# if no damage type is specified, take any hostile target
-			if not dtypes:
-				return True
-			for dtype in dtypes:
-				if v.resists[dtype] < 100:
-					return True
+			return getattr(self, 'damage_type', None) and self.can_harm(v) # it's a good target if the spell has a damage type and can harm the unit
 
 		nearby_enemies = self.caster.level.get_units_in_ball(self.caster, self.range + radius)
 		nearby_enemies = [u for u in nearby_enemies if is_target(u)]
@@ -816,6 +813,8 @@ class Spell(object):
 		if any(buff.name == "Soul Jarred" for buff in target_unit.buffs) and target_unit.cur_hp == 1:
 			return False
 		if not hasattr(self, 'damage_type'):
+			return True
+		if not self.damage_type: # all spells should have damage_type, but it will be empty list if it doesn't do damage.
 			return True
 		if isinstance(self.damage_type, list):
 			for d in self.damage_type:
@@ -970,12 +969,14 @@ class Buff(object):
 	def apply(self, owner):
 		assert(not self.applied)
 		self.owner = owner
+
+		# record charges first since now some buff's on_applied will add tags and could alter max_charges
+		prev_max_charges = {spell: spell.get_stat('max_charges') for spell in self.owner.spells}
+
 		if self.on_applied(owner) == ABORT_BUFF_APPLY:
 			return ABORT_BUFF_APPLY
 
 		self.applied = True
-
-		prev_max_charges = {spell: spell.get_stat('max_charges') for spell in self.owner.spells}
 
 		event_manager = self.owner.level.event_manager
 
@@ -1217,6 +1218,17 @@ class Upgrade(Buff):
 		else:
 			return base
 
+	def spell_tag_update(self, spell, tag, add=True):
+		s = self.owner.get_spell(spell)
+		if not s:
+			return
+		if add:
+			if tag not in s.tags:
+				s.tags.append(tag)
+		else:
+			if tag in s.tags:
+				s.tags.remove(tag)
+
 class Equipment(Buff):
 
 	def __init__(self, *args, **kwargs):
@@ -1235,12 +1247,17 @@ class Equipment(Buff):
 		
 		self.buff_type = BUFF_TYPE_ITEM
 		self.stack_type = STACK_INTENSITY  # Allow multiples of same item to stack
+		self.is_mini = False
 
 	def __str__(self):
 		return "Equipment: %s" % self.name
 
 	def get_asset(self):
-		asset = ['tiles', 'items', 'equipment', self.name.lower().replace(' ', '_') if not self.asset_name else self.asset_name]
+		if self.name.startswith('Mini '):
+			name_key = self.name[5:]
+		else:
+			name_key = self.name
+		asset = ['tiles', 'items', 'equipment', name_key.lower().replace(' ', '_') if not self.asset_name else self.asset_name]
 		# use generic trinket asset if specific asset is not present
 		if not os.path.exists(os.path.join('rl_data', *asset) + '.png'):
 
@@ -1277,7 +1294,7 @@ class ChannelBuff(Buff):
 		self.turns = 0
 		self.passed = True
 		self.owner_triggers[EventOnPass] = self.on_pass
-		self.stack_type = STACK_INTENSITY
+		self.stack_type = STACK_REPLACE
 
 		self.buff_type = BUFF_TYPE_BLESS
 
@@ -1326,18 +1343,47 @@ class ChannelBuff(Buff):
 
 class SpellUpgrade(Upgrade):
 
-	def __init__(self, spell, attribute, amount, level=1, tags=None, name=None, desc=None, exc_class=None):
+	def __init__(self, spell, attribute, amount, level=1, added_tags=None, name=None, desc=None, damage_type=None):
 		Upgrade.__init__(self)
 		self.spell = type(spell)
 		self.attribute = attribute.replace('_', ' ')
+		if attribute not in spell.stats:
+			self.added_attribute = True
+		else:
+			self.added_attribute = False
 		self.spell_bonuses[type(spell)][attribute] = amount
 		self.name = name if name else format_attr(attribute)
-		self.tags = tags if tags else list(spell.tags)
+		if added_tags is None: added_tags = []
+		self.added_tags = list(added_tags)
+		self.tags = list(spell.tags) + list(added_tags)
 		self.description = desc
 		self.prereq = spell
 		self.level = level
 		self.amount = amount
-		self.exc_class = exc_class
+		self.damage_type = damage_type if damage_type else []
+
+	def on_applied(self, owner): # when you get the spell upgrade
+		spell = self.owner.get_spell(self.spell) # grab the spell
+		self.applied_spell = spell
+		if self.added_tags:
+			for tag in self.added_tags:
+				spell.tags.append(tag)
+		if self.damage_type: # if the upgrade adds a damage type(s)
+			for dtype in self.damage_type: # for each one
+				spell.damage_type.append(dtype) # add that to the spell's damage types
+
+	def on_unapplied(self):
+		spell = self.applied_spell
+		if self.added_tags:
+			for tag in self.added_tags:
+				if tag in spell.tags:
+					spell.tags.remove(tag)
+		if self.damage_type:
+			for dtype in self.damage_type:
+				if dtype in spell.damage_type:
+					spell.damage_type.remove(dtype)
+		if self.attribute in spell.stats and self.added_attribute:
+			spell.stats.remove(self.attribute)
 
 class Immobilize(Buff):
 
@@ -1460,19 +1506,12 @@ class StunImmune(Buff):
 		self.name = "Clarity"
 
 	def get_tooltip(self):
-		return "Cannot be stunned, frozen, or petrified."
-
-class CowardBuff(Buff):
-
-	def on_init(self):
-		self.name = "Running Away"
+		return "Cannot be stunned, frozen, feared, silenced, or petrified."
 
 	def on_applied(self, owner):
-		self.owner.is_coward = True
-
-	def on_unapplied(self):
-		self.owner.is_coward = False
-
+		for b in owner.buffs:
+			if isinstance(b, Stun) or isinstance(b, Silence):
+				owner.remove_buff(b)
 
 class Unit(object):
 
@@ -1619,15 +1658,19 @@ class Unit(object):
 	def equip(self, item):
 		assert(item.slot >= 0)
 
-		# TEMP: all items stack.  Lets try it out.
-		if item.slot != ITEM_SLOT_AMULET:
-			to_replace = self.equipment.get(item.slot)
-			if to_replace:
-				self.unequip(to_replace)
-
-			self.equipment[item.slot] = item
+		if item.slot != ITEM_SLOT_AMULET: # if you have a slotted piece
+			to_replace = self.equipment.get(item.slot) # find the thing you're going to replace
+			if to_replace: # if there is something to replace
+				self.unequip(to_replace) # unequip it
+			if item.is_mini: # and now, if the thing you're equipping is mini
+				del self.equipment[item.slot]# remove the entry from the slotted equipment dictionary
+				item.slot = ITEM_SLOT_AMULET # make it not take up a slot
+				self.trinkets.append(item) # add it to your trinket list
+			else:
+				self.equipment[item.slot] = item # if it's not mini, put it in your appropriate item slot
 		else:
-			self.trinkets.append(item)
+			self.trinkets.append(item) # if it's not slotted gear, put it in the trinket list
+
 
 		self.apply_buff(item)
 
@@ -1732,7 +1775,7 @@ class Unit(object):
 				self.last_action = action
 				
 			logging.debug("%s will %s" % (self, action))
-			assert(action is not None)
+			# assert(action is not None) # was causing crash if finishing the level while stunned
 
 			if isinstance(action, MoveAction):
 				if self.is_player_controlled:
@@ -1870,8 +1913,8 @@ class Unit(object):
 			if not self.flying:
 				possible_movement_targets = [u for u in possible_movement_targets if self.level.tiles[u.x][u.y].can_walk]
 
-			# The player is always prioritized if possible
-			if any(u.is_player_controlled for u in possible_movement_targets):
+			# The player is always prioritized if possible. unless berserked, then they aren't thinking clearly enough to look for the player.
+			if not self.has_buff(BerserkBuff) and any(u.is_player_controlled for u in possible_movement_targets):
 				possible_movement_targets = [u for u in possible_movement_targets if u.is_player_controlled]
 
 		# Cowards move away from closest enemy, swapping if neccecary
@@ -1883,14 +1926,7 @@ class Unit(object):
 				possible_movement_targets = None
 
 		if not possible_movement_targets:
-
-			# Move randomly if there are no enemies in the level
-			possible_movement_targets = [p for p in self.level.get_adjacent_points(Point(self.x, self.y), check_unit=True, filter_walkable=False) if self.level.can_stand(p.x, p.y, self)]
-			if not possible_movement_targets:
-				return PassAction()
-			else:
-				p = random.choice(possible_movement_targets)
-				return MoveAction(p.x, p.y)
+			return self.random_move() # Move randomly if there are no enemies in the level
 
 		target = min(possible_movement_targets, key = lambda t: distance(Point(self.x, self.y), Point(t.x, t.y)))
 
@@ -1902,11 +1938,23 @@ class Unit(object):
 					x, y = libtcod.path_get(path, 0)
 					if self.level.can_move(self, x, y):
 						return MoveAction(x, y)
+				else:
+					# Get rid of the path then move randomly if they can't reach their target
+					libtcod.path_delete(path)
+					return self.random_move()
 
 				libtcod.path_delete(path)
 
 		# If you cant do anything then pass
 		return PassAction()
+
+	def random_move(self):
+		possible_movement_targets = [p for p in self.level.get_adjacent_points(Point(self.x, self.y), check_unit=True, filter_walkable=False) if self.level.can_stand(p.x, p.y, self)]
+		if not possible_movement_targets:
+			return PassAction()
+		else:
+			p = random.choice(possible_movement_targets)
+			return MoveAction(p.x, p.y)
 
 	def is_fleeing(self):
 		return self.is_coward or self.has_buff(FearBuff)
@@ -2046,8 +2094,11 @@ class Unit(object):
 		if existing:
 
 			if buff.stack_type == STACK_NONE:
-				existing[0].turns_left = max(duration, existing[0].turns_left)
-				return
+				if existing[0].turns_left > 0:
+					existing[0].turns_left = max(duration, existing[0].turns_left)
+					return
+				else:
+					return
 			elif buff.stack_type == STACK_DURATION:
 				existing[0].turns_left += duration
 				return
@@ -2520,6 +2571,56 @@ class Portal(Prop):
 
 		self.asset = ['tiles', 'portal', 'active_portal']
 
+	def get_extra_examine_tooltips(self):
+		if self.locked == True:
+			return
+
+		extras = []
+		if not hasattr(self, 'level_gen_params'):
+			return extras
+
+		gen_params = self.level_gen_params
+		seen = set() # no need to show dupes of monsters
+
+		if gen_params.primary_spawn:
+			unit = gen_params.primary_spawn()
+			if unit.name not in seen:
+				extras.append(copy(unit))
+				seen.add(unit.name)
+
+		if gen_params.secondary_spawn and gen_params.secondary_spawn != gen_params.primary_spawn:
+			unit = gen_params.secondary_spawn()
+			if unit.name not in seen:
+				extras.append(copy(unit))
+				seen.add(unit.name)
+
+		if gen_params.bosses:
+			for boss in gen_params.bosses:
+				if boss.name not in seen:
+					extras.append(copy(boss))
+					seen.add(boss.name)
+
+		if gen_params.items:
+			for item in gen_params.items:
+				if item.name not in seen:
+					extras.append(item)
+					seen.add(item.name)
+
+		if gen_params.shrine:
+			if isinstance(gen_params.shrine, Shop):
+				for item in gen_params.shrine.items:
+					extras.append(item)
+
+					if hasattr(item, "get_extra_examine_tooltips"):
+						subextras = item.get_extra_examine_tooltips()
+						if subextras:
+							extras.extend(subextras)
+			else:
+					extras.append(gen_params.shrine)
+
+		return extras
+
+
 	
 EventOnHealDotConsumed = namedtuple("EventOnHealDotConsumed", "consumer")
 class HealDot(Prop):
@@ -2652,7 +2753,7 @@ class Shop(Prop):
 		self.items = []
 
 		self.name = "Shop"
-		self.description = "What wonders could be contained for sale within?"
+		self.description = " "
 		self.currency = CURRENCY_PICK
 
 		# For now...
@@ -2720,6 +2821,89 @@ class ShiftingShop(Shop):
 	def on_player_enter(self, player):
 		self.items = self.get_items_func()
 		Shop.on_player_enter(self, player)
+
+class MiniShop(Shop):
+
+	def __init__(self):
+		Shop.__init__(self)
+		self.name = "Miniaturization Shrine"
+		self.description = "Turns a piece of equipment into a miniature version of itself."
+		self.asset = ['tiles', 'shrine', 'miniaturization_shrine']
+
+	def on_player_enter(self, player):
+		items = []
+		for slot in [ITEM_SLOT_STAFF, ITEM_SLOT_ROBE, ITEM_SLOT_HEAD, ITEM_SLOT_BOOTS]:  # slotted gear only
+			equipment = player.equipment.get(slot)
+			if equipment:
+				equipment = player.equipment.get(slot).clone()
+				equipment.name = "Mini %s" % equipment.name
+				equipment.is_mini = True
+				items.append(equipment)
+		self.items = items
+		Shop.on_player_enter(self, player)
+
+	def on_player_exit(self, player):
+		self.items = []
+
+class DuplicatorShop(Shop):
+
+	def __init__(self):
+		Shop.__init__(self)
+		self.name = "Duplication Shrine"
+		self.description = "Obtain a duplicate of an existing trinket."
+		self.asset = ['tiles', 'shrine', 'duplication_shrine']
+
+	def on_player_enter(self, player):
+		items = []
+		for i in player.trinkets:
+			if hasattr(i, 'is_pet'): # no sigils or exotic pets can be duplicated
+				continue
+
+			equipment = i.clone() # make a copy of the item
+			# not currently working for rng generated items like shields/randomlittlering/conversion due to clone()
+			# its making a new random one
+
+			if i.is_mini: # now we can have trinkets whose clone returns a non-trinket, so miniaturize them again if need be
+				equipment.name = "Mini %s" % equipment.name
+				equipment.is_mini = True
+				equipment.slot = ITEM_SLOT_AMULET
+
+			items.append(equipment)
+
+		self.items = items
+		Shop.on_player_enter(self, player)
+
+	def on_player_exit(self, player):
+		self.items = []
+
+class AmnesiaShop(Shop):
+
+	def __init__(self):
+		Shop.__init__(self)
+		self.name = "Amnesia Shrine"
+		self.description = "Forget a spell and its upgrade. Refunds SP. Reusable"
+		self.asset = ['tiles', 'shrine', 'amnesia_shrine']
+
+	def on_player_enter(self, player):
+		self.items = [type(s)() for s in player.spells]
+		Shop.on_player_enter(self, player)
+
+	def buy(self, shopper, spell):
+		assert isinstance(shopper, Unit)
+		assert spell in self.items
+
+		spell_upgrade = next((b for b in shopper.buffs if b.buff_type == BUFF_TYPE_PASSIVE and type(b.prereq) == type(spell)), None)
+		if spell_upgrade:
+			shopper.xp += spell_upgrade.level
+			shopper.remove_buff(spell_upgrade)
+
+		shopper.xp += spell.level
+		shopper.remove_spell(spell)
+
+		self.items = []
+
+	def on_player_exit(self, player):
+		self.items = []
 
 class ShrineShop(ShiftingShop):
 
@@ -3499,21 +3683,25 @@ class Level(object):
 
 		return list(unit_group)
 
-	def get_summon_point(self, x, y, radius_limit=5, sort_dist=True, flying=False, diag=False):
+	def get_summon_point(self, x, y, radius_limit=5, sort_dist=True, flying=False, diag=False, burrowing=False):
 		options = list(self.get_points_in_ball(x, y, radius_limit, diag=diag))
-		random.shuffle(options)
 
 		if sort_dist:
 			options.sort(key=lambda p: distance(p, Point(x, y)))
+		else:
+			random.shuffle(options)
 
 		for o in options:
 			tile = self.tiles[o.x][o.y]
-			if not flying:
-				if not tile.can_walk:
-					continue
-			else:
-				if not tile.can_fly:
-					continue
+			valid = False # refactored to include units having flying and/or burrowing
+			if tile.can_walk:
+				valid = True
+			if flying and tile.can_fly:
+				valid = True
+			if burrowing and not tile.can_see:
+				valid = True
+			if not valid:
+				continue
 			if self.get_unit_at(o.x, o.y):
 				continue
 			return o
@@ -3889,6 +4077,8 @@ class Level(object):
 		self.tiles[prop.x][prop.y].prop = None 
 
 	def portal_mercy(self):
+		if self.level_no == LAST_LEVEL:
+			return
 		for tile in self.iter_tiles():
 			if isinstance(tile.prop, Portal):
 				return # do nothing if a portal is found
@@ -4468,6 +4658,8 @@ Tags = NameLookupCollection([
 	Tag("Immolate", Color(0, 0, 10)),
 	Tag("Thunderstrike", Color(0, 0, 11)),
 	Tag("ArmageddonBlade", Color(0, 0, 12)),
+
+	Tag("Consumable", Color(254, 254, 254)),
 ])
 
 damage_tags = [

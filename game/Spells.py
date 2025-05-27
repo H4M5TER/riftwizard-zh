@@ -6,101 +6,72 @@ import itertools
 import text
 import BossSpawns
 
-class FlameTongue(Spell):
-
-	def on_init(self):
-		self.name = "Flame Tongue"
-		self.level = 1
-		self.damage = 6
-		self.max_charges = 28
-		self.range = 5
-
-		self.tags = [Tags.Fire, Tags.Sorcery]
-
-		self.description = "Deal fire damage in a beam"
-
-		self.upgrades['range'] = (3, 1)
-		self.upgrades['damage'] = (5, 1)
-
-	def get_impacted_tiles(self, x, y):
-		start = Point(self.caster.x, self.caster.y)
-		target = Point(x, y)
-
-		for point in Bolt(self.caster.level, start, target):
-			yield point
-
-	def cast(self, x, y):
-		start = Point(self.caster.x, self.caster.y)
-		target = Point(x, y)
-
-		for point in self.get_impacted_tiles(x, y):
-			self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), Tags.Fire, self)
-
-		yield
-
-
 class FireballSpell(Spell):
 
 	def on_init(self):
-		self.radius = 2
-		self.damage = 9
-		self.name = "Fireball"
-		self.max_charges = 18
-		self.range = 8
-		self.element = Tags.Fire
-
-		self.damage_type = Tags.Fire
-
-		self.whiteflame_bonus = 0
-		self.blueflame_bonus = 0
-
 		self.tags = [Tags.Fire, Tags.Sorcery]
+		self.damage_type = [Tags.Fire]
 		self.level = 1
 
-		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball randomly deals [physical], [lightning], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.", "damage type")
-		self.upgrades['ash'] = (1, 2, "Ash Ball", "Fireball blinds and poisons units for 4 turns.", "damage type")
-		self.upgrades['meteor'] = (1, 3, "Meteor", "Units in the center tile take extra [physical] damage and are stunned for [3:duration] turns.")
+		self.name = "Fireball"
+		self.radius = 2
+		self.damage = 9
+		self.max_charges = 18
+		self.range = 8
+
+		self.upgrades['chaos'] = (1, 5, "Chaos Ball", "Fireball randomly deals [physical], [lightning], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to.", [Tags.Chaos], [Tags.Physical, Tags.Lightning])
+		self.upgrades['shaped_blast'] = (1, 4, "Shaped Blast", "Fireball gains 1 [radius] for every 4 tiles away that you cast it, and never damages the wizard or their allies.")
+		self.upgrades['meteor'] = (1, 3, "Meteor", "Units in the center tile take extra [physical] damage and are stunned for [3:duration] turns.", None, [Tags.Physical])
+		self.upgrades['ash_ball'] = (1, 2, "Ash Ball", "Fireball blinds and poisons units for [4:duration] turns.")
 
 	def get_description(self):
 		return "Deals [{damage}:damage] [fire] damage to units in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
 
 	def cast(self, x, y):
-		dtypes = [Tags.Fire]
-		if self.get_stat('chaos'):
-			dtypes = [Tags.Fire, Tags.Lightning, Tags.Physical]
-
 		damage = self.get_stat('damage')
-
 		target = Point(x, y)
 
 		if self.get_stat('meteor'):
 			self.caster.level.deal_damage(target.x, target.y, damage, Tags.Physical, self)
 			unit = self.caster.level.get_unit_at(target.x, target.y)
 			if unit:
-				unit.apply_buff(Stun(), self.get_stat('duration', base=2))
+				unit.apply_buff(Stun(), self.get_stat('duration', base=3))
 
-		for stage in Burst(self.caster.level, target, self.get_stat('radius')):
+		for stage in self.get_aoe(x, y):
 			for point in stage:
-
-				random.shuffle(dtypes)
 				unit = self.caster.level.get_unit_at(point.x, point.y)
-				if unit:
-					dtype = min(((unit.resists[t], t) for t in dtypes), key=lambda t : t[0])[1]
+				if unit and self.get_stat('shaped_blast'):
+					if not are_hostile(self.caster, unit):
+						continue
+				if unit and self.get_stat('chaos'):
+					dtype = min(((unit.resists[t], t) for t in self.damage_type), key=lambda t : t[0])[1]
 				else:
-					dtype = random.choice(dtypes)
+					dtype = random.choice(self.damage_type)
+				if unit and self.get_stat('ash_ball'):
+					unit.apply_buff(BlindBuff(), self.get_stat('duration', base=4))
+					unit.apply_buff(Poison(), self.get_stat('duration', base=4))
 
 				self.caster.level.deal_damage(point.x, point.y, damage, dtype, self)
-
-				if self.get_stat('ash') and unit:
-					unit.apply_buff(BlindBuff(), self.get_stat('duration', base=5))
-					unit.apply_buff(Poison(), self.get_stat('duration', base=5))
-
 			yield
-
 		return
 
+	def get_aoe(self, x, y):
+		effective_radius = self.get_stat('radius')
+		if self.get_stat('shaped_blast'):
+			dist = distance(self.caster, Point(x, y))
+			effective_radius += int(dist//4)
+		yield from Burst(self.caster.level, Point(x, y), effective_radius)
+
 	def get_impacted_tiles(self, x, y):
-		return [p for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')) for p in stage]
+		for stage in self.get_aoe(x, y):
+			for point in stage:
+				unit = self.caster.level.get_unit_at(point.x, point.y)
+				if self.get_stat('shaped_blast') and unit and not are_hostile(unit, self.caster):
+					continue
+				yield point
+
+	def get_ai_target(self):
+		return Spell.get_corner_target(self, self.get_stat('radius'))
 
 class MeteorShower(Spell):
 
@@ -120,9 +91,9 @@ class MeteorShower(Spell):
 
 		self.max_channel = 10
 
-		self.upgrades['chaos'] = (1, 7, "Chaos Storm", "Each meteor casts your Annihilate on [3:num_targets] enemy units within [4:radius] tiles")
-		self.upgrades['dragons'] = (1, 8, "Rain of Dragons", "Each meteor has a 50% chance of casting your fire drake spell as well")
-		self.upgrades['pyrostatic'] = (1, 8, "Pyrostatic Storm", "Each meteor casts your Lightning Bolt on up to [2:num_targets] enemies in line of sight")
+		self.upgrades['chaos'] = (1, 7, "Chaos Storm", "Each meteor casts your Annihilate on [3:num_targets] enemy units within [4:radius] tiles", [Tags.Chaos])
+		self.upgrades['dragons'] = (1, 8, "Rain of Dragons", "Each meteor has a 25% chance of casting your fire drake spell as well", [Tags.Dragon])
+		self.upgrades['pyrostatic'] = (1, 8, "Pyrostatic Storm", "Each meteor casts your Lightning Bolt on up to [2:num_targets] enemies in line of sight", [Tags.Lightning])
 
 		self.stats.append('storm_radius')
 
@@ -166,7 +137,7 @@ class MeteorShower(Spell):
 						pass
 
 			if self.get_stat('dragons'):
-				if random.random() < .50:
+				if random.random() < .25:
 					for _ in self.owner.level.act_cast(self.owner, fire_drake, target.x, target.y, pay_costs=False, queue=False):
 						pass
 
@@ -188,7 +159,7 @@ class RainOfThunderbolts(Spell):
 	def on_init(self):
 		self.name = "Rain of Thunderbolts"
 		self.max_charges = 1
-		self.tags = [Tags.Lightning]
+		self.tags = [Tags.Lightning, Tags.Sorcery]
 		self.level = 7
 
 
@@ -197,9 +168,9 @@ class RainOfThunderbolts(Spell):
 		self.num_targets = 12
 
 
-		self.upgrades['dragons'] = (1, 8, "Tempest Drakes", "Each strike has a 50% chance of casting your storm drake spell as well")
-		self.upgrades['all_weather'] = (1, 6, "Cryostorm", "May instead cast your Iceball on Blizzards or Rain Clouds")
-		self.upgrades['everstorm'] = (1, 7, "Everstorm", "Each turn you channel this spell, summons [%d:num_summons] Storm Clouds across the map." % self.num_targets)
+		self.upgrades['dragons'] = (1, 8, "Tempest Drakes", "Each strike has a 25% chance of casting your storm drake spell as well", [Tags.Dragon])
+		self.upgrades['all_weather'] = (1, 6, "Cryostorm", "May instead cast your Iceball on Blizzards or Rain Clouds", [Tags.Ice])
+		self.upgrades['stormbringer'] = (1, 7, "Stormbringer", "Each turn you channel this spell, summons [%d:num_summons] Storm Clouds across the map." % self.num_targets)
 
 	def get_description(self):
 		return ("Casts your thunderstrike spell targeting [{num_targets}:num_targets] random Storm Clouds each turn.\n"
@@ -218,12 +189,12 @@ class RainOfThunderbolts(Spell):
 			return
 
 		if self.get_stat('all_weather'):
-			targets = [p for p in self.caster.level.iter_tiles() if self.caster.level.tiles[p.x][p.y].cloud] # all clouds are acceptable
+			accepted_clouds = [StormCloud, BlizzardCloud, RainCloud]
+			targets = [p for p in self.caster.level.iter_tiles() if self.caster.level.tiles[p.x][p.y].cloud
+					   and type(self.caster.level.tiles[p.x][p.y].cloud) in accepted_clouds] # all clouds are acceptable (was including webs before
 		else:
 			targets = [p for p in self.caster.level.iter_tiles() if self.caster.level.tiles[p.x][p.y].cloud
 					   and isinstance(self.caster.level.tiles[p.x][p.y].cloud ,StormCloud)] # storm clouds only
-
-		random.shuffle(targets)
 
 		tiles_with_enemies = [t for t in targets if self.caster.level.get_unit_at(t.x, t.y) and are_hostile(self.caster, self.caster.level.get_unit_at(t.x, t.y))]
 		tiles_no_units = [t for t in targets if not self.caster.level.get_unit_at(t.x, t.y)]
@@ -235,7 +206,7 @@ class RainOfThunderbolts(Spell):
 
 		targets = tiles_with_enemies + tiles_no_units
 
-		for target in targets:
+		for target in targets[:self.get_stat('num_targets')]: # wasn't slicing before and was hiting all clouds!
 			if self.get_stat('all_weather'):
 				if isinstance(self.caster.level.tiles[target.x][target.y].cloud,StormCloud):
 					self.owner.level.act_cast(self.caster, thunderstrike, target.x, target.y, pay_costs=False)
@@ -245,11 +216,10 @@ class RainOfThunderbolts(Spell):
 				self.owner.level.act_cast(self.caster, thunderstrike, target.x, target.y, pay_costs=False)
 
 			if self.get_stat('dragons'):
-				if random.random() < .50:
-					for _ in self.owner.level.act_cast(self.owner, storm_drake, target.x, target.y, pay_costs=False, queue=False):
-						pass
+				if random.random() < .25:
+					self.owner.level.act_cast(self.owner, storm_drake, target.x, target.y, pay_costs=False, queue=True)
 
-		if self.get_stat("everstorm"):
+		if self.get_stat("stormbringer"):
 			targets = [p for p in self.caster.level.iter_tiles()
 					   if(
 							not self.caster.level.tiles[p.x][p.y].cloud
@@ -272,17 +242,16 @@ class LightningBoltSpell(Spell):
 		self.range = 11
 		self.name = "Lightning Bolt"
 		self.max_charges = 18
-		self.element = Tags.Lightning
+		self.damage_type = [Tags.Lightning]
 
 		self.tags = [Tags.Lightning, Tags.Sorcery]
 		self.level = 1
 
-		self.upgrades['channel'] = (1, 2, "Channeling", "Lightning bolt can be channeled for up to 10 turns.")
-		self.upgrades['scrolls'] = (1, 7, "Electric Ink", "Whenever Lightning Bolt kills a unit, spawn a living lightning scroll that can cast your Lightning Bolt spell once.")
-		self.upgrades['energy'] = (1, 5, "Energy Bolt", "Lightning bolt also deals arcane damage")
+		self.upgrades['channel'] = (1, 1, "Channeling", "Lightning bolt can be channeled for up to 10 turns.")
+		self.upgrades['scrolls'] = (1, 3, "Electric Ink", "Whenever Lightning Bolt kills a unit, spawn a living lightning scroll that can cast your Lightning Bolt spell once.")
+		self.upgrades['energy'] = (1, 5, "Energy Bolt", "Lightning bolt also deals [arcane] damage", [Tags.Arcane], [Tags.Arcane])
 
 		self.suicide = False
-		self.damage_type = Tags.Lightning # For scroll AI
 
 		# Generally shoot from the caster but not always
 		self.origin_point = None
@@ -306,18 +275,13 @@ class LightningBoltSpell(Spell):
 
 		if self.get_stat('channel') and not channel_cast:
 			check_fn = self.should_ai_channel if not self.caster.is_player_controlled else None
-			self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y), channel_check=check_fn), 10)
+			self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y), channel_check=check_fn), self.get_stat('max_channel', base=10))
 			return
 
 		start = self.origin_point or self.caster
 		target = Point(x, y)
 
-		dtypes = [Tags.Lightning]
-
-		if self.get_stat('chaos'):
-			dtypes = [Tags.Lightning, Tags.Fire]
-		if self.get_stat('energy'):
-			dtypes = [Tags.Lightning, Tags.Arcane]
+		dtypes = self.damage_type
 
 		for dtype in dtypes:
 			for point in Bolt(self.caster.level, start, target):
@@ -355,14 +319,14 @@ class AnnihilateSpell(Spell):
 		self.max_charges = 10
 		self.damage = 16
 		self.tags = [Tags.Chaos, Tags.Sorcery]
+		self.damage_type = [Tags.Fire, Tags.Lightning, Tags.Physical]
 		self.level = 2
 		self.cascade_range = 0  # Should be cascade range
-		self.arcane = 0
-		self.dark = 0
 
 		self.upgrades['cascade_range'] =  (3, 3, 'Cascade', 'Remaining hits from Annihilate will jump to nearby targets if the main target is killed')
-		self.upgrades['extra'] =  (1, 2, 'Comprehensive Annihilation', 'Annihilate deals additional dark and arcane damage hits')
+		self.upgrades['extra'] =  (1, 4, 'Comprehensive Annihilation', 'Annihilate deals additional [dark] and [arcane] damage hits', [Tags.Dark, Tags.Arcane], [Tags.Dark, Tags.Arcane])
 		self.upgrades['doom_storm'] =  (1, 3, 'Doom Storm', 'Annihilate chains to up to [5:num_targets] units standing in storms in line of sight')
+		self.upgrades['assured_destruction'] = (1, 1, 'Assured Destruction', 'If you are able, when you cast this spell, use an additional charge to cast it again if the target lives.')
 
 		self.origin_point = None
 
@@ -376,30 +340,19 @@ class AnnihilateSpell(Spell):
 		for p in self.owner.level.get_points_in_line(self.origin_point or self.caster, Point(x, y))[1:-1]:
 			self.owner.level.show_effect(p.x, p.y, Tags.Chaos, minor=True)
 
-		dtypes = [Tags.Fire, Tags.Lightning, Tags.Physical]
-		if self.get_stat('extra'):
-			dtypes.append(Tags.Arcane)
-			dtypes.append(Tags.Dark)
-
-		if self.get_stat('crystal'):
-			dtypes.append(Tags.Ice)
-			dtypes.append(Tags.Holy)
-
 		targets = [Point(x, y)]
 		if self.get_stat('doom_storm'):
-			potential_targets = [t for t in self.owner.level.get_units_in_los(Point(x, y))]
+			targets += self.get_cloud_targets(x, y)
 
-			def is_storm(t):
-				storm_types = [BlizzardCloud, StormCloud, RainCloud]
-				return self.owner.level.tiles[t.x][t.y].cloud and type(self.owner.level.tiles[t.x][t.y].cloud) in storm_types
-
-			potential_targets = [t for t in potential_targets if is_storm(t)]
-			random.shuffle(potential_targets)
-
-			targets.extend(potential_targets[:self.get_stat('num_targets', base=3)])
+		if self.get_stat('giant_slayer'):
+			unit = self.caster.level.get_unit_at(x, y)
+			if not unit:
+				return
+			if unit.radius > 0:
+				targets = [t for t in self.caster.level.get_points_in_ball(unit.x, unit.y, unit.radius, diag=True)]
 
 		for cur_target in targets:
-			for dtype in dtypes:
+			for dtype in self.damage_type:
 				if self.get_stat('cascade_range') and not self.caster.level.get_unit_at(cur_target.x, cur_target.y):
 					other_targets = self.caster.level.get_units_in_ball(cur_target, self.get_stat('cascade_range'))
 					other_targets = [t for t in other_targets if self.caster.level.are_hostile(t, self.caster)]
@@ -414,23 +367,41 @@ class AnnihilateSpell(Spell):
 				for i in range(2):
 					yield
 
+		if self.get_stat('assured_destruction') and self.caster.is_player_controlled: # is_player_controlled check to prevent awkwardness with allies casting it
+			unit = self.caster.level.get_unit_at(x, y)
+			if unit and unit.is_alive():
+				if self.can_pay_costs():
+					self.caster.level.act_cast(self.caster, self, x, y, pay_costs=True)
+
+	def get_cloud_targets(self, x, y):
+		potential_targets = [t for t in self.owner.level.get_units_in_los(Point(x, y))]
+
+		def is_storm(t):
+			storm_types = [BlizzardCloud, StormCloud, RainCloud]
+			return self.owner.level.tiles[t.x][t.y].cloud and type(
+				self.owner.level.tiles[t.x][t.y].cloud) in storm_types
+
+		potential_targets = [t for t in potential_targets if is_storm(t)]
+		random.shuffle(potential_targets)
+
+		return potential_targets[:self.get_stat('num_targets', base=5)]
+
+
 class MegaAnnihilateSpell(AnnihilateSpell):
 
 	def on_init(self):
 		self.damage = 99
 		self.max_charges = 3
 		self.name = "Mega Annihilate"
-		
+
+		self.damage_type = [Tags.Fire, Tags.Lightning, Tags.Physical]
 		self.tags = [Tags.Chaos, Tags.Sorcery]
 		self.level = 5
-
 		self.cascade_range = 0
-		self.arcane = 0
-		self.dark = 0
 
 		self.upgrades['cascade_range'] =  (4, 3, 'Cascade', 'Remaining hits from Mega Annihilate will jump to nearby targets if the main target is killed')
-		self.upgrades['crystal'] =  (1, 2, 'Crystal Annihilation', 'Mega Annihilate deals additional [ice] and [holy] damage hits')
-		self.upgrades['max_charges'] = (6, 2, 'Endless Annihilation')
+		self.upgrades['crystal'] =  (1, 2, 'Crystal Annihilation', 'Mega Annihilate deals additional [ice] and [holy] damage hits', [Tags.Ice, Tags.Holy], [Tags.Ice, Tags.Holy])
+		self.upgrades['giant_slayer'] = (1, 4, 'Giant Slayer', "Mega Annihilate deals its damage to every tile of multi-tile units.")
 
 		self.origin_point = None
 
@@ -459,12 +430,10 @@ class Teleport(Spell):
 		start_loc = Point(self.caster.x, self.caster.y)
 
 		self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Translocation)
-		p = self.caster.level.get_summon_point(x, y)
-		if self.caster.flying:
-			p = self.caster.level.get_summon_point(x, y, flying=True)
+		p = self.caster.level.get_summon_point(x, y, flying=self.caster.flying, burrowing=self.caster.burrowing) # incorporate teleporting into walls if burrowing
 		if not p:
 			return
-		
+
 		yield self.caster.level.act_move(self.caster, p.x, p.y, teleport=True)
 		self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Translocation)
 		if self.get_stat('group_teleport'):
@@ -525,7 +494,7 @@ class BlinkSpell(Teleport):
 
 		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Blink can be cast without line of sight")
 		self.upgrades['dispersal'] = (1, 2, "Dissolution", "Casting blink also casts disperse")
-		self.upgrades['thunder'] = (1, 2, "Thunderblink", "Casting blink casts thunderstrike on the [2:num_targets] closest enemy targets in line of sight.")
+		self.upgrades['thunder'] = (1, 2, "Thunderblink", "Casting blink casts thunderstrike on the [2:num_targets] closest enemy targets in line of sight.", [Tags.Lightning])
 
 class FlameGateBuff(Buff):
 
@@ -536,6 +505,7 @@ class FlameGateBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'flame_gate']
 		self.description = "Whenever you cast a fire spell, temporarily summon a fire elemental near the target.\n\nThis enchantment ends if you move or cast a spell without the [fire] tag."
+		self.radius = self.spell.radius
 
 	def on_applied(self, owner):
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
@@ -545,6 +515,8 @@ class FlameGateBuff(Buff):
 	def on_spell_cast(self, spell_cast_event):
 		if Tags.Fire in spell_cast_event.spell.tags:
 			self.owner.level.queue_spell(self.make_elemental(spell_cast_event))
+			if self.spell.get_stat('searing_gate'):
+				self.radius += 1
 		else:
 			self.owner.remove_buff(self)
 
@@ -565,10 +537,15 @@ class FlameGateBuff(Buff):
 			elemental.resists[Tags.Ice] = -100
 			elemental.turns_to_death = self.spell.get_stat('minion_duration')
 			elemental.max_hp = self.spell.get_stat('minion_health')
-			elemental.team = self.owner.team
 			elemental.tags = [Tags.Elemental, Tags.Fire]
 			self.spell.summon(elemental, target=spell_cast_event)
 		yield
+
+	def on_advance(self):
+		if self.spell.get_stat('searing_gate'):
+			targets = [u for u in self.owner.level.get_units_in_ball(self.owner, self.radius) if are_hostile(u, self.owner)]
+			for u in targets:
+				u.deal_damage(self.spell.get_stat('damage', base=1), Tags.Fire, self.spell)
 
 class StarfireGateBuff(Buff): #I separated this into a separate buff so that I wasn't flooding FlameGateBuff with if statements and ternary operators
 
@@ -608,7 +585,6 @@ class StarfireGateBuff(Buff): #I separated this into a separate buff so that I w
 			elemental.resists[Tags.Ice] = -100
 			elemental.turns_to_death = self.spell.get_stat('minion_duration')
 			elemental.max_hp = self.spell.get_stat('minion_health')
-			elemental.team = self.owner.team
 			elemental.tags = [Tags.Elemental, Tags.Fire, Tags.Arcane]
 			elemental.shields = 1
 			self.spell.summon(elemental, target=spell_cast_event)
@@ -631,7 +607,9 @@ class FlameGateSpell(Spell):
 
 		self.upgrades['radius'] = (1, 3, "Burst Fire", "Elemental attacks gain 1 radius.")
 		self.upgrades['cast_eye'] = (1, 5, "Eye Gate", "Your elementals instantly cast your Eye of Fire spell when summoned")
-		self.upgrades['starfire_summon'] = (1, 5, "Starfire Gate", "Starfire Gate can sustain off of both [Fire] and [Arcane] spells. Starfire Gate summons Starfire Elementals instead of Fire Elementals.")
+		self.upgrades['starfire_summon'] = (1, 5, "Starfire Gate", "Starfire Gate can sustain off of both [Fire] and [Arcane] spells. Starfire Gate summons Starfire Elementals instead of Fire Elementals.", [Tags.Arcane])
+		self.upgrades['searing_gate'] = (1, 4, "Searing Gate", "Deal [1:damage] [fire] damage to enemy units in a [1_tile:radius] radius around you each turn.\n"
+															   "This radius increases by 1 each time you cast a [fire] spell.")
 
 	def cast(self, x, y):
 		if self.get_stat('starfire_summon'):
@@ -651,7 +629,6 @@ class FlameGateSpell(Spell):
 		elemental.resists[Tags.Ice] = -100
 		elemental.turns_to_death = self.get_stat('minion_duration')
 		elemental.max_hp = self.get_stat('minion_health')
-		elemental.team = self.owner.team
 		elemental.tags = [Tags.Elemental, Tags.Fire]
 		return elemental
 
@@ -668,13 +645,12 @@ class FlameGateSpell(Spell):
 		elemental.resists[Tags.Ice] = -100
 		elemental.turns_to_death = self.get_stat('minion_duration')
 		elemental.max_hp = self.get_stat('minion_health')
-		elemental.team = self.owner.team
 		elemental.tags = [Tags.Elemental, Tags.Fire, Tags.Arcane]
 		elemental.shields = 1
 		return elemental
 
 	def get_extra_examine_tooltips(self):
-		return [self.get_fire_elemental(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.get_starfire_elemental()]
+		return [self.get_fire_elemental(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.get_starfire_elemental(), self.spell_upgrades[3]]
 
 	def get_description(self):
 		return ("Whenever you cast a [fire] spell, summon a fire elemental at the target of that spell.\n"
@@ -718,7 +694,7 @@ class LightningFormBuff(Buff):
 		self.cast = False
 		
 		if self.spell.get_stat('crackling_aura'):
-			targets = self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat('radius', base=5))
+			targets = [u for u in self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat('radius', base=5)) if are_hostile(self.owner, u)]
 			random.shuffle(targets)
 			
 			for i in range(min(self.spell.get_stat('num_targets', base=4), len(targets))):
@@ -763,7 +739,7 @@ class LightningFormSpell(Spell):
 		self.level = 4
 
 		self.upgrades['lingering_form'] = (1, 2, "Lingering Form", "Lasts 3 turns after you cast a [lightning:lightning] spell instead of vanishing instantly.")
-		self.upgrades['fire_form'] = (1, 3, "Fire Form", "Also works on [fire:fire] spells and gives [100_fire:fire] resist.")
+		self.upgrades['fire_form'] = (1, 3, "Fire Form", "Also works on [fire:fire] spells and gives [100_fire:fire] resist.", [Tags.Fire])
 		self.upgrades['crackling_aura'] = (1, 4, "Crackling Aura", "In lightning form, deal [5_lightning:lightning] damage to up to [4:num_targets] enemies in a 5 tile radius each turn.")
 
 	def cast(self, x, y):
@@ -796,12 +772,13 @@ class VoidBeamSpell(Spell):
 		self.damage = 25
 		
 		self.tags = [Tags.Arcane, Tags.Sorcery]
+		self.damage_type = [Tags.Arcane]
 		self.level = 4
 
 		self.element = Tags.Arcane
 
 		self.upgrades['voidbomber'] = (1, 2, "Void Binding", "Slain enemies are raised as void bombers")
-		self.upgrades['starbeam'] = (1, 3, "Star Beam", "Void beam also deals [fire] damage")
+		self.upgrades['starbeam'] = (1, 3, "Star Beam", "Void beam also deals [fire] damage", [Tags.Fire], [Tags.Fire])
 		self.upgrades['voidcurse'] = (1, 3, "Voidcurse", "Enemies in the aoe gain a stacking debuff that causes them to lose 25 [arcane] resistance")
 		# More void beam.... fork?  Combustion... but bigger?  Triple beam?
 
@@ -819,12 +796,6 @@ class VoidBeamSpell(Spell):
 			# Kill walls
 			if not self.caster.level.tiles[point.x][point.y].can_see:
 				self.caster.level.make_floor(point.x, point.y)
-			
-			cur_tile = self.caster.level.tiles[point.x][point.y]
-
-			# Kill clouds
-			if cur_tile.cloud:
-				cur_tile.cloud.kill()
 
 			# Deal damage
 			unit = self.caster.level.get_unit_at(point.x, point.y)
@@ -836,16 +807,25 @@ class VoidBeamSpell(Spell):
 				self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), Tags.Fire, self)
 
 			if unit and not unit.is_alive() and self.get_stat('voidbomber'):
-				bomber = VoidBomber()
-				apply_minion_bonuses(self, bomber)
-				self.summon(bomber, target = unit)
+				self.summon(self.make_bomber(), target = unit)
 		yield
+
+	def make_bomber(self):
+		u = VoidBomber()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def get_impacted_tiles(self, x, y):
 		return list(self.aoe(x, y))
 
 	def get_description(self):
 		return "Deal [{damage}_arcane:arcane] damage and destroy walls in a beam.".format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0],
+				self.make_bomber(),
+				self.spell_upgrades[1],
+				self.spell_upgrades[2]]
 
 class ThunderStrike(Spell):
 
@@ -854,7 +834,7 @@ class ThunderStrike(Spell):
 		self.max_charges = 9
 		self.name = "Thunder Strike"
 		self.damage = 24
-		self.damage_type = Tags.Lightning
+		self.damage_type = [Tags.Lightning]
 		self.radius = 2
 		self.duration = 3
 		
@@ -862,9 +842,9 @@ class ThunderStrike(Spell):
 		self.level = 2
 
 		self.storm_power = 0
-		self.upgrades['requires_los'] = (-1, 3, "Blindcasting", "Thunderstrike can be cast without line of sight")
+		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Thunderstrike can be cast without line of sight")
 		self.upgrades['storm_power'] = (1, 3, "Storm Power", "Charge cost is refunded if the target tile already has a thunder storm.")
-		self.upgrades['heaven_strike'] = (1, 3, "Heaven Strike", "Thunder Strike also deals holy damage")
+		self.upgrades['heaven_strike'] = (1, 4, "Heaven Strike", "Thunder Strike also deals holy damage", [Tags.Holy], [Tags.Holy])
 
 	def get_description(self):
 		return ("Deal [{damage}_lightning:lightning] damage to the target.\n"
@@ -882,14 +862,9 @@ class ThunderStrike(Spell):
 		if in_cloud and self.get_stat('storm_power'):
 			self.refund_charges(1)
 
-		self.caster.level.deal_damage(x, y, damage, self.damage_type, self)
-		yield
-
-		if self.get_stat('heaven_strike'):
-			for i in range(3):
-				yield
-
-			self.caster.level.deal_damage(x, y, damage, Tags.Holy, self)
+		for dtype in self.damage_type:
+			self.caster.level.deal_damage(x, y, damage, dtype, self)
+			yield
 
 		for stage in Burst(self.caster.level, Point(x, y), radius):
 			for point in stage:
@@ -905,41 +880,6 @@ class ThunderStrike(Spell):
 
 		return [p for stage in Burst(self.caster.level, Point(x, y), radius) for p in stage]
 
-class GiantStrengthBuff(Buff):
-
-	def on_applied(self, owner):
-		hurl_boulder = SimpleRangedAttack(name="Hurl Boulder", damage=self.damage, range=6, damage_type=Tags.Physical)
-		hurl_boulder.max_charges = 50
-		self.spells = [hurl_boulder]
-		self.resists[Tags.Physical] = 50
-		self.color = Tags.Enchantment.color
-		self.name = "Giant Strength"
-		self.buff_type = BUFF_TYPE_BLESS
-		self.asset = ['status', 'giant_form']
-
-class GiantStrengthSpell(Spell):
-
-	def on_init(self):
-		self.name = "Stone Giant Form"
-		self.duration = 15
-		self.max_charges = 9
-		self.damage = 25
-		self.range = 0
-
-		self.tags = [Tags.Nature, Tags.Enchantment]
-		self.level = 2
-
-		self.upgrades['damage'] = (15, 2)
-		self.upgrades['duration'] = (15, 1)
-
-	def get_description(self):
-		return "Temporarily gain physical resistance and the ability to hurl boulders."
-
-	def cast(self, x, y):
-		buff = GiantStrengthBuff()
-		buff.damage = self.get_stat('damage')
-		self.caster.apply_buff(buff, self.get_stat('duration'))
-		yield
 
 class ChaosBarrage(Spell):
 
@@ -951,6 +891,7 @@ class ChaosBarrage(Spell):
 		self.angle = math.pi / 6
 		self.max_charges = 8
 		self.tags = [Tags.Chaos, Tags.Sorcery]
+		self.damage_type = [Tags.Fire, Tags.Lightning, Tags.Physical]
 		self.can_target_self = False
 
 		self.level = 2
@@ -1019,57 +960,6 @@ class ChaosBarrage(Spell):
 	def get_impacted_tiles(self, x, y):
 		return self.get_cone_burst(x, y)
 
-class InfernoCloud(Cloud):
-
-	def __init__(self, owner, damage):
-		Cloud.__init__(self)
-		self.damage = damage
-		self.owner = owner
-		self.color = Color(180, 0, 0)
-		self.spread_chance = .7
-		self.duration = 5
-		self.name = "Inferno"
-		self.description = "A spreading cloud of fire.  Deals %d damage to creatures caught within each turn."
-
-	def on_advance(self):
-
-		# Deal damage to units in the fire
-		if self.level.get_unit_at(self.x, self.y):
-			self.owner.level.deal_damage(self.x, self.y, self.get_stat('damage'), Tags.Fire, self)
-
-		if random.random() < self.spread_chance:	
-			expansion_points = self.owner.level.get_adjacent_points(Point(self.x, self.y))
-
-			expansion_points = [p for p in expansion_points if self.owner.level.can_walk(p.x, p.y)]
-
-			point = random.choice(expansion_points)
-			if not self.level.tiles[point.x][point.y].cloud:
-				self.owner.level.add_obj(InfernoCloud(self.owner, self.get_stat('damage')), point.x, point.y)
-
-class InfernoSpell(Spell):
-
-	def on_init(self):
-		self.range = 3
-		self.max_charges = 1
-		self.name = "Inferno"
-		self.tags = [Tags.Fire]
-		self.damage = 10
-
-		self.level = 5
-
-		self.requires_los = False
-		self.range = 7
-
-		self.upgrades['range'] = (5, 1)
-		self.upgrades['max_charges'] = (2, 1)
-
-	def get_description(self):
-		return "Create a spreading inferno that deals damage each turn to units inside."
-
-	def cast(self, x, y):
-		self.caster.level.add_obj(InfernoCloud(self.caster, self.get_stat('damage')), x, y)
-		yield
-
 class DispersalSpell(Spell):
 
 	def on_init(self):
@@ -1081,8 +971,9 @@ class DispersalSpell(Spell):
 		self.radius = 4
 		self.level = 2
 
-		self.upgrades['warpdagger'] = (1, 3, "Violent Warp", "Casts Magic Missile on all teleported enemy units")
-		self.upgrades['sheilds'] = (1, 2, "Protective Warp", "Teleported allied units in the radius gain 3 SH")
+		self.upgrades['warpdagger'] = (1, 6, "Violent Warp", "Casts Magic Missile on all teleported enemy units", None, [Tags.Arcane])
+		self.upgrades['shields'] = (1, 2, "Protective Warp", "Teleported allied units in the radius gain 3 SH")
+		self.upgrades['void_sickness'] = (1, 2, "Void Sickness", "Teleported units receive [10_turns:duration] of Silence and Poisoned", [Tags.Dark])
 
 	def get_description(self):
 		return ("Teleport all units in a [{radius}_tile:radius] radius to random locations\n"
@@ -1092,9 +983,6 @@ class DispersalSpell(Spell):
 		return self.caster.level.get_points_in_ball(x, y, self.get_stat('radius'))
 
 	def cast(self, x, y):
-		# For Violent Warp upgrade
-		magic_missile = self.owner.get_or_make_spell(MagicMissile)
-
 		for target in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')):
 			if not target:
 				continue
@@ -1108,7 +996,7 @@ class DispersalSpell(Spell):
 			self.caster.level.show_effect(target.x, target.y, Tags.Translocation)
 			yield 
 
-			# Calc possible points directly before moving with no yields in between to gaurantee that the point remains valid when we teleport
+			# Calc possible points directly before moving with no yields in between to guarantee that the point remains valid when we teleport
 			possible_points = []
 			for i in range(len(self.caster.level.tiles)):
 				for j in range(len(self.caster.level.tiles[i])):
@@ -1119,6 +1007,7 @@ class DispersalSpell(Spell):
 				return
 
 			target_point = random.choice(possible_points)
+			origin_point = Point(target.x, target.y)
 
 			self.caster.level.act_move(target, target_point.x, target_point.y, teleport=True)
 			yield
@@ -1129,12 +1018,18 @@ class DispersalSpell(Spell):
 				self.caster.level.act_cast(self.caster, magic_missile, target.x, target.y, pay_costs=False)
 				yield
 
-			if not are_hostile(self.caster, target) and self.get_stat('sheilds'):
-				target.add_shields(3)
+			if not are_hostile(self.caster, target) and self.get_stat('shields'):
+				target.add_shields(self.get_stat('num_targets', base=3))
+
+			if self.get_stat('void_sickness'):
+				target.apply_buff(Silence(), self.get_stat('duration', base=10))
+				target.apply_buff(Poison(), self.get_stat('duration', base=10))
 
 class PetrifySpell(Spell):
 
 	def on_init(self):
+		self.tags = [Tags.Arcane, Tags.Enchantment]
+		self.level = 2
 		self.range = 8
 		self.max_charges = 20
 		self.name = "Petrify"
@@ -1142,22 +1037,27 @@ class PetrifySpell(Spell):
 
 		self.duration = 10
 
-		self.upgrades['glassify'] = (1, 3, 'Glassify', 'Turn the target to glass instead of stone.  Glass targets have -100 physical resist.')
-		self.upgrades['arcane_conductivity'] = (1, 3, "Arcane Conductivity", "Target loses [100_arcane:arcane] resist.")
-		self.upgrades['petrified_animation'] = (1, 3, "Rocky Servitude", "On death, raise target as a golem.") #will add extra examine tooltip
-
-		self.tags = [Tags.Arcane, Tags.Enchantment]
-		self.level = 2
+		self.upgrades['glassify'] = (1, 1, 'Glassify', 'Turn the target to glass instead of stone.  Glass targets have -100 physical resist.')
+		self.upgrades['arcane_conductivity'] = (1, 2, "Arcane Conductivity", "Target loses [100_arcane:arcane] resist.")
+		self.upgrades['petrified_animation'] = (1, 3, "Rocky Servitude", "On death, raise target as a golem.")
+		self.upgrades['panic'] = (1, 6, "Panic", "Enemies in line of sight of the target are feared for [1:duration] turn.")
 
 	def create_golem(self, evt):
 		u = evt.unit
 		golem = Golem()
 		golem.max_hp = u.max_hp
+		apply_minion_bonuses(self, golem)
 		if u.flying:
 			golem.name = "Flying Golem"
 			golem.asset_name = "golem_flying"
 			golem.flying = True
 		self.summon(golem, u)
+
+	def make_tt_golem(self):
+		u = Golem()
+		apply_minion_bonuses(self, u)
+		u.max_hp = 0
+		return u
 
 	def cast(self, x, y):
 
@@ -1172,6 +1072,10 @@ class PetrifySpell(Spell):
 		if self.get_stat('petrified_animation'):
 			buff.owner_triggers[EventOnDeath] = self.create_golem
 		target.apply_buff(buff, self.get_stat('duration'))
+		if self.get_stat('panic'):
+			enemies = [u for u in target.level.get_units_in_los(target) if are_hostile(self.caster, u)]
+			for u in enemies:
+				u.apply_buff(FearBuff(), self.get_stat('duration', base=1))
 		yield
 
 	def get_description(self):
@@ -1180,7 +1084,7 @@ class PetrifySpell(Spell):
 		return desc.format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
-		return self.spell_upgrades + [Golem()]
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.make_tt_golem(), self.spell_upgrades[3]]
 
 class StoneAuraBuff(Buff):
 
@@ -1196,9 +1100,14 @@ class StoneAuraBuff(Buff):
 
 	def on_death(self, evt):
 		if self.spell.get_stat('wormification') and distance(evt.unit, self.owner) <= self.spell.get_stat('radius') and (evt.unit.get_buff(PetrifyBuff) or evt.unit.get_buff(GlassPetrifyBuff)):
-			unit = RockWurm()
-			unit.max_hp = evt.unit.max_hp
-			self.summon(unit, target=evt.unit)
+			self.owner.level.queue_spell(self.summon_worm(evt))
+
+	def summon_worm(self, evt):
+		unit = RockWurm()
+		unit.max_hp = evt.unit.max_hp
+		apply_minion_bonuses(self.spell, unit)
+		self.summon(unit, target=evt.unit)
+		yield
 
 	def on_advance(self):
 		BuffClass = GlassPetrifyBuff if self.spell.get_stat('glassify') else PetrifyBuff
@@ -1213,7 +1122,7 @@ class StoneAuraBuff(Buff):
 					u.kill()
 				continue
 			if stoned < self.spell.get_stat('num_targets'):
-				u.apply_buff(BuffClass(), self.spell.get_stat('petrify_duration'))
+				u.apply_buff(BuffClass(), self.spell.get_stat('duration'))
 				stoned += 1
 
 			if stoned >= self.spell.get_stat('num_targets'):
@@ -1227,17 +1136,13 @@ class StoneAuraSpell(Spell):
 		self.name = "Petrification Aura"
 		self.tags = [Tags.Arcane, Tags.Enchantment]
 		self.level = 4
-
-		self.max_charges = 3
+		self.max_charges = 2
 		self.num_targets = 3
-
-		self.duration = 7
-
-		self.petrify_duration = 2
+		self.duration = 6
 		self.radius = 7
 
 		self.upgrades['crumbling_aura'] = (1, 3, "Crumbling Aura", "Each turn, all petrified enemies within the aura with [16:damage] or less hp are instantly killed.")
-		self.upgrades['wormification'] = (1, 4, "Wormification Aura", "Enemies slain while petrified within the range of the aura, the enemy is raised as a rock worm.")
+		self.upgrades['wormification'] = (1, 4, "Wormification Aura", "Enemies slain while petrified within the range of the aura are raised as rock worms.\nThe rock worm's max HP is equal to the killed unit's. ")
 		self.upgrades['glassify'] = (1, 5, "Glassify", "Turn enemies to glass instead of stone, making them take double physical damage instead of one quarter.")
 
 	def get_description(self):
@@ -1245,15 +1150,53 @@ class StoneAuraSpell(Spell):
 				text.petrify_desc + '\n'
 				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0],
+				self.spell_upgrades[1],
+				self.make_rockwurm(),
+				self.spell_upgrades[2]]
+
+	def make_rockwurm(self):
+		u = RockWurm()
+		apply_minion_bonuses(self, u)
+		u.max_hp = 0
+		return u
+
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(StoneAuraBuff(self), self.get_stat('duration'))
 
 	def get_extra_examine_tooltips(self):
-		return [self.spell_upgrades[0], self.spell_upgrades[1], RockWurm(), self.spell_upgrades[2]]
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.make_rockwurm(), self.spell_upgrades[2]]
+
+class FenrisGrowthBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
+		self.color = Tags.Blood.color
+		self.name = "Ravenous Hunger"
+		self.description = (("On Kill:"
+							 "\n+[%d:minion_health] Max HP, [%d:minion_health] Heal"
+							 "\n+[%d:minion_damage] damage to abilties.") % (self.spell.get_stat('minion_health', base=10), self.spell.get_stat('minion_health', base=10), self.spell.get_stat('minion_damage', base=1)))
+
+	def on_init(self):
+		self.buff_type = BUFF_TYPE_BLESS
+		self.global_triggers[EventOnDeath] = self.on_death
+
+	def on_death(self, evt):
+		if evt.damage_event and evt.damage_event.source and evt.damage_event.source.owner == self.owner:
+			self.owner.max_hp += self.spell.get_stat('minion_health', base=10)
+			self.owner.heal(self.spell.get_stat('minion_health', base=10), self)
+			for spell in self.owner.spells:
+				if not hasattr(spell, 'damage'):
+					continue
+				spell.damage += self.spell.get_stat('minion_damage', base=1)
 
 class SummonWolfSpell(Spell):
 
 	def on_init(self):
+		self.tags = [Tags.Nature, Tags.Conjuration]
+		self.level = 1
 		self.max_charges = 7
 		self.name = "Wolf"
 		self.minion_health = 15
@@ -1261,52 +1204,46 @@ class SummonWolfSpell(Spell):
 
 		self.minion_range = 4
 
-		self.upgrades['wolf_pack'] = (2, 4, "Wolf Pack", "Summons a pack of [3:num_summons] wolves instead of just 1.")
-		self.upgrades['ice_hound'] = (1, 2, "Ice Hound", "Summon an ice hound instead of a wolf.")
-		self.upgrades['clay_hound'] = (1, 3, "Clay Hound", "Summon a clay hound instead of a wolf.")
-
-		self.tags = [Tags.Nature, Tags.Conjuration]
-		self.level = 1
+		self.upgrades['wolf_pack'] = (2, 5, "Wolf Pack", "Summons a pack of [3:num_summons] wolves instead of just 1.")
+		self.upgrades['mutant_wolf'] = (1, 2, "Mutant Wolf", "A random boss modifier is applied to the wolf.", [Tags.Chaos])
+		self.upgrades['werewolf'] = (1, 1, "Werewolf", "Summon a Werewolf instead of a wolf.", [Tags.Dark])
+		self.upgrades['fenris'] = (1, 4, "Fenris", "Summon Fenris instead of a wolf."
+												   "\nConsumes all remaining charges on cast."
+												   "\nFor each charge consumed, Fenris gains the damage and health of your wolf."
+												   "\nEach time Fenris kills a unit, he grows more powerful.")
 
 		self.must_target_walkable = True
 		self.must_target_empty = True
-
 		self.target_empty = True
 
 	def get_extra_examine_tooltips(self):
 		return [self.make_wolf(),
 				self.spell_upgrades[0],
 				self.spell_upgrades[1],
-				self.make_ice_wolf(),
 				self.spell_upgrades[2],
-				self.make_clay_wolf()]
+				self.make_werewolf(),
+				self.spell_upgrades[3],
+				self.make_fenris()]
 
-	def make_ice_wolf(self):
-		wolf = self.make_wolf()
+	def make_fenris(self):
+		unit = self.make_wolf()
+		multiplier = max(self.get_stat('cur_charges'), 1)
+		unit.max_hp *= multiplier
+		for spell in unit.spells:
+			spell.damage *= multiplier
+		unit.apply_buff(FenrisGrowthBuff(self))
+		unit.name = "Fenris"
+		return unit
 
-		ice_spit = SimpleRangedAttack(damage=self.get_stat('minion_damage'), range=self.get_stat('minion_range'), damage_type=Tags.Ice)
-		ice_spit.cool_down = 2
+	def make_werewolf(self):
+		unit = Werewolf()
+		apply_minion_bonuses(self, unit)
+		return unit
 
-		wolf.spells.insert(0, ice_spit)
-		wolf.resists[Tags.Ice] = 100
-		wolf.resists[Tags.Fire] = -50
-		wolf.resists[Tags.Dark] = 50
-		wolf.name = "Ice Hound"
-		wolf.tags = [Tags.Demon, Tags.Ice]
-		wolf.buffs.append(Thorns(4, Tags.Ice))
-
-		return wolf
-
-	def make_clay_wolf(self):
-		wolf = self.make_wolf()
-		wolf.name = "Clay Hound"
-		wolf.asset_name = "earth_hound"
-
-		wolf.resists[Tags.Physical] = 50
-		wolf.resists[Tags.Fire] = 50
-		wolf.resists[Tags.Lightning] = 50
-		wolf.buffs.append(RegenBuff(3))
-		return wolf
+	def make_mutant_wolf(self):
+		unit = self.make_wolf()
+		modifier = random.choice(BossSpawns.modifiers)[0]
+		return BossSpawns.apply_modifier(modifier, unit)
 
 	def make_wolf(self):
 		wolf = Unit()
@@ -1320,21 +1257,23 @@ class SummonWolfSpell(Spell):
 		wolf.tags = [Tags.Living, Tags.Nature]
 
 		wolf.spells.append(LeapAttack(damage=self.get_stat('minion_damage'), damage_type=Tags.Physical, range=self.get_stat('minion_range')))
-		wolf.team = self.caster.team
-
 		return wolf
 
 	def cast(self, x, y):
-
+		wolf = None
 		num_to_summon = 1
 		if self.get_stat('wolf_pack'):
 			num_to_summon = self.get_stat('num_summons', base=3)
 
 		for i in range(num_to_summon):
-			if self.get_stat('clay_hound'):
-				wolf = self.make_clay_wolf()
-			elif self.get_stat('ice_hound'):
-				wolf = self.make_ice_wolf()
+			if self.get_stat('mutant_wolf'):
+				wolf = self.make_mutant_wolf()
+			elif self.get_stat('werewolf'):
+				wolf = self.make_werewolf()
+			elif self.get_stat('fenris'):
+				self.cur_charges += 1 # so the current cast doesn't detract from the multiplier
+				wolf = self.make_fenris()
+				self.cur_charges = 0 # uses all charges
 			else:
 				wolf = self.make_wolf()
 			self.summon(wolf, Point(x, y))
@@ -1346,7 +1285,7 @@ class SummonWolfSpell(Spell):
 class SummonGiantBear(Spell):
 
 	def on_init(self):
-		self.max_charges = 2
+		self.max_charges = 3
 		self.name = "Giant Bear"
 		self.minion_health = 75
 		self.minion_damage = 10
@@ -1356,9 +1295,9 @@ class SummonGiantBear(Spell):
 
 		self.minion_attacks = 2
 
-		self.upgrades['armored'] = (1, 3, "Metal Bear", "Summons a metallic bear instead of a giant bear.", "species")
-		self.upgrades['venom'] = (1, 3, "Venom Bear", "Summons a venom bear instead of a giant bear.  Venom Bears have a poison bite, and heal whenever an enemy takes poison damage.", "species")
-		self.upgrades['blood'] = (1, 3, "Blood Bear", "Summons a blood bear instead of a giant bear.  Blood bears are resistant to dark damage, and deal increasing damage with each attack.", "species")
+		self.upgrades['armored'] = (1, 3, "Metal Bear", "Summons a metallic bear instead of a giant bear.", [Tags.Metallic])
+		self.upgrades['venom'] = (1, 3, "Venom Bear", "Summons a venom bear instead of a giant bear.  Venom Bears have a poison bite, and heal whenever an enemy takes poison damage.")
+		self.upgrades['blood'] = (1, 3, "Blood Bear", "Summons a blood bear instead of a giant bear.  Blood bears are resistant to dark damage, and deal increasing damage with each attack.", [Tags.Blood])
 
 		self.must_target_walkable = True
 		self.must_target_empty = True
@@ -1448,7 +1387,7 @@ class FeedingFrenzySpell(Spell):
 		self.upgrades['demon_units'] = (1, 2, "Demon Frenzy", "Demon units are also affected")
 		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Sight of Blood can be cast without line of sight")
 		
-		self.tags = [Tags.Nature, Tags.Blood, Tags.Enchantment]
+		self.tags = [Tags.Nature, Tags.Blood, Tags.Enchantment, Tags.Eye]
 		self.level = 3
 
 	def can_affect(self, unit):
@@ -1498,24 +1437,11 @@ class FeedingFrenzySpell(Spell):
 				+ "All [living] enemies in line of sight of the target go [berserk] for [{duration}_turns:duration].\n"
 				+ text.berserk_desc).format(**self.fmt_dict())
 
-class EternalDarknessUpgrade(Upgrade):
-
-	def on_init(self):
-		self.name = "Eternal Darkness"
-		self.description = "Every 200 dark damage dealt, gain a charge."
-		self.global_triggers[EventOnDamaged] = self.on_damage
-		self.damage_counter = 0
-		self.level = 3
-
-	def on_damage(self, evt):
-		if evt.damage_type == Tags.Dark:
-			self.damage_counter += evt.damage
-		if self.damage_counter >= 200:
-			self.damage_counter -= 200
-			darkness_spell = self.owner.get_spell(Darkness)
-			darkness_spell.cur_charges = min(darkness_spell.cur_charges + 1, darkness_spell.get_stat('max_charges'))
-
 class DarknessBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
 
 	def on_init(self):
 		self.name = "Darkness"
@@ -1541,7 +1467,7 @@ class DarknessBuff(Buff):
 				self.effect_unit(unit)
 			if self.deal_clouds and self.owner.level.tiles[unit.x][unit.y].cloud:
 				if are_hostile(self.owner, unit):
-					unit.deal_damage(5, Tags.Dark, self)
+					unit.deal_damage(self.spell.get_stat('damage', base=5), Tags.Dark, self) # scales, like it implies in tooltip
 
 	def on_unapplied(self):
 		units = list(self.owner.level.units)
@@ -1567,10 +1493,10 @@ class Darkness(Spell):
 
 		self.upgrades['darkvision'] = (1, 3, "Darkvision", "Doesn't blind you or your allies")
 		self.upgrades['deal_clouds'] = (1, 5, "Dark Clouds", "Deal [5_dark:dark] damage to all enemies under clouds each turn.")
-		self.add_upgrade(EternalDarknessUpgrade())
+		self.upgrades['duration'] = (15, 2, "Eternal Darkness")
 
 	def cast_instant(self, x, y):
-		buff = DarknessBuff()
+		buff = DarknessBuff(self)
 		if self.get_stat('darkvision'):
 			buff.darkvision = True
 		if self.get_stat('deal_clouds'):
@@ -1580,7 +1506,6 @@ class Darkness(Spell):
 	def get_description(self):
 		return ("Each turn, [blind] all units for [1_turn:duration].\n"
 				+ text.blind_desc + '\n'
-				#"[Demon] and [undead] units are unaffected.\n"
 				"Lasts [{duration}_turns:duration]").format(**self.fmt_dict())
 
 
@@ -1592,7 +1517,8 @@ class SpiritHarvestUpgrade(Upgrade):
 
 	def on_init(self):
 		self.name = "Spirit Harvest"
-		self.description = "For every 75 damage dealt by Lightning Storm, summon a Storm Spirit."
+		self.description = ("For every 75 damage dealt by Lightning Storm, summon a Storm Spirit."
+							"\nAdds the [Conjuration] tag.")
 		self.global_triggers[EventOnDamaged] = self.on_damaged
 		self.global_triggers[EventOnUnitAdded] = self.on_unit_added
 
@@ -1611,35 +1537,13 @@ class SpiritHarvestUpgrade(Upgrade):
 		
 		while self.dmg_dealt >= self.threshold:
 			self.dmg_dealt -= self.threshold
-			self.summon(StormSpirit(), target=self.spell.caster)
+			self.summon(self.spell.make_spirit(), target=self.spell.caster)
 
-class LightningStarUpgrade(Upgrade):
+	def on_applied(self, owner):
+		self.spell_tag_update(StormSpell, Tags.Conjuration)
 
-	def __init__(self, spell):
-		Upgrade.__init__(self)
-		self.spell = spell
-
-	def on_init(self):
-		self.level = 3
-		self.name = "Lightning Star"
-		self.description = "Each turn, deal damage in a beam along 3 random lightning clouds, twice."
-		
-		self.cloud_groups = []
-
-	def on_advance(self):
-		for cloud_group in self.cloud_groups:
-			if not self.owner.level.tiles[cloud_group[0].x][cloud_group[0].y].cloud:
-				self.cloud_groups.remove(cloud_group)
-				continue
-			for i in range(2):
-				random.shuffle(cloud_group)
-				chosen_clouds = cloud_group[:3]
-				if len(chosen_clouds) < 3:
-					continue
-				for i in range(3):
-					for p in self.owner.level.get_points_in_line(chosen_clouds[i], chosen_clouds[(i + 1) % 3]):
-						if self.owner.level.tiles[p.x][p.y].can_walk:
-							self.owner.level.deal_damage(p.x, p.y, self.spell.get_stat('damage'), Tags.Lightning, self.spell)
+	def on_unapplied(self):
+		self.spell_tag_update(StormSpell, Tags.Conjuration, add=False)
 
 class ParticleStormUpgrade(Upgrade):
 
@@ -1650,54 +1554,60 @@ class ParticleStormUpgrade(Upgrade):
 	def on_init(self):
 		self.level = 3
 		self.name = "Particle Storm"
-		self.description = "Clouds summoned by Lightning Storm deal [3_arcane:arcane] damage every turn."
-
-		self.cloud_groups = []
+		self.clouds = []
 
 	def on_advance(self):
-		for cloud_group in self.cloud_groups:
-			for c in cloud_group:
-				if not self.owner.level.tiles[cloud_group[0].x][cloud_group[0].y].cloud:
-					cloud_group.remove(c)
-					continue
-				self.owner.level.deal_damage(c.x, c.y, self.spell.get_stat('damage', base=3), Tags.Arcane, self.spell)
+		self.clouds = [cloud for cloud in self.clouds if cloud and self.owner.level.tiles[cloud.x][cloud.y].cloud == cloud]
+		for cloud in self.clouds:
+			self.owner.level.deal_damage(cloud.x, cloud.y, self.spell.get_stat('damage', base=3), Tags.Arcane, self.spell)
+
+	def on_applied(self, owner):
+		self.spell_tag_update(StormSpell, Tags.Arcane)
+
+	def on_unapplied(self):
+		self.spell_tag_update(StormSpell, Tags.Arcane, add=False)
+
+	def get_description(self):
+		return ("Clouds summoned by Lightning Storm deal [%d_arcane:arcane] damage every turn."
+							"\n Adds the [Arcane] tag.") % self.spell.get_stat('damage', base=3)
 
 class StormSpell(Spell):
 
 	def on_init(self):
+		self.level = 4
 		self.max_charges = 4
 		self.name = "Lightning Storm"
 		self.duration = 10
 		self.range = 9
 		self.radius = 4
 		self.damage = 12
-		self.strikechance = 50
-
-		self.add_upgrade(ParticleStormUpgrade(self))
-		self.add_upgrade(LightningStarUpgrade(self))
-		self.add_upgrade(SpiritHarvestUpgrade(self))
-		self.tags = [Tags.Lightning, Tags.Nature, Tags.Enchantment]
-		self.level = 4
-
 		self.stats.append('strikechance')
+		self.strikechance = 50
+		self.tags = [Tags.Lightning, Tags.Nature, Tags.Enchantment]
+
+		self.upgrades['strikechance'] = (50, 2, "Surestrike")
+		self.add_upgrade(ParticleStormUpgrade(self))
+		self.add_upgrade(SpiritHarvestUpgrade(self))
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_spirit()]
 
 	def cast(self, x, y):
 
-		cloud_group = []
 		for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')):
 			for p in stage:
-				cloud = StormCloud(self.caster)
+				cloud = StormCloud(self.caster, self.get_stat('damage'))
 				cloud.duration = self.get_stat('duration')
-				cloud.damage = self.get_stat('damage')
 				cloud.strikechance = self.get_stat('strikechance') / 100.0
 				cloud.source = self
-				cloud_group.append(cloud)
 				yield self.caster.level.add_obj(cloud, p.x, p.y)
+				if self.caster.has_buff(ParticleStormUpgrade):
+					self.caster.get_buff(ParticleStormUpgrade).clouds.append(cloud)
 
-		if self.caster.has_buff(LightningStarUpgrade):
-			self.caster.get_buff(LightningStarUpgrade).cloud_groups.append(cloud_group)
-		if self.caster.has_buff(ParticleStormUpgrade):
-			self.caster.get_buff(ParticleStormUpgrade).cloud_groups.append(cloud_group)
+	def make_spirit(self): # for stormspirit upgrade, now gets minion bonuses
+		u = StormSpirit()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def get_impacted_tiles(self, x, y):
 		return [p for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')) for p in stage]
@@ -1710,21 +1620,18 @@ class StormSpell(Spell):
 class ThornyPrisonSpell(Spell):
 
 	def on_init(self):
+		self.tags = [Tags.Nature, Tags.Conjuration]
+		self.level = 3
 		self.max_charges = 6
 		self.name = "Prison of Thorns"
 		self.range = 10
 		self.minion_damage = 3
 		self.minion_health = 7
-		
-		self.upgrades['minion_damage'] = (3, 2)
-		self.upgrades['minion_health'] = (7, 2)
-		self.upgrades['iron'] = (1, 5, "Iron Prison", "Summon iron thorns instead, which deal 3 more damage and are resistant to many forms of damage.", 'prison')
-		self.upgrades['icy'] = (1, 6, "Icy Prison", "Summon icy thorns instead, which have a ranged ice attack.", 'prison')
-		
 		self.minion_duration = 15
 
-		self.tags = [Tags.Nature, Tags.Conjuration]
-		self.level = 3
+		self.upgrades['grasping_vines'] = (1, 3, "Grasping Vines","Thorns gain a [2:minion_range] range [physical] attack, which pulls enemies towards it.")
+		self.upgrades['iron'] = (1, 5, "Iron Prison", "Summon iron thorns instead, which deal 3 more damage and are resistant to many forms of damage.", [Tags.Metallic])
+		self.upgrades['icy'] = (1, 6, "Icy Prison", "Summon icy thorns instead, which have a ranged ice attack.", [Tags.Ice])
 
 	def get_description(self):
 		return ("Surround a group of enemies with carnivorous plants.\n"
@@ -1733,13 +1640,15 @@ class ThornyPrisonSpell(Spell):
 				"The plants vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
-		return [self.thorn(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.iron_thorn(), self.spell_upgrades[3], self.icy_thorn()]
+		return [self.thorn(), self.spell_upgrades[0], self.spell_upgrades[1], self.iron_thorn(), self.spell_upgrades[2], self.icy_thorn()]
 
 	def thorn(self):
 		unit = Unit()
 		unit.name = "Thorny Plant"
 		unit.max_hp = self.get_stat('minion_health')
 		unit.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
+		if self.get_stat('grasping_vines'):
+			unit.spells.append(PullAttack(damage=self.get_stat('minion_damage'), range=self.get_stat('minion_range', base=2), color=Tags.Nature.color))
 		unit.stationary = True
 		unit.turns_to_death = self.get_stat('minion_duration')
 		unit.tags = [Tags.Nature]
@@ -1757,6 +1666,8 @@ class ThornyPrisonSpell(Spell):
 		unit = self.thorn()
 		unit.name = "Icy Thorn"
 		unit.asset_name = "spriggan_bush_icy"
+		unit.tags.append(Tags.Ice)
+		unit.resists[Tags.Ice] = 100
 		unit.spells = [SimpleRangedAttack(damage=self.get_stat('minion_damage'), range=3 + self.get_stat('minion_range'), damage_type=Tags.Ice)]
 		return unit
 
@@ -1829,7 +1740,7 @@ class FlameStrikeSpell(Spell):
 
 		self.upgrades['channel'] = (1, 3, "Channeling", "Pillar of Flame becomes a channeled spell")
 		self.upgrades['disruption'] = (1, 3, "Disrupting Flames", "Strips main target of shields and applies -50 [Fire] resist for [10:duration] turns.")
-		self.upgrades['cast_annihilate'] = (1, 4, "Pillar of Annihilation", "On kill, casts your Annihilate spell on up to [4:num_targets] enemy units in line of sight of the target tile.")
+		self.upgrades['cast_annihilate'] = (1, 4, "Pillar of Annihilation", "On kill, casts your Annihilate spell on up to [4:num_targets] enemy units in line of sight of the target tile.", [Tags.Chaos])
 
 	def cast(self, x, y, channel_cast=False):
 		
@@ -1930,6 +1841,7 @@ class CloudArmorSpell(Spell):
 class BloodlustBuff(Buff):
 
 	def __init__(self, spell):
+		self.spell = spell
 		Buff.__init__(self)
 		self.stack_type = STACK_INTENSITY
 		self.name = "Blood Lust"
@@ -1938,9 +1850,8 @@ class BloodlustBuff(Buff):
 		self.color = Tags.Fire.color
 
 		self.dtypes = [Tags.Fire, Tags.Physical]
-		if spell.get_stat('holy_fury'):
+		if spell.get_stat('twilight_fury'):
 			self.dtypes.append(Tags.Holy)
-		if spell.get_stat('dark_fury'):
 			self.dtypes.append(Tags.Dark)
 
 	def qualifies(self, spell):
@@ -1964,6 +1875,22 @@ class BloodlustBuff(Buff):
 		if self.qualifies(spell):
 			spell.damage -= self.extra_damage
 
+	def on_advance(self):
+		if self.spell.get_stat('endless_fury'):
+			self.owner.deal_damage(1, Tags.Fire, self.spell)
+
+	def on_applied(self, owner):
+		if self.spell.get_stat('combustion_point'):
+			dmg = owner.max_hp // 10
+			dmg = max(dmg, 5)
+			death_buff = DeathExplosion(dmg, 4, Tags.Fire)
+			death_buff.stack_type = STACK_INTENSITY
+			owner.apply_buff(death_buff, self.spell.get_stat('duration'))
+
+			fire_aura = DamageAuraBuff(2, Tags.Fire, 4)
+			fire_aura.stack_type = STACK_INTENSITY
+			owner.apply_buff(fire_aura, self.spell.get_stat('duration'))
+
 
 class BloodlustSpell(Spell):
 
@@ -1978,14 +1905,12 @@ class BloodlustSpell(Spell):
 		self.tags = [Tags.Nature, Tags.Enchantment, Tags.Blood, Tags.Fire]
 		self.level = 2
 
-		self.upgrades['extra_damage'] = (6, 3)
-		self.upgrades['duration'] = (7, 2)
-		self.upgrades['holy_fury'] = (1, 3, "Holy Fury", "Boiling Blood also impacts holy abilities")
-		self.upgrades['dark_fury'] = (1, 3, "Dark Fury", "Boiling Blood also impacts dark abilities")
-
+		self.upgrades['twilight_fury'] = (1, 3, "Twilight Fury", "Boiling Blood also impacts [holy] and [dark] abilities", [Tags.Holy, Tags.Dark])
+		self.upgrades['combustion_point'] = (1, 3, "Combustion Point", "Affected units receive a [fire] damage aura and a death explosion effect which scales with their health.")
+		self.upgrades['endless_fury'] = (1, 5, "Endless Fury", "Boiling Blood becomes permanent, but causes affected units to take 1 [fire] damage per turn.")
 
 	def get_description(self):
-		return "All allied units gain stacking [{extra_damage}_damage:damage] bonus to their fire and physical abilities.\nLasts [{duration}_turns:duration].".format(**self.fmt_dict())
+		return "All allied units gain stacking 6 [damage] bonus to their [fire] and [physical] abilities.\nLasts [{duration}_turns:duration].".format(**self.fmt_dict())
 
 	def cast(self, x, y):
 
@@ -1993,7 +1918,10 @@ class BloodlustSpell(Spell):
 			if not self.caster.level.are_hostile(self.caster, unit) and unit != self.caster:
 				buff = BloodlustBuff(self)
 				buff.extra_damage = self.get_stat('extra_damage')
-				unit.apply_buff(buff, self.get_stat('duration'))
+				if self.get_stat('endless_fury'):
+					unit.apply_buff(buff)
+				else:
+					unit.apply_buff(buff, self.get_stat('duration'))
 
 				# For the graphic
 				unit.deal_damage(0, Tags.Fire, self)
@@ -2008,9 +1936,9 @@ class HealMinionsSpell(Spell):
 		self.max_charges = 10
 		self.range = 0
 
-		self.upgrades['shields'] = (1, 2, "Shielding Light", "Allies in line of sight gain 1 shield")
-		self.upgrades['remove_debuffs'] = (1, 2, "Purifying Light", "Allies in line of sight lose all debuffs")
-		self.upgrades['heart_flame'] = (1, 4, "Heartflame", "Whenever Healing Light heals an ally, the nearest enemy in line of sight of that ally takes that much [fire] and [holy] damage.")
+		self.upgrades['shields'] = (1, 1, "Shielding Light", "Allies in line of sight gain 1 shield")
+		self.upgrades['remove_debuffs'] = (1, 2, "Purifying Light", "Allies in line of sight lose all debuffs before being healed")
+		self.upgrades['heart_flame'] = (1, 4, "Heartflame", "Whenever Healing Light heals an ally, the nearest enemy in line of sight of that ally takes that much [fire] and [holy] damage.", [Tags.Fire], [Tags.Fire, Tags.Holy])
 
 		self.tags = [Tags.Holy, Tags.Sorcery]
 		self.level = 2
@@ -2019,24 +1947,24 @@ class HealMinionsSpell(Spell):
 		return "Heal all allies in line of sight for [{heal}_health:heal].".format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
-		return [u for u in self.caster.level.get_units_in_los(self.caster) if u != self.caster and not are_hostile(self.caster, u)]
+		return [u for u in self.caster.level.get_units_in_los(self.caster) if u != self.caster and self.caster.team==u.team]
 
 	def cast(self, x, y):
 
 		for unit in self.caster.level.get_units_in_los(self.caster):
-			if not self.caster.level.are_hostile(self.caster, unit) and unit != self.caster:
+			if self.caster.team==unit.team and unit != self.caster: # wasn't healing berserked allies, but it should since berserk is a debuff
+
+				if self.get_stat('remove_debuffs'): # remove debuffs first to get rid of poison so heal can work.
+					for buff in unit.buffs:
+						if buff.buff_type == BUFF_TYPE_CURSE:
+							unit.remove_buff(buff)
 
 				health_dealt = 0
 				if unit.cur_hp < unit.max_hp:
 					health_dealt -= unit.deal_damage(-self.get_stat('heal'), Tags.Heal, self)
 				
 				if self.get_stat('shields'):
-					unit.add_shields(self.get_stat('shields'))
-				
-				if self.get_stat('remove_debuffs'):
-					for buff in unit.buffs:
-						if buff.buff_type == BUFF_TYPE_CURSE:
-							unit.remove_buff(buff)
+					unit.add_shields(1)
 				
 				if self.get_stat('heart_flame') and health_dealt > 0:
 					possible_targets = self.caster.level.get_units_in_los(unit)
@@ -2055,6 +1983,42 @@ class HealMinionsSpell(Spell):
 						self.owner.level.deal_damage(target.x, target.y, health_dealt, Tags.Holy, self)
 				yield
 
+class RegenerativeGoop(Upgrade):
+
+	def __init__(self, spell):
+		Upgrade.__init__(self)
+		self.spell = spell
+
+	def on_init(self):
+		self.tags = [Tags.Nature, Tags.Enchantment, Tags.Slime]
+		self.level = 5
+		self.name = "Regenerative Goop"
+		self.description = "[Slime] allies will heal adjacent allies when healed by the aura.\n Adds [Slime] tag."
+		self.global_triggers[EventOnHealed] = self.on_healed
+
+	def on_healed(self, evt):
+		if are_hostile(evt.unit, self.owner): # ignore healing of enemies
+			return
+		if not evt.source: # sourceless ignore
+			return
+		if not evt.source.owner: # ownerless ignore
+			return
+		if not isinstance(evt.source, HealAuraBuff): #didn't come from heal aura, ignore
+			return
+		if not evt.source.owner == self.owner: # didn't come from the wizards, heal aura, ignore
+			return
+		if not Tags.Slime in evt.unit.tags: # not a slime, ignore
+			return
+		heal_targets = [u for u in self.owner.level.get_units_in_ball(evt.unit, 1, diag=True) if not are_hostile(evt.unit, u)] # get a list of adj allied
+		for u in heal_targets: # heal each one
+			u.heal(self.spell.heal, self.spell)
+
+	def on_applied(self, owner):
+		self.spell_tag_update(RegenAuraSpell, Tags.Slime)
+
+	def on_unapplied(self):
+		self.spell_tag_update(RegenAuraSpell, Tags.Slime, add=False)
+
 class RegenAuraSpell(Spell):
 
 	def on_init(self):
@@ -2068,17 +2032,25 @@ class RegenAuraSpell(Spell):
 		self.level = 2
 
 		self.tags = [Tags.Enchantment, Tags.Nature]
-
 		self.whole_map = 0
-		self.upgrades['heal'] = (4, 2)
-		self.upgrades['duration'] = (8, 1)
+
 		self.upgrades['whole_map'] = (1, 4, "Global", "The aura heals all allies on the level")
+		self.upgrades['death_defiance'] = (1, 6, "Death Defiance", "When you cast this spell, allies in range gain the ability to reincarnate on death", [Tags.Holy])
+		self.add_upgrade(RegenerativeGoop(self))
 
 	def get_description(self):
 		return ("Each turn for [{duration}_turns:duration], all allied units in a [{radius}_tile:radius] radius are healed for [{heal}_HP:heal].").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(HealAuraBuff(self.get_stat('heal'), self.get_stat('radius'), whole_map=self.get_stat('whole_map')), self.get_stat('duration'))
+		if self.get_stat('death_defiance'):
+			allies = [u for u in self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius')) if not are_hostile(self.caster, u) and not u==self.caster and not u.is_player_controlled]
+			for u in allies:
+				if u.has_buff(ReincarnationBuff):
+					u.get_buff(ReincarnationBuff).lives += 1
+				else:
+					u.apply_buff(ReincarnationBuff())
+				self.caster.level.show_effect(u.x, u.y, Tags.Buff_Apply, Tags.Holy.color)
 
 class OrbBuff(Buff):
 
@@ -2204,22 +2176,20 @@ class OrbSpell(Spell):
 			if self.caster.level.tiles[start_point.x][start_point.y].is_wall():
 				self.caster.level.make_floor(start_point.x, start_point.y)
 
+		unit = self.make_orb(len(path) + 1)
+		buff = OrbBuff(spell=self, dest=Point(x, y))
+		unit.buffs.append(buff)
+		blocker = self.caster.level.get_unit_at(start_point.x, start_point.y)
+		self.summon(unit, start_point)
+
+	def make_orb(self, turns_to_death):
 		unit = ProjectileUnit()
 		unit.name = self.name
 		unit.stationary = True
-		unit.team = self.caster.team
-		unit.turns_to_death = len(path) + 1
-
+		unit.turns_to_death = turns_to_death
 		unit.max_hp = self.get_stat('minion_health')
-		
-		# path[0] = caster, path[1] = start_point, path[2] = first point to move to
-		buff = OrbBuff(spell=self, dest=Point(x, y))
-		unit.buffs.append(buff)
-		
 		self.on_make_orb(unit)
-		blocker = self.caster.level.get_unit_at(start_point.x, start_point.y)
-
-		self.summon(unit, start_point)
+		return unit
 
 	def get_collide_tiles(self, x, y):
 		return []
@@ -2234,24 +2204,113 @@ class OrbSpell(Spell):
 	def can_threaten_tile(self, orb, x, y):
 		return orb.level.can_see(orb.x, orb.y, x, y) # defalt to LoS, true of most orbs
 
+	def get_extra_examine_tooltips(self):
+		return [self.make_orb(0)] + self.spell_upgrades
+
+class SlimeOrbSpell(OrbSpell):
+
+	def on_init(self):
+		self.name = "Slime Orb"
+		self.level = 5
+		self.tags = [Tags.Conjuration, Tags.Orb, Tags.Slime]
+		self.range = 9
+		self.radius = 4
+		self.max_charges = 2
+		self.minion_health = 10
+
+		self.upgrades['adaptive'] = (1, 5, "Adaptive Slime", "Slime Orb will attempt to summon the type of slime that enemies are weakest to, rather than a Green Slime.")
+		self.upgrades['explosive_growth'] = (1, 5, "Explosive Growth", "Slime Orb will summon [3:num_summons] slimes instead of just 1 per enemy.")
+		self.upgrades['orb_walk'] = (1, 3, "Orb Detonation", "Targeting an existing slime orb detonates it.\nDeals [100:damage] [poison] damage in a [4:radius] tile burst.\nSummons a Green Slime Cube in the orb's location.")
+
+	def get_description(self):
+		return ("Summon an slime orb next to the caster.\n"
+				"Each turn the orb summons a slime next to enemy units in a [{radius}_tile:radius] radius.\n"
+				"The orb has no will of its own, each turn it will float one tile towards the target.\n"
+				"The orb can be destroyed by dark damage.").format(**self.fmt_dict())
+
+	def on_make_orb(self, orb):
+		orb.resists[Tags.Dark] = 0
+	
+	def on_orb_walk(self, existing):
+		# Burst
+		x = existing.x
+		y = existing.y
+
+		burst = Burst(self.caster.level, Point(x, y), self.get_stat('radius'))
+		for stage in burst:
+			for p in stage:
+				self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage', base=100), Tags.Poison, self)
+				yield
+
+		existing.kill()
+		self.summon(self.get_slime_cube(), Point(x, y))
+		yield
+
+	def get_slime_cube(self):
+		from Variants import GreenSlimeCube
+		u = GreenSlimeCube()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def on_orb_move(self, orb, next_point):
+		for p in orb.level.get_points_in_ball(next_point.x, next_point.y, self.get_stat('radius')):
+			unit = orb.level.get_unit_at(p.x, p.y)
+			if unit and are_hostile(orb, unit):
+				num_to_summon = 1
+				if self.get_stat('explosive_growth'):
+					num_to_summon = self.get_stat('num_summons', base=3)
+				for i in range(num_to_summon):
+					slime = self.get_green_slime()
+					if self.get_stat('adaptive'):
+						slime = self.get_adaptive_slime(unit)
+					self.summon(slime, unit)
+
+	def get_adaptive_slime(self, unit):
+		type_map = {
+			Tags.Poison: GreenSlime,
+			Tags.Fire: RedSlime,
+			Tags.Ice: IceSlime,
+			Tags.Lightning: ElectricSlime,
+			Tags.Dark: BloodSlime,
+			Tags.Physical: BloodSlime,
+			Tags.Arcane: VoidSlime,
+		}
+
+		best_tag = min(type_map.keys(), key=lambda tag: unit.resists.get(tag, 0))
+
+		slime = type_map[best_tag]()
+		apply_minion_bonuses(self, slime)
+		return slime
+
+	def get_green_slime(self):
+		u = GreenSlime()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def on_orb_collide(self, orb, next_point):
+		orb.level.show_effect(next_point.x, next_point.y, Tags.Poison)
+		yield
+
+	def can_threaten_tile(self, orb, x, y):
+		return Point(x, y) in orb.level.get_points_in_ball(orb.x, orb.y,self.get_stat('radius'))
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_orb(0), self.get_green_slime()] + self.spell_upgrades + [self.get_slime_cube()]
+
 class VoidOrbSpell(OrbSpell):
 
 	def on_init(self):
 		self.name = "Arcane Orb"
-		self.fire_edge = 0
 		self.range = 9
 		self.max_charges = 4
-
 		self.minion_health = 15
-
-		self.element = Tags.Arcane
 		
 		self.tags = [Tags.Arcane, Tags.Orb, Tags.Conjuration]
 		self.level = 3
 
-		self.upgrades['cast_blazerip'] = (1, 4, "Blazerip Orb", "Arcane Orb casts your Blazerip spell instead of your Magic Missile spell.")
+		self.upgrades['cast_blazerip'] = (1, 4, "Blazerip Orb", "Arcane Orb casts your Blazerip spell instead of your Magic Missile spell.", [Tags.Fire])
 		self.upgrades['double_shot'] = (1, 5, "Double Shot", "Arcane Orb fires twice.")
-		self.upgrades['orb_walk'] = (1, 5, "Orb Detonation", "Targeting an existing arcane orb detonates it, casting your Magic Missile [12:num_targets] times.")
+		self.upgrades['orb_walk'] = (1, 3, "Orb Detonation", "Targeting an existing arcane orb detonates it, casting your Magic Missile [12:num_targets] times.")
 
 	def on_orb_walk(self, existing):
 		# Burst
@@ -2310,13 +2369,11 @@ class FlameRiftSummonBuff(Buff):
 		self.color = Tags.Fire.color
 		self.dmg_dealt = 0
 		self.summon_threshold = 20
-		self.description = "%d damage until next Flame Rift" % (self.summon_threshold - self.dmg_dealt)
 
 	def on_advance(self):
 		while self.dmg_dealt >= self.summon_threshold:
 			self.dmg_dealt -= self.summon_threshold
-			unit = FireSpawner()
-			unit.turns_to_death = self.spell.get_stat('minion_duration', base=10)
+			unit = self.spell.make_flame_rift()
 			self.summon(unit, target=self.owner)
 		self.description = "%d damage until next Flame Rift" % (self.summon_threshold - self.dmg_dealt)
 
@@ -2334,7 +2391,7 @@ class SearingOrb(OrbSpell):
 		self.tags = [Tags.Fire, Tags.Orb, Tags.Conjuration]
 
 		self.upgrades['explosive'] = (1, 2, "Explosive Orb", "Searing Orb casts your Flameburst on expiration.")
-		self.upgrades['melt_walls'] = (1, 4, "Matter Melting", "Searing Orb can melt and be cast through walls")
+		self.upgrades['melt_walls'] = (1, 2, "Matter Melting", "Searing Orb can melt and be cast through walls")
 		#changed the functionality of this upgrade a bit, it was pretty powerful so I tried making it more situational but also more rewarding. What do you think?
 		self.upgrades['flame_rift'] = (1, 5, "Flame Rift", "For each 20 damage dealt by an orb, summon a flame rift for [10_turns:minion_duration] near the orb.") 
 
@@ -2349,6 +2406,15 @@ class SearingOrb(OrbSpell):
 		orb.resists[Tags.Ice] = 0
 		if self.get_stat('flame_rift'):
 			orb.apply_buff(FlameRiftSummonBuff(self))
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_orb(0)] + self.spell_upgrades + [self.make_flame_rift()]
+
+	def make_flame_rift(self):
+		u = FireSpawner()
+		u.turns_to_death = 10
+		apply_minion_bonuses(self, u)
+		return u
 
 	def on_orb_move(self, orb, next_point):
 		damage = self.get_stat('minion_damage')
@@ -2387,8 +2453,8 @@ class BallLightning(OrbSpell):
 		self.tags = [Tags.Orb, Tags.Lightning, Tags.Conjuration]
 
 		self.upgrades['final_burst'] = (1, 4, "Final Burst", "Casts your Arc Lightning when it dies.")
-		self.upgrades['drakebirth'] = (1, 4, "Drakebirth", "Casts your Lightning Drake when it dies.")
-		self.upgrades['pyrostatics'] = (1, 7, "Pyrostatics", "Instead of beams of lightning, fires your Pyrostatic Pulse.")
+		self.upgrades['drakebirth'] = (1, 4, "Drakebirth", "Casts your Storm Drake when it dies.", [Tags.Dragon])
+		self.upgrades['pyrostatics'] = (1, 7, "Pyrostatics", "Instead of beams of lightning, fires your Pyrostatic Pulse.", [Tags.Fire])
 
 	def get_description(self):
 		return ("Summon a lighting orb next to the caster.\n"
@@ -2449,10 +2515,13 @@ class GlassRefractionBuff(Buff):
 		if not self.owner.source:
 			return
 
-		if evt.caster != self.owner.source.owner:
+		if evt.caster != self.owner.source.owner: # if the unit casting the spell isn't the owner of the glass orb spell which created this unit, ignore
 			return
 
-		if Tags.Enchantment not in evt.spell.tags:
+		if Tags.Enchantment not in evt.spell.tags: # if it's not an enchantment spell, ignore
+			return
+
+		if (evt.x, evt.y) != (evt.caster.x, evt.caster.y): # if it's not self-targeted, ignore
 			return
 
 		enchantment_spell = type(evt.spell)()
@@ -2462,30 +2531,6 @@ class GlassRefractionBuff(Buff):
 	
 		for _ in self.owner.level.act_cast(self.owner, enchantment_spell, self.owner.x, self.owner.y, pay_costs=False, queue=False):
 			pass
-
-
-class EnchantmentRefractionUpgrade(Upgrade):
-
-	def __init__(self, spell):
-		Upgrade.__init__(self)
-		self.spell = spell
-
-	def on_init(self):
-		self.name = "Enchantment Refraction"
-		self.description = "Glass orb recasts any self-targeted enchantment you cast."
-		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
-		self.level = 4
-
-	def on_spell_cast(self, evt):
-		if self.owner.level.get_unit_at(evt.x, evt.y) == self.owner and Tags.Enchantment in evt.spell.tags:
-			for u in self.owner.level.units:
-				if self.spell.get_orb(u.x, u.y):
-					enchantment_spell = type(evt.spell)()
-					enchantment_spell.statholder = self.owner
-					enchantment_spell.owner = u
-					enchantment_spell.caster = u
-					for _ in self.owner.level.act_cast(u, enchantment_spell, u.x, u.y, pay_costs=False, queue=False):
-						pass
 
 class GlassOrbSpell(OrbSpell):
 
@@ -2502,7 +2547,7 @@ class GlassOrbSpell(OrbSpell):
 		self.tags = [Tags.Arcane, Tags.Orb, Tags.Conjuration]
 
 		self.upgrades['petrification'] = (1, 3, "Petrification Orb", "Casts your petrify every turn.")
-		self.upgrades['shards'] = (1, 3, "Orb Shards", "Each turn the orb shoots out two glass shards that deal [16_physical:physical] damage to random enemies in LOS")
+		self.upgrades['shards'] = (1, 4, "Orb Shards", "Each turn the orb shoots out [2:num_targets] glass shards that deal [16:minion_damage] [physical] damage to random enemies in LOS")
 		self.upgrades['refraction'] = (1, 4, "Enchantment Refraction", "Glass orb recasts any self-targeted [enchantment] spell you cast.")
 
 	def get_description(self):
@@ -2536,14 +2581,12 @@ class GlassOrbSpell(OrbSpell):
 						for _ in self.caster.level.act_cast(self.caster, petrify_spell, unit.x, unit.y, pay_costs=False, queue=False):
 							pass
 		
-		if self.get_stat('shards'):
-			elligible_targets = [u for u in self.caster.level.get_units_in_los(Point(next_point.x, next_point.y)) if are_hostile(u, self.caster)]
-			
-			for i in range(min(2, len(elligible_targets))):
-				unit = elligible_targets[i]
-				for point in Bolt(self.caster.level, orb, elligible_targets[i]):
+		if self.get_stat('shards'): # small refactor
+			targets = [u for u in self.caster.level.get_units_in_los(Point(next_point.x, next_point.y)) if are_hostile(u, self.caster)]
+			for unit in targets[:self.get_stat('num_targets', base=2)]:
+				for point in Bolt(self.caster.level, orb, unit):
 					self.caster.level.projectile_effect(point.x, point.y, proj_name="glassification", proj_origin=next_point, proj_dest=unit)
-				unit.deal_damage(self.get_stat('damage', base=16), Tags.Physical, self)
+				unit.deal_damage(self.get_stat('minion_damage', base=16), Tags.Physical, self)
 
 	def on_orb_collide(self, orb, next_point):
 		orb.level.show_effect(next_point.x, next_point.y, Tags.Physical)
@@ -2587,7 +2630,7 @@ class FrozenOrbSpell(OrbSpell):
 
 		self.freeze_chance = 0
 		self.dmg_dealt = 0
-		self.upgrades['freeze_damage'] = (1, 4, "Frostgleam", "Frozen enemies in radius additionally take [arcane:arcane] damage.")
+		self.upgrades['freeze_damage'] = (1, 4, "Frostgleam", "Frozen enemies in radius additionally take [arcane:arcane] damage.", [Tags.Arcane])
 		self.upgrades['summon_winter_faery'] = (1, 5, "Faebound Orb", "The Orb summons an Ice Faery for every 75 damage it deals.")
 		self.upgrades['cast_blizzard'] = (1, 8, "Blizzard Orb", "Ice Orb casts your Blizzard on an 8 turn cooldown.")
 
@@ -2634,7 +2677,7 @@ class FrozenOrbSpell(OrbSpell):
 		yield
 
 	def get_extra_examine_tooltips(self):
-		return [self.spell_upgrades[0], self.spell_upgrades[1], self.make_winter_fae(), self.spell_upgrades[2]]
+		return [self.make_orb(0), self.spell_upgrades[0], self.spell_upgrades[1], self.make_winter_fae(), self.spell_upgrades[2]]
 
 	def can_threaten_tile(self, orb, x, y):
 		return Point(x, y) in orb.level.get_points_in_ball(orb.x, orb.y,self.get_stat('radius')) # radius only, if it knows blizzard, that handles itself
@@ -2652,6 +2695,10 @@ class OrbControlSpell(Spell):
 		self.requires_los = False
 		self.max_charges = 11
 
+		self.upgrades['orb_magnets'] = (1, 5, "Orb Magnets", "Allied [orbs:orb] become [Metallic].\nCasts your Magnetize spell on each of your allied [orbs:orb].", [Tags.Metallic])
+		self.upgrades['orb_fortification'] = (1, 2, "Orb Fortification", "Set all allied [orbs:orb] resistances to 100%.")
+		self.upgrades['orb_pulse'] = (1, 3, "Orb Pulse", "Deal [25:damage] [arcane] damage to enemy units in a [3:radius] tile radius around each of your allied [orbs:orb].", [Tags.Arcane])
+
 	def get_description(self):
 		return ("Retarget all allied [orbs:orb] to target tile.")
 
@@ -2665,6 +2712,29 @@ class OrbControlSpell(Spell):
 				path = self.caster.level.get_points_in_line(u, Point(x, y))[1:]
 				u.turns_to_death = len(path) + 1
 				buff.dest = Point(x, y)
+
+				if self.get_stat('orb_magnets'):
+					if Tags.Metallic not in u.tags:
+						u.tags.append(Tags.Metallic)
+					s = self.caster.get_or_make_spell(MagnetizeSpell)
+					self.caster.level.act_cast(self.caster, s, u.x, u.y, pay_costs=False)
+
+				if self.get_stat('orb_fortification'):
+					for d_type in damage_tags:
+						u.resists[d_type] = 100
+
+				if self.get_stat('orb_pulse'):
+					self.caster.level.queue_spell(self.pulse(u))
+
+	def pulse(self, unit):
+		for stage in Burst(unit.level, unit, self.get_stat('radius', base=3), ignore_walls=True):
+			for p in stage:
+				u = self.caster.level.get_unit_at(p.x, p.y)
+				if u and not are_hostile(self.caster, u):
+					continue
+				self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage', base=25), Tags.Arcane, self)
+				yield
+
 				
 	def get_impacted_tiles(self, x, y):
 		tiles = set()
@@ -2712,7 +2782,8 @@ class Dominate(Spell):
 
 		self.upgrades['hp_threshold'] = (40, 3, 'HP Threshold', 'Increase the maximum HP units which can be targeted')
 		self.upgrades['check_cur_hp'] = (1, 4, 'Brute Force', 'Dominate targets based on current hp instead of maximum hp.')
-		self.upgrades['make_lich'] = (1, 4, "Undead Servitude", "Transforms the target into a lich.")
+		self.upgrades['make_lich'] = (1, 4, "Undead Servitude", "Transforms the target into a lich.", [Tags.Dark])
+		self.upgrades['cult_leader'] = (1, 7, "Cult Leader", "Dominated targets gain your Dominate spell on a 30 turn cooldown.")
 
 	def can_cast(self, x, y):
 		if not Spell.can_cast(self, x, y):
@@ -2729,6 +2800,13 @@ class Dominate(Spell):
 		unit = self.caster.level.get_unit_at(x, y)
 		if self.get_stat('make_lich'):
 			BossSpawns.apply_modifier(BossSpawns.Lich, unit)
+		if self.get_stat('cult_leader'):
+			if self.owner.is_player_controlled:
+				wizard = self.owner
+			else:
+				wizard = getattr(self.owner, 'wizard', self.owner)  # fallback to owner itself if something went wrong
+			unit.wizard = wizard  # store wizard ref on the unit so when they pass the spell off in chains, they can refer to the wizard quickly
+			grant_minion_spell(Dominate, unit, wizard, 30, pre_insert=True)
 		unit.team = self.caster.team
 		yield
 
@@ -2745,6 +2823,7 @@ class ElementalEyeBuff(Buff):
 		self.cooldown = freq
 		self.color = element.color
 		self.buff_type = BUFF_TYPE_BLESS
+		self.stack_type = STACK_REPLACE
 
 		freq_str = "each turn" if self.freq == 1 else ("every %d turns" % self.freq)
 		self.description = "Deals %d %s damage to a random enemy in LOS %s" % (self.damage, self.element.name, freq_str)
@@ -2770,8 +2849,7 @@ class ElementalEyeBuff(Buff):
 			path = self.owner.level.get_points_in_line(Point(self.owner.x, self.owner.y), target, find_clear=True)
 
 			for point in path:
-				self.owner.level.deal_damage(point.x, point.y, 0, self.element, self.spell)
-				u = self.owner.level.get_unit_at(point.x, point.y)
+				self.owner.level.show_effect(point.x, point.y, self.element)
 
 			unit = self.owner.level.get_unit_at(target.x, target.y)
 			self.owner.level.deal_damage(target.x, target.y, self.damage, self.element, self.spell)
@@ -2815,13 +2893,12 @@ class RageEyeBuff(ElementalEyeBuff):
 			units = self.owner.level.get_connected_group_from_point(target.x, target.y, check_hostile=self.owner)
 		for unit in units:
 			if unit:
-				if self.spell.get_stat('lycanthrophy') and Tags.Living in unit.tags and unit.cur_hp <= 25:
+				if self.spell.get_stat('lycanthrophy') and Tags.Living in unit.tags and unit.cur_hp <= (unit.max_hp // 4):
 					unit.kill()
-					newunit = Werewolf()
-					apply_minion_bonuses(self.spell, newunit)
-
-					self.spell.summon(newunit, target=unit)
-					newunit.apply_buff(BerserkBuff(), 14)
+					u = self.spell.make_werewolf()
+					u.max_hp = unit.max_hp
+					self.spell.summon(u, target=unit)
+					u.apply_buff(BerserkBuff(), 14)
 				
 				else:
 					unit.apply_buff(BerserkBuff(), self.berserk_duration)
@@ -2870,11 +2947,11 @@ class FireEyeBuff(ElementalEyeBuff):
 		self.name = "Eye of Fire"
 		self.color = Tags.Fire.color
 		self.asset = ['status', 'fire_eye']
-		self.replacement_spell = FireballSpell
+		self.replacement_spell = ImmolateSpell
 
 	def on_unapplied(self):
 		for i in range(self.spell.get_stat('summon_eyeball')):
-			unit = FlamingEye()
+			unit = self.spell.make_flaming_eye()
 			self.spell.summon(unit, self.owner)
 
 class IceEyeBuff(ElementalEyeBuff):
@@ -2888,42 +2965,122 @@ class IceEyeBuff(ElementalEyeBuff):
 
 	def on_shoot(self, target):
 		unit = self.owner.level.get_unit_at(target.x, target.y)
-		if unit and self.spell.get_stat('freezing'):
-			unit.apply_buff(FrozenBuff(), self.spell.get_stat('duration', base=3))
+		if unit and self.spell.get_stat('terror'):
+			unit.apply_buff(SoakedBuff(), self.spell.get_stat('duration', base=3))
+			unit.apply_buff(FearBuff(), self.spell.get_stat('duration', base=3))
 
 	def on_unapplied(self):
 		for i in range(self.spell.get_stat('summon_eyeball')):
-			unit = FrostEye()
-			unit.spells[0].buff_duration = max([2 + self.spell.duration - 30, 2]) #buffs by diff between 30 and spell's duration, min of 2
+			unit = self.spell.make_frost_eye()
 			self.spell.summon(unit, self.owner)
+
+class BloodEyeBuff(ElementalEyeBuff):
+
+	def __init__(self, damage, freq, spell):
+		ElementalEyeBuff.__init__(self, Tags.Dark, damage, freq, spell)
+		self.name = "Eye of Blood"
+		self.color = Tags.Blood.color
+		self.replacement_spell = BloodTapSpell
+		self.global_triggers[EventOnDamaged] = self.on_damaged
+
+	def on_advance(self):
+		self.cooldown -= 1
+		if self.cooldown <= 0:
+			self.cooldown = self.freq
+			targets = [t for t in self.owner.level.get_units_in_los(self.owner) if are_hostile(self.owner, t)]
+			if targets:
+				if self.spell.get_stat('hags_eye'):
+					for target in targets:
+						self.owner.level.queue_spell(self.shoot(Point(target.x, target.y)))
+
+				else:
+					target = random.choice(targets)
+					self.owner.level.queue_spell(self.shoot(Point(target.x, target.y)))
+				self.cooldown = self.freq
+
+	def on_damaged(self, evt):
+		if not evt.source:
+			return
+		if evt.source == self.spell:
+			if self.spell.get_stat('plasmoid') and evt.unit:
+				if evt.unit.is_alive():
+					drain_max_hp(evt.unit, evt.damage)
+				self.spell.summon(self.spell.make_slime(), target=evt.unit)
+			self.owner.heal(evt.damage, self.spell)
+
+class EyeOfBloodSpell(Spell):
+
+	def on_init(self):
+		self.tags = [Tags.Blood, Tags.Enchantment, Tags.Eye]
+		self.level = 2
+		self.range = 0
+		self.max_charges = 2
+		self.name = "Eye of Blood"
+		self.damage = 10
+		self.damage_type = [Tags.Dark]
+		self.duration = 20
+		self.shot_cooldown = 3
+		self.hp_cost = 10
+
+		self.stats.append('shot_cooldown')
+
+		self.upgrades['replace_cast'] = (1, 4, "Eye of Lifedrain", "Eye of Blood instead casts your Lifedrain spell for free.")
+		self.upgrades['hags_eye'] = (1, 7, "Hag's Eye", "Increase shot cooldown by 3. Shoots at all targets in line of sight")
+		self.upgrades['plasmoid'] = (1, 4, "Eye of Plasmoid", "When it deals damage, the target's max HP is reduced by the damage dealt, a Blood Slime is summoned nearby.", [Tags.Slime])
+
+	def cast_instant(self, x, y):
+		if self.get_stat('hags_eye'):
+			buff = BloodEyeBuff(self.get_stat('damage'), self.get_stat('shot_cooldown')+3, self)
+		else:
+			buff = BloodEyeBuff(self.get_stat('damage'), self.get_stat('shot_cooldown'), self)
+		buff.element = self.damage_type[0]
+		self.caster.apply_buff(buff, self.get_stat('duration'))
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_slime()]
+
+	def get_description(self):
+		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_dark:dark] damage to a random enemy unit in line of sight, healing the caster for damage dealt.\n"
+				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+
+	def make_slime(self):
+		u = BloodSlime()
+		apply_minion_bonuses(self, u)
+		return u
 
 class EyeOfFireSpell(Spell):
 
 	def on_init(self):
+		self.tags = [Tags.Fire, Tags.Enchantment, Tags.Eye]
+		self.level = 2
 		self.range = 0
 		self.max_charges = 4
 		self.name = "Eye of Fire"
 		self.damage = 15
-		self.element = Tags.Fire
+		self.damage_type = [Tags.Fire]
 		self.duration = 30
 		self.shot_cooldown = 3
 		
 		self.stats.append('shot_cooldown')
 		
-		self.upgrades['replace_cast'] = (1, 5, "Eye of Fireballs", "Eye of Fire casts your fireball spell")
-		self.upgrades['summon_eyeball'] = (1, 2, "Fiery Onlooker", "Eye of fire summons a Flaming Eyeball on expiration")
-		self.upgrades['cascade'] = (1, 3, "Eye of Conflagration", "Whenever eye of fire kills an enemy, it fires again")
+		self.upgrades['replace_cast'] = (1, 5, "Eye of Immolation", "Eye of Fire instead casts your Immolate spell")
+		self.upgrades['summon_eyeball'] = (1, 2, "Fiery Onlooker", "Eye of Fire summons a Flaming Eyeball on expiration", [Tags.Conjuration])
+		self.upgrades['cascade'] = (1, 2, "Eye of Conflagration", "Whenever eye of fire kills an enemy, it fires again")
 
-		self.tags = [Tags.Fire, Tags.Enchantment, Tags.Eye]
-		self.level = 2
+
 
 	def cast_instant(self, x, y):
 		buff = FireEyeBuff(self.get_stat('damage'), self.get_stat('shot_cooldown'), self)
-		buff.element = self.element
+		buff.element = self.damage_type[0]
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_extra_examine_tooltips(self):
-		return [self.spell_upgrades[0], self.spell_upgrades[1], FlamingEye(), self.spell_upgrades[2]]
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.make_flaming_eye(), self.spell_upgrades[2]]
+
+	def make_flaming_eye(self):
+		unit = FlamingEye()
+		apply_minion_bonuses(self, unit)
+		return unit
 
 	def get_description(self):
 		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_fire:fire] damage to a random enemy unit in line of sight.\n"
@@ -2932,11 +3089,13 @@ class EyeOfFireSpell(Spell):
 class EyeOfLightningSpell(Spell):
 
 	def on_init(self):
+		self.tags = [Tags.Lightning, Tags.Enchantment, Tags.Eye]
+		self.damage_type = [Tags.Lightning]
+		self.level = 2
 		self.range = 0
 		self.max_charges = 4
 		self.name = "Eye of Lightning"
 		self.damage = 15
-		self.element = Tags.Lightning
 		self.duration = 30
 		self.shot_cooldown = 3
 
@@ -2948,12 +3107,11 @@ class EyeOfLightningSpell(Spell):
 		self.upgrades['replace_cast'] = (1, 4, "Eye of Thunderstrike", "Eye of Lightning casts your Thunderstrike spell.")
 		self.upgrades['applies_buff'] = (1, 4, "Penetrating Gaze", "Eye of Lightning applies a non-stacking -50 Lightning resist to target.")
 
-		self.tags = [Tags.Lightning, Tags.Enchantment, Tags.Eye]
-		self.level = 2
+
 
 	def cast_instant(self, x, y):
 		buff = LightningEyeBuff(self.get_stat('damage'), self.get_stat('shot_cooldown'), self)
-		buff.element = self.element
+		buff.element = self.damage_type[0]
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
@@ -2967,7 +3125,7 @@ class EyeOfIceSpell(Spell):
 		self.max_charges = 4
 		self.name = "Eye of Ice"
 		self.damage = 15
-		self.element = Tags.Ice
+		self.damage_type = [Tags.Ice]
 		self.duration = 30
 		self.shot_cooldown = 3
 		
@@ -2975,8 +3133,8 @@ class EyeOfIceSpell(Spell):
 
 		self.stats.append('shot_cooldown')
 		
-		self.upgrades['summon_eyeball'] = (1, 2, "Frosty Onlooker", "Summons a Frosty Eyeball when the buff runs out.")
-		self.upgrades['freezing'] = (1, 3, "Eye of Freezing", "Freezes target for 3 turns.")
+		self.upgrades['summon_eyeball'] = (1, 2, "Frosty Onlooker", "Eye of Ice summons a Frosty Eyeball on expiration.", [Tags.Conjuration])
+		self.upgrades['array'] = (1, 4, "Icy Array", "You can have multiple instances of Eye of Ice active simultaneously.")
 		self.upgrades['replace_cast'] = (1, 6, "Eye of Iceballs", "Eye of Ice casts your Iceball spell.")
 
 		self.tags = [Tags.Ice, Tags.Enchantment, Tags.Eye]
@@ -2984,11 +3142,18 @@ class EyeOfIceSpell(Spell):
 
 	def cast_instant(self, x, y):
 		buff = IceEyeBuff(self.get_stat('damage'), self.get_stat('shot_cooldown'), self)
-		buff.element = self.element
+		buff.element = self.damage_type[0]
+		if self.get_stat('array'):
+			buff.stack_type = STACK_INTENSITY
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 	def get_extra_examine_tooltips(self):
-		return [self.spell_upgrades[0], FrostEye(), self.spell_upgrades[1], self.spell_upgrades[2]]
+		return [self.spell_upgrades[0], self.make_frost_eye(), self.spell_upgrades[1], self.spell_upgrades[2]]
+
+	def make_frost_eye(self):
+		unit = FrostEye()
+		apply_minion_bonuses(self, unit)
+		return unit
 
 	def get_description(self):
 		return ("Every [{shot_cooldown}_turns:shot_cooldown], deals [{damage}_ice:ice] damage to a random enemy unit in line of sight.\n"
@@ -3007,9 +3172,9 @@ class EyeOfRageSpell(Spell):
 		self.berserk_duration = 2
 		self.stats.append('berserk_duration')
 
-		self.upgrades['lycanthrophy'] = (1, 5, "Lycanthropy", "When Eye of Rage targets a [living] unit with 25 or less HP, that unit is instantly killed and raised as friendly Werewolf.  That Werewolf is berserked for 14 turns.")
+		self.upgrades['lycanthrophy'] = (1, 3, "Lycanthropy", "When Eye of Rage targets a [living] unit with 25% or less HP, that unit is instantly killed and raised as friendly Werewolf.  That Werewolf is berserked for 14 turns.")
 		self.upgrades['connected_group'] = (1, 5, "Infectious Rage", "Eye of Rage targets a connected group")
-		self.upgrades['fiery_aura'] = (1, 5, "Burning Rage", "Targeted units gain a fiery aura that damages nearby units.")
+		self.upgrades['fiery_aura'] = (1, 3, "Burning Rage", "Targeted units gain a fiery aura that damages nearby units.", [Tags.Fire])
 
 		self.tags = [Tags.Nature, Tags.Enchantment, Tags.Eye]
 		self.level = 2
@@ -3018,9 +3183,18 @@ class EyeOfRageSpell(Spell):
 		buff = RageEyeBuff(self.get_stat('shot_cooldown'), self.get_stat('berserk_duration'), self)
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
+	def make_werewolf(self):
+		u = Werewolf()
+		apply_minion_bonuses(self, u)
+		u.max_hp = 0
+		return u
+
 	def get_description(self):
 		return ("Every [{shot_cooldown}_turns:shot_cooldown], inflict [berserk] on a random enemy unit in line of sight for [{berserk_duration}_turns:berserk].\n"
 				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.make_werewolf(), self.spell_upgrades[1], self.spell_upgrades[2]]
 
 class NightmareBuff(DamageAuraBuff):
 
@@ -3044,7 +3218,6 @@ class NightmareBuff(DamageAuraBuff):
 		for spawner, cost in creatures:
 			for i in range(self.damage_dealt // cost):
 				unit = spawner()
-				unit.turns_to_death = random.randint(4, 13)
 				apply_minion_bonuses(self.spell, unit)
 				self.summon(unit, sort_dist=False, radius=self.spell.get_stat('radius'))
 
@@ -3053,6 +3226,9 @@ class NightmareSpell(Spell):
 
 	def on_init(self):
 
+		self.tags = [Tags.Enchantment, Tags.Dark, Tags.Arcane]
+		self.damage_type = [Tags.Dark, Tags.Arcane]
+		self.level = 3
 		self.range = 0
 		self.max_charges = 2
 		self.name = "Nightmare Aura"
@@ -3062,12 +3238,9 @@ class NightmareSpell(Spell):
 
 		self.stats.append('aura_damage')
 
-		self.upgrades['dark_dream'] = (1, 5, "Dark Dream", "Upon ending, temporarily summon Ravens, Werewolves, and Old Witches based on the total damage dealt by the spell.", "dream")
-		self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, temporarily summon Spark Spirits, Thunderbirds, and Aelves based on the total damage dealt by the spell.", "dream")
-		self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, temporarily summon Fire Lizards, Fire Spirits, and Flame Rifts based on the total damage dealt by the spell.", "dream")
-
-		self.tags = [Tags.Enchantment, Tags.Dark, Tags.Arcane]
-		self.level = 3
+		self.upgrades['dark_dream'] = (1, 3, "Dark Dream", "Upon ending, summon Ravens, Werewolves, and Old Witches based on the total damage dealt by the spell.", [Tags.Conjuration])
+		self.upgrades['electric_dream'] = (1, 5, "Electric Dream", "Upon ending, summon Spark Spirits, Thunderbirds, and Aelves based on the total damage dealt by the spell.", [Tags.Conjuration, Tags.Lightning])
+		self.upgrades['fever_dream'] = (1, 5, "Fever Dream", "Upon ending, summon Fire Lizards, Fire Spirits, and Flame Rifts based on the total damage dealt by the spell.", [Tags.Conjuration, Tags.Fire])
 
 	def cast_instant(self, x, y):
 		buff = NightmareBuff(self)
@@ -3077,27 +3250,108 @@ class NightmareSpell(Spell):
 		buff.source = self
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
+	def make_elf(self):
+		u = Elf()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_thunderbird(self):
+		u = Thunderbird()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_spark_spirit(self):
+		u = SparkSpirit()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_old_witch(self):
+		u = OldWitch()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_werewolf(self):
+		u = Werewolf()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_raven(self):
+		u = Raven()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_fire_spawner(self):
+		u = FireSpawner()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_fire_spirit(self):
+		u = FireSpirit()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_fire_lizard(self):
+		u = FireLizard()
+		apply_minion_bonuses(self, u)
+		return u
+
 	def get_description(self):
 		return ("Each turn, randomly deals [{aura_damage}_arcane:arcane] or [{aura_damage}_dark:dark] damage to each enemy in a [{radius}_tile:radius] radius.\n"
 				"This damage is fixed, and cannot be modified.\n"
 				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
-class CockatriceSkinSpell(Spell):
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.make_raven(), self.make_werewolf(), self.make_old_witch(),
+				self.spell_upgrades[1], self.make_spark_spirit(), self.make_thunderbird(), self.make_elf(),
+				self.spell_upgrades[2], self.make_fire_spirit(), self.make_fire_lizard(), self.make_fire_spawner()]
+
+class BasiliskArmorBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
+		self.stack_type = STACK_REPLACE
 
 	def on_init(self):
-		self.range = 0
-		self.max_charges = 4
 		self.name = "Basilisk Armor"
-		self.duration = 10
 
-		self.upgrades['max_charges'] = 4
-		self.upgrades['duration'] = 5
+	def on_applied(self, owner):
+		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
 
-		self.tags = [Tags.Enchantment, Tags.Nature, Tags.Arcane]
+	def on_spell_cast(self, evt):
+		if (evt.x, evt.y) != (self.owner.x, self.owner.y):
+			return
+		if not are_hostile(evt.caster, self.owner):
+			return
+		if self.spell.get_stat('reaction_cast'):
+			self.owner.level.act_cast(self.owner, self.owner.get_or_make_spell(PetrifySpell), evt.caster.x, evt.caster.y, pay_costs=False)
+		else:
+			evt.caster.apply_buff(PetrifyBuff(), self.spell.get_stat('duration', base=2))
+			if self.spell.get_stat('venomous'):
+				evt.caster.apply_buff(Poison(), self.spell.get_stat('duration', base=15))
+
+class BasiliskArmorSpell(Spell):
+
+	def on_init(self):
 		self.level = 3
+		self.tags = [Tags.Enchantment, Tags.Nature, Tags.Arcane]
+
+		self.range = 0
+		self.max_charges = 3
+		self.name = "Basilisk Armor"
+		self.duration = 15
+
+		self.upgrades['venomous'] = (1, 2, "Venomous", "Affected enemies are also [poisoned] for [15:duration] turns.")
+		self.upgrades['king_of_serpents'] = (1, 3, "King of Serpents", "Your [Dragon] allies also receive the buff when you cast this spell.", [Tags.Dragon])
+		self.upgrades['reaction_cast'] = (1, 4, "Reaction Cast", "Casts your Petrify spell on enemies instead.")
 
 	def cast_instant(self, x, y):
-		self.caster.apply_buff(cockatriceScaleArmorBuff(), self.get_stat('duration'))
+		self.caster.apply_buff(BasiliskArmorBuff(self), self.get_stat('duration'))
+		if self.get_stat('king_of_serpents'):
+			dragons = list([u for u in self.owner.level.units if Tags.Dragon in u.tags and not are_hostile(self.caster, u)])
+			if dragons:
+				for d in dragons:
+					d.apply_buff(BasiliskArmorBuff(self), self.get_stat('duration'))
 
 	def get_description(self):
 		return ("Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [2:duration] turns.\n"
@@ -3167,11 +3421,11 @@ class WatcherFormSpell(Spell):
 		self.max_charges = 5
 		self.duration = 5
 		self.element = Tags.Lightning
-		self.tags = [Tags.Enchantment, Tags.Lightning, Tags.Arcane]
+		self.tags = [Tags.Enchantment, Tags.Lightning, Tags.Eye]
 		self.level = 4
 
-		self.upgrades['pyrostatic_watcher'] = (1, 3, "Pyrostatic Watcher Form", "Instead casts your Pyrostatic Pulse, gain [100_fire:fire] resist instead of 75.")
-		self.upgrades['void_watcher'] = (1, 4, "Void Watcher Form", "Instead casts your Void Beam, gain [100_arcane:arcane] resist.  Can fire at targets outside of line of sight.")
+		self.upgrades['pyrostatic_watcher'] = (1, 3, "Pyrostatic Watcher Form", "Instead casts your Pyrostatic Pulse, gain [100_fire:fire] resist instead of 75.", [Tags.Fire])
+		self.upgrades['void_watcher'] = (1, 4, "Void Watcher Form", "Instead casts your Void Beam, gain [100_arcane:arcane] resist.  Can fire at targets outside of line of sight.", [Tags.Arcane])
 		self.upgrades['chain_lightning_watcher'] = (1, 5, "Chain Watcher Form", "Instead casts your Chain Lightning.")
 
 	def cast_instant(self, x, y):
@@ -3254,8 +3508,8 @@ class ImpGateSpell(Spell):
 		self.num_summons = 2
 
 		self.add_upgrade(ChaosBuddiesNew())
-		self.upgrades['metalswarm'] = (1, 4, "Metal Swarm", "Imp swarm summons copper imps instead of spark imps, tungsten imps instead of iron imps, and furnace imps instead of fire imps.", "swarm")
-		self.upgrades['darkswarm'] = (1, 3, "Dark Swarm", "Imp swarm summons rot imps, void imps, and insanity imps instead of fire, spark, and iron imps.", "swarm")
+		self.upgrades['metalswarm'] = (1, 4, "Metal Swarm", "Imp swarm summons copper imps instead of spark imps, tungsten imps instead of iron imps, and furnace imps instead of fire imps.", [Tags.Metallic])
+		self.upgrades['darkswarm'] = (1, 3, "Dark Swarm", "Imp swarm summons rot imps, void imps, and insanity imps instead of fire, spark, and iron imps.", [Tags.Dark])
 
 		self.imp_choices = [self.fire_imp, self.spark_imp, self.iron_imp]
 
@@ -3380,13 +3634,14 @@ class LightningHaloSpell(Spell):
 		self.max_charges = 5
 		self.duration = 9
 		self.tags = [Tags.Enchantment, Tags.Lightning]
+		self.damage_type = [Tags.Lightning]
 		self.level = 3
 		self.damage = 15
 		self.element = Tags.Lightning
 
 		self.radius = 3
-		self.upgrades['ring_of_fire'] = (1, 3, "Ring of Fire", "Lightning Halo creates an additional ring with 1 greater radius that deals [fire:fire] damage.")
-		self.upgrades['radioactivity'] = (1, 3, "Radioactive Field", "Deals 50% [poison:poison] damage to enemies inside the halo.") #made it 50% because dealing 100% damage to all units within radius is very powerful
+		self.upgrades['ring_of_fire'] = (1, 3, "Ring of Fire", "Lightning Halo creates an additional ring with 1 greater radius that deals [fire:fire] damage.", [Tags.Fire], [Tags.Fire])
+		self.upgrades['radioactivity'] = (1, 3, "Radioactive Field", "Deals 50% [poison:poison] damage to enemies inside the halo.", None, [Tags.Poison]) #made it 50% because dealing 100% damage to all units within radius is very powerful
 		self.upgrades['expanding'] = (1, 3, "Lightning Nova", "Every turn, Lightning Halo gets +1 radius")
  
 	def cast_instant(self, x, y):
@@ -3418,16 +3673,17 @@ class ArcaneVisionSpell(Spell):
 		self.max_charges = 4
 		self.duration = 8
 		self.bonus = 5
-		self.tags = [Tags.Enchantment, Tags.Arcane]
+		self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Eye]
 		self.level = 3
 
-		self.upgrades['duration'] = (8, 2)
 		self.upgrades['bonus'] = (5, 4)
 		self.upgrades['aura'] = (1, 5, "Vision Aura", "Mystic vision affects all allied units")
+		self.upgrades['overwatch'] = (1, 6, "Overwatch", "When you cast Mystic Vision, cast your Floating Eye on unoccupied adjacent tiles.")
 
 	def cast_instant(self, x, y):
 		buff = GlobalAttrBonus('range', self.get_stat('bonus'))
 		buff.name = "Mystic Vision"
+		buff.stack_type = STACK_DURATION
 		self.caster.apply_buff(buff, self.get_stat('duration'))
 
 		if self.get_stat('aura'):
@@ -3436,7 +3692,21 @@ class ArcaneVisionSpell(Spell):
 					continue
 				buff = GlobalAttrBonus('range', self.get_stat('bonus'))
 				buff.name = "Mystic Vision"
+				buff.stack_type = STACK_DURATION
 				u.apply_buff(buff, self.get_stat('duration'))
+
+		if self.get_stat('overwatch'):
+			if not self.caster.is_player_controlled: # things get out of hand when eyemages start casting this
+				return
+			points = set()
+			for p in self.caster.level.get_adjacent_points(self.caster, filter_walkable=False, check_unit=True):
+				if (p.x, p.y) == (self.caster.x, self.caster.y):
+					continue
+				points.add(p)
+			for p in points:
+				spell = self.caster.get_or_make_spell(SummonFloatingEye)
+				if spell.can_cast(p.x, p.y):
+					self.owner.level.act_cast(self.caster, spell, p.x, p.y, pay_costs=False)
 
 	def get_description(self):
 		return ("All other spells gain [{bonus}_range:range].\n"
@@ -3453,55 +3723,46 @@ class ArcaneDamageSpell(Spell):
 		self.tags = [Tags.Enchantment, Tags.Arcane]
 		self.level = 3
 
-		self.upgrades['duration'] = (8, 2)
-		self.upgrades['bonus'] = (4, 4, "Damage Bonus")
 		self.upgrades['stackable'] = (1, 4, "Intensity", "Mystic Power stacks in intensity instead of duration")
+		self.upgrades['explosive_power'] = (1, 4, "Explosive Power", "Your spells and skills also gain +2 [radius].")
+		self.upgrades['occult_power'] = (1, 4, "Occult Power", "Sacrifice allied units in a [4:radius] tile radius.\n"
+										 "Increase the duration and damage bonus by the number of allies sacrificed.\n"
+															   "Does not stack.", [Tags.Dark])
 
 	def cast_instant(self, x, y):
+		sacrificed = 0
 		buff = GlobalAttrBonus('damage', self.get_stat('bonus'))
 		buff.name = "Mystic Power"
 		buff.stack_type = STACK_DURATION if not self.get_stat('stackable') else STACK_INTENSITY
-		self.caster.apply_buff(buff, self.get_stat('duration'))
+
+		if self.get_stat('occult_power'):
+			sacrifices = [u for u in self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius', base=4)) if not are_hostile(u, self.caster) and not u==self.caster]
+			for u in sacrifices:
+				self.caster.level.show_effect(u.x, u.y, Tags.Dark)
+				u.kill()
+				sacrificed += 1
+			buff.global_bonuses['damage'] += sacrificed
+			buff.name = "Occult Power"
+			buff.color = Tags.Dark.color
+			buff.stack_type = STACK_REPLACE
+
+		if self.get_stat('explosive_power'):
+			buff.global_bonuses['radius'] = 2
+		self.caster.apply_buff(buff, self.get_stat('duration') + sacrificed)
 
 	def get_description(self):
-		return ("All spells and skills gain [{bonus}_damage:damage].\n"
+		return ("All spells and skills gain [7_bonus_damage:damage].\n"
 				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
-class PainBuff(GlobalAttrBonus):
-
-	def __init__(self, bonus, self_damage):
-		GlobalAttrBonus.__init__('damage', bonus)
-		self.self_damage = self_damage
-
-	def on_applied(self, owner):
-		self.owner_triggers[EventOnMoved] = self.on_moved
-
-	def advance(self):
-		owner.deal_damage(self_damage, Tags.Dark, self)
-
-	def on_moved(self):
-		self.owner.remove_buff(self)
-
-class PainSpell(Spell):
-
-	def on_init(self):
-		self.name = "Power of Pain"
-		self.range = 0
-		self.max_charges = 6
-		self.bonus = 7
-		self.tags = [Tags.Dark, Tags.Enchantment]
-		self.level = 4
-
-		self.self_damage = 4
-		self.upgrades['max_charges'] = 6
-		self.upgrades['bonus'] = (5, 2)
-		self.upgrades['self_damage'] = (-2, 3)
-
-	def cast_instant(self, x, y):
-		self.caster.apply_buff(PainBuff(self.bonus))
-
-	def get_description(self):
-		return "Your spells deal +%d damage.  Each turn you take %d dark damage.  Ends when you move." % (self.bonus, self.self_damage)
+	def get_impacted_tiles(self, x, y):
+		if self.get_stat('occult_power'):
+			points = self.caster.level.get_points_in_ball(self.caster.x, self.caster.y, self.get_stat('radius', base=4))
+			for p in points:
+				unit = self.caster.level.get_unit_at(p.x, p.y)
+				if unit and not are_hostile(unit, self.caster):
+					yield p
+		else:
+			return Point(x, y)
 
 class FlameBurstSpell(Spell):
 
@@ -3514,9 +3775,9 @@ class FlameBurstSpell(Spell):
 		self.level = 4
 		self.radius = 8
 
-		self.upgrades['meltflame'] = (1, 2, "Melting Flame", "Melt walls adjacent to the blast", "flame")
-		self.upgrades['dawnflame'] = (1, 5, "Bright Flame", "Flame Burst deals [holy] instead of [fire], and shields allied units instead of damaging them.", "flame")
-		self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of flame burst consumes all remaining charges.\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.", "flame")
+		self.upgrades['meltflame'] = (1, 2, "Melting Flame", "Melt walls adjacent to the blast")
+		self.upgrades['dawnflame'] = (1, 5, "Bright Flame", "Flame Burst deals [holy] instead of [fire], and shields allied units instead of damaging them.", [Tags.Holy])
+		self.upgrades['spreadflame'] = (1, 7, "Spreading Flame", "Each cast of flame burst consumes all remaining charges.\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage.")
 
 	def get_impacted_tiles(self, x, y):
 		radius = self.get_stat('radius')
@@ -3604,8 +3865,8 @@ class SummonFireDrakeSpell(Spell):
 		self.minion_range = 7
 
 		self.upgrades['broodlings'] = (1, 5, "Broodlings", "Summoned Fire Drakes can summon 2 Fire Lizards on a 9 turn cooldown.")
-		self.upgrades['metal'] = (1, 3, "Metal Dragon", "Summoned Fire Drakes are metallic")
-		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Fire Drakes can cast your Blazerip with a 4 turn cooldown.\n")
+		self.upgrades['metal'] = (1, 3, "Metal Dragon", "Summoned Fire Drakes are metallic", [Tags.Metallic])
+		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Fire Drakes can cast your Blazerip with a 4 turn cooldown.\n", [Tags.Arcane])
 
 		self.must_target_empty = True
 
@@ -3616,7 +3877,6 @@ class SummonFireDrakeSpell(Spell):
 
 	def cast_instant(self, x, y):
 		drake = FireDrake()
-		drake.team = self.caster.team
 		drake.max_hp = self.get_stat('minion_health')
 		drake.spells[0].damage = self.get_stat('minion_damage')
 		drake.spells[0].range = self.get_stat('minion_range')
@@ -3685,7 +3945,7 @@ class SummonStormDrakeSpell(Spell):
 		self.minion_range = 7
 		
 		self.upgrades['storm_legion'] = (1, 4, "Storm Summoning", "Whenever you cast Storm Drake, up to [2:num_summons] lightning storms in line of sight of the target are converted into drakes")
-		self.upgrades['ghost_drake'] = (1, 3, "Ghost Drake", "Summoned Storm Drakes are ghostly.")
+		self.upgrades['ghost_drake'] = (1, 3, "Ghost Drake", "Summoned Storm Drakes are ghostly.", [Tags.Dark])
 		self.upgrades['drake_swap'] = (1, 1, "Drake Swap", "Whenever you target a summoned Storm Drake with a lightning spell, swap places with it.")
 		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Storm Drakes can cast your Chain Lightning with a 16 turn cooldown.\n")
 	
@@ -3763,7 +4023,7 @@ class EssenceDrakeBuff(Buff):
 			return
 
 		candidate = random.choice(candidates)
-		candidate.turns_to_death += 5
+		candidate.turns_to_death = None
 
 
 class SummonVoidDrakeSpell(Spell):
@@ -3781,14 +4041,13 @@ class SummonVoidDrakeSpell(Spell):
 		self.minion_range = 7
 
 		self.upgrades['shields'] = (3, 3)
-		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Void Drakes can cast Magic Missile with a 3 turn cooldown.\nThis Magic Missile gains all of your upgrades and bonuses.")
-		self.upgrades['essence_drake'] = (1, 3, "Essence Drake", "Whenever a summoned Void Drake kills an enemy unit, a random temporary ally gains +5 turns to its duration.")
+		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Void Drakes can cast your Magic Missile with on 3 turn cooldown.")
+		self.upgrades['essence_drake'] = (1, 4, "Essence Drake", "Whenever a summoned Void Drake kills an enemy unit, a random temporary ally becomes permanent.")
 
 		self.must_target_empty = True
 
 	def cast_instant(self, x, y):
 		drake = VoidDrake()
-		drake.team = self.caster.team
 		drake.max_hp = self.get_stat('minion_health')
 		drake.spells[0].damage = self.get_stat('minion_damage')
 		drake.spells[0].range = self.get_stat('minion_range')
@@ -3827,48 +4086,46 @@ class SummonIceDrakeSpell(Spell):
 		self.minion_range = 7
 		self.minion_health = 45
 		self.minion_damage = 8
-		self.duration = 2
 
-
-		self.upgrades['dracolich'] = (1, 4, "Dracolich", "Summoned Ice Drakes are Liches and can create a soul jars.")
-		self.upgrades['broodlings'] = (1, 5, "Broodlings", "Summoned Ice Drakes can summon 2 Ice Lizards on a 9 turn cooldown.")
-		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Ice Drakes can cast Death Chill with an 8 turn cooldown.\nThis Death Chill gains all of your upgrades and bonuses.")
+		self.upgrades['broodlings'] = (1, 4, "Broodlings", "Summoned Ice Drakes can summon 2 Ice Lizards on a 9 turn cooldown.")
+		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Summoned Ice Drakes can cast Death Chill with an 8 turn cooldown.\nThis Death Chill gains all of your upgrades and bonuses.", [Tags.Dark])
+		self.upgrades['dracolich'] = (1, 6, "Dracolich", "Summons a Dracolich instead of an Ice Drake.", [Tags.Dark])
 
 		self.must_target_empty = True
 
 	def get_extra_examine_tooltips(self):
-		return [IceDrake(), self.spell_upgrades[0], self.spell_upgrades[1], self.make_lizard(), self.spell_upgrades[2]]
+		return [self.make_ice_drake(), self.spell_upgrades[0], self.make_lizard(), self.spell_upgrades[1], self.spell_upgrades[2], self.make_dracolich()]
 
 	def make_lizard(self):
 		lizard = IceLizard()
 		apply_minion_bonuses(self, lizard)
 		return lizard
 
-	def cast_instant(self, x, y):
-		drake = IceDrake()
-
-		drake.max_hp = self.get_stat('minion_health')
-		drake.spells[0].damage = self.get_stat('minion_damage')
-		drake.spells[0].range = self.get_stat('minion_range')
-		drake.spells[0].duration = self.get_stat('duration')
-		drake.spells[1].damage = self.get_stat('minion_damage')
+	def make_ice_drake(self):
+		u = IceDrake()
 
 		if self.get_stat('dragon_mage'):
-			dchill = DeathChill()
-			dchill.statholder = self.caster
-			dchill.max_charges = 0
-			dchill.cur_charges = 0
-			dchill.cool_down = 8
-			drake.spells.insert(1, dchill)
+			grant_minion_spell(DeathChill, u, self.caster, cool_down=8, pre_insert=True)
 
 		if self.get_stat('broodlings'):
 			summon = SimpleSummon(self.make_lizard, num_summons=2, cool_down=8)
-			drake.spells.insert(0, summon)
+			u.spells.insert(0, summon)
 
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_dracolich(self):
+		u = Dracolich()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def cast_instant(self, x, y):
 		if self.get_stat('dracolich'):
-			BossSpawns.apply_modifier(BossSpawns.Lich, drake)
+			u = self.make_dracolich()
+		else:
+			u = self.make_ice_drake()
 
-		self.summon(drake, Point(x, y))
+		self.summon(u, Point(x, y))
 
 	def get_description(self):
 		return ("Summon an Ice Drake at target square.\n"		
@@ -3877,52 +4134,6 @@ class SummonIceDrakeSpell(Spell):
 				"Ice Drakes have a melee attack which deals [{minion_damage}_physical:physical] damage.").format(**self.fmt_dict())
 
 
-class SparkSpell(Spell):
-
-	def on_init(self):
-		self.name = "Spark"
-		self.description = "Deal lightning damage to the target.  Chains to a limited number of nearby targets."
-		self.range = 8
-		self.max_charges = 26
-		self.level = 1
-		self.tags = [Tags.Lightning, Tags.Sorcery]
-		self.damage = 6
-
-		self.num_targets = 3
-		self.cascade_range = 3
-		self.upgrades['num_targets'] = (2, 2)
-		self.upgrades['damage'] = (6, 2)
-
-	def cast(self, x, y):
-		prev = self.caster
-		target = Point(x, y)
-		targets_left = self.get_stat('num_targets')
-
-		while targets_left > 0 and target:
-			targets_left -= 1
-			for p in self.caster.level.get_points_in_line(prev, target)[1:]:
-				self.caster.level.show_effect(p.x, p.y, Tags.Lightning)
-				yield
-
-			self.caster.level.deal_damage(target.x, target.y, self.get_stat('damage'), Tags.Lightning, self)
-			yield
-
-			possible_targets = self.caster.level.get_units_in_ball(target, self.get_stat('cascade_range'))
-
-			target_unit = self.caster.level.get_unit_at(target.x, target.y)
-			if target_unit in possible_targets:
-				possible_targets.remove(target_unit)
-			if self.get_stat('no_friendly_fire'):
-				possible_targets = [t for t in possible_targets if are_hostile(self.caster, t)]
-			if not self.get_stat('wall_pen'):
-				possible_targets = [t for t in possible_targets if self.caster.level.can_see(t.x, t.y, target.x, target.y)]
-
-			prev = target
-			if possible_targets:
-				target = random.choice(possible_targets)
-			else:
-				target = None
-
 class ChainLightningSpell(Spell):
 
 	def on_init(self):
@@ -3930,6 +4141,7 @@ class ChainLightningSpell(Spell):
 		self.range = 9
 		self.max_charges = 4
 		self.tags = [Tags.Lightning, Tags.Sorcery]
+		self.damage_type = [Tags.Lightning]
 		self.level = 3
 		self.damage = 12
 		self.element = Tags.Lightning
@@ -3938,9 +4150,9 @@ class ChainLightningSpell(Spell):
 		self.no_friendly_fire = 0
 		self.overlap = 1
 
-		self.upgrades['chain_fireball'] = (1, 7, "Chain Fireball", "Cast Fireball for free on each target chain lightning bounces to")
-		self.upgrades['weathercraft'] = (1, 3, "Cloud Conductance", "Chain Lightning can arc to blizzards, rain clouds, and storm clouds")
-		self.upgrades['shield'] = (1, 6, "Lightning Shield", "Chain Lightning can arc to friendly targets.\nFriendly units hit by Chain Lightning gain 1 SH, up to a max of 3, instead of damaged.")
+		self.upgrades['chain_fireball'] = (1, 7, "Chain Fireball", "Cast Fireball for free on each target chain lightning bounces to", [Tags.Fire], [Tags.Fire])
+		self.upgrades['weathercraft'] = (1, 3, "Cloud Conductance", "Chain Lightning can arc to blizzards, rain clouds, and storm clouds", [Tags.Nature])
+		self.upgrades['shield'] = (1, 4, "Lightning Shield", "Chain Lightning can arc to friendly targets.\nFriendly units hit by Chain Lightning gain 1 SH, up to a max of 3, instead of damaged.")
 
 	def get_description(self):
 		return ("Fire an arcing bolt of electricity dealing [{damage}_lightning:lightning] damage.\n"
@@ -4027,7 +4239,7 @@ class SoulCharge(Buff):
 		self.name = "Soulcharge"
 		self.buff_type = BUFF_TYPE_BLESS
 		self.color = Tags.Dark.color
-		self.spell_bonuses[DeathBolt]['damage'] = 3
+		self.tag_bonuses[Tags.Dark]['damage'] = 1
 		self.stack_type = STACK_INTENSITY
 
 class DeathBolt(Spell):
@@ -4035,15 +4247,15 @@ class DeathBolt(Spell):
 	def on_init(self):
 		self.name = "Death Bolt"
 		self.tags = [Tags.Dark, Tags.Sorcery, Tags.Conjuration]
+		self.damage_type = [Tags.Dark]
 		self.level = 1
 		self.damage = 9
-		self.element = Tags.Dark
 		self.range = 8
 		self.max_charges = 15
 
-		self.upgrades['soulbattery'] = (1, 2, "Soul Battery", "Deathbolt gains 3 damage whenever it slays a target, lasts until next realm.")
-		self.upgrades['winter'] = (1, 3, "Winter Bolt", "Deathbolt also deals ice damage")
-		self.upgrades['chaos'] = (1, 5, "Chaos Skeletons", "Raised skeletons are Chaos skeletons, gaining resistances, a chaos ball attack, and spawning a number of imps on death proportional to their max hp.")
+		self.upgrades['soulbattery'] = (1, 3, "Soul Battery", "Deathbolt grants 1 [damage] to your Dark spells and skills whenever it slays a target, lasts until next realm.")
+		self.upgrades['winter'] = (1, 3, "Winter Bolt", "Deathbolt also deals [ice] damage", [Tags.Ice], [Tags.Ice])
+		self.upgrades['chaos'] = (1, 5, "Chaos Skeletons", "Raised skeletons are Chaos skeletons, gaining resistances, a chaos ball attack, and spawning a number of imps on death proportional to their max hp.", [Tags.Chaos])
 
 		self.can_target_empty = False
 		self.minion_damage = 5
@@ -4071,7 +4283,18 @@ class DeathBolt(Spell):
 		skeleton.spells.append(SimpleMeleeAttack(5))
 		skeleton.tags.append(Tags.Undead)
 		return skeleton
-	
+
+	def make_skeleton(self):
+		u = self.skeleton()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_chaos_skeleton(self):
+		u = self.skeleton()
+		BossSpawns.apply_modifier(BossSpawns.Chaostouched, u)
+		apply_minion_bonuses(self, u)
+		return u
+
 	def try_raise(self, caster, unit):
 		if unit and unit.cur_hp <= 0 and not self.caster.level.get_unit_at(unit.x, unit.y):
 			skeleton = raise_skeleton(caster, unit, source=self)
@@ -4090,14 +4313,7 @@ class DeathBolt(Spell):
 				"Skeletons of flying units can fly.").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
-		return [self.skeleton()] + self.spell_upgrades
-
-class DeathrouletteStack(Buff):
-
-	def on_init(self):
-		self.name = "Roulette"
-		self.stack_type = STACK_INTENSITY
-		self.color = Tags.Dark.color
+		return [self.make_skeleton()] + self.spell_upgrades + [self.make_chaos_skeleton()]
 
 class WheelOfFate(Spell):
 
@@ -4110,17 +4326,26 @@ class WheelOfFate(Spell):
 		self.level = 4
 		self.max_charges = 12
 
-		self.upgrades['max_charges'] = (3, 4)
-		self.upgrades['cheater'] = (1, 4, "Cheat Fate", "Death Roulette avoids shielded and dark immune enemies, and weights its target selection by current resistance adjusted hitpoints instead of uniformly.")
+		self.upgrades['cheater'] = (1, 4, "Cheat Fate", "Wheel of Death avoids shielded and dark immune enemies, and weights its target selection by current resistance adjusted hitpoints instead of uniformly.")
+		self.upgrades['channel'] = (1, 4, "Channeling", "Wheel of Death can be channeled for up to 4 turns.")
+		self.upgrades['shared'] = (1, 4, "Shared Misfortune", "Wheel of Death instead deals damage to [2:num_targets] targets. The damage dealt to each target is divided by the number of targets hit.")
 
-	def cast(self, x, y):
+	def cast(self, x, y, channel_cast=False):
+
+		if self.get_stat('channel') and not channel_cast:
+			self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), self.get_stat('max_channel', base=4))
+			return
 
 		valid_targets = [u for u in self.caster.level.units if self.caster.level.are_hostile(self.caster, u)]
 
 		if not valid_targets:
 			return
 
-		if self.get_stat('cheater'):
+		if self.get_stat('shared'):
+			random.shuffle(valid_targets)
+			targets = valid_targets[:self.get_stat('num_targets', base=2)]
+
+		elif self.get_stat('cheater'):
 			preferred_targets = [t for t in valid_targets if t.resists[Tags.Dark] < 100]
 			more_preferred_targets = [t for t in preferred_targets if not t.shields]
 
@@ -4132,14 +4357,16 @@ class WheelOfFate(Spell):
 				target = random.choices(valid_targets, weights=[t.cur_hp * (100 - t.resists[Tags.Dark]) for t in valid_targets], k=1)[0]
 			else:
 				target = random.choice(valid_targets)
+			targets = [target]
 
 		else:
-			target = random.choice(valid_targets)
+			targets = [random.choice(valid_targets)]
 
-		target.deal_damage(self.get_stat('damage'), self.element, self)
-		self.owner.level.show_path_effect(self.owner, target, Tags.Dark, minor=True)
-		for i in range(3):
-			yield
+		for target in targets:
+			target.deal_damage(self.get_stat('damage') // len(targets), self.element, self)
+			self.owner.level.show_path_effect(self.owner, target, Tags.Dark, minor=True)
+			for i in range(3):
+				yield
 
 	def get_description(self):
 		return "Deal [{damage}_dark:dark] damage to a random enemy unit.".format(**self.fmt_dict())
@@ -4148,24 +4375,21 @@ class TouchOfDeath(Spell):
 
 	def on_init(self):
 		self.damage = 200
-		self.element = Tags.Dark
 		self.range = 1.5
 		self.melee = True
 		self.can_target_self = False
 		self.max_charges = 9
 		self.name = "Touch of Death"
 		self.tags = [Tags.Dark, Tags.Sorcery]
+		self.damage_type = [Tags.Dark]
 		self.level = 2
 
 		self.can_target_empty = False
 
-		self.fire_damage = 0
-		self.arcane_damage = 0
-		self.physical_damage = 0
-		self.upgrades['fire_damage'] = (200, 2, "Flametouch")
-		self.upgrades['raise_vampire'] = (1, 3, 'Touch of the Vampire', 'When a [living] target dies to touch of death, it is raised as a friendly Vampire.', 'raising')
-		self.upgrades['raise_reaper'] = (1, 4, 'Touch of the Reaper', 'When a [living] target dies to touch of death, it is raised as a friendly Reaper for [6:minion_duration] turns', 'raising')
+		self.upgrades['fire_damage'] = (1, 3, "Flametouch", "Touch of Death also deals [fire] damage.", [Tags.Fire], [Tags.Fire])
+		self.upgrades['vampire'] = (1, 3, 'Touch of the Vampire', 'When a [living] target dies to touch of death, it is raised as a friendly Vampire.', [Tags.Conjuration])
 		self.upgrades['hand_of_death'] = (1, 3, 'Hand of Death', 'Touch of death hits up to [4:num_targets] more adjacent targets')
+		self.upgrades['final_touch'] = (1, 5, 'Final Touch', "Touch of death deals additional damage equal to the target's max HP.")
 
 	def get_vamp(self):
 		vamp = Vampire()
@@ -4193,23 +4417,23 @@ class TouchOfDeath(Spell):
 			if not unit:
 				continue
 
-			unit.deal_damage(self.get_stat('damage'), self.element, self)
+			if self.get_stat('final_touch'):
+				unit.deal_damage(self.get_stat('damage')+unit.max_hp, Tags.Dark, self)
+			else:
+				unit.deal_damage(self.get_stat('damage'), Tags.Dark, self)
+
 			if self.get_stat('fire_damage'):
 				unit.deal_damage(self.get_stat('damage'), Tags.Fire, self)
 
 			if not unit.is_alive() and Tags.Living in unit.tags:
-				if self.get_stat('raise_vampire'):
-					vampire = self.get_vamp()
-					self.summon(vampire, Point(unit.x, unit.y))
-				elif self.get_stat('raise_reaper'):
-					reaper = Reaper()
-					reaper.turns_to_death = self.get_stat('minion_duration', base=6)
-					self.summon(reaper, Point(unit.x, unit.y))
-
-
+				if self.get_stat('vampire'):
+					self.summon(self.get_vamp(), Point(unit.x, unit.y))
 
 	def get_description(self):
 		return "Deal [{damage}_dark:dark] damage to one unit in melee range.".format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.get_vamp(), self.spell_upgrades[2], self.spell_upgrades[3]]
 
 class SealedFateBuff(Buff):
 
@@ -4298,7 +4522,7 @@ class Volcano(Spell):
 	def get_description(self):
 		return ("Create a [{radius}_tile:radius] burst of lava in a chasm.\n"
 				"The burst flows up to [{flow_range}_tiles:radius] out of the chasm.\n"
-				"The lava deals [{damage}_fire:fire] damage").format(**self.fmt_dict())
+				"The lava deals [{damage}_fire:fire] damage.").format(**self.fmt_dict())
 
 	def get_chasm_points(self, caster, x, y):
 		chasm_points = set([Point(x, y)])
@@ -4362,7 +4586,9 @@ class SoulSwap(Spell):
 		self.tags = [Tags.Dark, Tags.Sorcery, Tags.Translocation]
 
 		self.upgrades['forced_transfer'] = (1, 2, 'Forced Transfer', 'Soul Swap can target enemy undead units as well.')
-		self.upgrades['max_charges'] = (9, 2)
+		self.upgrades['spirit_tutor'] = (1, 4, "Spirit Tutor", "Swapped [undead] gains your Death Bolt on a 3 turn cooldown.")
+		self.upgrades['soul_ward'] = (1, 3, "Soul Shielding", "Target unit loses up to [1:damage] max HP, and you gain that many SH.\n This will not kill units.")
+
 
 	def can_cast(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
@@ -4382,6 +4608,28 @@ class SoulSwap(Spell):
 		if not self.can_cast(x, y):
 			return False
 
+		if self.get_stat('spirit_tutor') and self.caster.get_spell(DeathBolt):
+			unit = self.caster.level.get_unit_at(x, y)
+			if unit and not unit.get_spell(DeathBolt):
+				spell = DeathBolt()
+				spell.statholder = self.caster
+				spell.caster = unit
+				spell.owner = unit
+				spell.max_charges = 0
+				spell.cur_charges = 0
+				spell.cool_down = 3
+				unit.spells.insert(0, spell) # put it first, so it will prioritize it over other attacks
+
+		if self.get_stat('soul_ward'):
+			unit = self.caster.level.get_unit_at(x, y)
+			if unit:
+				orig = unit.max_hp
+				unit.max_hp -= self.get_stat('damage', base=1)
+				unit.max_hp = max(unit.max_hp, 1)
+				unit.cur_hp = min(unit.cur_hp, unit.max_hp)
+				self.caster.shields += (orig - unit.max_hp)
+
+
 		if self.caster.level.can_move(self.caster, x, y, teleport=True, force_swap=True):
 			self.caster.level.act_move(self.caster, x, y, teleport=True, force_swap=True)
 
@@ -4397,10 +4645,10 @@ class UnderworldPortal(Spell):
 		self.max_charges = 3
 		self.tags = [Tags.Dark, Tags.Sorcery, Tags.Translocation]
 		self.level = 3
-		self.imps_summoned = 0
 
 		self.upgrades['quick_cast'] = (1, 2, "Quickcast", "Casting underworld passage only takes half a turn")
-		self.upgrades['summon_rockworms'] = (1, 3, "Tremorsensitivity", "Summons 2 Rockworms on each end.")
+		self.upgrades['summon_rockworms'] = (1, 3, "Tremorsensitivity", "Summons [2:num_summons] Rockworms on each end.", [Tags.Conjuration])
+		self.upgrades['make_entrance'] = (1, 1, "Make Entrance", "You can cast this spell from any location. Creates a chasm in the location you cast from.")
 
 	def get_description(self):
 		return ("Teleport to any tile adjacent to a chasm.\n"
@@ -4411,7 +4659,11 @@ class UnderworldPortal(Spell):
 		if not self.caster.level.can_stand(x, y, self.caster):
 			return False
 
-		for center in [self.caster, Point(x, y)]:
+		locations = [self.caster, Point(x, y)]
+		if self.get_stat('make_entrance'):
+			locations = [Point(x, y)]
+
+		for center in locations:
 			next_to_chasm = False
 			for p in self.caster.level.get_points_in_ball(center.x, center.y, 1.5, diag=True):
 				if self.caster.level.tiles[p.x][p.y].is_chasm:
@@ -4421,6 +4673,11 @@ class UnderworldPortal(Spell):
 				return False
 		return Spell.can_cast(self, x, y)
 
+	def make_rockwurm(self):
+		u = RockWurm()
+		apply_minion_bonuses(self, u)
+		return u
+
 	def cast_instant(self, x, y):
 
 		old_loc = Point(self.caster.x, self.caster.y)
@@ -4428,50 +4685,95 @@ class UnderworldPortal(Spell):
 
 		if self.get_stat('summon_rockworms'):
 			for p in [old_loc, self.caster]:
-				for i in range(2):
-					self.summon(RockWurm(), target=p)
+				for i in range(self.get_stat('num_summons', base=2)):
+					self.summon(self.make_rockwurm(), target=p)
 
-		for point in [old_loc, self.caster]:
-			for i in range(self.get_stat('imps_summoned')):
-				p = self.caster.level.get_summon_point(point.x, point.y, sort_dist=False)
-				if p:
-					imp = random.choice([FireImp(), SparkImp(), IronImp()])
-					imp.max_hp += self.get_stat('minion_health')
-					imp.spells[0].damage += self.get_stat('minion_damage')
-					imp.team = self.caster.team
-					self.summon(imp, p)
+		if self.get_stat('make_entrance'):
+			self.caster.level.make_chasm(old_loc.x, old_loc.y)
 
 	def get_extra_examine_tooltips(self):
-		return [self.spell_upgrades[0], self.spell_upgrades[1], RockWurm()]
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.make_rockwurm(), self.spell_upgrades[2]]
 
-class VoidSpawn(Spell):
+class VampiricismBuff(Buff):
 
 	def on_init(self):
+		self.name = "Vampiricism"
+		self.buff_type = BUFF_TYPE_BLESS
+		self.color = Tags.Blood.color
+		self.asset = ["status", "blood_tap"]
+		self.global_triggers[EventOnDamaged] = self.on_damage
+		self.description= "Heals the owner for any damage they deal."
 
-		self.name = "Void Spawning"
-		self.max_charges = 10
-		self.tags = [Tags.Arcane, Tags.Conjuration]
-		self.level = 2
+	def on_damage(self, evt):
+		if not evt.source:
+			return
 
-		self.minion_duration = 10
+		if not evt.source.owner:
+			return
 
-		self.upgrades['minion_duration'] = 10
-		self.upgrades['requires_los'] = -1
+		if not evt.source.owner == self.owner:
+			return
+
+		if evt.damage <= 0:
+			return
+
+		self.owner.heal(evt.damage, evt.source)
+
+class Vampiricism(Spell):
+
+	def on_init(self):
+		self.name = "Vampiricism"
+		self.tags = [Tags.Blood, Tags.Enchantment]
+		self.level = 3
+		self.range = 1.5
+		self.melee = True
+		self.can_target_self = False
+		self.can_target_empty = False
+		self.hp_cost = 25
+
+		self.upgrades['vampiric_regent'] = (1, 7, "Vampiric Regent", "Grant the target your Dominate spell on a 20 turn cool down.")
+		self.upgrades['wicked_fangs'] = (1, 3, "Wicked Fangs", "The target's melee attacks gain +[7:damage] damage.")
+		self.upgrades['enthrall'] = (1, 6, "Enthrall", "You may cast this on [living] enemies if you have more health than them.\nIf you do, they become your ally.")
 
 	def get_description(self):
-		return "Summon a void spawner for 10 turns.  The void spawner is a stationary arcane creature that summons void bombers."
+		return "Grants an ally Vampiricism, causing them to heal for any damage they deal."
 
-	def get_impacted_tiles(self, x, y):
-		targets = self.caster.level.get_tiles_in_ball(x, y, 1.5)
-		targets = set(t for t in targets if t.can_walk and not t.unit)
-		return targets
+	def can_cast(self, x, y):
+		if not Spell.can_cast(self, x, y):
+			return False
+
+		unit = self.caster.level.get_unit_at(x, y)
+		if not unit:
+			return False
+		if unit.has_buff(VampiricismBuff):
+			return False
+
+		if are_hostile(self.caster, unit):
+			if self.get_stat('enthrall'):
+				if Tags.Living not in unit.tags:
+					return False
+				if unit.cur_hp > self.caster.cur_hp:
+					return False
+			else:
+				return False
+
+		return True
 
 	def cast_instant(self, x, y):
+		u = self.caster.level.get_unit_at(x, y)
+		u.apply_buff(VampiricismBuff())
+		self.owner.level.show_effect(x, y, Tags.Blood)
 
-		voidspawner = VoidSpawner()
-		voidspawner.team = self.caster.team
-		voidspawner.turns_to_death = self.get_stat('minion_duration')
-		self.summon(voidspawner, Point(x, y))
+		if self.get_stat('vampiric_regent'):
+			grant_minion_spell(Dominate, u, self.caster, cool_down=20)
+		if self.get_stat('enthrall'):
+			if u.team != self.caster.team:
+				u.team = self.caster.team
+		if self.get_stat('wicked_fangs'):
+			for spell in u.spells:
+				if spell.melee:
+					if spell.damage:
+						spell.damage += self.get_stat('damage', base=7)
 
 
 class SummonEarthElemental(Spell):
@@ -4486,9 +4788,9 @@ class SummonEarthElemental(Spell):
 		self.minion_duration = 15
 		self.minion_attacks = 1
 
-		self.upgrades['earthquake_totem'] = (1, 6, "Earthquake Totem", "Earthen Sentinel gains your Earthquake spell on a 3 turn cool down.", "totem")
-		self.upgrades['stinging_totem'] = (1, 5, "Stinging Totem", "Earthen Sentinel gains your Poison Sting spell.", "totem")
-		self.upgrades['holy_totem'] = (1, 7, "Holy Totem", "Earthen Sentinel gains your Heavenly Blast spell on a 2 turn cool down.", "totem")
+		self.upgrades['earthquake_totem'] = (1, 4, "Earthquake Totem", "Earthen Sentinel gains your Earthquake spell on a 3 turn cool down.")
+		self.upgrades['stinging_totem'] = (1, 3, "Stinging Totem", "Earthen Sentinel gains your Poison Sting spell.")
+		self.upgrades['holy_totem'] = (1, 6, "Holy Totem", "Earthen Sentinel gains your Heavenly Blast spell on a 2 turn cool down.", [Tags.Holy])
 
 		self.must_target_empty = True
 
@@ -4540,6 +4842,24 @@ class SummonEarthElemental(Spell):
 	def get_extra_examine_tooltips(self):
 		return [self.elemental()] + self.spell_upgrades
 
+class HauntedBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
+
+	def on_init(self):
+		self.name = "Haunted"
+		self.color = Tags.Dark.color
+		self.description = "Spawns a ghost nearby each turn."
+		self.buff_type = BUFF_TYPE_CURSE
+		self.stack_type = STACK_REPLACE
+
+	def on_advance(self):
+		u = Ghost()
+		apply_minion_bonuses(self.spell, u)
+		self.spell.summon(u, self.owner)
+
 class CallSpirits(Spell):
 
 	def on_init(self):
@@ -4553,10 +4873,9 @@ class CallSpirits(Spell):
 		self.level = 3
 		self.damage = 11
 
-		self.upgrades['radius'] = (1, 3)
-
-		self.upgrades['king'] = (1, 5, "Ghost King", "A Ghost King is summoned at the center of the ghost ball.", "center summon")
-		self.upgrades['mass'] = (1, 4, "Ghost Mass", "A Ghostly Mass is summoned at the center of the ghost ball.", "center summon")
+		self.upgrades['haunted'] = (1, 3, "Haunting", "Curses affected enemies with Haunted, which summons a ghost near them each turn.\nLasts for [10:duration] turns.")
+		self.upgrades['king'] = (1, 5, "Ghost King", "A Ghost King is summoned at the center of the ghost ball.")
+		self.upgrades['mass'] = (1, 4, "Ghost Mass", "A Ghostly Mass is summoned at the center of the ghost ball.")
 
 	def get_ai_target(self):
 		# target random empty tile if possible
@@ -4588,6 +4907,9 @@ class CallSpirits(Spell):
 
 			elif unit and are_hostile(unit, self.caster):
 				unit.deal_damage(self.get_stat('damage'), Tags.Dark, self)
+
+				if self.get_stat('haunted') and unit.is_alive() and are_hostile(self.caster, unit):
+					unit.apply_buff(HauntedBuff(self), self.get_stat('duration', base=10))
 
 	def get_description(self):
 		return ("Deal [{damage}_dark:dark] damage to enemy units in a [{radius}_tile:radius] radius.\n"
@@ -4644,66 +4966,12 @@ class MysticMemory(Spell):
 	def get_description(self):
 		return "While channeling, regain a charge of a random other spell. Channels for 5 turns."
 
-class ConjureMemories(Spell):
-
-	def on_init(self):
-		self.tags = [Tags.Arcane, Tags.Conjuration]
-		self.name = "Conjure Memories"
-		self.max_charges = 1
-		self.range = 0
-		self.level = 4
-
-		self.charges_regained = 1
-		self.upgrades['charges_regained'] = (1, 2)
-		self.upgrades['max_charges'] = (1, 2)
-
-	def get_description(self):
-		return "Regain a charge of each of your conjuration spells"
-
-	def cast_instant(self, x, y):
-
-		for s in self.caster.spells:
-
-			if s == self:
-				continue
-
-			if Tags.Conjuration not in s.tags:
-				continue
-
-			s.cur_charges += self.get_stat('charges_regained')
-			s.cur_charges = min(s.get_stat('max_charges'), s.cur_charges)
-
-
-class WovenSorceryBuff(Buff):
-
-	def on_applied(self, owner):
-		self.name = "Woven"
-		self.color = Tags.Sorcery.color
-		self.tag_bonuses[Tags.Sorcery]['damage'] = 3*len([s for s in owner.spells if Tags.Enchantment in s.tags])
-		self.tag_bonuses[Tags.Sorcery]['duration'] = len([s for s in owner.spells if Tags.Sorcery in s.tags])
-		self.tag_bonuses[Tags.Enchantment]['damage'] = 3*len([s for s in owner.spells if Tags.Enchantment in s.tags])
-		self.tag_bonuses[Tags.Enchantment]['duration'] = len([s for s in owner.spells if Tags.Sorcery in s.tags])
-		self.buff_type = BUFF_TYPE_BLESS
-		self.asset = ['status', 'woven']
-
-class WovenSorcerySpell(Spell):
-
-	def on_init(self):
-		self.max_charges = 4
-		self.duration = 20
-		self.name = "Weave Sorcery"
-		self.tags = [Tags.Sorcery, Tags.Enchantment]
-		self.level = 4
-		self.range = 0
-		self.upgrades['duration'] = (20, 3)
-
-	def get_description(self):
-		return "Your sorcery and enchantment spells get +3 damage for each enchantment spell you know and +1 duration for each sorcery spell you know.  Lasts 20 turns."
-
-	def cast_instant(self, x, y):
-		self.caster.apply_buff(WovenSorceryBuff(), self.get_stat('duration'))
 
 class PermenanceBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
 
 	def on_init(self):
 		' '
@@ -4713,6 +4981,22 @@ class PermenanceBuff(Buff):
 		self.color = Tags.Enchantment.color
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'permenance']
+		self.stack_type = STACK_REPLACE
+		self.owner_triggers[EventOnDamaged] = self.on_damaged
+
+	def on_applied(self, owner):
+		if not self.spell.get_stat('solidify'):
+			return
+		temp_allies = [u for u in owner.level.units if not are_hostile(owner, u) and u.turns_to_death]
+		for u in temp_allies:
+			u.turns_to_death = None
+
+	def on_damaged(self, evt):
+		if not self.spell.get_stat('immutable'):
+			return
+		if evt.damage > 0:
+			evt.unit.heal(evt.damage//2, self.spell)
+
 
 class Permenance(Spell):
 
@@ -4723,10 +5007,15 @@ class Permenance(Spell):
 		self.tags = [Tags.Enchantment]
 		self.level = 4
 		self.range = 0
-		self.upgrades['duration'] = (20, 3)
+		self.upgrades['true_permanence'] = (1, 3, "True Permanence", "Permanence duration is now permanent.")
+		self.upgrades['solidify'] = (1, 4, "Reality Hold", "On cast, temporary allies become permanent.")
+		self.upgrades['immutable'] = (1, 4, "Immutable Flesh", "You heal for half of all damage dealt to you.",[Tags.Blood])
 
 	def cast_instant(self, x, y):
-		self.caster.apply_buff(PermenanceBuff(), self.get_stat('duration'))
+		if self.get_stat('true_permanence'):
+			self.caster.apply_buff(PermenanceBuff(self))
+		else:
+			self.caster.apply_buff(PermenanceBuff(self), self.get_stat('duration'))
 
 	def get_description(self):
 		return ("Your spells and temporary summons last an extra [5_turns:duration].\n"
@@ -4737,13 +5026,13 @@ class DeathGazeSpell(Spell):
 	def on_init(self):
 		self.name = "Vampiric Gaze"
 		self.range = 0
-		self.tags = [Tags.Dark, Tags.Blood, Tags.Sorcery]
+		self.tags = [Tags.Dark, Tags.Blood, Tags.Sorcery, Tags.Eye]
 		self.level = 4
 		self.max_charges = 10
 		self.damage = 6
 		self.hp_cost = 5
 
-		self.upgrades['toxic_gaze'] = (1, 3, "Toxic Gaze", "Vampiric Gaze also deals [poison] damage")
+		self.upgrades['toxic_gaze'] = (1, 3, "Toxic Gaze", "Vampiric Gaze also deals [poison] damage", [Tags.Nature])
 		self.upgrades['vampire_tax'] = (1, 4, "Vampiric Tax", "You heal for 100% of the damage dealt")
 		self.upgrades['refract'] = (1, 6, "Refracting Gaze", "Each bolt bounces once to a random enemy in line of sight of the original target")
 		
@@ -4811,16 +5100,12 @@ class BoneBarrageSpell(Spell):
 		self.tags = [Tags.Dark, Tags.Sorcery]
 		self.level = 4
 		self.max_charges = 7
+		self.can_target_empty = False
+		self.damage_type = [Tags.Physical]
 
 		self.upgrades['beam'] = (1, 6, "Bone Spears", "Bone Barrage damages all targets in a beam from the minion to the target")
 		self.upgrades['dark'] = (1, 5, "Cursed Bones", "Bone Barrage also deals [dark] damage")
-		#self.upgrades['animation'] = (1, 6, "Shambler Assembly", "Bone Barrage can target empty tiles.\nIf it does, it creates a bone shambler at that tile with hp equal to the damage it would have dealt.")
-
-	def can_cast(self, x, y):
-		u = self.owner.level.get_unit_at(x, y)
-		if not u and not self.get_stat('animation'):
-			return False
-		return Spell.can_cast(self, x, y)
+		self.upgrades['pistons'] = (1, 3, "Piston Spears", "Damage dealt by [Metallic] allies is multiplied by 4.", [Tags.Metallic])
 
 	def get_description(self):
 		return ("Your summoned allies in line of sight of the target take [physical] damage equal to half their health.\n"
@@ -4851,6 +5136,8 @@ class BoneBarrageSpell(Spell):
 
 			half_hp = math.ceil(u.cur_hp / 2)
 			damage = u.deal_damage(half_hp, Tags.Physical, self)
+			if damage > 0 and self.get_stat('pistons') and Tags.Metallic in u.tags:
+				damage *= 4
 			total_damage += damage
 
 			if damage > 0:
@@ -4885,6 +5172,28 @@ class BoneBarrageSpell(Spell):
 			self.hit(unit, damage)
 		yield False
 
+class SavageSpree(Upgrade):
+
+	def on_init(self):
+		self.level = 7
+		self.name = "Savage Spree"
+		self.description = "Whenever an ally kills a unit, cast your Invoke Savagery for free"
+		self.global_triggers[EventOnDeath] = self.on_death
+
+	def on_death(self, evt):
+		if not evt.damage_event: # sometimes there is none
+			return
+		if not evt.damage_event.source:
+			return
+		if not evt.damage_event.source.owner:
+			return
+		u = evt.damage_event.source.owner
+		if u==self.owner:
+			return
+		if not are_hostile(self.owner, u):
+			spell = self.owner.get_or_make_spell(InvokeSavagerySpell)
+			self.owner.level.act_cast(self.owner, spell, self.owner.x, self.owner.y, pay_costs=False)
+
 class InvokeSavagerySpell(Spell):
 
 	def on_init(self):
@@ -4899,9 +5208,10 @@ class InvokeSavagerySpell(Spell):
 		self.kills = 0
 		self.targets = []
 
-		self.upgrades['poison'] = (10, 2, "Venomous Bite", "Poisons targets for 10 turns.")
-		self.upgrades['leap_attack'] = (1, 4, "Savage Leap", "Instead of a melee attack, do a leap attack.")
-		self.upgrades['recharge_wolf'] = (1, 4, "Scavengers", "Every 3 kills gain a wolf charge.")
+		self.upgrades['poison'] = (10, 1, "Venomous Bite", "Poisons targets for 10 turns.")
+		self.upgrades['leap_attack'] = (1, 4, "Savage Leap", "Instead of a melee attack, do a leap attack with a range of [3:radius].")
+		self.upgrades['recharge_wolf'] = (1, 3, "Scavengers", "Every 3 kills gain a wolf charge.")
+		self.add_upgrade(SavageSpree())
 
 	def get_impacted_tiles(self, x, y):
 		return [u for u in self.caster.level.units if u != self.caster and not are_hostile(u, self.caster) and Tags.Living in u.tags]
@@ -4909,7 +5219,7 @@ class InvokeSavagerySpell(Spell):
 	def cast(self, x, y):
 		self.targets = []
 		if self.get_stat('leap_attack'):
-			attack = LeapAttack(damage=self.get_stat('damage'), range=3, buff=[Stun, Poison][self.get_stat('poison') > 0], buff_duration=[self.get_stat('duration'), self.get_stat('poison')][self.get_stat('poison') > 0])
+			attack = LeapAttack(damage=self.get_stat('damage'), range=self.get_stat('radius',base=3), buff=[Stun, Poison][self.get_stat('poison') > 0], buff_duration=[self.get_stat('duration'), self.get_stat('poison')][self.get_stat('poison') > 0])
 		else:
 			attack = SimpleMeleeAttack(damage=self.get_stat('damage'), buff=[Stun, Poison][self.get_stat('poison') > 0], buff_duration=[self.get_stat('duration'), self.get_stat('poison')][self.get_stat('poison') > 0])
 
@@ -4955,13 +5265,13 @@ class MagicMissile(Spell):
 		self.max_charges = 25
 		self.shield_burn = 0
 
-		self.upgrades['shield_burn'] = (3, 2, "Shield Burn", "Magic Missile removes up to 3 SH from the target before dealing damage.")
-		self.upgrades['disruption'] = (1, 3, "Disruption Bolt", "If Magic Missile targets an [arcane] unit, it deals [dark] and [holy] damage instead of [arcane].")
+		self.upgrades['shield_burn'] = (1, 2, "Shield Burn", "Magic Missile removes all SH from the target before dealing damage.")
+		self.upgrades['disruption'] = (1, 2, "Disruption Bolt", "If Magic Missile targets an [arcane] unit, it deals [dark] and [holy] damage instead of [arcane].", None, [Tags.Dark, Tags.Holy])
 		self.upgrades['barrage'] = (1, 3, "Arcane Crossfire", "When you cast Magic Missile, up to [4:num_targets] additional missiles are fired from [arcane] allies in line of sight of the target.")
 		self.upgrades['ricochet'] = (1, 5, "Ricochet", "Magic Missile bounces up to [2:num_targets] times to targets in range and line of sight of the target.")
 
 	def cast(self, x, y):
-		dtypes = self.damage_type
+		dtypes = [Tags.Arcane]
 
 		bolts = [(self.caster, Point(x, y))]
 
@@ -4998,8 +5308,7 @@ class MagicMissile(Spell):
 		
 			if unit:
 				if self.get_stat('shield_burn'):
-					unit.shields -= self.get_stat('shield_burn')
-					unit.shields = max(unit.shields, 0)
+					unit.shields = 0
 				if self.get_stat('disruption') and Tags.Arcane in unit.tags:
 					dtypes = [Tags.Holy, Tags.Dark]
 
@@ -5018,27 +5327,32 @@ class MindDevour(Spell):
 
 	def on_init(self):
 		self.name = "Devour Mind"
-		self.range = 5
-		self.tags = [Tags.Arcane, Tags.Dark, Tags.Sorcery]
-		self.max_charges = 11
-		self.level = 2
-
+		self.range = 4
+		self.tags = [Tags.Arcane, Tags.Conjuration, Tags.Dark, Tags.Sorcery]
+		self.damage_type = [Tags.Arcane, Tags.Dark]
+		self.max_charges = 8
+		self.level = 3
 		self.damage = 24
-		self.threshold = .5
+
+		self.minion_damage = 5
 
 		self.requires_los = False
 
-		self.upgrades['huskify'] = (1, 2, "Huskification", "Killed targets are raised as zombies")
-		self.upgrades['spiriteater'] = (1, 1, "Spirit Eater", "Can target [demon] and [arcane] units")
-		self.upgrades['gluttony'] = (1, 2, "Gluttony", "If Devour Mind kills the target, the charge cost is refunded")
-
-		self.charges_gained = 1
+		self.upgrades['horde_mode'] = (1, 5, "Horde Mode", "Zombies raised by this spell can cast it on a 7 turn cooldown.")
+		self.upgrades['gluttony'] = (1, 4, "Gluttony", "If Devour Mind kills the target, heal for the half the target's max HP", [Tags.Blood])
+		self.upgrades['brain_freeze'] = (1, 3, "Brain Freeze", "Devour Mind deals [ice] damage in addition to [arcane] and [dark].\n"
+															   "If the target lives, they are [frozen:ice] for [3:duration] turns.\n"
+															   "Additionally, each of their abilities gains +[3:duration] cooldown.", [Tags.Ice], [Tags.Ice])
 
 
 	def get_description(self):
-		return ("Deal [{damage}_arcane:arcane] to an enemy unit.\n"
-				"Then, if the target is under 50% HP, deal it an additional [{damage}_dark:dark] damage.\n"
-				"Can only target [living] units.").format(**self.fmt_dict())
+		return ("Deal [{damage}_arcane:arcane] and [{damage}_dark:dark] damage to an enemy unit.\n"
+				"Then, if the target is under 50% HP, deal that damage again.\n"
+				"If this kills the target, they are raised as a zombie.\n"
+				"Can only target [living], [demon], and [arcane] units.").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_zombie()] + self.spell_upgrades
 
 	def can_cast(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
@@ -5048,11 +5362,10 @@ class MindDevour(Spell):
 		if not are_hostile(self.caster, unit):
 			return False
 
-		if Tags.Living in unit.tags:
-			return Spell.can_cast(self, x, y)
-
-		if self.get_stat('spiriteater') and (Tags.Demon in unit.tags or Tags.Arcane in unit.tags):
-			return Spell.can_cast(self, x, y)
+		legal_tags = [Tags.Living, Tags.Demon, Tags.Arcane]
+		for tag in legal_tags:
+			if tag in unit.tags:
+				return Spell.can_cast(self, x, y)
 	
 		return False
 
@@ -5062,23 +5375,48 @@ class MindDevour(Spell):
 		if not unit:
 			return
 
-		self.caster.level.deal_damage(x, y, self.get_stat('damage'), Tags.Arcane, self)
-		
+		for dtype in self.damage_type:
+			self.caster.level.deal_damage(x, y, self.get_stat('damage'), dtype, self)
+			yield
+
 		if unit.cur_hp / unit.max_hp < .5:
 			for i in range(3):
 				yield
 
-			self.caster.level.deal_damage(x, y, self.get_stat('damage'), Tags.Dark, self)
+			for dtype in self.damage_type:
+				self.caster.level.deal_damage(x, y, self.get_stat('damage'), dtype, self)
+				yield
 
-		if self.get_stat('gluttony') and not unit.is_alive():
-			self.cur_charges += 1
-			self.cur_charges = min(self.cur_charges, self.get_stat('max_charges'))
-		if self.get_stat('huskify') and not unit.is_alive():
-			zombie = Zombie()
-			apply_minion_bonuses(self, zombie)
-			zombie.max_hp = unit.max_hp
+		if not unit.is_alive():
+			zombie = self.make_zombie(unit)
 			self.summon(zombie, target=unit)
 
+			if self.get_stat('gluttony'):
+				self.caster.heal(unit.max_hp//2, self)
+
+		if self.get_stat('brain_freeze') and unit.is_alive():
+			unit.apply_buff(FrozenBuff(), self.get_stat('duration',base=3))
+			for s in unit.spells:
+				s.cool_down += self.get_stat('duration', base=3)
+
+	def make_zombie(self, unit=None):
+		u = Zombie()
+		apply_minion_bonuses(self, u)
+
+		if unit:
+			u.max_hp = unit.max_hp
+		else:
+			u.max_hp = 0
+
+		if self.get_stat('horde_mode'):
+			if self.owner.is_player_controlled:
+				wizard = self.owner
+			else:
+				wizard = getattr(self.owner, 'wizard', self.owner)  # fallback to owner itself if something went wrong
+			u.wizard = wizard  # store wizard ref on the unit so when they pass the spell off in chains, they can refer to the wizard quickly
+			grant_minion_spell(MindDevour, u, wizard, cool_down=7, pre_insert=True)
+
+		return u
 
 
 class DeathShock(Spell):
@@ -5087,6 +5425,7 @@ class DeathShock(Spell):
 		self.name = "Death Shock"
 		self.range = 9
 		self.tags = [Tags.Sorcery, Tags.Dark, Tags.Lightning]
+		self.damage_type = [Tags.Dark, Tags.Lightning]
 		self.max_charges = 6
 		self.level = 5
 		self.damage = 17
@@ -5094,9 +5433,9 @@ class DeathShock(Spell):
 
 		self.can_target_empty = False
 
-		self.upgrades['fire'] = (1, 5, 'Fire Shock', "After dealing [dark] and [lightning] damage, deals [fire] damage as well")
-		self.upgrades['shield_burn'] = (3, 4, 'Shield Burn', "Before dealing damage, removes 3 SH")
-		self.upgrades['corpse'] = (1, 4, 'Corpse Construct', "If Death Shock kills one or more enemies, summon an electric zombie with hp equal to half the total hp of all slain enemies.")
+		self.upgrades['fire'] = (1, 5, 'Fire Shock', "After dealing [dark] and [lightning] damage, deals [fire] damage as well", [Tags.Fire], [Tags.Fire])
+		self.upgrades['shield_burn'] = (3, 4, 'Shield Burn', "Before dealing damage, removes 3 SH") # weird, replace?
+		self.upgrades['corpse'] = (1, 4, 'Corpse Construct', "If Death Shock kills one or more enemies, summon an electric zombie with hp equal to half the total hp of all slain enemies.", [Tags.Conjuration])
 
 	def get_description(self):
 		return ("Deal [{damage}_lightning:lightning] damage and [{damage}_dark:dark] damage to the target.\n"
@@ -5166,8 +5505,6 @@ class MeltBuff(Buff):
 
 	def on_init(self):
 		self.resists[Tags.Physical] = -100
-		if self.spell.get_stat('ice_resist'):
-			self.resists[Tags.Ice] = -100
 		self.stack_type = STACK_DURATION
 		self.color = Color(255, 100, 100)
 		self.name = "Armor Melted"
@@ -5176,7 +5513,7 @@ class MeltBuff(Buff):
 class MeltFlame(Upgrade):
 
 	def on_init(self):
-		self.level = 4
+		self.level = 5
 		self.name = "White Flame"
 		self.description = "Whenever you cast a [fire] or [chaos] spell other than Melt targeting an enemy unit, melt is also cast at that target."
 		self.owner_triggers[EventOnSpellCast] = self.on_cast
@@ -5201,6 +5538,23 @@ class MeltFlame(Upgrade):
 
 		self.owner.level.act_cast(self.owner, spell, evt.x, evt.y, pay_costs=False)
 
+class MeltingPoint(Upgrade):
+
+	def __init__(self, spell):
+		Upgrade.__init__(self)
+		self.spell = spell
+
+	def on_init(self):
+		self.level = 4
+		self.tags = [Tags.Fire, Tags.Sorcery, Tags.Conjuration]
+		self.name = "Melting Point"
+		self.description = "If you end your turn in range of a [frozen:ice] or Soaked enemy, cast your Melt on them."
+
+	def on_advance(self):
+		targets = [u for u in self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat('range')) if (u.has_buff(FrozenBuff) or u.has_buff(SoakedBuff)) and are_hostile(self.owner, u)]
+		for t in targets:
+			self.owner.level.act_cast(self.owner, self.spell, t.x, t.y, pay_costs=False)
+
 class MeltSpell(Spell):
 
 	def on_init(self):
@@ -5209,15 +5563,19 @@ class MeltSpell(Spell):
 		self.max_charges = 15
 		self.name = "Melt"
 		self.damage = 22
-		self.element = Tags.Fire
+		self.damage_type = [Tags.Fire]
 		self.range = 6
 		self.duration = 3
 
 		self.can_target_empty = False
 
-		self.upgrades['mass_melt'] = (1, 3, "Mass Melt", "Chains to up to [4:num_targets] adjacent enemies.")
-		self.upgrades['ice_resist'] = (1, 3, "Ice Penetration", "Melt also reduces [ice] resist by 100")
+		self.upgrades['plasmify'] = (1, 1, "Plasmify", "Create 2 fire slimes when Melt kills its target.", [Tags.Slime])
+		self.upgrades['mass_melt'] = (1, 2, "Mass Melt", "Chains to up to [6:num_targets] adjacent enemies.")
+		self.add_upgrade(MeltingPoint(self))
 		self.add_upgrade(MeltFlame())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.make_slime(), self.spell_upgrades[1], self.spell_upgrades[2], self.spell_upgrades[3]]
 
 	def get_impacted_tiles(self, x, y):
 		targets = []
@@ -5238,9 +5596,17 @@ class MeltSpell(Spell):
 		targets = self.get_impacted_tiles(x, y)
 
 		for target in targets:
-			self.caster.level.deal_damage(target.x, target.y, self.get_stat('damage'), self.element, self)
+			self.caster.level.deal_damage(target.x, target.y, self.get_stat('damage'), self.damage_type[0], self)
 			if target.is_alive():
 					target.apply_buff(MeltBuff(self), self.get_stat('duration'))
+			elif self.get_stat('plasmify'):
+				for _ in range(2):
+					self.summon(self.make_slime(), target)
+
+	def make_slime(self):
+		u = RedSlime()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def get_description(self):
 		return "Target unit takes [{damage}_fire:fire] damage and loses [100_physical:physical] resist.".format(**self.fmt_dict())
@@ -5491,6 +5857,14 @@ class WordOfChaos(Spell):
 				"\nDeal [{damage}_fire:fire] damage to all [lightning] enemies."
 				"\nEach enemy construct loses all [physical] resist and takes [{damage}_physical:physical] damage.").format(**self.fmt_dict())
 
+	def make_chaos_spirit(self):
+		u = ChaosSpirit()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.make_chaos_spirit(), self.spell_upgrades[1], self.spell_upgrades[2]]
+
 	def get_impacted_tiles(self, x, y):
 		return [u for u in self.owner.level.units if u != self.caster and are_hostile(u, self.caster)]
 
@@ -5533,7 +5907,8 @@ class WordOfChaos(Spell):
 				unit.deal_damage(self.get_stat('damage'), Tags.Lightning, self)
 			
 			if self.get_stat('reanimation') and not unit.is_alive():
-				self.summon(ChaosSpirit(), target=unit)
+				u = self.make_chaos_spirit()
+				self.summon(u, target=unit)
 			yield
 
 class WordOfBeauty(Spell):
@@ -5547,7 +5922,7 @@ class WordOfBeauty(Spell):
 		self.level = 7
 		self.max_charges = 1
 
-		self.upgrades['beauty_steel'] = (1, 2, "Beauty of Steel", "Also heals allied [metallic:metallic] units.")
+		self.upgrades['beauty_steel'] = (1, 2, "Beauty of Steel", "Also heals allied [metallic:metallic] units.", [Tags.Metallic])
 		self.upgrades['shield_strip'] = (1, 2, "Shield Strip", "Damaged units lose 1 SH before being damaged.") #assuming this is what you meant?
 		self.upgrades['echo'] = (1, 4, "Echoing Beauty", "Auto recast in 10 turns.")
 
@@ -5590,15 +5965,36 @@ class WordOfMadness(Spell):
 
 		self.upgrades['selective_madness'] = (1, 1, "Selective Madness", "No longer heals enemies.")
 		self.upgrades['echo'] = (1, 5, "Echoing Madness", "Auto recast in 10 turns.")
-		self.upgrades['guardians'] = (1, 6, "Guardians of Madness", "Summon [3:num_summons] mind devourers, [5:num_summons] floating eyeballs, and [6:num_summons] troublers for 10 turns at random locations.")
+		self.upgrades['guardians'] = (1, 6, "Guardians of Madness", "Summon [3:num_summons] mind devourers, [5:num_summons] floating eyeballs, and [6:num_summons] troublers for 10 turns at random locations.", [Tags.Conjuration])
 
 	def get_description(self):
 		return ("[Berserk] all units except the caster for [{duration}_turns:duration].\n"
 				"Deal [dark] damage to all [construct] units equal to half their current HP.\n"
 				"Fully heal all [demon] and [arcane] units.").format(**self.fmt_dict())
 
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_mind_devourer(), self.make_floating_eye(), self.make_troubler()]
+
 	def get_impacted_tiles(self, x, y):
 		return [u for u in self.caster.level.units if u != self.caster]
+
+	def make_mind_devourer(self):
+		u = MindDevourer()
+		u.turns_to_death = 10
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_floating_eye(self):
+		u = FloatingEye()
+		u.turns_to_death = 10
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_troubler(self):
+		u = Troubler()
+		u.turns_to_death = 10
+		apply_minion_bonuses(self, u)
+		return u
 
 	def cast(self, x, y, is_echo=False):
 		if self.get_stat('echo') and not is_echo:
@@ -5611,13 +6007,12 @@ class WordOfMadness(Spell):
 					if self.caster.level.tiles[i][j].can_walk:
 						eligible_tiles.append(Point(i, j))
 			amt_summons = [3, 5, 6]
-			summons = [MindDevourer, FloatingEye, Troubler]
+			summons = [self.make_mind_devourer, self.make_floating_eye, self.make_troubler]
 			for s in range(3):
 				for i in range(self.get_stat('num_summons', base=amt_summons[s])):
 					tile = random.choice(eligible_tiles)
 					eligible_tiles.remove(tile)
 					u = summons[s]()
-					u.turns_to_death = 10
 					self.summon(u, tile)
 		
 		units = list(self.caster.level.units)
@@ -5631,9 +6026,6 @@ class WordOfMadness(Spell):
 			unit.apply_buff(BerserkBuff(), self.get_stat('duration'))
 			if Tags.Construct in unit.tags:
 				unit.deal_damage(unit.cur_hp // 2, Tags.Dark, self)
-			if Tags.Demon in unit.tags or Tags.Arcane in unit.tags:
-				if not self.get_stat('selective_madness') or not are_hostile(self.caster, unit):
-					unit.deal_damage(-unit.max_hp, Tags.Heal, self)
 			yield
 
 class RegenShieldsBuff(Buff):
@@ -5653,19 +6045,20 @@ class SummonFloatingEye(Spell):
 		self.name = "Floating Eye"
 
 		self.tags = [Tags.Eye, Tags.Arcane, Tags.Conjuration]
-		self.level = 3
+		self.level = 2
 		self.max_charges = 6
 
 		ex = FloatingEye()
 
 		self.minion_health = ex.max_hp
+		self.minion_damage = ex.spells[0].damage
 		self.shields = ex.shields
 
 		self.minion_duration = 16
 
 		self.upgrades['stone_gaze'] = (1, 3, "Stone Gaze", "Floating Eye can cast your Petrify on a 3 turn cooldown.")
-		self.upgrades['eyemage'] = (1, 4, "Eyemage", "Floating Eye can cast your [eye:eye] spells on 15 turn cooldowns.")
-		self.upgrades['regen_shields'] = (1, 4, "Regenerating Shields", "Floating Eye gains 2 SH per turn up to 4 SH.")
+		self.upgrades['eyemage'] = (1, 6, "Eyemage", "Floating Eye can cast your other level 2 [eye:eye] spells on 15 turn cooldowns.")
+		self.upgrades['regen_shields'] = (1, 2, "Regenerating Shields", "Floating Eye gains 2 SH per turn up to 4 SH.")
 
 		self.must_target_empty = True
 
@@ -5676,13 +6069,12 @@ class SummonFloatingEye(Spell):
 
 	def cast_instant(self, x, y):
 		eye = self.eye()
-		eye.team = TEAM_PLAYER
 
 		p = self.caster.level.get_summon_point(x, y, flying=True)
 		if p:
 			if self.get_stat('eyemage'):
 				for spell in self.caster.spells:
-					if Tags.Eye in spell.tags and spell != self:
+					if Tags.Eye in spell.tags and spell != self and spell.level == 2:
 						grant_minion_spell(type(spell), eye, self.caster, cool_down=15)
 
 			if self.get_stat('regen_shields'):
@@ -5696,114 +6088,17 @@ class SummonFloatingEye(Spell):
 	def get_description(self):
 		return ("Summon a floating eye.\n"
 				"Floating eyes have [{minion_health}_HP:minion_health], [{shields}_SH:shields], fly, and passively blink.\n"
-				#"Floating eyes have no attacks of their own, but will cast any other [eye] spells you know upon being summoned.\n"
 				"Floating eyes vanish after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
 		return [self.eye()] + self.spell_upgrades
-
-class FarmiliarBuff(Buff):
-
-	def __init__(self, summoner, tags):
-		Buff.__init__(self)
-		self.summoner = summoner
-		self.tags = tags
-		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
-
-	def on_spell_cast(self, evt):
-
-		if evt.caster != self.summoner:
-			return
-
-		if Tags.Sorcery not in evt.spell.tags:
-			return
-
-		has_tag = False
-		for tag in self.tags:
-			if tag in evt.spell.tags:
-				has_tag = True
-		
-		if not has_tag:
-			return
-
-		spell = type(evt.spell)()
-		spell.cur_charges = 1
-		spell.caster = self.owner
-		spell.owner = self.owner
-		spell.statholder = self.summoner
-
-		if spell.can_cast(evt.x, evt.y):
-			self.owner.level.act_cast(self.owner, spell, evt.x, evt.y)
-
-
-class ChimeraFarmiliar(Spell):
-
-	def on_init(self):
-		self.name = "Chimera Familiar"
-		self.tags = [Tags.Chaos, Tags.Conjuration]
-		self.level = 3
-		self.max_charges = 3
-		self.minion_health = 20
-		self.minion_damage = 6
-		self.minion_range = 4
-		self.minion_resists = 0
-		self.dark_casting = 0
-		self.arcane_casting = 0
-		self.nature_casting = 0
-		self.minion_resists = 50
-		self.upgrades['minion_resists'] = (50, 2)
-		self.upgrades['max_charges'] = (2, 3)
-		self.upgrades['nature_casting'] = (1, 1, "Nature Mimicry", "The Chimera will mimic nature sorcery spells as well")
-		self.upgrades['dark_casting'] = (1, 1, "Dark Mimicry", "The Chimera will mimic dark sorcery spells as well")
-		self.upgrades['arcane_casting'] = (1, 1, "Arcane Mimicry", "The Chimera will mimic arcane sorcery spells as well")
-
-		self.must_target_walkable = True
-		self.must_target_empty = True
-
-	def get_tags(self):
-		tags = [Tags.Fire, Tags.Lightning, Tags.Chaos]
-		if self.get_stat('dark_casting'):
-			tags.append(Tags.Dark)
-		if self.get_stat('nature_casting'):
-			tags.append(Tags.Nature)
-		if self.get_stat('arcane_casting'):
-			tags.append(Tags.Arcane)
-		return tags
-
-	def get_description(self):
-		tagstr = ' or '.join(t.name for t in self.get_tags())
-		return ("Summon a Chimera Familiar.\n"
-				"The chimera has [{minion_damage}_fire:fire] damage and [{minion_damage}_lightning:lightning] damage attacks with a range of [{minion_range}_tiles:minion_range].\n"
-			    "The chimera mimics your casts of %s [sorcery] spells if the target is in range and line of sight."
-			    % ' or '.join('[' + t.name.lower() + ']' for t in self.get_tags())).format(**self.fmt_dict())
-
-	def cast_instant(self, x, y):
-		chimera = Unit()
-		chimera.name = "Chimera"
-		chimera.sprite.char = 'C'
-		chimera.sprite.color = Tags.Sorcery.color
-		chimera.max_hp = self.get_stat('minion_health')
-		b1 = SimpleRangedAttack(damage=self.get_stat('minion_damage'), range=self.get_stat('minion_range'), damage_type=Tags.Lightning)
-		b1.cool_down = 2
-		b2 = SimpleRangedAttack(damage=self.get_stat('minion_damage'), range=self.get_stat('minion_range'), damage_type=Tags.Fire)
-		b2.cool_down = 2
-		chimera.spells.append(b1)
-		chimera.spells.append(b2)
-		chimera.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
-		chimera.resists[Tags.Fire] = self.get_stat('minion_resists')
-		chimera.resists[Tags.Lightning] = self.get_stat('minion_resists')
-		chimera.buffs.append(FarmiliarBuff(self.caster, self.get_tags()))
-		chimera.team = TEAM_PLAYER
-		chimera.tags = [Tags.Living, Tags.Arcane]
-
-		self.summon(chimera, Point(x, y))
-
 
 class ArcLightning(Spell):
 
 	def on_init(self):
 		self.name = "Arc Lightning"
 		self.tags = [Tags.Lightning, Tags.Sorcery]
+		self.damage_type = [Tags.Lightning]
 		self.max_charges = 1
 		self.level = 6
 		self.num_targets = 4
@@ -5813,7 +6108,7 @@ class ArcLightning(Spell):
 		self.element = Tags.Lightning
 		self.range = 18
 
-		self.upgrades['arcane_arcs'] = (1, 5, "Proton Storm", "Arc Lightning deals [4_arcane:arcane] damage to all units in line of sight of each arc target")
+		self.upgrades['arcane_arcs'] = (1, 5, "Proton Storm", "Arc Lightning deals [4_arcane:arcane] damage to all units in line of sight of each arc target", [Tags.Arcane], [Tags.Arcane])
 		self.upgrades['enervation'] = (1, 4, "Enervation", "Arc Lightning heals allies instead of damaging them")
 		self.upgrades['num_targets'] = (4, 5, "Multi Flash")
 
@@ -5866,6 +6161,48 @@ class ArcLightning(Spell):
 
 		yield 0
 
+class StingingRebuke(Upgrade):
+
+	def __init__(self, spell):
+		Upgrade.__init__(self)
+		self.spell = spell
+
+	def on_init(self):
+		self.level = 4
+		self.name = "Stinging Rebuke"
+		self.description = "Each turn, cast your poison sting on up to [2:num_targets] enemies in line of sight who dealt damage to you."
+		self.owner_triggers[EventOnDamaged] = self.on_damaged
+		self.casts = 0
+
+	def on_damaged(self, evt):
+		if self.casts >= self.spell.get_stat('num_targets', base=2):
+			return
+		if evt.damage <= 0: # don't want to sting those using damage event's to heal! specially fanged amulet i think
+			return
+		if not evt.source:
+			return
+		if not evt.source.owner:
+			return
+		unit = self.owner.level.get_unit_at(evt.source.owner.x, evt.source.owner.y)
+		if not unit:
+			return
+		if unit == self.owner:
+			return
+		if not are_hostile(unit, self.owner):
+			return
+		self.owner.level.queue_spell(self.sting(unit)) # double-queued in this way to prevent wizard from stinging themselves in trample situations
+
+	def on_advance(self):
+		self.casts = 0
+
+	def sting(self, unit):
+		self.owner.level.act_cast(self.owner, self.spell, unit.x, unit.y, pay_costs=False)
+		self.casts += 1
+		yield
+
+	def get_description(self):
+		return "Each turn, cast your poison sting on up to [%d:num_targets] enemies in line of sight who dealt damage to you." % self.spell.get_stat('num_targets', base=2)
+
 class PoisonSting(Spell):
 
 	def on_init(self):
@@ -5874,12 +6211,14 @@ class PoisonSting(Spell):
 		self.max_charges = 20
 		self.duration = 30
 		self.damage = 9
+		self.damage_type = [Tags.Physical]
 		self.range = 12
 		self.level = 1
 
 		self.upgrades['antigen'] = (1, 2, "Acidity", "Damaged targets lose all poison resist")
-		self.upgrades['webs'] = (1, 2, "Silk Shot", "Stuns target and spawns webs along a line to the target.  Webs stun enemy units that enter them for 2 turns.")
-		self.upgrades['barrage'] = (1, 4, "Stinger Barrage", "Hits every poisoned enemy in a radius of 3 of the main target.")
+		self.upgrades['webs'] = (1, 1, "Silk Shot", "Stuns target and spawns webs along a line to the target.  Webs stun enemy units that enter them for 2 turns.")
+		self.upgrades['barrage'] = (1, 3, "Stinger Barrage", "Hits every poisoned enemy in a radius of 3 of the main target.")
+		self.add_upgrade(StingingRebuke(self))
 
 	def get_impacted_tiles(self, x, y):
 		if self.get_stat('webs'):
@@ -5917,7 +6256,7 @@ class PoisonSting(Spell):
 			yield
 		
 		if unit and self.get_stat('webs'):
-			unit.apply_buff(Stun(), self.get_stat('duration', base=2))
+			unit.apply_buff(Stun(), self.get_stat('duration', base=2)) # why is this stun only scaling with bonuses? why not just not end the line at the spot before in the previous loop?
 
 		if self.get_stat('barrage'):
 			elligible_units = [u for u in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius', base=3)) if u.has_buff(Poison) and are_hostile(self.caster, u)]
@@ -5954,7 +6293,7 @@ class Flameblast(Spell):
 		self.tags = [Tags.Sorcery, Tags.Fire]
 		self.max_charges = 18
 		self.damage = 9
-		self.element = Tags.Fire
+		self.damage_type = [Tags.Fire]
 		self.range = 5
 		self.angle = math.pi / 6.0
 		self.level = 2
@@ -5963,9 +6302,8 @@ class Flameblast(Spell):
 		self.max_channel = 10
 
 		self.upgrades['heal'] = (1, 3, "Healing Hearthfire", "Fan of Flames heals allies instead of damaging them.")
-		self.upgrades['frostfire'] = (1, 4, "Fan of Frostfire", "Fan of flames also deals Ice damage.")
+		self.upgrades['frostfire'] = (1, 4, "Fan of Frostfire", "Fan of flames also deals [Ice] damage.", [Tags.Ice], [Tags.Ice])
 		self.upgrades['wildfire'] = (1, 5, "Wildfire", "Fan of Flames gains 1 range for the next turn for each enemy unit killed.")
-		#self.upgrades['channel'] = (1, 2, "Channeling", "Fan of Flames can be channeled for up to 10 turns")
 		self.channel = 1
 
 	def get_description(self):
@@ -5996,7 +6334,7 @@ class Flameblast(Spell):
 				unit = self.caster.level.get_unit_at(point.x, point.y)
 				if unit:
 					if are_hostile(unit, self.caster) or not self.get_stat('heal'): #Always deal damage if FoF does not heal. If FoF heals, only deal damage to hostile enemies.
-						self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), self.element, self)
+						self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), self.damage_type[0], self)
 						if self.get_stat('frostfire'):
 							self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), Tags.Ice, self)
 					else:
@@ -6005,7 +6343,7 @@ class Flameblast(Spell):
 					if not unit.is_alive() and self.get_stat('wildfire'):
 						self.caster.apply_buff(WildfireCharge(), 2)
 				else:
-					self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), self.element, self)
+					self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), self.damage_type[0], self)
 					if self.get_stat('frostfire'):
 						self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), Tags.Ice, self)
 			yield
@@ -6027,14 +6365,13 @@ class SummonBlueLion(Spell):
 		
 		self.upgrades['holy_bolt'] = (1, 3, "Holy Bolt", "The Blue Lion's melee attack is replaced by a range 6 holy bolt attack.")
 		self.upgrades['healing_light_spell'] = (1, 4, "Shimmermane", "The Blue Lion gains your Healing Light spell on a 7 turn cooldown.")
-		self.upgrades['burning_lion'] = (1, 5, "Burning Lion", "Summon a Burning Lion instead of a Blue Lion.")
+		self.upgrades['burning_lion'] = (1, 5, "Burning Lion", "Summon a Burning Lion instead of a Blue Lion.", [Tags.Fire])
 
 		self.must_target_empty = True
 
 	def make_lion(self):
 		lion = Unit()
 		lion.name = "Blue Lion"
-		lion.team = self.caster.team
 		lion.sprite.char = 'L'
 		lion.sprite.color = Color(100, 120, 255)
 		lion.asset_name = "blue_lion"
@@ -6096,6 +6433,10 @@ class DeathCleaveBuff(Buff):
 		self.buff_type = BUFF_TYPE_BLESS
 		self.asset = ['status', 'death_cleave']
 		self.color = Tags.Dark.color
+		if self.spell.get_stat('lightning_cleave'):
+			self.tag_bonuses_pct[Tags.Lightning]['num_targets'] = 100
+			self.tag_bonuses_pct[Tags.Lightning]['radius'] = 100
+			self.tag_bonuses_pct[Tags.Lightning]['cascade_range'] = 100
 
 	def on_init(self):
 		self.name = "Death Cleave"
@@ -6125,6 +6466,11 @@ class DeathCleaveBuff(Buff):
 
 		if not cur_target.is_alive():
 
+			if self.spell.get_stat('cleaving_whirlwind') and self.owner.level.can_move(self.owner, cur_target.x, cur_target.y, teleport=True):
+				self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Translocation)
+				self.owner.level.act_move(self.owner, cur_target.x, cur_target.y, teleport=True)
+				yield
+
 			def can_cleave(t):
 				if not evt.caster.level.are_hostile(t, evt.caster):
 					return False
@@ -6150,29 +6496,66 @@ class DeathCleaveBuff(Buff):
 		elif cur_target.is_alive():
 			evt.caster.level.queue_spell(self.show_fizzle(cur_target))
 
+			if self.spell.get_stat('marked_for_death') and are_hostile(self.owner, cur_target):
+				u = self.spell.make_reaper()
+				self.spell.summon(u, cur_target)
+				if u:
+					cur_target.apply_buff(MarkedForDeath(u))
+				yield
 
+class MarkedForDeath(Buff):
 
+	def __init__(self, unit):
+		Buff.__init__(self)
+		self.connected_unit = unit
+
+	def on_init(self):
+		self.name = "Marked for Death"
+		self.color = Tags.Dark.color
+		self.buff_type = BUFF_TYPE_CURSE
+		self.stack_type = STACK_INTENSITY
+		self.owner_triggers[EventOnDeath] = self.on_death
+
+	def on_advance(self):
+		if not self.connected_unit.is_alive():
+			self.owner.remove_buff(self)
+
+	def on_death(self, evt):
+		if self.connected_unit and self.connected_unit.is_alive():
+			self.connected_unit.kill()
+
+	def on_unapplied(self):
+		if self.connected_unit and self.connected_unit.is_alive():
+			self.connected_unit.kill()
 
 class DeathCleaveSpell(Spell):
 
 	def on_init(self):
 		self.name = "Death Cleave"
-		self.duration = 2
-		self.upgrades['duration'] = (3, 3)
-		self.upgrades['max_charges'] = (4, 2)
-		#self.upgrades['cascade_range'] = (3, 4)
+		self.duration = 3
 		self.max_charges = 4
-		self.cascade_range = 5
 		self.range = 0
 		self.level = 4
 		self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Dark]
 
+		self.upgrades['lightning_cleave'] = (1, 3, "Lightning Cleave", "Your [lightning] spells and skills gain the following bonuses:\n+100% [num_targets:num_targets]\n+100% [cascade_range:cascade_range]\n+100% [radius].", [Tags.Lightning])
+		self.upgrades['cleaving_whirlwind'] = (1, 4, "Cleaving Whirlwind", "When your spell kills its primary target, attempt to teleport to that location.", [Tags.Translocation])
+		self.upgrades['marked_for_death'] = (1, 5, "Marked for Death", "If a spell you cast targeting an enemy fails to kill its primary target, summon a Reaper near their location.\nThe Reaper will disappear if the marked target dies.", [Tags.Conjuration])
+
 	def cast_instant(self, x, y):
-		self.caster.apply_buff(DeathCleaveBuff(self), self.get_stat('duration') + 1) # +1 so as to not count the current turn
+		self.caster.apply_buff(DeathCleaveBuff(self), self.get_stat('duration') + 1)
 
 	def get_description(self):
 		return ("Whenever a spell you cast kills its primary target, that spell is recast on a random valid enemy target.\n"
 		  		"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
+
+	def make_reaper(self):
+		u = Reaper()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_reaper()]
 
 class CantripCascade(Spell):
 
@@ -6242,6 +6625,18 @@ class CantripCascade(Spell):
 	def get_description(self):
 		return ("Cast each of your level 1 sorcery spells on each enemy in a cone.")
 
+class Preparedness(Upgrade):
+
+	def on_init(self):
+		self.name = "Preparedness"
+		self.description = "Cast your Multicast for free when you enter a level."
+		self.level = 7
+		self.owner_triggers[EventOnUnitAdded] = self.on_added
+
+	def on_added(self, _evt):
+		self.owner.level.act_cast(self.owner, self.owner.get_or_make_spell(MulticastSpell), self.owner.x, self.owner.y, pay_costs=False)
+
+
 class MulticastBuff(Buff):
 
 	def __init__(self, spell):
@@ -6258,6 +6653,9 @@ class MulticastBuff(Buff):
 		self.description = "Whenever you cast a sorcery spell, copy it."
 		self.can_copy = True
 		self.owner_triggers[EventOnSpellCast] = self.on_spell_cast
+		if self.spell.get_stat('spell_weaving'):
+			self.global_bonuses['quick_cast'] = 1
+			self.tag_bonuses[Tags.Sorcery]['quick_cast'] = -1
 
 	def on_spell_cast(self, evt):
 		if evt.spell.item:
@@ -6285,13 +6683,13 @@ class MulticastSpell(Spell):
 		self.duration = 3
 		self.copies = 1
 		self.max_charges = 3
-		self.multi_conjure = 0
-		self.upgrades['copies'] = (1, 4)
-		self.upgrades['duration'] = (4, 3)
-		self.upgrades['max_charges'] = (4, 2)
 		self.range = 0
 		self.level = 7
 		self.tags = [Tags.Enchantment, Tags.Arcane]
+
+		self.upgrades['copies'] = (1, 4)
+		self.upgrades['spell_weaving'] = (1, 5, "Spell Weaving", "Your non-sorcery spells gain quickcast for the duration of the buff.")
+		self.add_upgrade(Preparedness())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(MulticastBuff(self), self.get_stat('duration') + 1)
@@ -6320,7 +6718,7 @@ class FaeCourt(Spell):
 
 		self.tags = [Tags.Nature, Tags.Arcane, Tags.Conjuration]
 
-		self.upgrades['winter_fae'] = (1, 5, "Winter Faery", "Summon winter faeries instead of normal ones. Winter faeries resist ice and can cast your Freeze spell on a 5 turn cooldown.")
+		self.upgrades['winter_fae'] = (1, 5, "Winter Faery", "Summon winter faeries instead of normal ones. Winter faeries resist ice and can cast your Freeze spell on a 5 turn cooldown.", [Tags.Ice])
 		self.upgrades['summon_queen'] = (1, 7, "Summon Queen", "A fae queen is summoned as well")
 		self.upgrades['glass_fae'] = (1, 9, "Glass Faery", "Summon glass faeries instead of normal ones.")
 
@@ -6346,7 +6744,6 @@ class FaeCourt(Spell):
 		unit.spells.append(HealAlly(heal=self.get_stat('heal'), range=self.get_stat('minion_range') + 2))
 
 		unit.turns_to_death = self.get_stat('minion_duration')
-		unit.team = self.caster.team
 		unit.tags = [Tags.Nature, Tags.Arcane, Tags.Living]
 		unit.resists[Tags.Arcane] = 50
 
@@ -6381,12 +6778,8 @@ class FaeCourt(Spell):
 
 	def get_faery_queen(self):
 		unit = ThornQueen()
-		unit.max_hp += self.minion_health - 9
-		for s in unit.spells:
-			if hasattr(s, 'damage'):
-				s.damage += self.minion_damage - 4
-		unit.turns_to_death = self.get_stat('minion_duration')
-
+		unit.turns_to_death = 15
+		apply_minion_bonuses(self, unit)
 		return unit
 
 	def cast(self, x, y):
@@ -6412,34 +6805,21 @@ class FaeCourt(Spell):
 class RingOfSpiders(Spell):
 
 	def on_init(self):
-
+		self.tags = [Tags.Nature, Tags.Conjuration]
 		self.name = "Ring of Spiders"
 		self.duration = 10
 		self.range = 8
-
-		self.level = 5
+		self.level = 4
 		self.max_charges = 2
 
-		self.damage = 0
-		self.aether_spiders = 0
-		self.stun_duration = 1
-		
-		self.minion_health = 14
-		self.minion_damage = 2
-
-		self.upgrades['turbo_toxin'] = (1, 3, "Turbo Toxin", "Units blocking the spider ring instantly take 30 [poison_damage:poison].")
-		self.upgrades['stun_duration'] = (4, 3, "Long Webs", "Units blocking the web ring are [stunned] for [5_turns:duration].")
-		self.upgrades['aether_spiders'] = (1, 6)
-
-		self.tags = [Tags.Nature, Tags.Conjuration]
+		self.upgrades['turbo_toxin'] = (1, 3, "Turbo Toxin", "Units blocking the spider ring instantly take 30 [poison] damage.")
+		self.upgrades['stun_duration'] = (1, 3, "Long Webs", "Units blocking the web ring are [stunned] for [5_turns:duration].")
+		self.upgrades['aether_spiders'] = (1, 6, "Aether Spiders", "Summons Aether Spiders instead of Giant Spiders.", [Tags.Arcane])
 
 	def get_description(self):
 		return ("Summons a ring of giant spiders at the target, surrounded by a ring of webs.\n"
-			 	"Units blocking the spider ring are [poisoned] for [{duration}_turns:duration], creatures blocking the web ring are [stunned] for [1_turn:duration].\n"
-			 	"Giant spiders have [{minion_health}_HP:minion_health] and spin webs.\n"
-			 	"Giant spiders have a melee attack which deals [{minion_damage}_physical:physical] and inflicts [5_turns:duration] of [poison].\n"
-			 	"Webs [stun] non spider units which step on them for [1_turn:duration].\n"
-			 	+ text.poison_desc + text.stun_desc).format(**self.fmt_dict())
+			 	"Units blocking the spider ring are [poisoned] for [%d_turns:duration].\n"
+				"Units blocking the web ring are [stunned] for [%d_turns:duration].\n" % (self.get_stat('duration'), self.get_stat('duration', base=1)))
 
 	def get_impacted_tiles(self, x, y):
 		return self.caster.level.get_points_in_rect(x-2, y-2, x+2, y+2)
@@ -6451,20 +6831,12 @@ class RingOfSpiders(Spell):
 
 			rank = max(abs(p.x - x), abs(p.y - y))
 
-			if rank == 0:
-				if self.get_stat('damage'):
-					self.caster.level.deal_damage(x, y, self.get_stat('damage'), Tags.Poison, self)
-			elif rank == 1:
+			if rank == 1:
 				if not unit:
 					if self.get_stat('aether_spiders'):
-						spider = PhaseSpider()
+						spider = self.make_aether_spider()
 					else:
-						spider = GiantSpider()
-					spider.team = self.caster.team
-					
-					spider.spells[0].damage = self.get_stat('minion_damage')
-					spider.max_hp = self.get_stat('minion_health')
-
+						spider = self.make_spider()
 					self.summon(spider, p)
 
 				if unit:
@@ -6477,11 +6849,24 @@ class RingOfSpiders(Spell):
 					cloud.owner = self.caster
 					self.caster.level.add_obj(cloud, *p)
 				if unit:
-					unit.apply_buff(Stun(), self.get_stat('duration', base=self.get_stat('stun_duration')))
+					if self.get_stat('stun_duration'):
+						unit.apply_buff(Stun(), self.get_stat('duration', base=5))
+					else:
+						unit.apply_buff(Stun(), self.get_stat('duration', base=1))
 			yield
 
+	def make_spider(self):
+		u = GiantSpider()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_aether_spider(self):
+		u = PhaseSpider()
+		apply_minion_bonuses(self, u)
+		return u
+
 	def get_extra_examine_tooltips(self):
-		return [GiantSpider(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], PhaseSpider()]
+		return [self.make_spider(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.make_aether_spider()]
 
 class HolyBlast(Spell):
 
@@ -6492,7 +6877,7 @@ class HolyBlast(Spell):
 		self.radius = 1
 		self.damage = 14
 
-		self.damage_type = Tags.Holy
+		self.damage_type = [Tags.Holy]
 		
 		self.max_charges = 12
 
@@ -6501,11 +6886,17 @@ class HolyBlast(Spell):
 		self.tags = [Tags.Holy, Tags.Sorcery] 
 
 		self.upgrades['spiritbind'] = (1, 3, "Spirit Bind", "Slain enemies create temporary spirits.  Spirits are blinking holy undead with 4 hitpoints and a 2 damage ranged holy attack.")
-		self.upgrades['shield'] = (1, 2, "Shield", "Affected ally units gain 2 SH, to a maximum of 5.")
+		self.upgrades['shield'] = (1, 3, "Shield", "Affected ally units gain 2 SH")
 		self.upgrades['echo_heal'] = (1, 2, "Echo Heal", "Affected ally units are re-healed for half the initial amount each turn for 5 turns.")
 
 	def get_description(self):
 		return "Deal [{damage}_holy:holy] damage to enemies and heal allies for [{damage}_hp:heal] along a beam and in a [{radius}_tile:radius] burst.".format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0],
+				self.make_spirit(),
+				self.spell_upgrades[1],
+				self.spell_upgrades[2]]
 
 	def get_impacted_tiles(self, x, y):
 		burst = set(p for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')) for p in stage)
@@ -6524,6 +6915,22 @@ class HolyBlast(Spell):
 				return random.choice(allies)
 		return None
 
+	def make_spirit(self): # brought this outside to use in examine tooltip
+		spirit = Unit()
+		spirit.name = "Spirit"
+		spirit.asset_name = "holy_ghost"  # temp
+		spirit.max_hp = 4
+		spirit.spells.append(SimpleRangedAttack(damage=2, damage_type=Tags.Holy, range=3))
+		spirit.turns_to_death = 7
+		spirit.tags = [Tags.Holy, Tags.Undead]
+		spirit.buffs.append(TeleportyBuff())
+		apply_minion_bonuses(self, spirit)
+		spirit.resists[Tags.Holy] = 100
+		spirit.resists[Tags.Dark] = -100
+		spirit.resists[Tags.Physical] = 100
+		spirit.flying = True
+		return spirit
+
 	def cast(self, x, y):
 		target = Point(x, y)
 
@@ -6532,10 +6939,7 @@ class HolyBlast(Spell):
 			if unit and not are_hostile(unit, self.caster) and not unit == self.caster and unit != self.statholder:
 				unit.deal_damage(-self.get_stat('damage'), Tags.Heal, self)
 				if self.get_stat('shield'):
-					if unit.shields < 4:
-						unit.add_shields(2)
-					elif unit.shields == 4:
-						unit.add_shields(1)
+						unit.add_shields(self.get_stat('num_targets', base=2))
 				if self.get_stat('echo_heal'):
 					unit.apply_buff(RegenBuff(self.get_stat('damage') // 2), 5)
 			elif unit == self.caster:
@@ -6545,19 +6949,7 @@ class HolyBlast(Spell):
 			else:
 				self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), Tags.Holy, self)
 				if unit and not unit.is_alive() and self.get_stat('spiritbind'):
-					spirit = Unit()
-					spirit.name = "Spirit"
-					spirit.asset_name = "holy_ghost" # temp
-					spirit.max_hp = 4
-					spirit.spells.append(SimpleRangedAttack(damage=2, damage_type=Tags.Holy, range=3))
-					spirit.turns_to_death = 7
-					spirit.tags = [Tags.Holy, Tags.Undead]
-					spirit.buffs.append(TeleportyBuff())
-					apply_minion_bonuses(self, spirit)
-					spirit.resists[Tags.Holy] = 100
-					spirit.resists[Tags.Dark] = -100
-					spirit.resists[Tags.Physical] = 100
-					spirit.flying = True
+					spirit = self.make_spirit()
 					self.summon(spirit, target=unit)
 
 		points_hit = set()
@@ -6582,6 +6974,7 @@ class HolyFlame(Spell):
 		self.name = "Holy Fire"
 
 		self.tags = [Tags.Fire, Tags.Holy, Tags.Sorcery]
+		self.damage_type = [Tags.Fire, Tags.Holy]
 
 		self.max_charges = 7
 
@@ -6593,9 +6986,9 @@ class HolyFlame(Spell):
 
 		self.range = 7
 
-		self.upgrades['holy_smite'] = (1, 2, "Holy Smite", "Holy Fire deals additional lightning damage on the center tile.")
+		self.upgrades['holy_smite'] = (1, 3, "Holy Smite", "Holy Fire deals additional lightning damage on the center tile.", [Tags.Lightning], [Tags.Lightning])
 		self.upgrades['divine_blaze'] = (1, 4, "Divine Blaze", "Holy Fire casts your Blazerip spell.")
-		self.upgrades['heaven_call'] = (1, 4, "Heaven Call", "If Holy Fire kills a unit, gain a charge of Call Seraph.") #Changed to max of one recharge / turn for balance purposes
+		self.upgrades['heaven_call'] = (1, 5, "Heaven Call", "When Holy Fire kills a unit, gain a charge of Call Seraph.")
 
 		self.level = 3
 
@@ -6615,7 +7008,7 @@ class HolyFlame(Spell):
 				yield p
 
 	def cast(self, x, y):
-		killed = False
+		killed = 0
 		cur_target = Point(x, y)
 		dtypes = [Tags.Holy, Tags.Fire]
 		if self.get_stat('lightning'):
@@ -6631,7 +7024,7 @@ class HolyFlame(Spell):
 			if unit and unit.is_alive() and (Tags.Demon in unit.tags or Tags.Undead in unit.tags):
 				unit.apply_buff(Stun(), self.get_stat('duration'))
 			elif self.get_stat('heaven_call') and unit and not unit.is_alive():
-				killed = True
+				killed += 1
 
 			yield
 
@@ -6647,7 +7040,7 @@ class HolyFlame(Spell):
 			if unit and (Tags.Demon in unit.tags or Tags.Undead in unit.tags):
 				unit.apply_buff(Stun(), self.get_stat('duration'))
 			elif self.get_stat('heaven_call') and unit and not unit.is_alive():
-				killed = True
+				killed += 1
 			yield
 
 		for i in range(2):
@@ -6657,8 +7050,7 @@ class HolyFlame(Spell):
 		if killed: 
 			seraph_spell = self.caster.get_spell(SummonSeraphim)
 			if seraph_spell:
-				seraph_spell.cur_charges += 1
-				seraph_spell.cur_charges = min(seraph_spell.cur_charges, seraph_spell.get_stat('max_charges'))
+				seraph_spell.refund_charges(killed)
 				
 
 		if self.get_stat('divine_blaze'):
@@ -6703,6 +7095,7 @@ class AngelSong(Spell):
 						conversion_buff.spell = self
 						unit.apply_buff(conversion_buff)
 					unit.get_buff(ConversionBuff).stacks += abs(dmg)
+					unit.get_buff(ConversionBuff).name = "Mercy {}".format(unit.get_buff(ConversionBuff).stacks) # so you can tell how much they have
 			if Tags.Dark in unit.tags or Tags.Undead in unit.tags or Tags.Demon in unit.tags:
 				unit.deal_damage(self.get_stat('damage'), Tags.Fire, self)
 				unit.deal_damage(self.get_stat('damage'), Tags.Holy, self)
@@ -6739,9 +7132,9 @@ class AngelicChorus(Spell):
 
 		self.max_charges = 3
 
-		self.upgrades['cast_deathbolt'] = (1, 4, "Dual Angels", "Angels can cast your Death Bolt on a 4 turn cooldown.") #minor, silly issue: the angel's Sing kills the undead lol
-		self.upgrades['conversion'] = (1, 5, "Mercy", "When an enemy is healed for a cumulative total more than its max health, it becomes an ally.")
-		self.upgrades['num_summons'] = (4, 5, "Massive Chorus")
+		self.upgrades['cast_deathbolt'] = (1, 4, "Dual Angels", "Angels can cast your Death Bolt on a 4 turn cooldown.", [Tags.Dark]) #minor, silly issue: the angel's Sing kills the undead lol
+		self.upgrades['conversion'] = (1, 3, "Mercy", "When an enemy is healed for a cumulative total more than its max health, it becomes an ally.")
+		self.upgrades['num_summons'] = (4, 4, "Massive Chorus")
 
 	def get_description(self):
 		return ("Summons a choir of [{num_summons}:num_summons] angelic singers.\n"
@@ -6798,22 +7191,23 @@ class HeavensWrath(Spell):
 	def on_init(self):
 
 		self.name = "Heaven's Wrath"
-
+		self.tags = [Tags.Holy, Tags.Lightning, Tags.Sorcery]
+		self.damage_type = [Tags.Holy, Tags.Lightning]
+		self.range = 0
 		self.num_targets = 3
 
 		self.damage = 22
 
 		self.level = 6
-		self.max_charges = 2
+		self.max_charges = 4
 
 		self.stun_duration = 0
 
-		self.upgrades['culling'] = (1, 3, "Culling" ,"Heaven's Wrath also damages the units with the lowest current HP.")
-		self.upgrades['stun_duration'] = (3, 3, "Halt Heretics", "Heaven's Wrath also applies Stun for [3_turns:duration].")
-		self.upgrades['deal_fire'] = (1, 3, "Fiery Wrath", "Heaven's Wrath also deals fire damage.")
+		self.upgrades['culling'] = (1, 4, "Culling" ,"Heaven's Wrath also damages the units with the lowest current HP.")
+		self.upgrades['stun_duration'] = (3, 2, "Halt Heretics", "Heaven's Wrath also applies Stun for [3_turns:duration].")
+		self.upgrades['deal_fire'] = (1, 3, "Fiery Wrath", "Heaven's Wrath also deals fire damage.", [Tags.Fire], [Tags.Fire])
 
-		self.tags = [Tags.Holy, Tags.Lightning, Tags.Sorcery]
-		self.range = 0
+
 
 	def get_description(self):
 		return ("Deal [{damage}_lightning:lightning] damage and [{damage}_holy:holy] damage to [{num_targets}_units:num_targets] with the highest current HP.\n"
@@ -6861,11 +7255,11 @@ class BestowImmortality(Spell):
 		self.range = 8
 
 		self.upgrades['lives'] = (2, 2, "Endlessness", "The target gains 3 reincarnations instead of just 1.")
-		self.upgrades['mass'] = (1, 3, "Mass Immortality", "All allies with the same name as the target are also affected.")
+		self.upgrades['mass'] = (1, 6, "Mass Immortality", "All allies with the same name as the target are also affected.")
 		self.upgrades['essence'] = (1, 2, "Twilight Essence", "Targeted unit gains the [holy] and [undead] tags and 25 [holy] and [dark] resist.")
 
 	def get_description(self):
-		return "Target allied unit gains the ability to reincarnate on death."
+		return "Target unit gains the ability to reincarnate on death."
 
 	def can_cast(self, x, y):
 		unit = self.caster.level.get_unit_at(x, y)
@@ -6935,7 +7329,7 @@ class SoulTax(Spell):
 		self.max_charges = 4
 		self.arcane = 0
 
-		self.upgrades['arcane'] = (1, 2, "Arcane Taxation", "Soul tax deals an additional third of the target's remaining HP as arcane damage.")
+		self.upgrades['arcane'] = (1, 3, "Arcane Taxation", "Soul tax deals an additional third of the target's remaining HP as arcane damage.", [Tags.Arcane])
 		self.upgrades['quick_cast'] = (1, 2, "Insta Tax", "Casting Soul Tax only takes half a turn")
 		self.upgrades['target_group'] = (1, 6, "Mass Taxation", "Targets a connected group of enemies.")
 
@@ -6979,25 +7373,32 @@ class SoulTax(Spell):
 					break
 		yield
 
-
 class HolyShieldBuff(Buff):
 
-	def __init__(self, resist, resist_tags, thorns=False):
+	def __init__(self, spell):
 		Buff.__init__(self)
 		self.name = "Holy Armor"
 		self.buff_type = BUFF_TYPE_BLESS
-		self.resist_tags = resist_tags
-		self.thorns = thorns
-		self.owner_triggers[EventOnDamaged] = self.on_damaged
+		self.stack_type = STACK_REPLACE
+		self.spell = spell
+		self.resist_tags = [Tags.Fire, Tags.Lightning, Tags.Dark, Tags.Physical]
+		if self.spell.get_stat('crystal_armor'):
+			self.resist_tags += [Tags.Arcane, Tags.Holy, Tags.Ice]
+
+		if self.spell.get_stat('smiting_thorns'):
+			self.owner_triggers[EventOnDamaged] = self.on_damaged
+			self.thorn_dmg = self.spell.get_stat('damage', base=7)
 		
 		for tag in self.resist_tags:
-			self.resists[tag] = resist
+			self.resists[tag] = self.spell.get_stat('resist')
 
 	def on_damaged(self, evt):
-		if self.thorns:
-			if evt.source.owner and are_hostile(evt.source.owner, self.owner):
-				evt.source.owner.deal_damage(7, Tags.Lightning, self)
+		if evt.source and evt.source.owner and are_hostile(evt.source.owner, self.owner):
+			evt.source.owner.deal_damage(self.thorn_dmg, Tags.Lightning, self.spell)
 
+	def get_description(self):
+		if self.spell.get_stat('smiting_thorns'):
+			return "Whenever you take damage from an enemy, deal [%d_lightning:lightning] damage to the source" % self.thorn_dmg
 
 class HolyShieldSpell(Spell):
 
@@ -7009,21 +7410,14 @@ class HolyShieldSpell(Spell):
 		self.duration = 9
 		self.resist = 50
 		self.max_charges = 6
+		self.range = 0
 
 		self.upgrades['resist'] = (25, 1, "Greater Armor")
 		self.upgrades['crystal_armor'] = (1, 2, "Crystal Armor", "Also provides resistance to [arcane:arcane], [holy:holy], and [ice:ice].")
-		self.upgrades['smiting_thorns'] = (1, 3, "Smiting Thorns", "Whenever you take damage from an enemy, deal [7_lightning:lightning] damage to the source.")
-
-		self.range = 0
+		self.upgrades['smiting_thorns'] = (1, 4, "Smiting Thorns", "Whenever you take damage from an enemy, deal [7_lightning:lightning] damage to the source.", [Tags.Lightning])
 
 	def cast_instant(self, x, y):
-		tags = [Tags.Fire, Tags.Lightning, Tags.Dark, Tags.Physical]
-		if self.get_stat('crystal_armor'):
-			tags.append(Tags.Arcane)
-			tags.append(Tags.Holy)
-			tags.append(Tags.Ice)
-		buff = HolyShieldBuff(self.get_stat('resist'), tags, thorns=self.get_stat('smiting_thorns'))
-		self.caster.apply_buff(buff, self.get_stat('duration'))
+		self.caster.apply_buff(HolyShieldBuff(self), self.get_stat('duration'))
 
 	def get_description(self):
 		return ("Gain [{resist}_physical:physical] resist.\n"
@@ -7043,10 +7437,11 @@ class BlindingLightSpell(Spell):
 		self.damage = 5
 
 		self.tags = [Tags.Holy, Tags.Sorcery]
+		self.damage_type = [Tags.Holy]
 		self.level = 3
 		self.dark_units = 0
 		self.upgrades['inflict_stun'] = (1, 2, "Halting Light", "Deals [1_turn:duration] of stun to all enemy units.")
-		self.upgrades['deal_fire'] = (1, 3, "Searing Light", "Deals [5_fire:fire] damage to all enemy units in LOS.") #restricting it to enemy units for now, maybe the cost could be lowered if it's all units?
+		self.upgrades['deal_fire'] = (1, 3, "Searing Light", "Deals [5_fire:fire] damage to all enemy units in LOS.", [Tags.Fire], [Tags.Fire]) #restricting it to enemy units for now, maybe the cost could be lowered if it's all units?
 		self.upgrades['quick_cast'] = (1, 2, "Quickcast", "Casting Blinding Light only takes half a turn")
 
 
@@ -7078,8 +7473,10 @@ class BlindingLightSpell(Spell):
 class FlockOfEaglesSpell(Spell):
 
 	def on_init(self):
-
+		self.tags = [Tags.Conjuration, Tags.Nature, Tags.Holy]
+		self.level = 5
 		self.name = "Flock of Eagles"
+		self.range = 0
 
 		self.minion_health = 18
 		self.minion_damage = 6
@@ -7091,13 +7488,8 @@ class FlockOfEaglesSpell(Spell):
 
 		self.upgrades['num_summons'] = (4, 6, "Army of Eagles")
 		self.upgrades['shields'] = (3, 3, "Shielded Eagles")
-		self.upgrades['thunderbirds'] = (1, 5, "Thunder Claw", "Eagles gain your Thunder Strike spell on a 15 turn cool down.")
+		self.upgrades['thunderbirds'] = (1, 5, "Thunder Claw", "Eagles gain your Thunder Strike spell on a 15 turn cool down.", [Tags.Lightning])
 		self.upgrades['awe'] = (1, 3, "Untouchable Majesty", "Eagles deal 1 [holy] damage to anyone dealing them damage.")
-
-		self.range = 0
-
-		self.level = 5
-		self.tags = [Tags.Conjuration, Tags.Nature, Tags.Holy]
 
 	def get_extra_examine_tooltips(self):
 		return [self.make_eagle()] + self.spell_upgrades
@@ -7121,7 +7513,6 @@ class FlockOfEaglesSpell(Spell):
 			eagle.spells.append(peck)
 			eagle.spells.append(dive)
 			eagle.max_hp = self.get_stat('minion_health')
-			eagle.team = self.caster.team
 
 			eagle.flying = True
 			eagle.tags = [Tags.Living, Tags.Holy, Tags.Nature]
@@ -7140,70 +7531,6 @@ class FlockOfEaglesSpell(Spell):
 		for i in range(self.get_stat('num_summons')):
 			eagle = self.make_eagle()
 			self.summon(eagle, Point(x, y))
-
-class FlamingSwordSwing(Spell):
-
-	def __init__(self, parent_spell):
-		self.parent_spell = parent_spell
-		Spell.__init__(self)
-
-	def on_init(self):
-		self.name = "Flaming Arc"
-		self.description = "Swing your flaming sword"
-		self.range = 1.5
-		self.melee = True
-		self.can_target_self = False
-		self.max_charges = 50
-
-	def get_impacted_tiles(self, x, y):
-		ball = self.caster.level.get_points_in_ball(x, y, 1)
-		aoe = [p for p in ball if 1 <= distance(p, self.caster, diag=True) < 2]
-		return aoe
-
-	def cast(self, x, y):
-		for p in self.get_impacted_tiles(x, y):
-			for dtype in [Tags.Fire, Tags.Holy]:
-				self.caster.level.deal_damage(p.x, p.y, self.parent_spell.get_stat('damage'), dtype, self)
-				yield
-
-class FlamingSwordBuff(Buff):
-
-	def __init__(self, spell):
-		self.spell = spell
-		Buff.__init__(self)
-		self.color = Tags.Holy.color
-		self.name = "Flaming Sword"
-
-	def on_applied(self, owner):
-		self.spell_slot = self.owner.spells.index(self.spell)
-		self.owner.spells[self.spell_slot] = FlamingSwordSwing(self.spell)
-		
-		# Hack
-		self.owner.spells[self.spell_slot].caster = self.owner
-
-	def on_unapplied(self):
-		self.owner.spells[self.spell_slot] = self.spell
-
-class FlamingSwordSpell(Spell):
-
-	def on_init(self):
-
-		self.name = "Flaming Sword"
-		self.description = "Wield a flaming sword.  The sword can be swung at adjacent enemies dealing fire and holy damage."
-		self.duration = 15
-		self.max_charges = 4
-
-		self.tags = [Tags.Holy, Tags.Fire, Tags.Enchantment]
-		self.level = 2
-		self.range = 0
-
-		self.damage = 14
-
-		self.upgrades['damage'] = (14, 4)
-		self.upgrades['duration'] = (30, 3)
-
-	def cast_instant(self, x, y):
-		self.caster.apply_buff(FlamingSwordBuff(self), self.get_stat('duration'))
 
 class BeautyIdolBuff(Buff):
 
@@ -7279,7 +7606,7 @@ class HeavenlyIdol(Spell):
 		self.heal = 1
 		self.minion_duration = 15
 
-		self.upgrades['fire_gaze'] = (1, 4, "Fire Gaze", "The Idol gains a fire beam attack")
+		self.upgrades['fire_gaze'] = (1, 4, "Fire Gaze", "The Idol gains a fire beam attack", [Tags.Fire])
 		self.upgrades['shield_gaze'] = (1, 4, "Shield Gaze", "The Idol gains a single-target +4 SH ability, which sets the SH of a unit with less than 4 SH to 4 SH.")
 		self.upgrades['immortality'] = (1, 6, "Bastion of Immortality", "Casts your Suspend Mortality on summoned ally units with a 5 turn cooldown")
 
@@ -7333,22 +7660,6 @@ class HeavenlyIdol(Spell):
 	def get_extra_examine_tooltips(self):
 		return [self.make_idol()] + self.spell_upgrades
 
-class GoldGuardian(Upgrade):
-
-	def on_init(self):
-		self.prereq = SummonGoldDrakeSpell
-		self.name = "Golden Crusade"
-		self.level = 2
-		self.description = "Gain a free charge of Gold Drake whenever you enter a rift containing atleast 1 [undead] or [demon] unit."
-		self.owner_triggers[EventOnUnitAdded] = self.on_unit_add
-
-	def on_unit_add(self, evt):
-		for u in self.owner.level.units:
-			if Tags.Undead in u.tags or Tags.Demon in u.tags:
-				if self.prereq.cur_charges < self.prereq.get_stat('max_charges'):
-					self.prereq.cur_charges += 1
-					return
-
 class DragonSaintThornsBuff(Buff):
 
 	def __init__(self, spell):
@@ -7373,43 +7684,40 @@ class SummonGoldDrakeSpell(Spell):
 		self.max_charges = 2
 		self.tags = [Tags.Holy, Tags.Conjuration, Tags.Dragon]
 		self.level = 6
+		self.must_target_empty = True
 
 		self.minion_health = 45
 		self.minion_damage = 8
 		self.minion_range = 7
 		self.shields = 0
 
+		self.upgrades['dragon_mage'] = (1, 4, "Dragon Mage", "Summoned Gold Drakes can cast Healing Light with a 8 turn cooldown.\n"
+															 "This Healing Light gains all of your upgrades and bonuses.")
 		self.upgrades['dragon_saint'] = (1, 3, "Dragon Saint", "Deals 14 [holy_damage:holy] to anything that deals damage to the Gold Drake.")
 		self.upgrades['immortal_dragon'] = (1, 3, "Immortal Dragon", "Gold Drake gains the Immortal modifier.")
-		self.upgrades['dragon_mage'] = (1, 4, "Dragon Mage", "Summoned Gold Drakes can cast Healing Light with a 8 turn cooldown.\nThis Healing Light gains all of your upgrades and bonuses.")
-		#self.add_upgrade(GoldGuardian())
 
-		self.must_target_empty = True
+	def make_gold_drake(self):
+		u = GoldDrake()
 
-	def cast_instant(self, x, y):
-		drake = GoldDrake()
-		drake.team = self.caster.team
-		drake.max_hp = self.get_stat('minion_health')
-		drake.spells[0].damage = self.get_stat('minion_damage')
-		drake.spells[0].range = self.get_stat('minion_range')
-		drake.spells[1].damage = self.get_stat('minion_damage')
-		drake.shields += self.get_stat('shields')
-		
 		if self.get_stat('dragon_mage'):
-			hlight = HealMinionsSpell()
-			hlight.statholder = self.caster
-			hlight.max_charges = 0
-			hlight.cur_charges = 0
-			hlight.cool_down = 8
-			drake.spells.insert(1, hlight)
+			grant_minion_spell(HealMinionsSpell, u, self.owner, cool_down=8, pre_insert=True)
 
 		if self.get_stat('dragon_saint'):
-			drake.apply_buff(DragonSaintThornsBuff(self))
+			u.apply_buff(DragonSaintThornsBuff(self))
 
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_immortal_gold_drake(self):
+		u = self.make_gold_drake()
+		BossSpawns.apply_modifier(BossSpawns.Immortal, u)
+		return u
+
+	def cast_instant(self, x, y):
+		u = self.make_gold_drake()
 		if self.get_stat('immortal_dragon'):
-			BossSpawns.apply_modifier(BossSpawns.Immortal, drake)
-
-		self.summon(drake, Point(x, y))
+			BossSpawns.apply_modifier(BossSpawns.Immortal, u)
+		self.summon(u, Point(x, y))
 
 	def get_description(self):
 		return ("Summon a Gold Drake.\n"
@@ -7418,7 +7726,7 @@ class SummonGoldDrakeSpell(Spell):
 				"Gold drakes have a melee attack which deals [{minion_damage}_physical:physical] damage").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
-		return [GoldDrake()] + self.spell_upgrades
+		return [self.make_gold_drake()] + self.spell_upgrades + [self.make_immortal_gold_drake()]
 
 class SeraphimSwordSwing(Spell):
 
@@ -7464,12 +7772,12 @@ class SummonSeraphim(Spell):
 		self.shields = 3
 		self.minion_damage = 14
 
-		self.minion_duration = 14
+		self.minion_duration = 20
 		self.heal = 0
 
-		self.upgrades['moonblade'] = (1, 3, "Moonblade", "The Seraph deals arcane damage in addition to fire and holy damage with its cleave attack.")
-		self.upgrades['heal'] = (4, 4, "Heal Aura", "The Seraph heals all allies within 4 tiles for 4 HP each turn.", "aura")
-		self.upgrades['holy_fire'] = (1, 5, "Holy Fire Aura", "The Seraph gains a damage aura, randomly dealing either [2_fire:fire] or [2_holy:holy] damage to enemies within 5 tiles each turn.", "aura")
+		self.upgrades['moonblade'] = (1, 3, "Moonblade", "The Seraph deals [arcane] damage in addition to [fire] and [holy] damage with its cleave attack.", [Tags.Arcane])
+		self.upgrades['heal'] = (4, 4, "Heal Aura", "The Seraph heals all allies within 4 tiles for 4 HP each turn.")
+		self.upgrades['holy_fire'] = (1, 5, "Holy Fire Aura", "The Seraph gains a damage aura, randomly dealing either [2_fire:fire] or [2_holy:holy] damage to enemies within 5 tiles each turn.")
 		self.level = 4
 
 		self.must_target_empty = True
@@ -7575,7 +7883,7 @@ class SummonArchon(Spell):
 
 		self.upgrades['healing'] = (1, 3, "Heal Beam", "Archon's attack heals allies it passes through.")
 		self.upgrades['cascade'] = (1, 4, "Beam Arc", "Archon's attack arcs a maximum of one time to a nearby enemy.")
-		self.upgrades['storm_archon'] = (1, 4, "Storm Archon", "Archon gains 50 Ice resist and its attack also deals Ice damage.")
+		self.upgrades['storm_archon'] = (1, 4, "Storm Archon", "Archon gains 50 Ice resist and its attack also deals Ice damage.", [Tags.Ice])
 
 		self.level = 5
 
@@ -7685,6 +7993,7 @@ class PainMirror(Buff):
 class PainMirrorSpell(Spell):
 
 	def on_init(self):
+		self.tags = [Tags.Blood, Tags.Enchantment]
 		self.name = "Pain Mirror"
 		self.range = 0
 		self.duration = 14
@@ -7694,11 +8003,9 @@ class PainMirrorSpell(Spell):
 
 		self.max_charges = 1
 
-		self.upgrades['flesh_harvest'] = (1, 3, "Flesh Harvest", "For every 100 damage taken during Pain Mirror, gain a charge of Summon Flesh Fiend.")
-		self.upgrades['gain_resists'] = (1, 5, "Dulled Pain", "Gain 25% resist to [dark:dark], [arcane:arcane], [fire:fire], [lightning:lightning], and [physical:physical] damage during pain mirror.")
-		self.upgrades['deal_fire'] = (1, 6, "Burning Pain", "Additionally deal [fire:fire] damage.")
-
-		self.tags = [Tags.Blood, Tags.Enchantment]
+		self.upgrades['flesh_harvest'] = (1, 3, "Flesh Harvest", "For every 100 damage taken during Pain Mirror, gain a charge of Summon Flesh Fiend.") # this stacks really wellnow since summoning it will trigger this!
+		self.upgrades['gain_resists'] = (1, 3, "Dulled Pain", "Gain 25% resist to [dark:dark], [arcane:arcane], [fire:fire], [lightning:lightning], and [physical:physical] damage during pain mirror.") # switch to metallic resists and get metallic tag?
+		self.upgrades['deal_fire'] = (1, 6, "Burning Pain", "Additionally deal [fire:fire] damage.", [Tags.Fire])
 
 	def cast_instant(self, x, y):
 		buff = PainMirror(self)
@@ -7726,14 +8033,19 @@ class PyrostaticPulse(Spell):
 		self.max_charges = 9
 		self.range = 6
 		self.tags = [Tags.Fire, Tags.Lightning, Tags.Sorcery]
+		self.damage_type = [Tags.Fire, Tags.Lightning]
 
-		self.upgrades['chaos'] = (1, 3, "Chaos Pulse", "Add a physical damage layer.")
+		self.upgrades['chaos'] = (1, 4, "Chaos Pulse", "Add a [physical] damage layer.", [Tags.Chaos], [Tags.Physical])
 		self.upgrades['lesser_cascade'] = (1, 4, "Crackle Cascade", "[Lightning:lightning] damage arcs to [2:num_targets] enemy units in line of sight.")
-		self.upgrades['greater_cascade'] = (1, 6, "Forking Cascade", "Secondary beams triggered from the target to up to [2:num_targets] random enemies in line of sight of the target.")
+		self.upgrades['greater_cascade'] = (1, 7, "Forking Cascade", "Secondary beams triggered from the target to up to [2:num_targets] random enemies in line of sight of the target.")
+		self.upgrades['spirit_calling'] = (1, 4, "Spirit Calling", "Summons fire spirits for units killed by the [fire] beam, and spark spirits for those killed by the [lightning] beams.", [Tags.Conjuration])
 
 	def get_description(self):
 		return ("Deal [{damage}_fire:fire] damage in a beam.\n"
 				"Deal [{damage}_lightning:lightning] damage to tiles adjacent to the beam.").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_fire_spirit(), self.make_spark_spirit()]
 
 	def get_impacted_tiles(self, x, y):
 		center_beam = self.caster.level.get_points_in_line(self.caster, Point(x, y), find_clear=True)[1:]
@@ -7782,6 +8094,8 @@ class PyrostaticPulse(Spell):
 		for p in center_beam:
 			unit = self.caster.level.get_unit_at(p.x, p.y)
 			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Fire, self)
+			if self.get_stat('spirit_calling') and unit and not unit.is_alive():
+				self.summon(self.make_fire_spirit(), unit)
 
 		yield
 
@@ -7790,7 +8104,8 @@ class PyrostaticPulse(Spell):
 			if unit:
 				lightning_cascades.append(unit)
 			self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Lightning, self)
-
+			if self.get_stat('spirit_calling') and unit and not unit.is_alive():
+				self.summon(self.make_spark_spirit(), unit)
 		yield
 
 		for p in physical_beam:
@@ -7818,149 +8133,15 @@ class PyrostaticPulse(Spell):
 							self.caster.level.deal_damage(q.x, q.y, 0, Tags.Lightning, self)
 						self.caster.level.deal_damage(q.x, q.y, self.get_stat('damage'), Tags.Lightning, self)
 
-	def cast_instant(self, x, y):
-		self.do_spell(self.caster, Point(x, y))
+	def make_fire_spirit(self):
+		u = FireSpirit()
+		apply_minion_bonuses(self, u)
+		return u
 
-class ThunderStone(Prop):
-
-	def __init__(self):
-		self.name = "Thunder Stone"
-		self.asset = ['tiles', 'thunderstone']
-		self.damage = 0
-
-	def on_unit_enter(self, player):
-		candidates = self.level.get_units_in_los(self)
-		candidates = [u for u in candidates if are_hostile(player, u)]
-		candidates = sorted(candidates, key=lambda u: -distance(u, player))
-		if candidates:
-			target = candidates[0]
-		else:
-			target = player
-		self.level.queue_spell(self.arc(target))
-		self.level.remove_obj(self)
-
-	def arc(self, target):
-
-		self.level.deal_damage(self.x, self.y, 0, Tags.Lightning), self	
-		for p in self.level.get_points_in_line(self, target)[1:]:
-			unit = self.level.get_unit_at(point.x, point.y)
-			if unit and unit.team == TEAM_PLAYER:
-				continuenue
-			self.level.deal_damage(p.x, p.y, self.damage, Tags.Lightning, self)
-		yield
-
-class ThunderStones(Spell):
-
-	def on_init(self):
-		self.name = "Thunder Stones"
-		self.description = "Create several thunderstones nearby on the ground.  When a unit step on a stone, lightning arcs to the farthest visible enemy, dealing damage to enemies in a beam."
-		self.level = 2
-		self.tags = [Tags.Lightning, Tags.Sorcery]
-
-		self.damage = 14
-		self.num_stones = 4
-		self.max_charges = 12
-		self.range = 0
-
-		self.upgrades['damage'] = (9, 3)
-		self.upgrades['num_stones'] = (2, 3)
-
-	def cast_instant(self, x, y):
-
-		candidate_points = self.caster.level.get_points_in_ball(x, y, 3)
-
-		def can_target(p):
-			tile = self.caster.level.tiles[p.x][p.y]
-			if tile.prop:
-				return False
-			if not tile.can_walk:
-				return False
-			return True
-
-		candidate_points = [p for p in candidate_points if can_target(p)]
-
-		random.shuffle(candidate_points)
-
-		for i in range(self.get_stat('num_stones')):
-			if not candidate_points:
-				break
-			p = candidate_points.pop()
-			prop = ThunderStone()
-			prop.damage = self.get_stat('damage')
-			self.caster.level.add_obj(prop, p.x, p.y)
-
-class FireStone(Prop):
-
-	def __init__(self):
-		self.name = "Fire Stone"
-		self.asset = ['tiles', 'firestone']
-		self.damage = 0
-		self.radius = 0
-
-	def on_unit_enter(self, player):
-		candidates = self.level.get_units_in_los(self)
-		candidates = [u for u in candidates if are_hostile(player, u)]
-		candidates = sorted(candidates, key=lambda u: -distance(u, player))
-		if candidates:
-			target = candidates[0]
-		else:
-			target = player
-		self.level.queue_spell(self.explode())
-		self.level.remove_obj(self)
-
-	def explode(self):
-		for stage in Burst(self.level, self, self.radius):
-			for point in stage:
-				unit = self.level.get_unit_at(point.x, point.y)
-				if unit and unit.team == TEAM_PLAYER:
-					continue
-				self.level.deal_damage(point.x, point.y, self.damage, Tags.Fire, self)
-
-			for i in range(3):
-				yield
-
-class FireStones(Spell):
-
-	def on_init(self):
-		self.name = "Fire Stones"
-		self.description = "Create several firestones nearby on the ground.  When a unit step on a stone, it bursts into flames, dealing damage to enemies in an area."
-		self.level = 2
-		self.tags = [Tags.Fire, Tags.Sorcery]
-
-		self.damage = 16
-		self.num_stones = 4
-		self.radius = 3
-		self.max_charges = 12
-		self.range = 0
-
-		self.upgrades['damage'] = (11, 3)
-		self.upgrades['num_stones'] = (2, 2)
-		self.upgrades['radius'] = (2, 3)
-
-	def cast_instant(self, x, y):
-
-		candidate_points = self.caster.level.get_points_in_ball(x, y, 3)
-
-		def can_target(p):
-			tile = self.caster.level.tiles[p.x][p.y]
-			if tile.prop:
-				return False
-			if not tile.can_walk:
-				return False
-			return True
-
-		candidate_points = [p for p in candidate_points if can_target(p)]
-
-		random.shuffle(candidate_points)
-
-		for i in range(self.get_stat('num_stones')):
-			if not candidate_points:
-				break
-			p = candidate_points.pop()
-			prop = FireStone()
-			prop.damage = self.get_stat('damage')
-			prop.radius = self.get_stat('radius')
-			self.caster.level.add_obj(prop, p.x, p.y)
+	def make_spark_spirit(self):
+		u = SparkSpirit()
+		apply_minion_bonuses(self, u)
+		return u
 
 class VoidRip(Spell):
 
@@ -7968,15 +8149,16 @@ class VoidRip(Spell):
 		self.name = "Aether Swap"
 		self.range = 7
 
+		self.tags = [Tags.Arcane, Tags.Translocation, Tags.Sorcery]
+		self.damage_type = [Tags.Arcane]
+
 		self.max_charges = 8
 		self.damage = 16
 		self.level = 3
 
-		self.upgrades['petrify'] = (1, 3, "Petrification", "Casts your Petrify on the target.")
+		self.upgrades['petrify'] = (1, 2, "Petrification", "Casts your Petrify on the target.")
 		self.upgrades['requires_los'] = (-1, 4, "Blindcasting", "Aether Swap can be cast without line of sight")
 		self.upgrades['quick_cast'] = (1, 3, "Quickcast", "Casting Aether Swap only takes half a turn")
-
-		self.tags = [Tags.Arcane, Tags.Translocation, Tags.Sorcery]
 
 	def get_description(self):
 		return ("Swap places with target unit.\n"
@@ -8020,22 +8202,48 @@ class VoidRip(Spell):
 				for _ in self.caster.level.act_cast(self.caster, petrify_spell, target.x, target.y, pay_costs=False, queue=False):
 					pass
 
+class RetributiveSiphon(Upgrade):
+
+	def on_init(self):
+		self.name = "Retributive Siphon"
+		self.description = "If a shielded unit damages you, steal one of their shields."
+		self.level = 5
+		self.owner_triggers[EventOnDamaged] = self.on_damaged
+
+	def on_damaged(self, evt):
+		if evt.damage < 1:
+			return
+		if not evt.source:
+			return
+		if not evt.source.owner:
+			return
+		if evt.source.owner == self.owner:
+			return
+		if not evt.source.owner.shields:
+			return
+		evt.source.owner.shields -= 1
+		self.owner.level.show_effect(evt.source.owner.x, evt.source.owner.y, Tags.Shield_Expire)
+		self.owner.add_shields(1)
+
+
 class ShieldSiphon(Spell):
 
 	def on_init(self):
 		self.name = "Siphon Shields"
 
-		self.max_charges = 3
+		self.max_charges = 1
 		self.level = 4
 
 		self.tags = [Tags.Arcane, Tags.Enchantment]
 		self.range = 0
 
 		self.shield_burn = 0
-		self.shield_steal = 1
+		self.shield_steal = 3
 
-		self.upgrades['shield_burn'] = (5, 2, "Shield Burn", "Deal 5 fire damage per shield stolen")
-		self.upgrades['shield_steal'] = (4, 1)
+		self.upgrades['shield_burn'] = (5, 3, "Shield Burn", "Deal 5 fire damage per shield stolen", [Tags.Fire])
+		self.upgrades['shield_steal'] = (7, 2)
+		self.add_upgrade(RetributiveSiphon())
+
 
 	def get_impacted_tiles(self, x, y):
 		return [u for u in self.caster.level.get_units_in_los(self.caster) if are_hostile(u, self.caster) and u.shields]
@@ -8086,9 +8294,9 @@ class VoidMaw(Spell):
 		self.minion_duration = 15
 		self.shields = 2
 
-		self.upgrades['devour'] = (1, 3, "Gnashing Teeth", "Hungry Maw gains a [physical] melee attack which attacks four times")
-		self.upgrades['shields'] = (5, 3, "Invincible Maw")
-		self.upgrades['void'] = (1, 5, "Void Maw", "Hungry Maw gains a wall melting arcane beam attack")
+		self.upgrades['devour'] = (1, 3, "Gnashing Teeth", "Hungry Maw gains a [physical] melee attack which attacks [4:num_targets] times")
+		self.upgrades['shields'] = (5, 2, "Invincible Maw")
+		self.upgrades['void'] = (1, 4, "Void Maw", "Hungry Maw gains a wall melting arcane beam attack")
 		
 		self.must_target_empty = True
 
@@ -8111,7 +8319,7 @@ class VoidMaw(Spell):
 
 
 		if self.get_stat('devour'):
-			devour = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), attacks=4)
+			devour = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), attacks=self.get_stat('num_targets', base=4))
 			devour.name = "Gnashing Teeth"
 			u.spells.append(devour)
 
@@ -8137,30 +8345,38 @@ class VoidMaw(Spell):
 		u = self.make_maw()
 		self.summon(u, Point(x, y))
 
+class PlagueBringers(Upgrade):
+
+	def on_init(self):
+		self.name = "Plague Bringers"
+		self.description = "Your [undead] minions gain access to your version of this spell."
+		self.level = 4
+		self.global_triggers[EventOnUnitPreAdded] = self.on_added
+
+	def on_added(self, evt):
+		if are_hostile(self.owner, evt.unit):
+			return
+		if evt.unit == self.owner:
+			return
+		if not Tags.Undead in evt.unit.tags:
+			return
+		s = HallowFlesh()
+		s.statholder = self.owner
+		s.max_charges = 0
+		s.cur_charges = 0
+		evt.unit.spells.insert(0, s)
 
 class RotBuff(Buff):
 
 	def __init__(self, spell):
 		self.spell = spell
 		Buff.__init__(self)
+		self.buff_type = BUFF_TYPE_CURSE
 
 	def on_init(self):
 		self.color = Tags.Dark.color
 		self.name = "Hallowed Flesh"
 		self.asset = ['status', 'rot']
-
-	def on_unapplied(self):
-		if not self.spell.get_stat('raise_zombie'):
-			return
-		if self.owner.is_alive():
-			return
-		self.owner.level.queue_spell(self.on_death())
-
-	def on_death(self):
-		zombie = Zombie()
-		zombie.max_hp = self.owner.max_hp
-		self.spell.summon(zombie, self.owner)
-		yield
 
 	def on_applied(self, owner):
 		self.owner.resists[Tags.Dark] += 100
@@ -8179,6 +8395,17 @@ class RotBuff(Buff):
 		if Tags.Living in self.owner.tags:
 			self.owner.tags.remove(Tags.Living)
 
+	def on_advance(self):
+		self.owner.deal_damage(self.spell.get_stat('damage'), Tags.Poison, self.spell)
+		if self.spell.get_stat('pandemic'):
+			targets = [u for u in self.owner.level.get_units_in_ball(self.owner,1,diag=True) if are_hostile(self.spell.owner, u) and Tags.Living in u.tags]
+			for target in targets:
+				if not target.is_alive:
+					continue
+				target.apply_buff(RotBuff(self.spell))
+				target.level.show_effect(target.x, target.y, Tags.Dark)
+
+
 class HallowFlesh(Spell):
 
 	def on_init(self):
@@ -8192,17 +8419,19 @@ class HallowFlesh(Spell):
 		self.fire_vulnerability = 0
 		self.max_health_loss = 25
 
-		self.damage = 6
+		self.damage = 1
+		self.damage_type = [Tags.Poison]
 
-		self.upgrades['max_health_loss'] = (25, 2) 
-		self.upgrades['fire_vulnerability'] = (50, 2, "Fire Vulnerability")
-		self.upgrades['raise_zombie'] = (1, 4, "Plague of Undead", "Raise killed units as zombies.")
+		self.upgrades['raise_zombie'] = (1, 4, "Plague of Undead", "Raise killed units as zombies.", [Tags.Conjuration])
+		self.upgrades['pandemic'] = (1, 2, "Pandemic", "The curse spreads from cursed units to adjacent living enemies each turn.")
+		self.add_upgrade(PlagueBringers())
+
 
 	def get_description(self):
 		return ("Curse a group of [living] enemy units with the essence of undeath.\n"
 				"Affected units become [undead] and lose [living].\n"
-				"Affected units lose [{max_health_loss}%:damage] of their max HP.\n"
-				"Affected units then take [{damage}_poison:poison] damage.\n"
+				"Affected units lose [25%:damage] of their max HP.\n"
+				"Affected units take [{damage}_poison:poison] damage per turn.\n"
 				"Affected units lose [100_holy:holy] resist.\n"
 				"Affected units gain [100_dark:dark] resist.\n"
 				"Affected units cannot be healed.").format(**self.fmt_dict())
@@ -8217,8 +8446,10 @@ class HallowFlesh(Spell):
 		for p in points:
 			unit = self.caster.level.get_unit_at(p.x, p.y)
 			if unit:
-				unit.apply_buff(RotBuff(self))
-				unit.deal_damage(self.get_stat('damage'), Tags.Poison, self)
+				buff = RotBuff(self)
+				if self.get_stat('raise_zombie'): # now behaves like the petrify upgrade that summons golems
+					buff.owner_triggers[EventOnDeath] = self.make_zombie
+				unit.apply_buff(buff)
 				yield
 
 	def can_cast(self, x, y):
@@ -8238,6 +8469,19 @@ class HallowFlesh(Spell):
 
 		return Spell.can_cast(self, x, y)
 
+	def make_zombie(self, evt):
+		u = evt.unit
+		zombie = Zombie()
+		zombie.max_hp = u.max_hp
+		apply_minion_bonuses(self, zombie)
+		self.summon(zombie, u)
+
+	def tooltip_zombie(self):
+		u = Zombie()
+		apply_minion_bonuses(self, u)
+		u.max_hp = 0
+		return u
+
 	def get_ai_target(self):
 		targets = [u for u in self.owner.level.units if self.can_cast(u.x, u.y)]
 		targets = [u for u in targets if are_hostile(self.caster, u)]
@@ -8245,6 +8489,9 @@ class HallowFlesh(Spell):
 
 		if targets:
 			return random.choice(targets)
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.tooltip_zombie(), self.spell_upgrades[1], self.spell_upgrades[2]]
 
 class ConductanceBuff(Buff):
 	
@@ -8255,6 +8502,7 @@ class ConductanceBuff(Buff):
 		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
 		self.resists[Tags.Lightning] = -50
 		self.buff_type = BUFF_TYPE_CURSE
+		self.stack_type = STACK_REPLACE # so you can override previous curse if you upgrade it
 		self.copies = 1
 		self.asset = ['status', 'conductance']
 
@@ -8290,18 +8538,29 @@ class ConductanceSpell(Spell):
 		self.copies = 1
 		self.upgrades['copies'] = (1, 2, "Multicopy", "Make 1 extra copy of lightning spells cast on the target")
 		self.upgrades['resistance_debuff'] = (50, 2)
-		self.upgrades['max_charges'] = (6, 2)
+		self.upgrades['target_group'] = (1, 4, "Mass Conductance", "Targets a connected group of enemies.")
 
 	def can_cast(self, x, y):
 		return self.caster.level.get_unit_at(x, y) and Spell.can_cast(self, x, y)
 
+	def get_impacted_tiles(self, x, y):
+		if not self.get_stat('target_group'):
+			return [Point(x, y)]
+		else:
+			return self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster)
+
 	def cast_instant(self, x, y):
-		unit = self.caster.level.get_unit_at(x, y)
-		if unit:
-			buff = ConductanceBuff()
-			buff.copies = self.get_stat('copies')
-			buff.resists[Tags.Lightning] = -self.get_stat('resistance_debuff')
-			unit.apply_buff(buff, self.get_stat('duration'))
+		units = [self.caster.level.get_unit_at(x, y)]
+		if self.get_stat('target_group'):
+			units = self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster)
+		for unit in units:
+			if not unit:
+				break
+			if unit:
+				buff = ConductanceBuff()
+				buff.copies = self.get_stat('copies')
+				buff.resists[Tags.Lightning] = -self.get_stat('resistance_debuff')
+				unit.apply_buff(buff, self.get_stat('duration'))
 
 	def get_description(self):
 		return ("Curse an enemy with the essence of conductivity.\n"
@@ -8422,9 +8681,9 @@ class PlagueOfFilth(Spell):
 		self.level = 3
 		self.max_charges = 5
 
-		self.upgrades['num_summons'] = (2, 4)
-		self.upgrades['minion_duration'] = (6, 2)
-		self.upgrades['snakes'] = (1, 2, "Serpent Plague", "Plague of Filth has a 50% chance of summoning a snake instead of a fly swarm or frog.  Snakes have 3/4 the health of toads, deal 1 more damage.  Snakes apply 5 stacks of poison on hit.")
+		self.upgrades['num_summons'] = (2, 3)
+		self.upgrades['snakes'] = (1, 1, "Serpent Plague", "Plague of Filth has a 50% chance of summoning a snake instead of a fly swarm or frog.  Snakes have 3/4 the health of toads, deal 1 more damage.  Snakes apply 5 stacks of poison on hit.")
+		self.upgrades['plague_horseman'] = (1, 4, "Plague Horseman", "If you channel this spell for its full duration, summons a Black Rider.")
 
 	def fmt_dict(self):
 		d = Spell.fmt_dict(self)
@@ -8474,8 +8733,19 @@ class PlagueOfFilth(Spell):
 			self.summon(unit, Point(x, y), radius=self.get_stat('radius'), sort_dist=False)
 			yield
 
+		# Final turn
+		if self.get_stat('plague_horseman'):
+			if not self.owner.has_buff(ChannelBuff):
+				from RareMonsters import BlackRider
+				unit = BlackRider()
+				apply_minion_bonuses(self, unit)
+				unit.turns_to_death = None
+				self.summon(unit, radius=7)
+				yield
+
 	def get_extra_examine_tooltips(self):
-		return [FlyCloud(), HornedToad(), self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], Snake()]
+		from RareMonsters import BlackRider
+		return [FlyCloud(), HornedToad(), self.spell_upgrades[0], self.spell_upgrades[1], Snake(), self.spell_upgrades[2], BlackRider()]
 
 class SummonFieryTormentor(Spell):
 
@@ -8495,8 +8765,8 @@ class SummonFieryTormentor(Spell):
 		self.requires_los = False
 		self.range = 8
 
-		self.upgrades['frostfire'] = (1, 3, "Frostfire Tormentor", "Summons a frostfire tormentor instead.")
-		self.upgrades['metallic'] = (1, 3, "Metallic Tormentor", "Summons a metallic fiery tormentor instead.")
+		self.upgrades['frostfire'] = (1, 3, "Frostfire Tormentor", "Summons a frostfire tormentor instead.", [Tags.Ice])
+		self.upgrades['metallic'] = (1, 3, "Metallic Tormentor", "Summons a metallic fiery tormentor instead.", [Tags.Metallic])
 		self.upgrades['mass'] = (1, 6, "Tormenting Mass", "Summons a Fiery Tormenting Mass instead.")
 
 		self.tags = [Tags.Dark, Tags.Fire, Tags.Conjuration]
@@ -8557,6 +8827,7 @@ class DispersionFieldBuff(Buff):
 	def on_init(self):
 		self.name = "Dispersion Field"
 		self.description = "Teleport nearby enemies away each turn"
+		self.stack_type = STACK_DURATION
 
 	def on_advance(self):
 		tped = 0
@@ -8576,14 +8847,48 @@ class DispersionFieldBuff(Buff):
 				continue
 
 			target_point = random.choice(possible_points)
+			dist = distance(u, target_point)
 
 			self.owner.level.show_effect(u.x, u.y, Tags.Translocation)
 			self.owner.level.act_move(u, target_point.x, target_point.y, teleport=True)
 			self.owner.level.show_effect(u.x, u.y, Tags.Translocation)
 
+			if self.spell.get_stat('planar_travel'):
+				dtype = random.choice(damage_tags)
+				u.deal_damage(dist, dtype, self.spell)
+
+			if self.spell.get_stat('bombs_away'):
+				u.apply_buff(TimeBombBuff(self.spell))
+
 			tped += 1
 			if tped > self.spell.get_stat('num_targets'):
 				break
+
+class TimeBombBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
+		self.stack_type = STACK_INTENSITY
+		self.buff_type = BUFF_TYPE_CURSE
+		self.name = "Time Bomb"
+		self.color = Tags.Arcane.color
+		self.tick_damage = self.spell.get_stat('damage', base=1)
+		self.damage = self.spell.get_stat('damage', base=25)
+		self.radius = self.spell.get_stat('radius', base=4)
+
+	def on_advance(self):
+		self.owner.deal_damage(self.tick_damage, Tags.Arcane, self.spell)
+
+	def on_unapplied(self):
+		self.owner.level.queue_spell(self.explode())
+
+	def explode(self):
+		for p in self.owner.level.get_points_in_ball(self.owner.x, self.owner.y, self.radius):
+			self.owner.level.deal_damage(p.x, p.y, self.damage, Tags.Arcane, self.spell)
+			if self.owner.level.tiles[p.x][p.y].is_wall():
+				self.owner.level.make_floor(p.x, p.y)
+		yield
 
 class DispersionFieldSpell(Spell):
 
@@ -8592,16 +8897,18 @@ class DispersionFieldSpell(Spell):
 		self.level = 4
 		self.tags = [Tags.Enchantment, Tags.Arcane, Tags.Translocation]
 
-		self.max_charges = 3
-		self.duration = 7
+		self.max_charges = 4
+		self.duration = 10
 		self.num_targets = 3
 
 		self.range = 0
 		self.radius = 6
 
-		self.upgrades['num_targets'] = (2, 2)
-		self.upgrades['duration'] = (5, 1)
-		self.upgrades['max_charges'] = (5, 4)
+		self.upgrades['num_targets'] = (3, 2)
+		self.upgrades['planar_travel'] = (1, 3, "Planar Travel", "Teleported enemies take damage of a random type equal to the distance traveled.", [Tags.Chaos])
+		self.upgrades['bombs_away'] = (1, 5, "Bombs Away", "Teleported enemies receive the Time Bomb debuff.\n"
+														   "This effect deals [1_arcane:arcane] damage per turn.\n"
+														   "If the debuff is removed or the unit dies, the bomb explodes, destroying walls and dealing [25_arcane:arcane] damage to all units in a [4_tile:radius] radius.")
 
 	def get_description(self):
 		return ("Each turn, teleport [{num_targets}_enemies:num_targets] in a [{radius}_tile:radius] radius to random locations on the map.\n"
@@ -8640,9 +8947,9 @@ class SummonKnights(Spell):
 		# Purely for shrine bonuses
 		self.minion_range = 3
 
-		self.upgrades['void_court'] = (1, 4, "Void Court", "Summon only void knights.  Summon a void champion as well.", "court")
-		self.upgrades['storm_court'] = (1, 4, "Storm Court","Summon only storm knights.  Summon a storm champion as well.", "court")
-		self.upgrades['chaos_court'] = (1, 4, "Chaos Court", "Summon only chaos knights.  Summon a chaos champion as well.", "court")
+		self.upgrades['void_court'] = (1, 4, "Void Court", "Summon only void knights.  Summon a void champion as well.", [Tags.Arcane])
+		self.upgrades['storm_court'] = (1, 4, "Storm Court","Summon only storm knights.  Summon a storm champion as well.", [Tags.Lightning, Tags.Ice])
+		self.upgrades['chaos_court'] = (1, 4, "Chaos Court", "Summon only chaos knights.  Summon a chaos champion as well.", [Tags.Chaos])
 
 	def get_description(self):
 		return ("Summon a void knight, a chaos knight, and a storm knight.\n"
@@ -8676,6 +8983,7 @@ class ToxinBurst(Spell):
 		self.level = 2
 
 		self.tags = [Tags.Sorcery, Tags.Nature, Tags.Dark]
+		self.damage_type = [Tags.Poison]
 
 		self.damage = 1
 		self.radius = 4
@@ -8683,13 +8991,14 @@ class ToxinBurst(Spell):
 		self.requires_los = False
 		self.range = 12
 
-		self.damage_type = Tags.Poison
+		self.damage_type = [Tags.Poison]
 
 		self.max_charges = 10
 
 		self.upgrades['chemical_remedy'] = (4, 1, "Herbal Remedy", "All allies in the radius are healed instead of damaged and poisoned.")
-		self.upgrades['deal_dark'] = (1, 3, "Withertoxin", "Toxin Burst also deals [15_dark:dark] damage.")
-		self.upgrades['summon_bomber'] = (1, 3, "Toxin Bomber", "Summons a Poison Bomber in the center of the burst that deals [15_poison:poison] damage.")
+		self.upgrades['deal_dark'] = (1, 3, "Withertoxin", "Toxin Burst also deals [15_dark:dark] damage.", None, [Tags.Dark])
+		self.upgrades['summon_bomber'] = (1, 3, "Toxin Bomber", "Summons a Poison Bomber in the center of the burst that deals [15_poison:poison] damage.", [Tags.Conjuration])
+		self.upgrades['gas_cloud'] = (1, 3, "Gas Cloud", "Affected units are afflicted with blinded and soaked for [5_turns:duration]")
 
 	def get_bomber(self):
 		unit = PoisonBomber()
@@ -8697,6 +9006,7 @@ class ToxinBurst(Spell):
 		unit.buffs[0].radius = self.radius
 
 		unit.name = "Toxin Bomber"
+		apply_minion_bonuses(self, unit) # now gets minion bonuses, since it's a conjuration spell after all
 		return unit
 
 	def cast(self, x, y):
@@ -8717,7 +9027,9 @@ class ToxinBurst(Spell):
 			unit = self.caster.level.get_unit_at(p.x, p.y)
 			if unit:
 				unit.apply_buff(Poison(), self.get_stat('duration'))
-
+				if self.get_stat('gas_cloud'):
+					unit.apply_buff(BlindBuff(), self.get_stat('duration', base=5))
+					unit.apply_buff(SoakedBuff(), self.get_stat('duration', base=5))
 			if random.random() < .3:
 				yield
 		
@@ -8729,7 +9041,361 @@ class ToxinBurst(Spell):
 				+ text.poison_desc).format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
-		return [self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.get_bomber()]
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.get_bomber(), self.spell_upgrades[3]]
+
+class SlimeRustBuff(Buff):
+
+	def on_init(self):
+		self.name = "Slime Rust"
+		self.color = Tags.Slime.color
+		for type in damage_tags:
+			self.resists[type] = -10
+		self.stack_type = STACK_NONE
+		self.buff_type = BUFF_TYPE_CURSE
+
+class Slimeshot(Spell):
+
+	def on_init(self):
+		self.name = "Slimeshot"
+		self.level = 2
+		self.tags = [Tags.Sorcery, Tags.Slime]
+		self.damage_type = [Tags.Poison]
+		self.damage = 12
+		self.range = 12
+		self.radius = 3
+		self.duration = 10
+		self.max_charges = 6
+
+		self.upgrades['slimify'] = (1, 6, "Slimification Shot", "Cast your Slimify on affected enemy units.")
+
+		self.upgrades['transmute'] = (1, 5, "Storm Transmutation", "Storms in the affected area get turned into slimes of matching types.\n"
+																   "Lightning Storms spawn Electric Slimes\n"
+																   "Blizzards spawn Ice Slimes\n"
+																   "Rain Clouds spawn Green Slimes", [Tags.Nature])
+
+		self.upgrades['slime_rust'] = (1, 2, "Slime Rust", "Slimeshot deals [physical] damage in addition to [poison].\n"
+														   "Affected units receive [Slime_Rust:slime] which reduces all of their resistances by 10%\n"
+														   "Does not affect [Slime] units.", [Tags.Metallic], [Tags.Physical])
+
+	def get_description(self):
+		return ("Deals [{damage}:damage] [poison] damage to units in a [{radius}_tile:radius] burst\n"
+				"If cast on an allied [slime] unit, it will explode, adding its max hp to the damage dealt by the spell.\n"
+				"Inflict [{duration}:duration] turns of Soaked on non [slime] units.").format(**self.fmt_dict())
+
+	def cast(self, x, y):
+		self.owner.level.show_beam(self.caster, Point(x, y), Tags.Poison, inclusive=False)
+		target_u = self.caster.level.get_unit_at(x, y)
+		damage = self.get_stat('damage')
+
+		if target_u and not are_hostile(self.caster, target_u) and Tags.Slime in target_u.tags:
+			damage += target_u.max_hp
+			target_u.kill()
+
+		for stage in self.get_aoe(x, y):
+			for point in stage:
+				self.caster.level.deal_damage(point.x, point.y, damage, Tags.Poison, self)
+				yield
+				unit = self.caster.level.get_unit_at(point.x, point.y)
+				if unit:
+					if Tags.Slime not in unit.tags:
+						unit.apply_buff(SoakedBuff(), self.get_stat('duration'))
+						if self.get_stat('slime_rust'):
+							unit.deal_damage(damage, Tags.Physical, self)
+							unit.apply_buff(SlimeRustBuff())
+					if self.get_stat('slimify') and are_hostile(self.caster, unit):
+						self.caster.level.act_cast(self.caster, self.caster.get_or_make_spell(Slimify), unit.x, unit.y, pay_costs=False)
+
+				cloud = self.caster.level.tiles[point.x][point.y].cloud
+				if cloud and self.get_stat('transmute') and not type(cloud)==SpiderWeb:
+					slime = self.get_cloud_matching_slime(cloud)
+					if slime:
+						cloud.kill()
+						self.caster.level.queue_spell(self.summon_slime(slime, point))
+
+			yield
+		return
+
+	def summon_slime(self, slime, point):
+		self.summon(slime, target=point)
+		yield
+
+	def get_aoe(self, x, y):
+		yield from Burst(self.caster.level, Point(x, y), self.get_stat('radius'))
+
+	def get_impacted_tiles(self, x, y):
+		for stage in self.get_aoe(x, y):
+			for point in stage:
+				yield point
+
+	def make_electric_slime(self):
+		u = ElectricSlime()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_ice_slime(self):
+		u = IceSlime()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_green_slime(self):
+		u = GreenSlime()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_cloud_matching_slime(self, cloud):
+		if type(cloud) == StormCloud:
+			return self.make_electric_slime()
+		elif type(cloud) == BlizzardCloud:
+			return self.make_ice_slime()
+		elif type(cloud) == RainCloud:
+			return self.make_green_slime()
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.make_electric_slime(), self.make_ice_slime(), self.make_green_slime(), self.spell_upgrades[2]]
+
+	def get_ai_target(self):
+		return Spell.get_corner_target(self, self.get_stat('radius'))
+
+class AmalgamateSlime(Spell):
+
+	def on_init(self):
+		self.name = "Amalgamate Slime"
+		self.tags = [Tags.Slime, Tags.Sorcery]
+		self.level = 3
+		self.range = RANGE_GLOBAL
+		self.max_charges = 3
+
+		self.can_target_empty = False
+		self.requires_los = False
+		self.can_self_target = False
+
+		self.upgrades['global_network'] = (1, 2, "Global Network", "Affects all friendly slimes in the level instead of those in a connected group")
+		self.upgrades['can_self_target'] = (1, 2, "Slime Drinking", "You may target yourself with this spell.\n"
+																   "Casting it on yourself causes you to ignore its other effects and heal for the total health of slimes absorbed.")
+		self.upgrades['absorption'] = (1, 3, "Absorption", "Slimes steal [1:damage] max hp from adjacent enemy units before amalgamating", [Tags.Blood])
+		self.upgrades['slimy_mimic'] = (1, 4, "Slimy Mimic", "Instead of consolidating into the target slime, summons a random monster with the slimy boss modifier.\n"
+															 "The monster summoned depends on the total health of the absorbed slimes, with higher health pools yielding more powerful monsters.\n"
+															 "The summoned monster's health is set to the total health of the absorbed slimes.", [Tags.Chaos])
+
+	def can_cast(self, x, y):
+		u = self.caster.level.get_unit_at(x, y)
+		if self.get_stat('can_self_target') and u == self.caster: # if you have the upgrade, then go ahead and cast it on yourself
+			return True
+		if u and not are_hostile(self.caster, u) and Tags.Slime in u.tags: # normally, cast on friendly slimes only
+			return True
+		return False
+
+	def get_impacted_tiles(self, x, y):
+		if not self.can_cast(x, y): # if you can't cast there, no tiles will be impacted
+			return None
+
+		if self.get_stat('global_network'): # get all the friendly slimes!
+			return [u for u in self.caster.level.units if Tags.Slime in u.tags and not are_hostile(self.caster, u)]
+
+		# need some extra work here since get_units_in_ball won't work since the caster (you) doesn't have the Slime tag,
+		# so have to look around for friendly slimes and then get those connected unit groups from each of them
+		if self.get_stat('can_self_target') and self.caster.level.get_unit_at(x, y) == self.caster:
+			adj_slimes = [u for u in self.caster.level.get_units_in_ball(self.caster, 1, diag=True) if Tags.Slime in u.tags and not are_hostile(u, self.caster)]
+			affected_units = set()
+			affected_units.add(self.caster)
+			if not adj_slimes:
+				return [self.caster]
+			for u in adj_slimes:
+				for u in self.caster.level.get_connected_group_from_point(u.x, u.y, required_tags=[Tags.Slime], check_friendly=self.caster):
+					affected_units.add(u)
+			return list(affected_units)
+
+		else: # normal cast, grab the slimes in a group
+			return [u for u in self.caster.level.get_connected_group_from_point(x, y, required_tags=[Tags.Slime], check_friendly=self.caster)]
+
+	def cast(self, x, y):
+		target_unit = self.caster.level.get_unit_at(x, y)
+		group = self.get_impacted_tiles(x, y)
+		cumulative_hp = 0
+
+		if self.get_stat('can_self_target') and target_unit == self.caster: # casting on yourself won't do the other fancy bits, just care about hp
+			for u in group:
+				if u != self.caster:
+					self.caster.level.show_beam(u, self.caster, Tags.Poison)
+					self.caster.heal(u.max_hp, self)
+					u.kill()
+					yield
+			return
+
+		if self.get_stat('slimy_mimic'): # if we're making a new monster, we don't care about the amalgamating, just the hp to find out how scary of a monster we make
+			for u in group:
+				cumulative_hp += u.max_hp
+				self.caster.level.show_effect(target_unit.x, target_unit.y, Tags.Chaos) # ? idk if this works
+				self.caster.level.show_beam(u, target_unit, Tags.Poison)
+				u.kill()
+				yield
+			summon_diff = max(1, min(9, cumulative_hp // 25)) # get the difficulty level of the unit to be summoned. /25 might be too low, can adjust if need be.
+			candidates = [u for u in spawn_options if u[1] == summon_diff] # grab the appropriate difficulty monsters
+			candidate = random.choice(candidates)[0]() # pick a random one and build a monster from it
+			candidate = BossSpawns.apply_modifier(BossSpawns.Slimy, candidate) # give it the slimy modifier
+			apply_minion_bonuses(self, candidate) # give it minion bonuses
+			candidate.max_hp  = cumulative_hp # fix its max hp equal to the amalgamated hp
+			self.summon(candidate, Point(x, y))
+			yield
+			return
+
+		spell_map = {} # track all the spells added and their cumulative damage
+		new_spells = [] # list of spells from units besides the target
+		tag_set = set() # all relevant tags on impacted units
+		resistances = {} # track the highest resistance values of combined units
+		for u in group:
+			cumulative_hp += u.max_hp
+			if self.get_stat('absorption'):
+				for unit in self.caster.level.get_units_in_ball(u, 1, diag=True):
+					if are_hostile(self.caster, unit): # only drain from hostiles
+						prev_max = unit.max_hp
+						drain_max_hp(unit, self.get_stat('damage', base=1))
+						self.caster.level.show_effect(unit.x, unit.y, Tags.Blood)
+						cumulative_hp += (prev_max - unit.max_hp) # only add as much hp as was actually drained
+
+			if u == target_unit: # not absorbing the target, so don't need to do next parts to it
+				continue
+
+			for resist_type, value in u.resists.items(): # look at resistances of absorbed units
+				if resist_type not in resistances or value > resistances[resist_type]: # if target doesn't have that resistance or the to be absorbed unit's resistance is greater to a given damage type, store that
+					resistances[resist_type] = value
+
+			for s in u.spells:
+				if hasattr(s, 'damage'): # track spells with damage in the spell_map, so they can be cumulated later
+					spell_map[s.name] = spell_map.get(s.name, 0) + s.damage
+				new_spells.append(s) # add their spells to the new_spells list
+
+			for t in u.tags: # track the absorbed units' tags, so they can be added to the target
+				tag_set.add(t)
+
+			self.caster.level.show_beam(u, target_unit, Tags.Poison) # vfx for the spell
+			u.kill()
+			yield
+
+		hp_deficit = target_unit.max_hp - target_unit.cur_hp
+		target_unit.max_hp = cumulative_hp # set max hp to the cumulative total
+		target_unit.cur_hp = cumulative_hp - hp_deficit # keep the difference between cur_hp and max_hp the same
+
+		existing_names = set(s.name for s in target_unit.spells) # track spells which the target already has
+
+		for s in target_unit.spells: # stack dmg from spell_map into existing spells
+			if s.name in spell_map and hasattr(s, 'damage'): # if one of the units existing spells is in the spell map (name matched)
+				s.damage += spell_map[s.name] # then add the absorbed spell of the same names damage to the units spell
+				del spell_map[s.name] # then get rid of that entry in the spell_map
+
+		for s in new_spells: # for all the absorbed spells
+			if s.name not in existing_names: # if the target doesn't already have the spell
+				if hasattr(s, 'damage') and s.name in spell_map: # if the spell has a damage attribute and is in the spell map
+					s.damage = spell_map[s.name] # make the new spell's damage equal to the sum of all the same_named spells
+					del spell_map[s.name] # get rid of the map entry
+				target_unit.add_spell(s) # then give the unit the spell
+				existing_names.add(s.name)  # prevent further duplicates
+
+		target_unit.spells.sort(key=lambda s : getattr(s, 'damage', 0), reverse=True) # highest damage spells preferred, so they go at the top of the list
+
+		for tag in tag_set: # give the target tags they don't already have from absorbed units
+			if tag not in target_unit.tags:
+				target_unit.tags.append(tag)
+
+		for resist_type, value in resistances.items(): # set the targets resistances for each dmg type to the max of any absorbed unit
+			target_unit.resists[resist_type] = max(target_unit.resists[resist_type], value)
+
+		buff = target_unit.get_buff(SlimeBuff) # if they have base slime buff, grab it
+		if buff:
+			target_unit.remove_buff(buff) # get rid of it (having the base buff causes them to split immediately and reverts their health, which makes the spell pretty awful)
+		candidates = get_matching_slimes(target_unit) # we want to know what kind of slimes to spawn for the slimy buff we're going to apply
+		target_unit.apply_buff(BossSpawns.SlimyBuff(spawner=candidates)) # give the slimy buff directly.
+
+	def get_description(self):
+		return ("Allied [slime] units in a connected group are amalgamated onto the target.\n"
+				"The target gains the max hp, resists, spells, and spell damage, of the affected units.\n"
+				"Target loses the base slime buff, and gains the Slimy boss buff.\n"
+				"This spell must target a friendly [slime] unit.")
+
+class SlimifyBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
+		self.description = self.spell.get_description()
+
+	def on_init(self):
+		self.name = "Slimify"
+		self.color = Tags.Slime.color
+		self.buff_type = BUFF_TYPE_CURSE
+		self.owner_triggers[EventOnDamaged] = self.on_damaged
+		self.owner_triggers[EventOnDeath] = self.on_death
+		self.stack_type = STACK_DURATION
+
+	def on_advance(self):
+		self.owner.deal_damage(self.spell.get_stat('damage'), Tags.Physical, self.spell)
+		if self.spell.get_stat('rainbow'):
+			self.spell.summon(self.spell.make_random_slime(), self.owner, radius = 2, sort_dist=True)
+		else:
+			self.spell.summon(self.spell.make_slime(), self.owner, radius = 2, sort_dist=True)
+
+	def on_damaged(self, evt):
+		if not evt.damage > 0: # 0 or less damage, ignore
+			return
+		if not evt.source: # ignore sourceless
+			return
+		if not evt.source.owner: # ignore ownerless
+			return
+		if self.spell.get_stat('rapid_decomposition') and Tags.Slime in evt.source.owner.tags: # trigger self effects if damaged by a slime
+			self.on_advance()
+		if not evt.source == self.spell: # ignore damage not from the spell
+			return
+		drain_max_hp(self.owner, evt.damage)
+
+	def on_death(self, evt):
+		if not self.spell.get_stat('contagion'):
+			return
+		possible_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if u != self.owner and are_hostile(u, self.spell.owner)]
+		if possible_targets:
+			target = random.choice(possible_targets)
+			target.apply_buff(SlimifyBuff(self.spell), self.spell.get_stat('duration'))
+
+class Slimify(Spell):
+
+	def on_init(self):
+		self.name = "Slimify"
+		self.tags = [Tags.Enchantment, Tags.Blood, Tags.Conjuration, Tags.Slime]
+		self.damage_type = [Tags.Physical]
+		self.range = 5
+		self.max_charges = 4
+		self.level = 4
+		self.damage = 10
+		self.duration = 5
+		self.can_target_empty = False
+
+		self.upgrades['rainbow'] = (1, 3, "Rainbow Slimes", "Slimes can be of any variety, not just Green Slimes.")
+		self.upgrades['contagion'] = (1, 5, "Contagion", "Slimify will jump to the nearest enemy unit in line of sight if the affected target dies.")
+		self.upgrades['rapid_decomposition'] = (1, 6, "Rapid Decomposition", "The damage and spawning effects are triggered any time the affected target takes damage from a slime.")
+
+	def get_description(self):
+		return ("Deals [{damage}:damage] [physical] damage to the target each turn for [{duration}:duration] turns.\n"
+				"Their maximum health is decreased by the damage dealt, and a slime is spawned nearby.").format(**self.fmt_dict())
+
+	def cast_instant(self, x, y):
+		unit = self.caster.level.get_unit_at(x, y)
+		if not unit:
+			return
+		self.owner.level.show_beam(self.caster, Point(x, y), Tags.Poison, inclusive=False)
+		unit.apply_buff(SlimifyBuff(self), self.get_stat('duration'))
+
+	def make_slime(self):
+		u = GreenSlime()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_random_slime(self):
+		candidates = [GreenSlime, RedSlime, IceSlime, VoidSlime, ElectricSlime, BloodSlime]
+		u = random.choice(candidates)()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_slime()] + self.spell_upgrades
 
 class ToxicSpore(Spell):
 
@@ -8748,9 +9414,9 @@ class ToxicSpore(Spell):
 		self.num_summons = 2
 		self.minion_range = 2
 		self.upgrades['num_summons'] = (2, 3)
-		self.upgrades['grey_mushboom'] = (1, 2, "Grey Mushbooms", "Summon grey mushbooms instead, which apply stun instead of poison.", "color")
-		self.upgrades['red_mushboom'] = (1, 5, "Red Mushbooms", "Summon red mushbooms instead, which do not apply poison but deal fire damage", "color")
-		self.upgrades['glass_mushboom'] = (1, 6, "Glass Mushbooms", "Summon glass mushbooms instead, which apply glassify instead of poison", "color")
+		self.upgrades['grey_mushboom'] = (1, 2, "Grey Mushbooms", "Summon grey mushbooms instead, which apply stun instead of poison.")
+		self.upgrades['red_mushboom'] = (1, 5, "Red Mushbooms", "Summon red mushbooms instead, which do not apply poison but deal fire damage", [Tags.Fire])
+		self.upgrades['glass_mushboom'] = (1, 6, "Glass Mushbooms", "Summon glass mushbooms instead, which apply glassify instead of poison")
 
 
 	def get_description(self):
@@ -8796,61 +9462,6 @@ class ToxicSpore(Spell):
 					self.spell_upgrades[2], self.RedMushboom(),
 					self.spell_upgrades[3], self.GlassMushboom()]
 
-class AmplifyPoisonBuff(Buff):
-
-	def __init__(self, spell):
-		self.spell = spell
-		Buff.__init__(self)
-
-	def on_init(self):
-		self.name = "Amplified Poison"
-		self.asset = ['status', 'amplified_poison']
-		self.stack_type = STACK_DURATION
-		self.buff_type = BUFF_TYPE_CURSE
-		self.color = Tags.Poison.color
-		self.resists[Tags.Poison] = -self.spell.get_stat('resistance_debuff')
-
-class AmplifyPoisonSpell(Spell):
-
-	def on_init(self):
-		self.name = "Amplify Venom"
-
-		self.duration = 10
-		self.tags = [Tags.Enchantment, Tags.Nature]
-		self.level = 3
-
-		self.range = 0
-
-		self.max_charges = 8
-
-		self.resistance_debuff = 100
-		self.upgrades['resistance_debuff'] = (100, 3)
-		self.upgrades['duration'] = (10, 1)
-		self.upgrades['max_charges'] = (12, 2)
-		self.upgrades['spread'] = (1, 2, "Spread Poison", "Amplify Poison spreads poison to nearby enemies (radius 2)")
-
-	def get_description(self):
-		return ("All [poisoned] enemies lose [100_poison:poison] resist for [{duration}_turns:duration].").format(**self.fmt_dict())
-
-	def cast(self, x, y):
-
-		units = [u for u in self.caster.level.units if are_hostile(u, self.caster) and u.has_buff(Poison)]
-		random.shuffle(units)
-		for u in units:
-					
-			# Unit died, or some crazy buff removed poison
-			if not u.has_buff(Poison):
-				continue
-
-			if self.get_stat('spread'):
-				for p in self.caster.level.get_points_in_ball(u.x, u.y, 2):
-					unit = self.caster.level.get_unit_at(p.x, p.y)
-					if unit and are_hostile(self.caster, unit):
-						unit.apply_buff(Poison(), u.get_buff(Poison).turns_left)
-
-			u.apply_buff(AmplifyPoisonBuff(self), self.get_stat('duration'))
-			yield
-
 class IgnitePoison(Spell):
 
 	def on_init(self):
@@ -8885,7 +9496,7 @@ class IgnitePoison(Spell):
 
 	def get_description(self):
 		return ("Consume all [poison] on enemy units.\n"
-				"Deal [fire] damage in an [{radius}_tile:radius] burst around each affected enemy equal to [{multiplier}x:damage] the amount of poison consumed.").format(**self.fmt_dict())		
+				"Deal [fire] damage in a [{radius}_tile:radius] burst around each affected enemy equal to [{multiplier}x:damage] the amount of poison consumed.").format(**self.fmt_dict())
 
 	def burst(self, damage, u):
 		damage_dealt = 0
@@ -8960,143 +9571,130 @@ class VenomBeastHealing(Buff):
 			return
 		self.owner.deal_damage(-evt.damage, Tags.Heal, self)
 
-class VenomBeast(Spell):
+class VampireQueen(Upgrade):
+
+	def __init__(self, spell):
+		Upgrade.__init__(self)
+		self.spell = spell
 
 	def on_init(self):
-		self.name = "Venom Beast"
+		self.name = "Vampire Queen"
+		self.level = 7
+		self.description = "All summoned spiders gain the [Blood] tag and can cast your Lifedrain on a 4 turn cooldown.\nAdds the [Blood] tag."
+		self.global_triggers[EventOnUnitAdded] = self.on_unit_added
 
-		self.level = 4
-		self.tags = [Tags.Nature, Tags.Conjuration]
-		self.minion_health = 70
-		self.minion_damage = 12
+	def on_unit_added(self, evt):
+		if are_hostile(self.owner, evt.unit):
+			return
+		if evt.unit == self.owner:
+			return
+		if evt.unit.has_buff(SpiderBuff):
+			grant_minion_spell(BloodTapSpell, evt.unit, self.owner, cool_down=4, pre_insert=True)
+			evt.unit.tags.append(Tags.Blood)
 
-		self.max_charges = 3
+	def on_applied(self, owner):
+		self.spell_tag_update(SummonSpiderQueen, Tags.Blood)
 
-		self.upgrades['venom_skin'] = (1, 3, "Poison Skin", "The venom beast's skin poison's melee attackers for 5 turns.")
-		self.upgrades['resists'] = (50, 2, "Resistances", "The venom beast gains resistance to fire and lightning damage.")
-		self.upgrades['minion_health'] = (30, 3)
-		self.upgrades['trample'] = (1, 2, "Trample Attack", "The venom beast gains a trample attack on a 2 turn cooldown.")
+	def on_unapplied(self):
+		self.spell_tag_update(SummonSpiderQueen, Tags.Blood, add=False)
 
-		self.must_target_walkable = True
-		self.must_target_empty = True
-
-	def get_description(self):
-		return ("Summon a venom best.\n"
-				"The venom beast has [{minion_health}_HP:minion_health], and heals whenever any unit takes poison damage.\n"
-				"The venom beast has a melee attack which deals [{minion_damage}_physical:physical] damage and inflicts [5_turns:duration] of [poison].").format(**self.fmt_dict())
-
-	def cast_instant(self, x, y):
-		beast = Unit()
-		beast.name = "Venom Beast"
-		beast.resists[Tags.Poison] = 100
-		beast.tags = [Tags.Living, Tags.Poison, Tags.Nature]
-
-		if self.get_stat('trample'):
-			trample = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), trample=True)
-			trample.cool_down = 2
-			trample.name = "Trample"
-			beast.spells.append(trample)
-
-		bite = SimpleMeleeAttack(damage=self.get_stat('minion_damage'), buff=Poison, buff_duration=5)
-		bite.name = "Poison Bite"
-		beast.spells.append(bite)
-
-		beast.buffs = [VenomBeastHealing()]
-
-		if self.get_stat('venom_skin'):
-			beast.buffs.append(VenomBeastThorns())
-
-		beast.max_hp = self.get_stat('minion_health')
-
-		beast.resists[Tags.Fire] = self.get_stat('resists')
-		beast.resists[Tags.Lightning] = self.get_stat('resists')
-
-		self.summon(beast, target=Point(x, y))
 
 class SummonSpiderQueen(Spell):
 
 	def on_init(self):
 		self.name = "Spider Queen"
-		self.tags = [Tags.Nature, Tags.Conjuration]
-
-		self.max_charges = 2
 		self.level = 5
 
-		self.upgrades["aether"] = (1, 3, "Aether Queen", "Summon an aether spider queen instead.", "species")
-		self.upgrades["steel"] = (1, 3, "Steel Queen", "Summon a steel spider queen instead.", "species")
-		self.upgrades['vampire'] = (1, 7, "Vampire Queen", "The Spider Queen and its babies can cast your Lifedrain on a 4 turn cooldown.")
-
+		self.tags = [Tags.Nature, Tags.Conjuration]
 		self.must_target_walkable = True
 		self.must_target_empty = True
 
-		self.minion_damage = GiantSpider().spells[0].damage
-		self.minion_health = 10
-
+		self.minion_damage = 2
+		self.minion_health = 96
 		self.num_summons = 4
+		self.max_charges = 2
 
+		self.upgrades['aether'] = (1, 3, "Aether Queen", "Summon an aether spider queen instead.", [Tags.Arcane])
+		self.upgrades['steel'] = (1, 3, "Steel Queen", "Summon a steel spider queen instead.", [Tags.Metallic])
+		self.add_upgrade(VampireQueen(self))
 
 	def fmt_dict(self):
 		d = Spell.fmt_dict(self)
-		d['queen_hp'] = 96 + self.get_stat('minion_health', base=0)
-		d['spider_hp'] = 14 + self.get_stat('minion_health', base=0)
+		d['queen_hp'] = self.get_stat('minion_health', base=96)
+		d['spider_hp'] = self.get_stat('minion_health', base=14)
+		d['baby_hp'] = self.get_stat('minion_health', base=3)
 		return d
 
 	def get_description(self):
 		return ("Summon a spider queen.\n"
 				"The spider queen has [{queen_hp}_HP:minion_health].\n"
 				"The spider queen hatches [{num_summons}:num_summons] baby spiders every [12_turns:duration].\n"
-				"Baby spiders have [3_HP:minion_health] and prefer to flee than attack, but they mature into giant spiders after [8_turns:duration] which have [{spider_hp}_HP:minion_health].\n"
+				"Baby spiders have [{baby_hp}_HP:minion_health] and prefer to flee than attack, but they mature into giant spiders after [8_turns:duration] which have [{spider_hp}_HP:minion_health].\n"
 				"Giant spiders and the spider queen have melee attacks which deal [{minion_damage}_physical:physical] physical damage and inflicts 10 turns of [poison].").format(**self.fmt_dict())
 
-	def spawn_with_bonuses(self, base_spawner):
-		unit = base_spawner()
-		if self.get_stat('vampire'):
-			grant_minion_spell(BloodTapSpell, unit, self.caster, cool_down=4)
-		apply_minion_bonuses(self, unit)
+	def replace_spawner(self, unit):
+		for s in unit.spells:
+			if isinstance(s, SimpleSummon):
+				unit.spells.remove(s)
+				if self.get_stat('aether'):
+					unit.spells.insert(0, SimpleSummon(self.make_baby_phase_spider, num_summons=self.get_stat('num_summons'), cool_down=12))
+				elif self.get_stat('steel'):
+					unit.spells.insert(0, SimpleSummon(self.make_baby_steel_spider, num_summons=self.get_stat('num_summons'), cool_down=12))
+				else:
+					unit.spells.insert(0, SimpleSummon(self.make_baby_spider, num_summons=self.get_stat('num_summons'), cool_down=12))
+				break
 		return unit
 
+	def make_baby_spider(self):
+		u = BabySpider()
+		apply_minion_bonuses(self, u)
+		u.source = self
+		return u
+
+	def make_baby_steel_spider(self):
+		u = BabySteelSpider()
+		apply_minion_bonuses(self, u)
+		u.source = self
+		return u
+
+	def make_baby_phase_spider(self):
+		u = PhaseSpider()
+		apply_minion_bonuses(self, u)
+		u.source = self
+		return u
+
+	def make_spider_queen(self):
+		u = GiantSpiderQueen()
+		apply_minion_bonuses(self, u)
+		self.replace_spawner(u)
+		return u
+
+	def make_steel_spider_queen(self):
+		u = SteelSpiderQueen()
+		apply_minion_bonuses(self, u)
+		self.replace_spawner(u)
+		return u
+
+	def make_aether_spider_queen(self):
+		u = PhaseSpiderQueen()
+		apply_minion_bonuses(self, u)
+		self.replace_spawner(u)
+		return u
+
 	def cast_instant(self, x, y):
-
-		spawner = GiantSpider
-
 		if self.get_stat('aether'):
-			spawner = PhaseSpider
-		if self.get_stat('steel'):
-			spawner = SteelSpider
-
-		unit = spawner()
-		unit.max_hp = 96
-		apply_minion_bonuses(self, unit)
-
-		unit.name = "%s Queen" % unit.name
-		unit.asset_name += '_mother'
-
-		def babyspider():
-			unit = spawner()
-			unit.max_hp = 3
-			apply_minion_bonuses(self, unit)
-			unit.name = "Baby %s" % unit.name
-			unit.asset_name += '_child'
-			
-			if self.get_stat('vampire'):
-				#put the granting spell before the damage-setting since it's a baby, lmk if you want me to move it to after
-				grant_minion_spell(BloodTapSpell, unit, self.caster, cool_down=4)
-			
-			for s in unit.spells:
-				if hasattr(s, 'damage'):
-					s.damage = 1
-
-			unit.is_coward = True
-			unit.buffs = [b for b in unit.buffs if not isinstance(b, SpiderBuff)]
-			unit.buffs.append(MatureInto(lambda: self.spawn_with_bonuses(spawner), 8))
-			unit.source = self
-			return unit
-
-		unit.spells.insert(0, SimpleSummon(babyspider, num_summons=self.get_stat('num_summons'), cool_down=12))
-		if self.get_stat('vampire'):
-			grant_minion_spell(BloodTapSpell, unit, self.caster, cool_down=4)
-
+			unit = self.make_aether_spider_queen()
+		elif self.get_stat('steel'):
+			unit = self.make_steel_spider_queen()
+		else:
+			unit = self.make_spider_queen()
 		self.summon(unit, target=Point(x, y))
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_spider_queen(),
+				self.spell_upgrades[0], self.make_aether_spider_queen(),
+				self.spell_upgrades[1], self.make_steel_spider_queen(),
+				self.spell_upgrades[2]]
 
 class RefreezeBuff(Buff):
 
@@ -9162,6 +9760,7 @@ class Iceball(Spell):
 
 	def on_init(self):
 		self.tags = [Tags.Sorcery, Tags.Ice]
+		self.damage_type = [Tags.Ice]
 		self.level = 2
 		self.name = "Iceball"
 
@@ -9174,13 +9773,19 @@ class Iceball(Spell):
 		self.max_charges = 8
 
 		self.upgrades['cloud_combustion'] = (1, 3, "Cloud Combustion", "Gains +2 radius and x2 damage if cast on a Blizzard tile. The Blizzard tile is consumed.")
-		self.upgrades['icecrush'] = (1, 4, "Ice Crush", "Units inside of the area of effect which are already frozen take physical damage before being refrozen.")
-		self.upgrades['summon_faery'] = (4, 4, "Fae Ball", "Whenever you cast Iceball, summon 1 ice faery for every 4 enemies it damages.")
+		self.upgrades['icecrush'] = (1, 3, "Ice Crush", "Units inside of the area of effect which are already frozen take physical damage before being refrozen.", None, [Tags.Physical])
+		self.upgrades['summon_faery'] = (4, 4, "Fae Ball", "Whenever you cast Iceball, summon 1 ice faery for every 4 enemies it damages.", [Tags.Conjuration])
 
 
 	def get_description(self):
 		return ("Deals [{damage}_ice:ice] damage in a [{radius}_tile:radius] burst.\n"
 				"Affected units in the area are [frozen] for [{duration}_turns:duration].").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0],
+				self.spell_upgrades[1],
+				self.spell_upgrades[2],
+				self.make_faerie()]
 
 	def cast(self, x, y):
 		target = Point(x, y)
@@ -9213,12 +9818,17 @@ class Iceball(Spell):
 					enemies_dmged += 1
 					if enemies_dmged == 4:
 						enemies_dmged = 0
-						ice_faery = FairyIce()
+						ice_faery = self.make_faerie()
 						self.summon(ice_faery, Point(x, y))
 			for i in range(3):
 				yield
 
 		return
+
+	def make_faerie(self):
+		u = FairyIce()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def get_impacted_tiles(self, x, y):
 		if self.get_stat('cloud_combustion') and self.caster.level.tiles[x][y].cloud and isinstance(self.caster.level.tiles[x][y].cloud, BlizzardCloud):
@@ -9233,7 +9843,7 @@ class IcePhoenixRecharge(Upgrade):
 		self.description = "Every 150 damage, return a charge of your Ice Phoenix spell."
 		self.owner_triggers[EventOnUnitAdded] = self.on_unit_added
 		self.global_triggers[EventOnDamaged] = self.on_damage
-		self.level = 4
+		self.level = 3
 		self.damage_dealt = 0
 
 	def on_unit_added(self, evt):
@@ -9264,9 +9874,9 @@ class BlizzardSpell(Spell):
 		self.damage = 5
 		self.duration = 5
 
-		self.upgrades['freezing'] = (1, 3, "Flash Freeze", "Freeze all units in affected tiles for 2 turns.")
+		self.upgrades['freezing'] = (1, 2, "Flash Freeze", "Freeze all units in affected tiles for 2 turns.")
 		self.add_upgrade(IcePhoenixRecharge())
-		self.upgrades['cast_icicle'] = (1, 4, "Hailstorm", "For each cloud in your Blizzard, there is a 25% chance for you to cast your Icicle spell on it each turn.")
+		self.upgrades['cast_icicle'] = (1, 7, "Hailstorm", "For each cloud in your Blizzard, there is a 25% chance for you to cast your Icicle spell on it each turn.")
 
 	def get_description(self):
 		return ("Create a blizzard with a [{radius}_tile:radius] radius.\n" +
@@ -9339,8 +9949,8 @@ class SummonFrostfireHydra(Spell):
 		self.minion_duration = 15
 
 		self.add_upgrade(HydraReclamationUpgrade())
-		self.upgrades['crystal_eyes'] = (1, 4, "Crystal Eyes Hydra", "50% of damage dealt by Frostfire Hydra is redealt as Arcane damage.")
-		self.upgrades['freezing'] = (1, 6, "Freezing Ice", "Frostfire Hydra's Ice beam freezes units for 2 turns.")
+		self.upgrades['crystal_eyes'] = (1, 4, "Crystal Eyes Hydra", "50% of damage dealt by Frostfire Hydra is redealt as Arcane damage.", [Tags.Arcane])
+		self.upgrades['freezing'] = (1, 5, "Freezing Ice", "Frostfire Hydra's Ice beam freezes units for 2 turns.")
 
 		self.must_target_walkable = True
 		self.must_target_empty = True
@@ -9409,14 +10019,22 @@ class StormNova(Spell):
 		self.range = 0
 
 		self.upgrades['grants_immunity'] = (100, 2, "Stormshield", "Allies in radius are not affected, and instead gain [ice:ice] and [lightning:lightning] immunity for [4_turns:duration].")
-		self.upgrades['dual_burst'] = (1, 4, "Dual Nova", "Enemies take both lightning and ice damage instead of just one, and are both frozen and stunned.")
-		self.upgrades['summon_threshold'] = (40, 5, "Spirit Nova", "Summons a Storm Spirit for every 40 damage dealt")
+		self.upgrades['dual_burst'] = (1, 4, "Dual Nova", "Enemies take both [lightning] and [ice] damage instead of just one, and are both frozen and stunned.")
+		self.upgrades['summon_threshold'] = (40, 5, "Spirit Nova", "Summons a Storm Spirit for every 40 damage dealt in a single cast", [Tags.Conjuration])
 
 	def get_description(self):
 		return ("Unleashes a [{radius}_tile:radius] burst of storm energy.\n"
 				"Each tile in the burst takes either [{damage}_ice:ice] damage or [{damage}_lightning:lightning] damage.\n"
 				"Units dealt ice damage are [frozen] for [{duration}_turns:duration].\n"
 				"Units dealt lightning damage are [stunned] for [{duration}_turns:duration].").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_storm_spirit()]
+
+	def make_storm_spirit(self):
+		u = StormSpirit()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def cast(self, x, y):
 		dmg_dealt = 0
@@ -9432,12 +10050,12 @@ class StormNova(Spell):
 					if not self.get_stat('grants_immunity') or (self.get_stat('grants_immunity') and are_hostile(self.caster, unit)):
 
 						if dtype == Tags.Ice or self.get_stat('dual_burst'):
-							unit.apply_buff(FrozenBuff(), self.get_stat('duration'))
 							dmg_dealt += self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Ice, self)
+							unit.apply_buff(FrozenBuff(), self.get_stat('duration'))
 
 						if dtype == Tags.Lightning or self.get_stat('dual_burst'):
-							unit.apply_buff(Stun(), self.get_stat('duration'))
 							dmg_dealt += self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Lightning, self)
+							unit.apply_buff(Stun(), self.get_stat('duration'))
 
 					elif self.get_stat('grants_immunity') and not are_hostile(self.caster, unit):
 
@@ -9457,15 +10075,8 @@ class StormNova(Spell):
 
 				if self.get_stat('summon_threshold'):
 					while dmg_dealt >= self.get_stat('summon_threshold'):
-						self.summon(StormSpirit(), self.caster)
+						self.summon(self.make_storm_spirit(), self.caster)
 						dmg_dealt -= self.get_stat('summon_threshold')
-				
-				if self.get_stat('clouds'):
-					if dtype == Tags.Ice:
-						cloud = BlizzardCloud(self.caster)
-					if dtype == Tags.Lightning:
-						cloud = StormCloud(self.caster)
-					self.caster.level.add_obj(cloud, p.x, p.y)
 
 			yield
 
@@ -9519,19 +10130,18 @@ class DeathChill(Spell):
 		
 		self.level = 3
 		self.tags = [Tags.Enchantment, Tags.Dark, Tags.Ice]
+		self.damage_type = [Tags.Dark] # only dark b/c don't want things casting it on dark immune thinking it will do ice dmg
 
 		self.duration = 5
 		self.radius = 3
 		self.damage = 11
-
 		self.range = 9
-
 		self.max_charges = 12
 
 		self.can_target_empty = False
 
 		self.upgrades['raise_skeleton'] = (1, 3, "Icy Necromancy", "Raise slain [living] units as Icy Skeletons.")
-		self.upgrades['deal_poison'] = (1, 3, "Slaughter Chill", "Also deals [poison] damage to main target.")
+		self.upgrades['deal_poison'] = (1, 2, "Slaughter Chill", "Also deals [poison] damage to main target.", None, [Tags.Poison])
 		self.upgrades['mass_deathchill'] = (1, 6, "Mass Death Chill", "Applies Death Chill to a connected group of enemies.")
 
 	def get_impacted_tiles(self, x, y):
@@ -9553,6 +10163,19 @@ class DeathChill(Spell):
 		for target in targets:
 			if target:
 				target.apply_buff(DeathChillDebuff(self), self.get_stat('duration'))
+
+	def make_icy_skeleton(self):
+		skeleton = Unit()
+		skeleton.name = "Skeletal"
+		skeleton.max_hp = 0
+		skeleton.spells.append(SimpleMeleeAttack(5))
+		skeleton.tags.append(Tags.Undead)
+		BossSpawns.apply_modifier(BossSpawns.Icy, skeleton)
+		apply_minion_bonuses(self, skeleton)
+		return skeleton
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.make_icy_skeleton(), self.spell_upgrades[1], self.spell_upgrades[2]]
 
 class IcePhoenixBuff(Buff):
 	
@@ -9690,57 +10313,17 @@ class WordOfIce(Spell):
 		return ("All non [ice] immune enemies are [frozen] for [{duration}_turns:duration].\n"
 				"Deals [{damage}_ice:ice] damage to all fire units.").format(**self.fmt_dict())
 
-class IceWeave(Spell):
+class CorrosionDebuff(Buff):
 
 	def on_init(self):
-		self.name = "Ice Weave"
-		self.level = 3
-		self.tags = [Tags.Enchantment, Tags.Ice]
-		self.max_charges = 4
-		self.range = 0
+		self.name = "Corrosion"
+		self.buff_type = BUFF_TYPE_CURSE
+		self.stack_type = STACK_INTENSITY
+		self.color = Tags.Dark.color
 
-		self.duration = 4
-
-		self.upgrades['duration'] = (2, 3)
-		self.upgrades['max_charges'] = (4, 3)
-
-	def get_description(self):
-		return ("All [frozen] enemies are [frozen] for an additional [{duration}_turns:duration].").format(**self.fmt_dict())
-
-	def cast_instant(self, x, y):
-		for u in self.caster.level.units:
-			if not are_hostile(self.caster, u):
-				continue
-
-			buff = u.get_buff(FrozenBuff)
-			if not buff:
-				continue
-
-			buff.turns_left += 4
-			u.deal_damage(0, Tags.Ice, self)
-
-class IcicleHarvest(Upgrade):
-
-	def on_init(self):
-		self.name = "Icicle Harvest"
-		self.description = "Whenever a frozen enemy dies to [ice] damage, regain a charge of Icicle."
-		self.global_triggers[EventOnDeath] = self.on_death
-		self.level = 2
-
-	def on_death(self, evt):
-		if not are_hostile(self.owner, evt.unit):
-			return
-
-		if not evt.unit.has_buff(FrozenBuff):
-			return
-
-		if self.prereq.cur_charges >= self.prereq.get_stat('max_charges'):
-			return
-
-		if not evt.damage_event or evt.damage_event.damage_type != Tags.Ice:
-			return
-
-		self.prereq.cur_charges += 1
+	def on_applied(self, owner):
+		resist_debuff_tag = random.choice(damage_tags)
+		self.owner.resists[resist_debuff_tag] -= 10
 
 class Icicle(Spell):
 
@@ -9749,6 +10332,7 @@ class Icicle(Spell):
 		self.name = "Icicle"
 
 		self.tags = [Tags.Ice, Tags.Sorcery]
+		self.damage_type = [Tags.Ice, Tags.Physical]
 
 		self.radius = 1
 		self.damage = 6
@@ -9758,14 +10342,27 @@ class Icicle(Spell):
 
 		self.max_charges = 22
 
-		self.upgrades['freezing'] = (1, 2, "Freezing", "Freeze the main target for 2 turns")
-		self.upgrades['ice_spear'] = (1, 2, "Ice Spear", "Deals physical damage to all units in a beam to the main target")
-		self.add_upgrade(IcicleHarvest())
+		self.upgrades['freezing'] = (1, 1, "Freezing", "Freeze the main target for 2 turns")
+		self.upgrades['ice_spear'] = (1, 2, "Ice Spear", "Deals [physical] damage to all units in a beam to the main target")
+		self.upgrades['storm_spike'] = (1, 5, "Storm Spike", "Deals lightning damage to all units in the radius.\nIcicle can be cast on any tile containing a cloud.", [Tags.Lightning], [Tags.Lightning])
+		self.upgrades['corrosive_shard'] = (1, 5, "Corrosive Shard", "Deals [Poison] and [Dark] damage to the main target. Reduces a random resistance by 10%.", [Tags.Dark], [Tags.Poison, Tags.Dark])
 
 	def get_description(self):
 		return ("Deal [{damage}_physical:physical] damage to the target.\n"
 				"Then, deal [{damage}_ice:ice] to the target and a [{radius}_tile:radius] area around it.\n"
 				"If cast on a chasm tile, creates a floor tile.").format(**self.fmt_dict())
+
+	def can_cast(self, x, y):
+		if self.get_stat('storm_spike'):
+			if self.caster.level.tiles[x][y].cloud and not isinstance(self.caster.level.tiles[x][y].cloud, SpiderWeb):
+				return True
+		return Spell.can_cast(self, x, y)
+
+	def get_targetable_tiles(self):
+		tiles = Spell.get_targetable_tiles(self)
+		if self.get_stat('storm_spike'):
+			tiles += [t for t in self.caster.level.iter_tiles() if t.cloud and not isinstance(t.cloud, SpiderWeb) and t not in tiles]
+		return tiles
 
 	def cast(self, x, y):
 
@@ -9788,11 +10385,18 @@ class Icicle(Spell):
 		if unit and self.get_stat('freezing'):
 			unit.apply_buff(FrozenBuff(), 2 + self.get_stat('duration'))
 
+		if unit and self.get_stat('corrosive_shard'):
+			unit.apply_buff(CorrosionDebuff())
+			unit.deal_damage(self.get_stat('damage'), Tags.Poison, self)
+			unit.deal_damage(self.get_stat('damage'), Tags.Dark, self)
+
 		yield
 
 		for stage in Burst(self.caster.level, Point(x, y), self.get_stat('radius')):
 			for p in stage:
 				self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Ice, self)
+				if self.get_stat('storm_spike'):
+					self.caster.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Lightning, self)
 			yield
 
 		if self.owner.level.tiles[x][y].is_chasm:
@@ -9827,7 +10431,7 @@ class IceWind(Spell):
 
 		self.upgrades['refresh_conjuration'] = (1, 3, "Ice Guardians", "For each 100 damage dealt by a single cast, gain a charge of a random ice conjuration spell.")
 		self.upgrades['mirror'] = (1, 4, "Dual Wind", "Chill Wind also affects a symmetric area behind the caster.")
-		self.upgrades['cast_blazerip'] = (1, 7, "Arcane Storm", "On kill, Chill Wind casts your Blazerip spell.")
+		self.upgrades['cast_blazerip'] = (1, 7, "Arcane Storm", "On kill, Chill Wind casts your Blazerip spell.", [Tags.Arcane])
 
 	def get_description(self):
 		return ("Deals [{damage}_ice:ice] damage and inflicts [{duration}_turns:duration] of [frozen] on units in a [3_tile:radius] wide line perpendicular to the caster.").format(**self.fmt_dict())
@@ -9903,13 +10507,8 @@ class IceWall(Spell):
 		self.radius = 3
 
 		self.upgrades['hungry_wall'] = (1, 3, "Hungry Wall", "+1 minion duration whenever an enemy dies of ice damage")
-		self.upgrades['fae_wall'] = (1, 5, "Fae Wall", "Ice Walls gain fae modifier.")
+		self.upgrades['fae_wall'] = (1, 5, "Fae Wall", "Ice Walls gain fae modifier.", [Tags.Arcane])
 		self.upgrades['endless_wall'] = (99, 7, "Endless Wall", "Infinite radius, make floors out of tiles in AoE.")
-
-		# Permafrost
-		# Cast your Freeze spell
-		# Summon random one offs?
-		# infinite radiius????
 
 	def fmt_dict(self):
 		d = Spell.fmt_dict(self)
@@ -9990,17 +10589,18 @@ class EarthquakeSpell(Spell):
 		self.range = 0
 
 		self.damage = 21
-		self.level = 3
+		self.level = 4
 		self.tags = [Tags.Sorcery, Tags.Nature]
+		self.damage_type = [Tags.Physical]
 
-		self.upgrades['safety'] = (1, 2, "Safety", "Earthquake will not damage friendly units.")
-		self.upgrades['radius_buff'] = (1, 2, "Aftershocks", "Whenever you cast Earthquake, Earthquake gains +2 radius for 2 turns.") #Changed to 2 turns for same reason as Wildfire
-		self.upgrades['stun'] = (1, 4, "Magnitude 8.0", "Stuns for 7 turns.") #change to duration for scaling?
+		self.upgrades['radius_buff'] = (1, 4, "Aftershocks", "Whenever you cast Earthquake, Earthquake gains +2 radius for [2:duration] turns.") # made this scalable with duration bonuses
+		self.upgrades['stun'] = (1, 4, "Magnitude 8.0", "Stuns for [7:duration] turns.") #changed to duration for scaling
+		self.upgrades['shrapnel_quake'] = (1, 7, "Shrapnel Quake", "Casts your Shrapnel Blast on affected wall tiles.", [Tags.Metallic, Tags.Fire])
 
 	def get_description(self):
 		return ("Invoke an earthquake with a [{radius}_tile:radius] radius.\n"
 				"Each tile in the area has a 50% chance to be affected.\n"
-				"Units on affected tiles take [{damage}_physical:physical] damage.\n"
+				"Enemies on affected tiles take [{damage}_physical:physical] damage.\n"
 				"Walls on affected tiles are destroyed.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
@@ -10012,7 +10612,7 @@ class EarthquakeSpell(Spell):
 			if unit == self.caster:
 				continue
 
-			if self.get_stat('safety') and unit and not are_hostile(self.caster, unit):
+			if unit and not are_hostile(self.caster, unit):
 				continue
 
 			if random.random() < .5:
@@ -10025,16 +10625,19 @@ class EarthquakeSpell(Spell):
 
 			if unit:
 				if self.get_stat('stun'):
-					unit.apply_buff(Stun(), 7)
+					unit.apply_buff(Stun(), 7 + self.get_stat('duration'))
 				unit.deal_damage(self.get_stat('damage'), Tags.Physical, self)
 				continue
 
 			tile = self.caster.level.tiles[p.x][p.y]
 			if not tile.can_see:
-				self.caster.level.make_floor(p.x, p.y)
+				if self.get_stat('shrapnel_quake'):
+					self.caster.level.act_cast(self.caster, self.caster.get_or_make_spell(ShrapnelBlast), p.x, p.y, pay_costs=False)
+				else:
+					self.caster.level.make_floor(p.x, p.y)
 
 		if self.get_stat('radius_buff'):
-			self.caster.apply_buff(AftershocksBuff(), 2)
+			self.caster.apply_buff(AftershocksBuff(), 2 + self.get_stat('duration'))
 
 class SearingSealBuff(Buff):
 
@@ -10070,8 +10673,6 @@ class SearingSealBuff(Buff):
 				"On expiration, deals 1 damage to each enemy in LOS for every 5 charges.\n"
 				"\n[Fire] charges: %d") % num_charges[0]
 
-	# def get_tooltip(self):
-	# 	self.get_description()
 
 	def on_damage(self, evt):
 		for i in range(len(self.dtypes)):
@@ -10094,7 +10695,7 @@ class SearingSealBuff(Buff):
 		if self.spell.get_stat('fire_harvest'):
 			while self.charges[0] > 100:
 				self.charges[0] -= 100
-				self.summon(FireSpirit())
+				self.summon(self.spell.make_fire_spirit())
 
 class SearingSealSpell(Spell):
 
@@ -10107,9 +10708,9 @@ class SearingSealSpell(Spell):
 		self.range = 0
 		self.duration = 6
 
-		self.upgrades['slow_burn'] = (1, 4, "Slow Burn", "On expiring and dealing damage, gain a buff that redeals half the damage, then, finally, one that deals a third of it.")
-		self.upgrades['chaos_seal'] = (1, 4, "Chaos Seal", "Gains charges separately from [fire:fire], [lightning:lightning], and [physical:physical] damage, and redeals each on expiration.")
-		self.upgrades['fire_harvest'] = (1, 5, "Fire Harvest", "For every 100 charges stored, summon a flame spirit.")
+		self.upgrades['slow_burn'] = (1, 3, "Slow Burn", "On expiring and dealing damage, gain a buff that redeals half the damage, then, finally, one that deals a third of it.")
+		self.upgrades['chaos_seal'] = (1, 5, "Chaos Seal", "Gains charges separately from [fire:fire], [lightning:lightning], and [physical:physical] damage, and redeals each on expiration.", [Tags.Chaos])
+		self.upgrades['fire_harvest'] = (1, 5, "Fire Harvest", "For every 100 charges stored, summon a flame spirit.", [Tags.Conjuration])
 
 	def get_description(self):
 		return ("Gain Seal of Searing.\n"
@@ -10117,6 +10718,14 @@ class SearingSealSpell(Spell):
 				"When the seal expires, it deals [1_fire:fire] damage to all enemies in line of sight for every 5 charges it has.\n"
 				"The seal lasts [{duration}_turns:duration].\n"
 				"Recasting the spell will expire the current seal and create a new one.").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_fire_spirit()]
+
+	def make_fire_spirit(self):
+		u = FireSpirit()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(SearingSealBuff(self), self.get_stat('duration'))
@@ -10128,39 +10737,64 @@ class PurityBuff(Buff):
 		self.description = "Immune to debuffs."
 		self.color = Tags.Holy.color
 		self.asset = ['status', 'purity']
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
 
 	def on_applied(self, owner):
 		self.owner.debuff_immune = True
 
+		buffs = list(self.owner.buffs)
+		for b in buffs:
+			if b.buff_type == BUFF_TYPE_CURSE:
+				self.owner.remove_buff(b)
+
 	def on_unapplied(self):
 		self.owner.debuff_immune = False
+
+	def on_cast(self, evt):
+		spell = self.owner.get_spell(PuritySpell)
+		if not spell:
+			return
+		if not spell.get_stat('crusader'):
+			return
+		if not Tags.Holy in evt.spell.tags:
+			return
+		self.turns_left += spell.get_stat('duration', base=1)
 
 class PuritySpell(Spell):
 
 	def on_init(self):
 		self.name = "Purity"
-
 		self.duration = 6
 		self.level = 4
 		self.max_charges = 4
-
-		self.upgrades['duration'] = (6, 3)
-		self.upgrades['max_charges'] = (4, 3)
 		self.range = 0
-
 		self.tags = [Tags.Holy, Tags.Enchantment]
+
+		self.upgrades['sin_eater'] = (1, 2, "Sin Eater", "Each debuff removed grants 3 SH", [Tags.Dark])
+		self.upgrades['crusader'] = (1, 3, "Crusader", "Casting a [Holy] spell extends this buff's duration by [1_turn:duration]")
+		self.upgrades['aura'] = (1, 2, "Aura of Purity", "The purity buff is also applied to allies in a [5:radius] tile radius.")
 
 	def get_description(self):
 		return ("Lose all debuffs.\n"
 				"You cannot gain new debuffs.\n"
 				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
+	def get_impacted_tiles(self, x, y):
+		if not self.get_stat('aura'):
+			return [self.caster]
+		return [u for u in self.caster.level.get_units_in_ball(self.caster, self.get_stat('radius', base=5)) if u.team==self.caster.team]
+
 	def cast_instant(self, x, y):
 		buffs = list(self.caster.buffs)
 		for b in buffs:
 			if b.buff_type == BUFF_TYPE_CURSE:
-				self.caster.remove_buff(b)
-		self.caster.apply_buff(PurityBuff(), self.get_stat('duration'))
+				if self.get_stat('sin_eater'):
+					self.caster.add_shields(3)
+
+		units = self.get_impacted_tiles(x, y)
+		for u in units:
+			u.apply_buff(PurityBuff(), self.get_stat('duration'))
+			u.level.show_effect(u.x, u.y, Tags.Holy)
 
 class TwilightGazeBuff(Buff):
 
@@ -10183,7 +10817,8 @@ class TwilightGazeSpell(Spell):
 
 	def on_init(self):
 		self.name = "Twilight Gaze"
-
+		self.tags = [Tags.Holy, Tags.Dark, Tags.Enchantment]
+		self.range = 0
 		self.level = 6
 		self.max_charges = 4
 		
@@ -10191,19 +10826,19 @@ class TwilightGazeSpell(Spell):
 		self.duration = 10
 
 		self.upgrades['resistance_debuff'] = (50, 3)
-		self.upgrades['duration'] = (10, 2)
-		self.upgrades['arcane'] = (1, 3, "Arcane Gaze", "Twilight Gaze also reduces [arcane] resist.")
-
-		self.tags = [Tags.Holy, Tags.Dark, Tags.Enchantment]
-		self.range = 0
+		self.upgrades['piercing_gaze'] = (1, 3, "Piercing Gaze", "Twlight Gaze affects all enemies, not just those in light of sight.")
+		self.upgrades['arcane'] = (1, 3, "Arcane Gaze", "Twilight Gaze also reduces [arcane] resist.", [Tags.Arcane])
 
 	def get_description(self):
 		return ("All enemies in line of sight lose [{resistance_debuff}_dark:dark] resist and [{resistance_debuff}_holy:holy] resist.\n"
 				"Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
 
 	def cast(self, x, y):
-		units = [u for u in self.caster.level.get_units_in_los(self.caster) if are_hostile(u, self.caster)]
-		units.sort(key=lambda u: distance(self.caster, u)) 
+		if self.get_stat('piercing_gaze'):
+			units = [u for u in self.caster.level.units if are_hostile(u, self.caster)]
+		else:
+			units = [u for u in self.caster.level.get_units_in_los(self.caster) if are_hostile(u, self.caster)]
+		units.sort(key=lambda u: distance(self.caster, u))
 		for u in units:
 			u.apply_buff(TwilightGazeBuff(self), self.get_stat('duration'))
 			yield
@@ -10218,46 +10853,48 @@ class SlimeformBuff(Buff):
 		self.name = "Slime Form"
 		self.transform_asset = ["char", "slime_form"]
 		self.stack_type = STACK_TYPE_TRANSFORM
+		self.color = Tags.Slime.color
 		self.resists[Tags.Poison] = 100
 		self.resists[Tags.Physical] = 50
 
 	def make_summon(self, base):
 		unit = base()
-		unit.max_hp = self.spell.get_stat('minion_health')
-		unit.spells[0].damage = self.spell.get_stat('minion_damage')
-		if not unit.spells[0].melee:
-			unit.spells[0].range = self.spell.get_stat('minion_range')
+		apply_minion_bonuses(self.spell, unit)
 		# Make sure bonuses propogate
 		unit.buffs[0].spawner = lambda : self.make_summon(base)
 		unit.source = self.spell
 		return unit
 
 	def on_advance(self):
-		spawn_funcs = [GreenSlime]
+		spawn_funcs = GreenSlime
 		if self.spell.get_stat('fire_slimes'):
-			spawn_funcs.append(RedSlime)
+			spawn_funcs = RedSlime
 		if self.spell.get_stat('ice_slimes'):
-			spawn_funcs.append(IceSlime)
+			spawn_funcs = IceSlime
+		if self.spell.get_stat('electric_slimes'):
+			spawn_funcs = ElectricSlime
 		if self.spell.get_stat('void_slimes'):
-			spawn_funcs.append(VoidSlime)
-		
-		spawn_func = random.choice(spawn_funcs)
-		unit = self.make_summon(spawn_func)
+			spawn_funcs = VoidSlime
+		if self.spell.get_stat('blood_slimes'):
+			spawn_funcs = BloodSlime
+		unit = self.make_summon(spawn_funcs)
 		self.spell.summon(unit)
 
 class SlimeformSpell(Spell):
 
 	def on_init(self):
 		self.name = "Slime Form"
-		self.tags = [Tags.Arcane, Tags.Enchantment, Tags.Conjuration]
-		self.level = 5
+		self.tags = [Tags.Enchantment, Tags.Conjuration, Tags.Slime]
+		self.level = 3
 		self.max_charges = 2
 		self.range = 0
-		self.duration = 8
+		self.duration = 12
 
-		self.upgrades['fire_slimes'] = (1, 1, "Fire Slime", "Gain a chance to summon fire slime.")
-		self.upgrades['ice_slimes'] = (1, 2, "Ice Slime", "Gain a chance to summon ice slime.")
-		self.upgrades['void_slimes'] = (1, 3, "Void Slime", "Gain a chance to summon void slime.")
+		self.upgrades['fire_slimes'] = (1, 3, "Fire Slime", "Instead of Green Slimes, summons Fire Slimes.", [Tags.Fire])
+		self.upgrades['ice_slimes'] = (1, 3, "Ice Slime", "Instead of Green Slimes, summons Ice Slimes.", [Tags.Ice])
+		self.upgrades['electric_slimes'] = (1, 3, "Electric Slime", "Instead of Green Slimes, summon Electric Slimes.", [Tags.Lightning])
+		self.upgrades['void_slimes'] = (1, 3, "Void Slime", "Instead of Green Slimes, summons Void Slimes.", [Tags.Arcane])
+		self.upgrades['blood_slimes'] = (1, 3, "Blood Slime", "Instead of Green Slimes, summons Blood Slimes.", [Tags.Blood])
 
 		ex = GreenSlime()
 
@@ -10269,15 +10906,90 @@ class SlimeformSpell(Spell):
 		return ("Assume slime form for [{duration}_turns:duration].\n"
 				"Gain [50_physical:physical] resist while in slime form.\n"
 				"Gain [100_poison:poison] resist while in slime form.\n"
-				"Summon a friendly slime each turn while in slime form.\n"
-				"Slimes have [{minion_health}_HP:minion_health], have a 50% chance each turn to gain 1 max HP, and split into two slimes upon reaching twice their starting HP.\n"
-				"Slimes have a melee attack which deals [{minion_damage}_poison:poison] damage.").format(**self.fmt_dict())
+				"Summon a friendly slime each turn while in slime form.\n").format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
 		self.caster.apply_buff(SlimeformBuff(self), self.get_stat('duration'))
 
 	def get_extra_examine_tooltips(self):
-		return [GreenSlime(), self.spell_upgrades[0], RedSlime(), self.spell_upgrades[1], IceSlime(), self.spell_upgrades[2], VoidSlime()]
+		return [GreenSlime(), self.spell_upgrades[0], RedSlime(), self.spell_upgrades[1], IceSlime(), self.spell_upgrades[2], ElectricSlime(), self.spell_upgrades[3], VoidSlime(), self.spell_upgrades[4], BloodSlime()]
+
+class OozingTrailBuff(Buff):
+
+	def __init__(self, spell):
+		Buff.__init__(self)
+		self.spell = spell
+
+	def on_init(self):
+		self.name = "Oozing Trail"
+		self.description = "Each time you move, summon a slime nearby"
+		self.owner_triggers[EventOnMoved] = self.on_moved
+
+	def make_slime(self, spawner):
+		u = spawner()
+		apply_minion_bonuses(self.spell, u)
+		u.buffs[0].spawner = lambda : self.make_slime(spawner) # propogate bonuses
+		u.source = self
+		return u
+
+	def on_moved(self, evt):
+		u = self.make_slime(get_matching_slimes(self.owner)[0])
+		self.summon(u, self.owner)
+
+class SummonSlimeDrake(Spell):
+
+	def on_init(self):
+		self.name = "Slime Drake"
+		self.level = 8
+		self.tags = [Tags.Conjuration, Tags.Dragon, Tags.Slime]
+		self.max_charges = 1
+		self.range = 5
+
+		self.minion_damage = 8
+		self.minion_health = 140
+		self.minion_range = 7
+
+		self.upgrades['infernal'] = (1, 5, "Infernal Drake", "Slime Drake gets the Infernal boss modifier.", [Tags.Chaos])
+		self.upgrades['dragon_mage'] = (1, 5, "Dragon Mage", "Slime Drake can cast your Slimeshot with a 6 turn cooldown.")
+		self.upgrades['oozing_trail'] = (1, 4, "Oozing Trail", "When the Slime Drake moves, it will attempt to summon a Slime nearby.")
+
+	def get_description(self):
+		return "Summon a Slime Drake"
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_slime_drake(), self.spell_upgrades[0], self.make_infernal_drake(), self.spell_upgrades[1], self.spell_upgrades[2], self.make_slime()]
+
+	def make_slime(self):
+		u = GreenSlime()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_slime_drake(self):
+		from RareMonsters import SlimeDrake
+		u = SlimeDrake()
+		if self.get_stat('dragon_mage'):
+			grant_minion_spell(Slimeshot, u, self.owner, cool_down=6)
+		if self.get_stat('oozing_trail'):
+			u.apply_buff(OozingTrailBuff(self))
+		if self.get_stat('infernal'):
+			BossSpawns.apply_modifier(BossSpawns.Chaostouched, u)
+		apply_minion_bonuses(self, u)
+		u.buffs[0].spawner = lambda : self.make_slime_drake() # propogate bonuses
+		u.source = self
+		return u
+
+	def make_infernal_drake(self):
+		u = self.make_slime_drake()
+		if self.get_stat('infernal'):
+			return u
+		else:
+			BossSpawns.apply_modifier(BossSpawns.Chaostouched, u)
+			return u
+
+	def cast(self, x, y):
+		self.summon(self.make_slime_drake(), Point(x, y))
+		yield
+
 
 class AetherSicknessBuff(Buff):
 
@@ -10296,6 +11008,7 @@ class Blazerip(Spell):
 	def on_init(self):
 		self.name = "Blazerip"
 		self.tags = [Tags.Arcane, Tags.Fire, Tags.Sorcery]
+		self.damage_type = [Tags.Arcane, Tags.Fire]
 		self.level = 3
 		self.max_charges = 8
 		self.damage = 12
@@ -10304,16 +11017,18 @@ class Blazerip(Spell):
 		self.radius = 3
 
 		self.upgrades['mirror'] = (1, 3, "Dual Blazerip", "Blazerip also affects a symmetric area behind the player.")
-		self.upgrades['aether_poison'] = (1, 3, "Aether Poison", "Inflicts Aether Poison on units it hits. Aether Poison lasts [4:duration] turns, and deals [1_arcane:damage] damage per turn, and causes the enemy to lose 50 [arcane] resistance during the duration.")
-		self.upgrades['blazebugs'] = (1, 5, "Blazebugs", "On kill, summon a swarm of either Fae Flies or Burning Flies.")
+		self.upgrades['aether_poison'] = (1, 3, "Aether Poison", "Inflicts Aether Poison on units it hits. Aether Poison lasts [10:duration] turns, and deals [1_arcane:damage] damage per turn, and causes the enemy to lose 50 [arcane] resistance during the duration.")
+		self.upgrades['blazebugs'] = (1, 5, "Blazebugs", "On kill, summon a swarm of either Fae Flies or Burning Flies.", [Tags.Conjuration])
 
 	def get_fae_flies(self):
 		flies = FlyCloud()
+		apply_minion_bonuses(self, flies)
 		BossSpawns.apply_modifier(BossSpawns.Faetouched, flies)
 		return flies
 
 	def get_fire_flies(self):
 		flies = FlyCloud()
+		apply_minion_bonuses(self, flies)
 		BossSpawns.apply_modifier(BossSpawns.Flametouched, flies)
 		return flies
 
@@ -10332,7 +11047,7 @@ class Blazerip(Spell):
 			unit = self.caster.level.get_unit_at(p.x, p.y)
 			if unit:
 				if self.get_stat('aether_poison'):
-					unit.apply_buff(AetherSicknessBuff(), self.get_stat('duration', base=4)) #currently applies debuff BEFORE dealing damage. Let me know if you want this to change to after.
+					unit.apply_buff(AetherSicknessBuff(), self.get_stat('duration', base=10))
 			
 			self.owner.level.deal_damage(p.x, p.y, self.get_stat('damage'), Tags.Arcane, self)
 			
@@ -10381,17 +11096,18 @@ class IceVortex(Spell):
 		self.duration = 2
 		self.range = 10
 		self.requires_los = False
-
 		self.radius = 5
 
-		self.upgrades['damage'] = (11, 3)
-		self.upgrades['duration'] = (2, 2)
-		self.upgrades['radius'] = (3, 2)
+		self.upgrades['embodied'] = (1, 2, "Embodied Vortex", "You may cast Ice Vortex on yourself.")
+		self.upgrades['drake_call'] = (1, 6, "Drake Calling", "If a target is killed by this spell, casts your Ice Drake spell at their location.", [Tags.Dragon])
+		self.upgrades['channel'] = (1, 1, "Channeling", "Ice Vortex can be channeled for up to 2 turns.")
 
 	def can_cast(self, x, y):
 		u = self.caster.level.get_unit_at(x, y)
 		if not u:
 			return False
+		if self.get_stat('embodied') and u==self.caster:
+			return True
 		if not u.has_buff(FrozenBuff):
 			return False
 		return Spell.can_cast(self, x, y)
@@ -10404,7 +11120,12 @@ class IceVortex(Spell):
 		first_enemy = [u for u in level.units if u.team != TEAM_PLAYER][0]
 		first_enemy.apply_buff(FrozenBuff(), 5)
 
-	def cast(self, x, y):
+	def cast(self, x, y, channel_cast=False):
+
+		if self.get_stat('channel') and not channel_cast:
+			self.caster.apply_buff(ChannelBuff(self.cast, Point(x, y)), self.get_stat('max_channel', base=2))
+			return
+
 		main_target = self.caster.level.get_unit_at(x, y)
 		units = [u for u in self.caster.level.get_units_in_ball(Point(x, y), self.get_stat('radius')) if u != main_target]
 		random.shuffle(units)
@@ -10422,10 +11143,13 @@ class IceVortex(Spell):
 			yield
 			u.apply_buff(FrozenBuff(), self.get_stat('duration'))
 			yield
+			pre_hp = u.cur_hp
 			u.deal_damage(self.get_stat('damage'), Tags.Arcane, self)
 			yield
 			u.deal_damage(self.get_stat('damage'), Tags.Ice, self)
 			yield
+			if self.get_stat('drake_call') and pre_hp > 0 and not u.is_alive():
+				self.caster.level.act_cast(self.caster, self.caster.get_or_make_spell(SummonIceDrakeSpell), u.x, u.y, pay_costs=False)
 
 
 class RestlessDeadBuff(Buff):
@@ -10511,7 +11235,7 @@ class RestlessDead(Spell):
 		self.max_charges = 3
 		self.minion_damage = 5
 
-		self.upgrades['salvage'] = (1, 2, "Junk Golems", "Whenever an enemy constructs dies, raise it as a junk golem.")
+		self.upgrades['salvage'] = (1, 2, "Junk Golems", "Whenever an enemy constructs dies, raise it as a junk golem.", [Tags.Metallic])
 		self.upgrades['spirit_catcher'] = (1, 3, "Elemental Spirits", "Whenever an enemy fire, ice or lightning unit dies, a random summoned ally gains 100 resistance to that element and a ranged attack of that type.  Each ally can gain only 1 such buff.")
 		self.upgrades['friendly'] = (1, 2, "Restless Minions", "Allies can also be raised by Restless Dead")
 
@@ -10544,75 +11268,13 @@ class RestlessDead(Spell):
 	def get_extra_examine_tooltips(self):
 		return [self.example_skeleton(), self.spell_upgrades[0], self.example_junk_golem(), self.spell_upgrades[1], self.spell_upgrades[2]]
 
-class GustOfWind(Spell):
-
-	def on_init(self):
-		self.name = "Gust of Wind"
-		self.level = 2
-		self.tags = [Tags.Nature, Tags.Sorcery]
-		self.range = 7
-		self.max_charges = 10
-		self.angle = math.pi / 6
-		self.damage = 14
-		self.force = 3
-		self.stats.append('force')
-		self.duration = 3
-
-		self.upgrades['duration'] = (2, 2, "Stun Duration")
-		self.upgrades['range'] = (4, 4)
-		self.upgrades['damage'] = (10, 3)
-		self.upgrades['force'] = (3, 3)
-
-	def get_description(self):
-		return ("Push back units in a cone [{force}:range] tiles.\n"
-				"If a unit collides with a wall, chasm, or another unit, it is [stunned] for [{duration}_turns:duration] and takes [{damage}_physical:physical] damage.\n"
-				"Stationary enemise are unaffected.\n"
-				"Stormclouds and webs in the area are destroyed.\n").format(**self.fmt_dict())
-		
-
-	def get_impacted_tiles(self, x, y):
-		target = Point(x, y)
-		burst = Burst(self.caster.level, self.caster, self.get_stat('range'), expand_diagonals=True, burst_cone_params=BurstConeParams(target, self.angle))
-		return [p for stage in burst for p in stage if self.caster.level.can_see(self.caster.x, self.caster.y, p.x, p.y)]
-
-	def blow(self, unit, start_loc):
-		for p in self.caster.level.get_points_in_line(start_loc, unit, find_clear=True):
-			self.caster.level.leap_effect(p.x, p.y, Tags.Nature.color, unit)
-			yield
-
-	def cast_instant(self, x, y):
-		to_push = []
-		for p in self.get_impacted_tiles(x, y):
-
-			cloud = self.caster.level.tiles[p.x][p.y].cloud
-			if cloud:
-				cloud.kill()
-
-			unit = self.caster.level.get_unit_at(p.x, p.y)
-			if not unit:
-				continue
-			if unit == self.caster:
-				continue
-			if unit.stationary:
-				continue
-			
-			to_push.append(unit)
-		
-		to_push.sort(key=lambda u: -distance(u, self.caster))
-		for unit in to_push:
-			start_loc = Point(unit.x, unit.y)
-			self.owner.level.queue_spell(self.blow(unit, start_loc))
-			result = push(unit, self.caster, self.get_stat('force'))
-			if not result:
-				unit.apply_buff(Stun(), self.get_stat('duration'))
-				unit.deal_damage(self.get_stat('damage'), Tags.Physical, self)
-
 class ChaosCast(Upgrade):
 
 	def on_init(self):
-		self.level = 4
+		self.level = 5
 		self.name = "Pyrostatic Chaos"
-		self.description = "Whenever you cast a [chaos] spell, cast Pyrostatic Curse at that position."
+		self.description = ("Whenever you cast another [chaos] spell, cast Pyrostatic Curse at that position."
+							"\nAdds the [Chaos] tag.")
 		self.owner_triggers[EventOnSpellCast] = self.on_cast
 
 	def on_cast(self, evt):
@@ -10622,6 +11284,12 @@ class ChaosCast(Upgrade):
 		spell = self.owner.get_or_make_spell(PyrostaticHexSpell)
 		self.owner.level.act_cast(self.owner, spell, evt.x, evt.y, pay_costs=False)
 
+	def on_applied(self, owner):
+		self.spell_tag_update(PyrostaticHexSpell, Tags.Chaos)
+
+	def on_unapplied(self):
+		self.spell_tag_update(PyrostaticHexSpell, Tags.Chaos, add=False)
+
 class PyroStaticHexBuff(Buff):
 
 	def __init__(self, spell):
@@ -10630,40 +11298,32 @@ class PyroStaticHexBuff(Buff):
 
 	def on_init(self):
 		self.name = "Pyrostatic Hex"
-		self.beam = False
+		self.beam = self.spell.get_stat('beam')
 		self.buff_type = BUFF_TYPE_CURSE
 		self.color = Tags.Fire.color
 		self.owner_triggers[EventOnDamaged] = self.on_damage
 		self.asset = ['status', 'pyrostatic_hex']
 
 		if self.spell.get_stat('remove_resistance'):
-			self.resists[Tags.Fire] = -25
+			self.resists[Tags.Fire] = -50
 
 	def on_damage(self, evt):
 		if evt.damage_type != Tags.Fire:
 			return
 
-		self.owner.level.queue_spell(self.deal_damage(evt))
+		self.owner.level.queue_spell(self.redeal(evt))
 
-	def return_dist(self, unit):
-		return distance(self.owner, unit)
-
-	def deal_damage(self, evt):
-
-		redeal_targets = [u for u in self.owner.level.get_units_in_los(self.owner) if are_hostile(u, self.spell.owner) and u != self.owner]
-		if not self.beam:
-			random.shuffle(redeal_targets)
-		else:
-			sort(redeal_targets, key=lambda u: distance(u, self.owner))
-
-		for t in redeal_targets[:self.spell.get_stat('num_targets')]:
+	def redeal(self, evt):
+		targets = [u for u in self.owner.level.get_units_in_los(self.owner) if are_hostile(u, self.spell.owner) and u != self.owner]
+		random.shuffle(targets)
+		for t in targets[:self.spell.get_stat('num_targets')]:
 			if not self.beam:
 				for p in self.owner.level.get_points_in_line(self.owner, t)[1:-1]:
 					self.owner.level.show_effect(p.x, p.y, Tags.Lightning)
 				t.deal_damage(evt.damage, Tags.Lightning, self.spell)
 			else:	
 				for p in self.owner.level.get_points_in_line(self.owner, t)[1:]:
-					self.owner.level.deal_damage(evt.damage // 2, Tags.Lightning, self.spell)
+					self.owner.level.deal_damage(p.x, p.y, evt.damage, Tags.Lightning, self.spell)
 		yield
 
 class PyrostaticHexSpell(Spell):
@@ -10672,18 +11332,17 @@ class PyrostaticHexSpell(Spell):
 		self.name = "Pyrostatic Curse"
 
 		self.tags = [Tags.Fire, Tags.Lightning, Tags.Enchantment]
-		self.level = 4
-		self.max_charges = 10
+		self.level = 3
+		self.max_charges = 5
 
-		self.radius = 5
-		self.range = 9
-		self.duration = 4
-
+		self.radius = 7
+		self.range = 12
+		self.duration = 6
 		self.num_targets = 2
 
-		self.upgrades['remove_resistance'] = (1, 2, "Resistance Melting", "Removes 25 [Fire] resist from targets.")
+		self.upgrades['remove_resistance'] = (1, 3, "Resistance Melting", "Removes 50 [Fire] resist from targets.")
 		self.add_upgrade(ChaosCast())
-		self.upgrades['beam'] = (1, 5, "Linear Conductance", "Redealt [lightning] damage is dealt along a beam instead of just to one target.")
+		self.upgrades['beam'] = (1, 3, "Linear Conductance", "Redealt [lightning] damage is dealt along a beam instead of just to one target.")
 
 	def get_description(self):
 		return ("Curses targets in a [{radius}_tile:radius] radius for [{duration}_turns:duration].\n"
@@ -10715,7 +11374,7 @@ class SpikeballFactory(Spell):
 		# copper spikeballs
 		self.upgrades['defense'] = (1, 3, "Defense System", "The summoned lairs gain a projectile attack with 10 range that deals [5_physical:physical] damage.")
 		self.upgrades['manufactory'] = (1, 6, "Manufactory", "Surrounds the initially summoned gates with another layer of gates")
-		self.upgrades['copper'] = (1, 7, "Copper Spikeballs", "Summons copper spikeballs instead of normal ones")
+		self.upgrades['copper'] = (1, 7, "Copper Spikeballs", "Summons copper spikeballs instead of normal ones", [Tags.Lightning])
 
 	def get_description(self):
 		return "Surrounds the caster with spikeball gates, which will spawn spikeballs."
@@ -10736,7 +11395,7 @@ class SpikeballFactory(Spell):
 			apply_minion_bonuses(self, gate)
 			if self.get_stat('defense'):
 				spell = SimpleRangedAttack(damage=self.get_stat('minion_damage', base=5), range=self.get_stat('minion_rage', base=10))
-				gate.spells.insert(0, spell)
+				gate.add_spell(spell)
 			self.summon(gate, p)
 			yield
 
@@ -10758,8 +11417,6 @@ class MercurizeBuff(Buff):
 	def __init__(self, spell):
 		self.spell = spell
 		Buff.__init__(self)
-		if self.spell.get_stat('corrosion'):
-			self.resists[Tags.Physical] = -50
 
 	def on_init(self):
 		self.buff_type = BUFF_TYPE_CURSE
@@ -10768,28 +11425,20 @@ class MercurizeBuff(Buff):
 		self.owner_triggers[EventOnDeath] = self.on_death
 
 	def on_advance(self):
-		dtypes = [Tags.Physical, Tags.Poison]
-
-		if self.spell.get_stat('dark'):
-			dtypes.append(Tags.Dark)
-
-		for dtype in dtypes:
+		for dtype in self.spell.damage_type:
 			self.owner.deal_damage(self.spell.get_stat('damage'), dtype, self.spell)
 			if not self.owner.is_alive():
 				break
+		if self.owner.is_alive() and self.spell.get_stat('mad_hatter'):
+			if self.owner.cur_hp < (self.owner.max_hp // 2):
+				self.owner.apply_buff(BerserkBuff(), self.turns_left)
 
 	def on_death(self, evt):
 		geist = self.spell.get_geist()
 		geist.max_hp = self.owner.max_hp
-
 		self.spell.summon(geist, target=self.owner)
-
-		if self.spell.get_stat('noxious_aura'):
-			geist.apply_buff(DamageAuraBuff(damage=1, damage_type=Tags.Poison, radius=2))
-
 		if self.spell.get_stat('vengeance'):
 			geist.apply_buff(MercurialVengeance(self.spell))
-
 
 class MercurialVengeance(Buff):
 
@@ -10817,22 +11466,19 @@ class MercurizeSpell(Spell):
 
 		self.level = 2
 		self.tags = [Tags.Dark, Tags.Metallic, Tags.Enchantment, Tags.Conjuration]
+		self.damage_type = [Tags.Poison, Tags.Physical]
 
 		self.damage = 2
-
 		self.max_charges = 6
 		self.duration = 6
-
 		self.range = 8
 
 		self.minion_damage = 10
-
 		self.minion_duration = 32
 
-		self.upgrades['dark'] = (1, 4, "Morbidity", "Mercurized targets also take dark damage")
-		self.upgrades['corrosion'] = (1, 2, "Corrosion", "Mercurized targets lose 50 physical resist")
-		self.upgrades['noxious_aura'] = (1, 4, "Toxic Fumes", "Quicksilver Geists have a noxious aura that deals 1 poison damage to enemy units within [2_tiles:radius] each turn.")
-		self.upgrades['vengeance'] = (1, 3, "Mercurial Vengeance", "When a Quicksilver Geist is killed, its killer is afflicted with Mercurize.")
+		self.upgrades['dark'] = (1, 2, "Morbidity", "Mercurized targets also take [dark] damage", None, [Tags.Dark])
+		self.upgrades['vengeance'] = (1, 4, "Mercurial Vengeance", "When a Quicksilver Geist is killed, its killer is afflicted with Mercurize.")
+		self.upgrades['mad_hatter'] = (1, 3, "Mercurial Temper", "At the end of their turn, units affected by Mercurize with less than half health are berserked for the remainder of its duration")
 
 	def get_description(self):
 		return("Afflict the target with Mercurize.  The target takes [{damage}_poison:poison] and [{damage}_physical:physical] damage each turn for [{duration}_turns:duration].\n"
@@ -10895,11 +11541,17 @@ class MagnetizeBuff(Buff):
 			if distance(self.owner, u) < 2:
 				u.apply_buff(Stun(), 1)
 				if self.spell.get_stat('cast_mercurize'):
-					mercurize_buff = MercurizeBuff(self.spell.caster.get_or_make_spell(MercurizeSpell))
-					u.apply_buff(mercurize_buff, self.spell.get_stat('duration', base=1)) #change to 2? since buffs act weird w/ 1 duration
-				u.deal_damage(self.spell.get_stat('damage'), Tags.Lightning, self)
+					spell = MercurizeSpell()
+					spell.owner = self.spell.owner
+					spell.caster = self.spell.owner
+					spell.statholder = self.spell.owner
+					spell.duration = 1
+					self.owner.level.act_cast(self.owner, spell, u.x, u.y, pay_costs=False, queue=True)
+				u.deal_damage(self.spell.get_stat('damage'), Tags.Lightning, self.spell)
 			elif self.spell.get_stat('electromagnetism'):
-				u.deal_damage(self.spell.get_stat('damage'), Tags.Lightning, self)
+				u.deal_damage(self.spell.get_stat('damage'), Tags.Lightning, self.spell)
+			elif self.spell.get_stat('radioactivity'):
+				u.deal_damage(self.spell.get_stat('damage'), Tags.Poison, self.spell)
 
 
 class MagnetizeSpell(Spell):
@@ -10907,6 +11559,7 @@ class MagnetizeSpell(Spell):
 	def on_init(self):
 		self.name = "Magnetize"
 		self.tags = [Tags.Lightning, Tags.Metallic, Tags.Enchantment]
+		self.damage_type = [Tags.Lightning]
 
 		self.level = 2
 		self.max_charges = 10
@@ -10919,12 +11572,12 @@ class MagnetizeSpell(Spell):
 		self.range = 9
 		self.requires_los = False
 
-		self.duration = 5
+		self.duration = 10
 
-		self.upgrades['radioactivity'] = (1, 4, "Radioactivity", "Lowers target's [lightning:lightning] and [arcane:arcane] resist by 75.")
+		self.upgrades['radioactivity'] = (1, 3, "Radioactivity", "Lowers target's [lightning:lightning] and [arcane:arcane] resist by 75. \n Deals [poison] damage to all units in range each turn.")
 		self.upgrades['electromagnetism'] = (1, 4, "Electromagnetism", "Deals [lightning:lightning] damage to all units in range rather than just adjacent units.")
-		self.upgrades['cast_mercurize'] = (1, 7, "Liquid Magnetism", "Casts your Mercurize with 1 duration on adjacent enemy units.")
-
+		self.upgrades['cast_mercurize'] = (1, 5, "Liquid Magnetism", "Casts your Mercurize with [1_duration:duration] on adjacent enemy units.")
+		self.upgrades['hemomagnetism'] = (1, 2, "Hemomagnetism", "Magnetism can now target living units.", [Tags.Blood])
 
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
@@ -10932,9 +11585,12 @@ class MagnetizeSpell(Spell):
 		if not unit:
 			return False
 
-		if not ((Tags.Metallic in unit.tags) or (self.get_stat('universal'))):
-			#keeping self.get_stat('universal') for now just in case we wanna keep that later
-			return False
+		if self.get_stat('hemomagnetism'):
+			if Tags.Living not in unit.tags and Tags.Metallic not in unit.tags:
+				return False
+		else:
+			if Tags.Metallic not in unit.tags:
+				return False
 
 		return Spell.can_cast(self, x, y)
 
@@ -10945,6 +11601,7 @@ class MagnetizeSpell(Spell):
 			if self.get_stat('radioactivity'):
 				unit.resists[Tags.Lightning] -= 75
 				unit.resists[Tags.Arcane] -= 75
+
 			unit.apply_buff(MagnetizeBuff(self), self.get_stat('duration'))
 
 	def get_description(self):
@@ -10966,9 +11623,10 @@ class SilverSpearSpell(Spell):
 		self.range = 11
 		self.radius = 1
 
-		self.upgrades['deal_lightning'] = (1, 3, "Copper Shaft", "Deals Lightning damage to all enemies in the spear's radius.")
+		self.upgrades['deal_lightning'] = (1, 3, "Copper Shaft", "Deals Lightning damage to all enemies in the spear's radius.", [Tags.Lightning])
 		self.upgrades['cast_holyblast'] = (1, 4, "Consecration", "Cast your Heavenly Blast on slain targets.")
-		#self.upgrades['barrage'] = (1, 4, "Spear Barrage", "Shoots 3 parallel spears.")
+		self.upgrades['requires_los'] = (-1, 4, "Astral Spear")
+
 
 	def get_description(self):
 		return ("Deals [{damage}_physical:physical] damage to the target.\n"
@@ -10988,11 +11646,7 @@ class SilverSpearSpell(Spell):
 
 	def cast(self, x, y):
 		spear_offsets = [Point(0, 0)]
-		#trigonometry fun for parallel spears
-		if self.get_stat('barrage'):
-			pass #couldn't get the trigonometry fun to work :(
 		hits = set()
-		# todo- holy sparkles randomly around projectile?
 		for spear_offset in spear_offsets:
 			
 			start_x = self.caster.x + spear_offset.x
@@ -11032,39 +11686,12 @@ class SilverSpearSpell(Spell):
 				for _ in self.caster.level.act_cast(self.caster, holy_blast_spell, unit.x, unit.y, queue=False, pay_costs=False):
 					yield
 
-def InfernoCannon():
-	unit = Unit()
-	unit.tags = [Tags.Construct, Tags.Metallic, Tags.Fire]
-	unit.max_hp = 24
-	unit.name = "Inferno Cannon"
-	unit.asset_name = "goblin_cannon"
-	unit.stationary = True
-
-	unit.resists[Tags.Physical] = 50
-	unit.resists[Tags.Fire] = -100
-
-	cannonball = SimpleRangedAttack(damage=11, range=12, radius=2, damage_type=[Tags.Physical, Tags.Fire])
-	cannonball.name = "Cannon Blast"
-	unit.spells = [cannonball]
-
-	unit.buffs.append(DeathExplosion(damage=30, damage_type=Tags.Fire, radius=3))
-	return unit
-
-def SiegeGolem():
-	unit = SiegeOperator(InfernoCannon)
-	unit.name = "Golem Siege Mechanic"
-	unit.asset_name = "golem"
-
-	unit.max_hp = 25
-	unit.tags = [Tags.Metallic, Tags.Construct]
-	return unit
-
 class ChaosCannonball(Spell):
 
 	def on_init(self):
 		self.name = "Chaos Cannonball"
 		self.tags = [Tags.Chaos]
-		self.dtypes = [Tags.Fire, Tags.Lightning, Tags.Physical]
+		self.damage_type = [Tags.Fire, Tags.Lightning, Tags.Physical]
 		self.retarget = True
 		self.radius = 1
 
@@ -11075,7 +11702,7 @@ class ChaosCannonball(Spell):
 
 		self.caster.cur_hp -= self.caster.max_hp // 2
 
-		for dtype in self.dtypes:
+		for dtype in self.damage_type:
 			possible_targets = self.caster.level.get_units_in_ball(self.caster, self.range)
 			possible_targets = [u for u in possible_targets if self.caster.level.can_see(u.x, u.y, self.caster.x, self.caster.y)]
 			possible_targets = [u for u in possible_targets if are_hostile(self.caster, u)]
@@ -11110,14 +11737,12 @@ class SummonSiegeGolemsSpell(Spell):
 		self.minion_range = 15
 		self.radius = 3
 
-		self.minion_health = InfernoCannon().max_hp
+		self.minion_health = 24 # InfernoCannon().max_hp
 		self.num_summons = 3
 
-		self.upgrades['assistant_cannoneers'] = (1, 3, "Assistant Cannoneers", "In addition to Siege Golems, summon 5 Goblin Assistants that can repair and operate inferno cannons.")
-		self.upgrades['recycling'] = (1, 5, "Recycling", "Constructs and Metallic units killed by the Inferno Cannon's [Fire_Blast:fire] are summoned as Siege Golems.")
-		self.upgrades['chaos_cannon'] = (1, 7, "Chaos Cannon", "Instead of summoning Siege Golems, summon Chaos Siege Golems. Chaos Siege Golems make a Chaos Cannon that shoots a Fire projectile, a Lightning projectile, and a Physical projectile with lowered radiuses.")
-
-		#Upgrade- fires cluster firebombs instead of just explosions?
+		self.upgrades['assistant_cannoneers'] = (1, 2, "Assistant Cannoneers", "In addition to Siege Golems, summon 5 Goblin Assistants that can repair and operate inferno cannons.")
+		self.upgrades['recycling'] = (1, 3, "Recycling", "Constructs and Metallic units killed by the Inferno Cannon's [Fire_Blast:fire] are summoned as Siege Golems.")
+		self.upgrades['chaos_cannon'] = (1, 5, "Chaos Cannon", "Instead of summoning Siege Golems, summon Chaos Siege Golems. Chaos Siege Golems make a Chaos Cannon that shoots a [Fire] projectile, a [Lightning] projectile, and a [Physical] projectile with lowered radiuses.", [Tags.Chaos])
 
 	def get_description(self):
 		return ("Summons a crew of [{num_summons}:num_summons] siege golems.\n"
@@ -11125,15 +11750,12 @@ class SummonSiegeGolemsSpell(Spell):
 				"The inferno cannon deals [{minion_damage}_fire:fire] damage to units in a [{radius}_tile:radius] radius.\n"
 				"The cannon will explode when destroyed, dealing [{minion_damage}_fire:fire] damage to units in a fixed [3_tile:radius] radius.\n".format(**self.fmt_dict()))
 
-
 	def cannon(self):
 		unit = Unit()
 		unit.tags = [Tags.Construct, Tags.Metallic, Tags.Fire]
-		
-		unit.max_hp = 24
+		unit.max_hp = self.get_stat('minion_health')
 		unit.name = "Inferno Cannon"
 		unit.stationary = True
-
 		unit.resists[Tags.Physical] = 50
 		unit.resists[Tags.Fire] = -100
 
@@ -11159,12 +11781,30 @@ class SummonSiegeGolemsSpell(Spell):
 			cannonball = ChaosCannonball()
 			cannonball.range = self.get_stat('minion_range')
 			cannonball.damage = self.get_stat('minion_damage')
+			cannonball.radius = self.get_stat('radius', base=1)
 			unit.asset_name = "inferno_cannon_chaos"
+		cannonball.siege = True
 		unit.spells = [cannonball]
-
 		unit.buffs.append(DeathExplosion(damage=self.get_stat('minion_damage'), damage_type=Tags.Fire, radius=3))
+		return unit
 
-		unit.max_hp = 18
+	def make_chaos_cannon(self): # for tt
+		unit = Unit()
+		unit.tags = [Tags.Construct, Tags.Metallic, Tags.Fire]
+		unit.name = "Inferno Cannon"
+		unit.stationary = True
+		unit.resists[Tags.Physical] = 50
+		unit.resists[Tags.Fire] = -100
+		unit.max_hp = self.get_stat('minion_health')
+		cannonball = ChaosCannonball()
+		cannonball.range = self.get_stat('minion_range')
+		cannonball.damage = self.get_stat('minion_damage')
+		cannonball.radius = self.get_stat('radius', base=1)
+		unit.asset_name = "inferno_cannon_chaos"
+		cannonball.siege = True
+		unit.spells = [cannonball]
+		unit.buffs.append(DeathExplosion(damage=self.get_stat('minion_damage'), damage_type=Tags.Fire, radius=3))
+		apply_minion_bonuses(self, unit)
 		return unit
 
 	def golem(self):
@@ -11173,7 +11813,7 @@ class SummonSiegeGolemsSpell(Spell):
 		golem.spells[1].heal = 2
 		golem.name = "Golem Siege Mechanic"
 		golem.asset_name = "golem_siege"
-		golem.max_hp = 25
+		golem.max_hp = 24
 		golem.tags = [Tags.Metallic, Tags.Construct]
 		apply_minion_bonuses(self, golem)
 
@@ -11206,7 +11846,7 @@ class SummonSiegeGolemsSpell(Spell):
 				yield
 
 	def get_extra_examine_tooltips(self):
-		return [self.cannon(), self.golem(), self.spell_upgrades[0], self.get_assistant(), self.spell_upgrades[1], self.spell_upgrades[2]]
+		return [self.cannon(), self.golem(), self.spell_upgrades[0], self.get_assistant(), self.spell_upgrades[1], self.spell_upgrades[2], self.make_chaos_cannon()]
 
 # Lightning Spire
 # Each turn fires lightning bolts a random X units in the aoe
@@ -11332,8 +11972,9 @@ class EssenceFlux(Spell):
 		self.range = 7
 		self.radius = 4
 
-		self.upgrades['radius'] = (2, 2)
-		self.upgrades['max_charges'] = (6, 2)
+		self.upgrades['stabilize'] = (1, 4, "Essence Stabilizer", "Allies affected by the spell match the higher of each pair, rather than swapping resistances.")
+		self.upgrades['degrade'] = (1, 3, "Essence Degradation", "Enemies affected by the spell match the lower of each pair, rather than swapping resistances.")
+		self.upgrades['banish'] = (1, 2, "Banishment", "Temporary creatures in the affected area are killed.", [Tags.Sorcery])
 
 	def get_description(self):
 		return ("Swap the polarity of the resistances of all other units in a [{radius}_tile:radius] area.\n"
@@ -11369,6 +12010,17 @@ class EssenceFlux(Spell):
 
 					unit.resists[e1] = old_resists[e2]
 					unit.resists[e2] = old_resists[e1]
+
+					if self.get_stat('stabilize') and not are_hostile(self.caster, unit):
+						unit.resists[e1] = max(unit.resists[e1], old_resists[e1])
+						unit.resists[e2] = max(unit.resists[e2], old_resists[e2])
+
+					if self.get_stat('degrade') and are_hostile(self.caster, unit):
+						unit.resists[e1] = min(unit.resists[e1], old_resists[e1])
+						unit.resists[e2] = min(unit.resists[e2], old_resists[e2])
+
+					if self.get_stat('banish') and unit.turns_to_death:
+						unit.kill()
 
 					color = e1.color if old_resists[e1] > old_resists[e2] else e2.color
 					self.caster.level.show_effect(unit.x, unit.y, Tags.Debuff_Apply, fill_color=color)
@@ -11406,11 +12058,10 @@ class FaehauntGardenBuff(Buff):
 			self.counter -= self.counter_max
 
 			if self.spell.get_stat('glass'):
-				butterfly = GlassButterfly()
+				butterfly = self.spell.get_glass_butterfly()
 			else:
-				butterfly = ButterflyDemon()
+				butterfly = self.spell.get_butterfly()
 
-			apply_minion_bonuses(self.spell, butterfly)
 			bfly = self.summon(butterfly, target=evt.unit, sort_dist=False)
 			if bfly:
 				self.owner.level.show_path_effect(self.owner, bfly, [Tags.Arcane, Tags.Lightning], minor=True, inclusive=False)
@@ -11420,7 +12071,6 @@ class FaehauntGardenBuff(Buff):
 			while self.fly_counter > self.fly_counter_max:
 				self.fly_counter -= self.fly_counter_max
 				flies = self.spell.get_fae_flies()
-				apply_minion_bonuses(self.spell, flies)
 				flies.turns_to_death = None
 				flies = self.summon(flies)
 				if flies:
@@ -11445,19 +12095,32 @@ class FaehauntGardenSpell(Spell):
 		self.minion_range = example.spells[0].range
 		self.minion_damage = example.spells[0].damage
 
-		self.upgrades['gnomes'] = (1, 4, "Guardian Gnomes", "Summon 6 electric gnomes on casting faehaunt garden.")
+		self.upgrades['gnomes'] = (1, 4, "Guardian Gnomes", "Summon [6:num_summons] electric gnomes on casting faehaunt garden.")
 		self.upgrades['flies'] = (1, 4, "Fae Flies", "Summon a Fae Fly Swarm every 15 damage.")
 		self.upgrades['glass'] = (1, 4, "Glass Garden", "Summon Glass Butterflies instead of Butterfly Demons.")
 
 	def get_fae_flies(self):
 		flies = FlyCloud()
+		apply_minion_bonuses(self, flies)
 		BossSpawns.apply_modifier(BossSpawns.Faetouched, flies)
+		flies.turns_to_death = None
 		return flies
 
 	def get_gnome(self):
 		gnome = Gnome()
+		apply_minion_bonuses(self, gnome)
 		BossSpawns.apply_modifier(BossSpawns.Stormtouched, gnome)
 		return gnome
+
+	def get_butterfly(self):
+		u = ButterflyDemon()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_glass_butterfly(self):
+		u = GlassButterfly()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def fmt_dict(self):
 		result = Spell.fmt_dict(self)
@@ -11466,7 +12129,7 @@ class FaehauntGardenSpell(Spell):
 		return result
 
 	def get_extra_examine_tooltips(self):
-		return [ButterflyDemon(), self.spell_upgrades[0], self.get_gnome(), self.spell_upgrades[1], self.get_fae_flies(), self.spell_upgrades[2], GlassButterfly()]
+		return [self.get_butterfly(), self.spell_upgrades[0], self.get_gnome(), self.spell_upgrades[1], self.get_fae_flies(), self.spell_upgrades[2], self.get_glass_butterfly()]
 
 	def get_description(self):
 		return ("For [{duration}:duration] turns, whenever you deal 50 or more [lightning] or [arcane] damage, summon a butterfly demon.\n"
@@ -11482,48 +12145,7 @@ class FaehauntGardenSpell(Spell):
 		if self.get_stat('gnomes'):
 			for _ in range(self.get_stat('num_summons', base=6)):
 				gnome = self.get_gnome()
-				apply_minion_bonuses(self, gnome)
 				self.summon(gnome)
-
-class DisintegrationCascadeBuff(Buff):
-
-	def __init__(self, spell):
-		Buff.__init__(self)
-		self.name = "Disintegrator"
-		self.buff_type = BUFF_TYPE_BLESS
-		self.color = Tags.Arcane.color
-		self.counter = 0
-		self.counter_max = 30
-		self.global_triggers[EventOnDamaged] = self.on_damaged
-		self.spell = spell
-
-	def on_damaged(self, evt):
-
-		if evt.damage_type not in [Tags.Arcane, Tags.Dark]:
-			return
-
-		self.counter += evt.damage
-		while self.counter > self.counter_max:
-			self.counter -= self.counter_max
-			enemies = [u for u in self.owner.level.units if are_hostile(u, self.owner)]
-			for e in enemies:
-				e.deal_damage(1, Tags.Physical, self)
-
-class DisintegrationCascadeSpell(Spell):
-
-	def on_init(self):
-		self.name = "Disintegration Cascade"
-		self.tags = [Tags.Dark, Tags.Arcane, Tags.Enchantment]
-		self.duration = 30
-		self.max_charges = 3
-		self.level = 5
-		self.range = 0
-
-	def get_description(self):
-		return "For [{duration}_turns:duration], whenever 30 [dark] or [arcane] damage is dealt to an enemy, all enemies take 1 [physical] damage.".format(**self.fmt_dict())
-
-	def cast_instant(self, x, y):
-		self.caster.apply_buff(DisintegrationCascadeBuff(self), self.get_stat('duration'))		
 
 class FurnaceOfSorceryBuff(Buff):
 
@@ -11599,9 +12221,9 @@ class FurnaceOfSorcerySpell(Spell):
 		self.minion_health = example.max_hp
 		self.radius = 4
 
-		self.upgrades['flames'] = (1, 5, "Flames of Sorcery", "The furnace can cast your Flame Burst spell on a 5 turn coodlown.")
-		self.upgrades['smithy'] = (1, 4, "Imp Smithy", "The furnace also produces an Copper Imp every 30 damage.")
-		self.upgrades['lasers'] = (1, 6, "Arcane Eyebolts", "The hounds can cast your magic missile spell on a 4 turn cooldown.")
+		self.upgrades['flames'] = (1, 5, "Flames of Sorcery", "The furnace can cast your Flame Burst spell on a 5 turn coodlown.", [Tags.Fire])
+		self.upgrades['smithy'] = (1, 4, "Imp Smithy", "The furnace also produces an Copper Imp every 30 damage.", [Tags.Dark])
+		self.upgrades['lasers'] = (1, 7, "Arcane Eyebolts", "The hounds can cast your magic missile spell on a 4 turn cooldown.", [Tags.Arcane])
 
 	# Do not show radius on targeting
 	def get_impacted_tiles(self, x, y):
@@ -11655,7 +12277,7 @@ class GoldSkullSummonSpell(Spell):
 
 		self.upgrades['ghost_ball'] = (1, 6, "Ghost Caller", "The Golden Skull gains your Ghostball spell with a 6 turn cooldown")
 		self.upgrades['wheel'] = (1, 5, "Bone Wheel", "The Golden Skull gains your Wheel of Death spell with a 12 turn cooldown")
-		self.upgrades['bloodshift'] = (1, 4, "Blood Skull", "The Golden Skull gains your Bloodshift spell with a 3 turn cooldown")
+		self.upgrades['bloodshift'] = (1, 4, "Blood Skull", "The Golden Skull gains your Bloodshift spell with a 3 turn cooldown", [Tags.Blood])
 
 	def get_extra_examine_tooltips(self):
 		return [self.skull()] + self.spell_upgrades
@@ -11724,9 +12346,7 @@ class WyrmEggs(Spell):
 		example = IceWyrm()
 
 		self.minion_health = example.max_hp
-
 		self.minion_damage = example.spells[1].damage
-		self.duration = example.spells[0].duration
 		self.minion_range = example.spells[0].range
 
 		self.upgrades['magic_eggs'] = (1, 4, "Magic Eggs", "Fire eggs cast your Fireball on a 3 turn cooldown, and Ice eggs cast your Icicle on a 3 turn cooldown.")
@@ -11735,17 +12355,7 @@ class WyrmEggs(Spell):
 
 	def get_description(self):
 		return ("Summons [{num_summons}:num_summons] Wyrm eggs near the caster.\n"
-				"Upon death, these eggs hatch into Wyrms.\n"
-				"Wyrms have [{minion_health}_HP:minion_health], and regenerate 8 HP per turn.\n"
-				"Each wyrm is either a [fire] or an [ice] wyrm, being immune to its own element, but taking 50% extra damage from the other.\n"
-				"The wyrms have melee trample attacks dealing [{minion_damage}_physical:physical] damage and breath attacks that deal [{minion_damage}_damage:damage] of the appropriate type.\n"
-				"The ice wyrm breath weapon freeze units in the affected area for [{duration}_turns:duration].\n").format(**self.fmt_dict())
-
-	def fmt_dict(self):
-		result = Spell.fmt_dict(self)
-		result['minion_damage'] = result['minion_damage'] - 7
-		return result
-
+				"Each egg will hatch into either a [fire] or an [ice] wyrm on death.\n").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		for i in range(self.get_stat('num_summons')):
@@ -11767,97 +12377,89 @@ class WyrmEggs(Spell):
 			self.summon(egg, radius=4, sort_dist=False)
 			yield
 
-	def get_extra_examine_tooltips(self):
-		return [FireWyrmEgg(), IceWyrmEgg()] + self.spell_upgrades
+	def make_fire_wyrm_egg(self):
+		u = FireWyrmEgg()
+		apply_minion_bonuses(self, u)
+		return u
 
-class DeathchillConjuringBuff(Buff):
+	def make_fire_wyrm(self):
+		u = FireWyrm()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_ice_wyrm_egg(self):
+		u = IceWyrmEgg()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_ice_wyrm(self):
+		u = IceWyrm()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_extra_examine_tooltips(self):
+		return [self.make_fire_wyrm_egg(), self.make_fire_wyrm(), self.make_ice_wyrm_egg(), self.make_ice_wyrm()] + self.spell_upgrades
+
+class GlaiveWarden(Upgrade):
+
+	def on_init(self):
+		self.name = "Glaive Warden"
+		self.description = "Moon Glaive gains +1 [damage] each time a [living] or [nature] ally is summoned.\nBonus damage lasts until next realm.\nAdds [Nature] tag."
+		self.level = 5
+		self.global_triggers[EventOnUnitAdded] = self.on_added
+
+	def on_added(self, evt):
+		if are_hostile(self.owner, evt.unit):
+			return
+		if evt.unit == self.owner:
+			return
+		if Tags.Living in evt.unit.tags or Tags.Nature in evt.unit.tags:
+			self.owner.apply_buff(GlaiveWardenBuff())
+
+	def on_applied(self, owner):
+		self.spell_tag_update(MoonGlaive, Tags.Nature)
+
+	def on_unapplied(self):
+		self.spell_tag_update(MoonGlaive, Tags.Nature, add=False)
+
+class GlaiveWardenBuff(Buff):
+
+	def on_init(self):
+		self.name = "Glaive Warden"
+		self.buff_type = BUFF_TYPE_BLESS
+		self.color = Tags.Nature.color
+		self.spell_bonuses[MoonGlaive]['damage'] = 1
+		self.stack_type = STACK_INTENSITY
+
+class GravityBladeBuff(Buff):
 
 	def __init__(self, spell):
 		Buff.__init__(self)
 		self.spell = spell
 
 	def on_init(self):
-		self.name = "Deathchill Gate"
+		self.name = "Gravity Blade"
+		self.description = "Gravity Blade"
 		self.buff_type = BUFF_TYPE_BLESS
-		self.color = Tags.Dark.color
-		self.global_triggers[EventOnDamaged] = self.on_damage
+		self.color = Tags.Metallic.color
 
-		self.ice = 0
-		self.dark = 0
-		self.threshold = 50
+	def on_applied(self, owner):
+		self.on_advance()
 
-	def get_description(self):
-		return "%d ice damage dealt, %d dark damage dealt" % (self.ice, self.dark)
+	def on_advance(self):
+		# pull stuff towards blade
+		units = [u for u in self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat('radius', base=4)) if are_hostile(u, self.spell.owner)]
+		units.sort(key=lambda u: distance(u, self.owner)) # pull closest first
+		for u in units:
+			for _ in range(self.spell.get_stat('radius', base=4)): # pull 4 times rather than 1 4 str pull
+				self.owner.level.queue_spell(self.pull(u))
 
-	def on_damage(self, evt):
-		if not are_hostile(evt.unit, self.owner):
+	def pull(self, u):
+		if not u.is_alive():
 			return
-
-		if evt.damage_type == Tags.Ice:
-			self.ice += evt.damage
-
-		if evt.damage_type == Tags.Dark:
-			self.dark += evt.damage
-
-		while self.ice > 25 and self.dark > 25:
-			chimera = DeathchillChimera()
-
-			apply_minion_bonuses(self.spell, chimera)
-			self.summon(chimera, radius=4, sort_dist=False)
-
-			self.ice -= 25
-			self.dark -= 25
-
-class DeathchillConjuringSpell(Spell):
-
-	def on_init(self):
-		self.name = "Deathchill Gate"
-		self.tags = [Tags.Dark, Tags.Ice, Tags.Conjuration, Tags.Enchantment]
-		self.level = 4
-		self.max_charges = 2
-		self.duration = 15
-		self.range = 0
-
-
-		example = DeathchillChimera()
-		
-		self.minion_damage = example.spells[0].damage
-		self.minion_health = example.max_hp
-		self.minion_range = example.spells[0].range
-
-		self.upgrades['duration'] = (3, 2)
-		self.upgrades['max_charges'] = (2, 3)
-
-	def get_description(self):
-		return ("For [{duration}_turns:duration], whenever you deal 25 [dark] and 25 [ice] damage, summon a deathchill chimera.\n"
-				"Deathchill chimera have [{minion_health}_HP:minion_health].\n"
-				"Deathchill chimera have ranged [dark] and [ice] attacks, each dealing [{minion_damage}_damage:damage] with a range of [{minion_range}_tiles:range].\n"
-				"Deathchill chimera are 75% resistant to [ice] and [dark] damage, can fly, and split into a Death Snake and an Ice Lion on death."
-			).format(**self.fmt_dict())
-
-	def cast_instant(self, x, y):
-		self.owner.apply_buff(DeathchillConjuringBuff(self), self.get_stat('duration'))
-
-class AetherBlade(Upgrade):
-
-	def on_init(self):
-		self.name = "Aether Blade"
-		self.description = "Whenever you cast a [Translocation] spell, gain a charge of Moon Glaive."
-		self.global_triggers[EventOnSpellCast] = self.on_cast
-		self.level = 3
-
-	def on_cast(self, evt):
-		if not evt.spell.caster == self.owner:
-			return
-
-		if not Tags.Translocation in evt.spell.tags:
-			return
-
-		if self.prereq.cur_charges >= self.prereq.get_stat('max_charges'):
-			return
-
-		self.prereq.cur_charges += 1
-
+		self.owner.level.show_beam(u, self.owner, Tags.Arcane, minor=True)
+		pull(u, self.owner, 1)
+		yield
 
 class MoonGlaiveBuff(Buff):
 
@@ -11898,6 +12500,7 @@ class MoonGlaive(Spell):
 		self.name = "Moon Glaive"
 
 		self.tags = [Tags.Metallic, Tags.Arcane, Tags.Sorcery]
+		self.damage_type = [Tags.Physical, Tags.Arcane]
 		self.level = 2
 
 		self.max_charges = 12
@@ -11905,9 +12508,9 @@ class MoonGlaive(Spell):
 		self.damage = 7
 
 		self.upgrades['los_damage'] = (1, 4, "Glimmerblade", "Deals [1_arcane:arcane] damage to all enemies in LOS of the target.  This damage is fixed and cannot be buffed.")
-		self.upgrades['lightning_damage'] = (1, 4, "Electroblade", "Deals [7_lightning:lightning] damage to up to [3:num_targets] enemies up to [2_tiles:radius] away from the blade's destination.")
-		self.upgrades['recharge'] = (1, 3, "Steelshaping", "Regain a charge of another random Metallic spell.")
-		#self.add_upgrade(AetherBlade())
+		self.upgrades['lightning_damage'] = (1, 4, "Electroblade", "Deals [7_lightning:lightning] damage to up to [3:num_targets] enemies up to [2_tiles:radius] away from the blade's destination.", [Tags.Lightning], [Tags.Lightning])
+		self.upgrades['gravity_blade'] = (1, 3, "Gravityblade", "Pull all enemies within [4_tiles:radius] toward the blade.\nThe blade now lingers at the target tile for [3:duration] turns.")
+		self.add_upgrade(GlaiveWarden())
 
 		self.must_target_empty = True
 
@@ -11949,15 +12552,6 @@ class MoonGlaive(Spell):
 					possible_targets.remove(target)
 					self.caster.level.deal_damage(target.x, target.y, self.get_stat('damage'), Tags.Lightning, self)
 
-		if self.get_stat('recharge'):
-			valid_spells = [s for s in self.caster.spells if Tags.Metallic in s.tags and s != self]
-			valid_spells = [s for s in valid_spells if s.cur_charges < s.get_stat('max_charges')]
-			
-			if valid_spells:
-				affected_spell = random.choice(valid_spells)
-				affected_spell.cur_charges += self.get_stat('recharge') #in case we want to change it to more than 1, we can just change the upgrade amt
-				affected_spell.cur_charges = min([affected_spell.get_stat('max_charges'), affected_spell.cur_charges])
-
 		# Make unit
 		unit = Unit()
 		unit.tags = [Tags.Metallic, Tags.Arcane, Tags.Construct]
@@ -11971,12 +12565,20 @@ class MoonGlaive(Spell):
 		unit.stationary = True
 		unit.flying = True
 
+		if self.get_stat('gravity_blade'):
+			unit.buffs.append(GravityBladeBuff(self))
+
 		summoned_unit = self.summon(unit, target=(Point(x, y)))
 		if not summoned_unit:
 			return
 
 		# apply buff
-		self.caster.apply_buff(MoonGlaiveBuff(self, unit), duration=2)
+		if self.get_stat('gravity_blade'):
+			duration = self.get_stat('duration', base=4)
+		else:
+			duration = 2
+
+		self.caster.apply_buff(MoonGlaiveBuff(self, unit), duration=duration)
 
 	def get_description(self):
 		return ("Deals [{damage}_arcane:arcane] and [{damage}_physical:physical] damage in a line to target empty tile."
@@ -12051,9 +12653,9 @@ class CarnivalOfPain(Spell):
 
 		self.kills = 0
 
-		self.upgrades['lifesteal'] = (1, 5, "Lifesteal", "You heal for 50% of all damage dealt by this spell.")
+		self.upgrades['lifesteal'] = (1, 5, "Lifesteal", "You heal for 50% of all damage dealt by this spell.", [Tags.Blood])
 		self.upgrades['death_power'] = (1, 5, "Death Power", "If the damage killed the enemy, the bolt coming out of that enemy deals 2x damage.")
-		self.upgrades['summon_tormentor'] = (1, 8, "Torment", "Every 3 kills casts your Fiery Tormentor spell where the slain enemy was.")
+		self.upgrades['summon_tormentor'] = (1, 8, "Torment", "Every 3 kills casts your Fiery Tormentor spell where the slain enemy was.", [Tags.Conjuration])
 
 	def get_description(self):
 		return ("Whenever an enemy takes [physical], [fire], or [lightning] damage, the [{num_targets}:num_targets] nearest enemies take that much [dark] damage.\n"
@@ -12072,6 +12674,9 @@ class DreamwalkBuff(Buff):
 		self.name = "Dreamwalking"
 		self.buff_type = BUFF_TYPE_BLESS
 		self.stack_type = STACK_REPLACE
+		self.color = Tags.Translocation.color
+		if self.spell.get_stat('nightmare_form'):
+			self.global_triggers[EventOnDamaged] = self.on_damaged
 
 		if self.spell.get_stat('dream_form'):
 			self.resists[Tags.Dark] = 75
@@ -12081,14 +12686,14 @@ class DreamwalkBuff(Buff):
 
 	def on_applied(self, owner):
 		self.hp = self.owner.cur_hp
-		self.charges = {s: s.cur_charges for s in self.owner.spells}
+		self.charges = {s: s.cur_charges for s in self.owner.spells if Tags.Translocation in s.tags}
 		self.location = Point(self.owner.x, self.owner.y)
 
 	def on_unapplied(self):
 
 		self.owner.cur_hp = self.hp
 		
-		if self.spell.get_stat('memory_walk'):
+		if self.spell.get_stat('astral_projection'):
 			for s in self.charges:
 				if s in self.owner.spells:
 					s.cur_charges = self.charges[s]
@@ -12099,6 +12704,22 @@ class DreamwalkBuff(Buff):
 				self.owner.level.act_move(self.owner, tp_point.x, tp_point.y, teleport=True)
 		else:
 			self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Translocation)
+
+	def on_damaged(self, evt):
+		if not evt.unit.is_alive(): # don't do it to dead things
+			return
+		if evt.unit == self.owner: # don't fear yourself
+			return
+		if not evt.source: # ignore unsourced
+			return
+		if not evt.source.owner: #ignore if no owner
+			return
+		if not hasattr(evt.source, 'tags'): #  ignore tagless sources
+			return
+		if not evt.source.tags:
+			return
+		if evt.source.owner == self.owner and Tags.Dark in evt.source.tags:
+			evt.unit.apply_buff(FearBuff(), 1)
 
 class DreamwalkSpell(Spell):
 
@@ -12111,12 +12732,12 @@ class DreamwalkSpell(Spell):
 		self.duration = 5
 
 		self.upgrades['dream_form'] = (1, 3, "Dream Form", "While dreamwalking, gain 75% resistance to [arcane], [dark], [physical], and [holy] damage.")
-		# self.upgrades['memory_walk'] = (1, 7, "Memory Walk", "When dreamwalk ends, reset all spell charge counts to what they were at the beginning of the walk.")
-		self.upgrades['max_charges'] = (2, 4)
+		self.upgrades['nightmare_form'] = (1, 5, "Nightmare Form", "Damage from [dark] spells and skills while dreamwalking inflict 1 turn of fear.", [Tags.Dark])
+		self.upgrades['astral_projection'] = (1, 2, "Astral Projection", "When dreamwalk ends, reset all [Translocation] spell charge counts to what they were at the beginning of the walk.")
 
 	def get_description(self):
-		return ("Dreamwalk for 5 turns.  Afterwards, you are returned to the location you cast it at, restored to the HP you cast it at.\n"
-			    "Casting Dreamwalk while dreamwalk is already active will simply end the current walk.")
+		return ("Dreamwalk for [%d:duration] turns.  Afterwards, you are returned to the location you cast it at, restored to the HP you cast it at.\n"
+			    "Casting Dreamwalk while already active will end the current walk." % self.get_stat('duration'))
 
 	def cast_instant(self, x, y):
 		if self.owner.has_buff(DreamwalkBuff):
@@ -12133,12 +12754,15 @@ class MassCalcification(Spell):
 		self.range = 0
 		self.max_charges = 3
 
-		self.upgrades['fae_bones'] = (1, 4, "Fae Bones", "Arcane Allies are raised as fae bone shamblers instead of normal ones.")
-		self.upgrades['burning_bones'] = (1, 4, "Burning Bones", "Fire allies are raised as burning bone shamblers instead of normal ones.")
+		self.upgrades['fae_bones'] = (1, 4, "Fae Bones", "Arcane Allies are raised as fae bone shamblers instead of normal ones.", [Tags.Arcane])
+		self.upgrades['burning_bones'] = (1, 4, "Burning Bones", "Fire allies are raised as burning bone shamblers instead of normal ones.", [Tags.Fire])
 		self.upgrades['bone_shards'] = (1, 5, "Bone Shards", "Each slain ally deals [7_physical:physical] damage to up to [3:num_targets] enemies in line of sight.")
 
 	def get_description(self):
 		return "All non undead allies are instantly killed and raised as bone shamblers.\nBone Shamblers have the same HP as the raised units, a quarter that much melee damage, and split into smaller shamblers on death."
+
+	def get_impacted_tiles(self, x, y):
+		return [u for u in self.owner.level.units if u != self.owner and not are_hostile(u, self.owner) and Tags.Undead not in u.tags]
 
 	def make_shambler(self, u):
 		shambler = BoneShambler(u.max_hp)
@@ -12183,7 +12807,7 @@ class ScourgeBuff(Stun):
 		self.asset = ['status', 'stun']  # TODO- own asset
 		self.description = "Cannot move or cast spells.  [Holy] damage dealt to all nearby units each turn."
 		
-		if self.spell.get_stat('refresh_conjuration') or self.spell.get_stat('refresh_dominate'):
+		if self.spell.get_stat('ascension'):
 			self.owner_triggers[EventOnDeath] = self.on_death
 
 		self.freeze_animation = True
@@ -12194,16 +12818,18 @@ class ScourgeBuff(Stun):
 
 	def on_death(self, evt):
 		spell = None
-		if self.spell.get_stat('refresh_conjuration'):
+		if self.spell.get_stat('ascension') and Tags.Demon in evt.unit.tags and are_hostile(self.spell.owner, evt.unit):
 			spells = [s for s in self.spell.owner.spells if Tags.Holy in s.tags and Tags.Conjuration in s.tags]
 			if spells:
 				spell = random.choice(spells)
-		elif self.spell.get_stat('refresh_dominate'):
-			spell = self.spell.owner.get_spell(Dominate)
-
 		if spell:
-			spell.cur_charges += 1
-			spell.cur_charges = min(spell.cur_charges, spell.get_stat('max_charges'))
+			self.owner.level.act_cast(self.spell.owner, spell, evt.unit.x, evt.unit.y, pay_costs=False)
+
+	def on_unapplied(self):
+		if self.spell.get_stat('painful_lesson'):
+			self.owner.apply_buff(FearBuff(), self.spell.get_stat('duration'))
+		else:
+			Stun.on_unapplied(self)
 
 class ScourgeSpell(Spell):
 
@@ -12216,9 +12842,9 @@ class ScourgeSpell(Spell):
 		self.duration = 5
 		self.radius = 1
 
-		self.upgrades['refresh_conjuration'] = (1, 3, "Redemption", "When a Scourged enemy dies, gain a charge of a random Holy conjuration.")
-		self.upgrades['refresh_dominate'] = (1, 3, "Conversion", "When a Scourged enemy dies, gain a charge of Dominate.")
-		self.upgrades['mass_scourge'] = (1, 4, "Mass Scourge", "Scourge is applied to a connected group of enemies.")
+		self.upgrades['ascension'] = (1, 6, "Ascension", "When a enemy Scourged [Demon] dies, casts a random Holy conjuration you know.")
+		self.upgrades['mass_scourge'] = (1, 5, "Mass Scourge", "Targeting an enemy applies Scourged to a connected group of enemies.")
+		self.upgrades['painful_lesson'] = (1, 2, "Painful Lesson", "Target is feared for [5_turns:duration] after Scourged ends.")
 
 		self.range = 6
 
@@ -12227,7 +12853,7 @@ class ScourgeSpell(Spell):
 	def get_impacted_tiles(self, x, y):
 		tiles = [Point(x, y)]
 		if self.get_stat('mass_scourge'):
-			tiles = self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster)
+			tiles += self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster)
 		return tiles
 
 	def get_description(self):
@@ -12237,7 +12863,7 @@ class ScourgeSpell(Spell):
 	def cast_instant(self, x, y):
 		targets = [self.caster.level.get_unit_at(x, y)]
 		if self.get_stat('mass_scourge'):
-			targets = self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster) #Currently it's going to scourge allies as well, let me know if you want this to change
+			targets += self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster) #Currently it's going to scourge allies as well, let me know if you want this to change
 
 		for target in targets:
 			if target:
@@ -12252,12 +12878,11 @@ class ImmolateBuff(Buff):
 	def on_init(self):
 		self.name = "Immolated"
 		self.buff_type = BUFF_TYPE_CURSE
-		self.stack_type = STACK_REPLACE
+		self.stack_type = STACK_INTENSITY
 		self.color = Tags.Fire.color
 		self.damage = self.spell.get_stat('damage')
-		self.damage_growth = self.spell.get_stat('damage_growth')
+		self.damage_growth = self.damage
 		self.asset = ['status', 'burning']
-
 		self.show_effect = False
 
 		if self.spell.get_stat('dragon_soul'):
@@ -12267,29 +12892,18 @@ class ImmolateBuff(Buff):
 		self.owner.deal_damage(self.damage, Tags.Fire, self.spell)
 
 		if self.spell.get_stat('radiant_heat'):
-			for t in self.owner.level.get_tiles_in_ball(self.owner.x, self.owner.y, self.spell.get_stat('radius')):
-				u = self.owner.level.get_unit_at(t.x, t.y)
-
-				if not u:
-					if random.random() > .7:
-						self.owner.level.show_effect(t.x, t.y, Tags.Fire, minor=True)
-					continue
-
-				if u == self.owner:
-					continue
-
-				if not are_hostile(u, self.spell.caster):
-					continue
-				
+			targets = [t for t in self.owner.level.get_units_in_ball(self.owner, self.spell.get_stat('radius', base=3)) if are_hostile(self.spell.owner, t)]
+			for u in targets:
 				u.deal_damage(self.damage // 2, Tags.Fire, self.spell)
+				u.apply_buff(BlindBuff(), self.spell.get_stat('duration', base=3))
 
 		self.damage += self.damage_growth
 
 	def on_death(self, evt):
-		spells = [s for s in self.spell.caster.spells if Tags.Dragon in s.tags if s.cur_charges < s.get_stat('max_charges') and s.level <= 4]
+		spells = [s for s in self.spell.caster.spells if Tags.Dragon in s.tags if s.cur_charges < s.get_stat('max_charges')]
 		if spells:
 			spell = random.choice(spells)
-			spell.cur_charges += 1
+			spell.refund_charges(1)
 
 
 class ImmolateSpell(Spell):
@@ -12297,28 +12911,26 @@ class ImmolateSpell(Spell):
 	def on_init(self):
 		self.name = "Immolate"
 		self.tags = [Tags.Fire, Tags.Enchantment]
+		self.damage_type = [Tags.Fire]
 		self.level = 2
 		self.must_target_empty = False
 
 		self.damage = 3
-		self.damage_growth = 3
 		self.duration = 8
+		self.range = 8
 		self.max_charges = 10
 
-		self.range = 8
-		self.radius = 3
 
-		self.stats.append('damage_growth')
-
-		self.upgrades['mass_immolate'] = (1, 3, "Conflagration", "Immolate also affects a connected group of enemies.")
-		self.upgrades['radiant_heat'] = (1, 4, "Radiant Heat", "Immolate deals half damage to units in a [3_tile:radius] radius around the target each turn.")
-		self.upgrades['dragon_soul'] = (1, 2, "Dragon Soul", "When an immolated enemy dies, regain a charge of a random level 4 or lower [dragon] spell you know.")
+		self.upgrades['mass_immolate'] = (1, 5, "Conflagration", "Immolate also affects a connected group of enemies.")
+		self.upgrades['radiant_heat'] = (1, 3, "Radiant Heat", "Immolate inflicts [3_turns:duration] of blind and deals half damage to units in a [3_tile:radius] radius around the target each turn.")
+		self.upgrades['dragon_soul'] = (1, 3, "Dragon Soul", "When an immolated enemy dies, regain a charge of a random [dragon] spell you know.", [Tags.Dragon])
+		self.upgrades['unquenchable_flames'] = (1, 4, "Unquenchable Flames", "Immolate gains permanent duration")
 
 		self.can_target_empty = False
 
 	def get_description(self):
 		return ("Target enemy takes [{damage}_fire:fire] damage each turn for [{duration}_turns:duration].\n"
-				"This damage increases by a fixed [{damage_growth}_damage:damage] each turn.").format(**self.fmt_dict())
+				"This damage increases by [{damage}_damage:damage] each turn.").format(**self.fmt_dict())
 
 	def get_impacted_tiles(self, x, y):
 
@@ -12364,7 +12976,10 @@ class ImmolateSpell(Spell):
 				return
 
 			self.owner.level.show_effect(u.x, u.y, Tags.Immolate)
-			u.apply_buff(ImmolateBuff(self), self.get_stat('duration'))
+			if self.get_stat('unquenchable_flames'):
+				u.apply_buff(ImmolateBuff(self))
+			else:
+				u.apply_buff(ImmolateBuff(self), self.get_stat('duration'))
 			yield
 
 class ArmageddonArmorBuff(Buff):
@@ -12454,20 +13069,16 @@ class Bonespear(Spell):
 
 		self.name = "Bone Spear"
 		self.tags = [Tags.Sorcery, Tags.Blood]
-		self.hp_cost = 5
+		self.damage_type = [Tags.Physical]
 
+		self.hp_cost = 3
 		self.range = 8
 		self.damage = 16
-
 		self.level = 2
 
-		self.duration = 3
-
-		self.radius = 3
-
-		self.upgrades['fire'] = (1, 4, "Infernal Spear", "Bone Spear also deals [fire] damage.")
-		self.upgrades['toxic'] = (1, 4, "Toxic Spear", "Whenever the spear kills a unit, up to 3 enemy units within a [3_tile:radius] radius take [16_poison:poison] damage.")
-		self.upgrades['stun'] = (1, 3, "Stun Spear", "Bone Spear applies stun for 3 turns")
+		self.upgrades['fire'] = (1, 4, "Infernal Spear", "Bone Spear also deals [fire] damage.", [Tags.Fire], [Tags.Fire])
+		self.upgrades['toxic'] = (1, 4, "Toxic Spear", "Whenever the spear kills a unit, enemy units within a [3_tile:radius] radius take [16_poison:poison] damage.", [Tags.Dark], [Tags.Poison])
+		self.upgrades['stun'] = (1, 3, "Stun Spear", "Bone Spear applies stun for [3:duration] turns")
 
 		self.cast_on_walls = True
 
@@ -12487,11 +13098,10 @@ class Bonespear(Spell):
 				if self.get_stat('fire'):
 					unit.deal_damage(self.get_stat('damage'), Tags.Fire, self)
 				if self.get_stat('stun'):
-					unit.apply_buff(Stun(), self.get_stat('duration'))
+					unit.apply_buff(Stun(), self.get_stat('duration', base=3))
 				if self.get_stat('toxic') and not unit.is_alive():
-					candidates = [u for u in self.owner.level.get_units_in_ball(unit, self.get_stat('radius')) if are_hostile(u, self.caster)]
-					random.shuffle(candidates)
-					for c in candidates[:3]:
+					candidates = [u for u in self.owner.level.get_units_in_ball(unit, self.get_stat('radius', base=3)) if are_hostile(u, self.caster)]
+					for c in candidates:
 						for p in self.owner.level.get_points_in_line(unit, c)[1:-1]:
 							self.owner.level.show_effect(p.x, p.y, Tags.Poison, minor=True)
 						c.deal_damage(self.get_stat('damage'), Tags.Poison, self)
@@ -12518,9 +13128,9 @@ class WormOffering(Spell):
 		self.target_empty = True
 
 		# Ultimate Upgrades
-		self.upgrades['toxic'] = (1, 6, "Toxogenesis", "Summons a toxic worm ball instead.  Toxic wormballs have a poison aura.", 'ultimate')
-		self.upgrades['iron'] = (1, 5, "Mechanogenesis", "Summons an iron worm ball instead.  Iron wormballs have many resistances.", 'ultimate')
-		self.upgrades['ghostly'] = (1, 5, "Ectogenesis", "Summons a ghost worm ball instead.  Ghost wormballs have many resistances, are undead, and teleport.", 'ultimate')
+		self.upgrades['toxic'] = (1, 4, "Toxogenesis", "Summons a toxic worm ball instead.  Toxic wormballs have a poison aura.")
+		self.upgrades['iron'] = (1, 5, "Mechanogenesis", "Summons an iron worm ball instead.  Iron wormballs have many resistances.", [Tags.Metallic])
+		self.upgrades['ghostly'] = (1, 5, "Ectogenesis", "Summons a ghost worm ball instead.  Ghost wormballs have many resistances, are undead, and teleport.", [Tags.Dark])
 
 	def get_description(self):
 		return ("Sacrifice half your HP rounded up and summon a wormball with that much hp.\n"
@@ -12565,11 +13175,9 @@ class HagSummon(Spell):
 		self.range = 5
 		self.tags = [Tags.Blood, Tags.Dark, Tags.Conjuration]
 
-		# Todo- drain not getting minion dmg bonus
-
 		self.upgrades["bone_spear"] = (1, 5, "Spear Hag", "The Night Hag gains your Bone Spear spell on a 4 turn cooldown")
-		self.upgrades["nightmare"] = (1, 4, "Nightmare Hag", "The Night hag can cast your Nightmare Aura spell")
-		self.upgrades["bone_lady"] = (1, 6, "Bone Queen", "The Night Hag gains the ability to summon small bone shamblers")
+		self.upgrades["nightmare"] = (1, 4, "Nightmare Hag", "The Night hag can cast your Nightmare Aura spell", [Tags.Arcane])
+		self.upgrades["bone_lady"] = (1, 6, "Bone Queen", "The Night Hag gains the ability to summon [2:num_summons] small bone shamblers")
 
 	def bone_shambler(self):
 		shambler = BoneShambler(8)
@@ -12587,7 +13195,7 @@ class HagSummon(Spell):
 			grant_minion_spell(NightmareSpell, hag, self.caster, 30)
 
 		if self.get_stat('bone_lady'):
-			summon = SimpleSummon(self.bone_shambler, cool_down=4, num_summons=2 + self.get_stat('num_summons'))
+			summon = SimpleSummon(self.bone_shambler, cool_down=4, num_summons=self.get_stat('num_summons', base=2))
 			hag.spells.insert(0, summon)
 
 		return hag
@@ -12597,7 +13205,7 @@ class HagSummon(Spell):
 				"Night Hags can summon ghosts and drain HP from all living units in line of sight when they are wounded.\n")
 
 	def get_extra_examine_tooltips(self):
-		return [self.hag()] + self.spell_upgrades
+		return [self.hag()] + self.spell_upgrades + [self.bone_shambler()]
 
 	def cast_instant(self, x, y):
 		hag = self.hag()
@@ -12608,7 +13216,7 @@ class BloodGolemVampirism(Buff):
 
 	def on_init(self):
 		self.name = "Blood Golem Vampirism"
-		self.description = "Half of all damage dealt is converted to healing, and then redirected and redistributed to all [living] allies"
+		self.description = "Half of all damage dealt is converted to healing, and distributed amongst [living] allies"
 		self.global_triggers[EventOnDamaged] = self.on_damage
 
 	def on_damage(self, evt):
@@ -12616,6 +13224,9 @@ class BloodGolemVampirism(Buff):
 			return
 
 		if evt.source.owner != self.owner:
+			return
+
+		if evt.damage <= 0:
 			return
 
 		if evt.damage_type == Tags.Heal:
@@ -12633,18 +13244,22 @@ class BloodGolemBuff(Buff):
 
 	def pre_damage(self, evt):
 		# Do not trigger on cosmetic dmg, resisted damage, or healing
-		if evt.unresisted_damage <= 0:
+		if evt.unresisted_damage == 0:
+			return
+
+		if evt.unresisted_damage < 0 and evt.source and not isinstance(evt.source, BloodGolemVampirism):
 			return
 
 		# Block the damage
-		self.owner.shields += 1
+		if evt.unresisted_damage > 0:
+			self.owner.shields += 1
 
 		# ..but redeal it to all allies
 		allies = [u for u in self.owner.level.units if Tags.Living in u.tags and not are_hostile(self.owner, u)]
 		
 		divisor = max(1, len(allies))
-		to_dist = evt.damage // divisor
-		remainder = evt.damage % divisor
+		to_dist = evt.unresisted_damage // divisor
+		remainder = evt.unresisted_damage % divisor
 
 		# Makes sure every point is distributed- for instance distributing 3 damage amongst 5 enemies should deal 1 damage to 3 random allies
 		remainder_recievers = list(allies)
@@ -12673,14 +13288,14 @@ class BloodGolemSpell(Spell):
 		self.hp_cost = 9
 		self.color = Tags.Blood.color
 
-		self.upgrades['pain_aura'] = (1, 4, "Pain Aura", "The Blood Golem gains a [5_tile:radius] [poison] and [fire] damage aura.")
-		self.upgrades['super_thorns'] = (1, 3, "Greater Thorns", "The Blood Golems thorns damage is increased by its minion damage stat.")
+		self.upgrades['pain_aura'] = (1, 3, "Pain Aura", "The Blood Golem gains a [5_tile:radius] damage aura that randomly deals randomly deals 2 [poison] or [fire] damage each turn.", [Tags.Dark])
 		self.upgrades['vampirism'] = (1, 5, "Vampire Golem", "Whenever the Blood Golem deals damage, half that much healing is distributed amongst its [living] allies.")
+		self.upgrades['iron_blood'] = (1, 2, "Iron Blood", "Blood Golems receive [Metallic] unit resistances.")
 
 	def get_description(self):
 		return 	("Summon a Blood Golem.\n"
 				 "The golem never takes damage, instead redistributing damage to its master and any [living] allies.\n"
-				 "The Golem has a [25_physical:physical] damage melee attack, and thorns which deal 7 [physical] damage to units that attack the golem in melee.")
+				 "The Golem has a [25:minion_damage] [physical] damage melee attack, and thorns which deal [7:minion_damage] [physical] damage to units that attack the golem in melee.")
 
 	def get_extra_examine_tooltips(self):
 		return [self.BloodGolem()] + self.spell_upgrades
@@ -12691,29 +13306,28 @@ class BloodGolemSpell(Spell):
 		unit.tags = [Tags.Construct, Tags.Metallic, Tags.Blood]
 		unit.max_hp = 50
 
-		for t in damage_tags:
-			unit.resists[t] = 0
+		if not self.get_stat('iron_blood'):
+			for t in damage_tags:
+				unit.resists[t] = 0
 
 		unit.name = 'Blood Golem'
 		unit.asset_name = 'golem_blood'
 
-		unit.buffs.append(BloodGolemBuff())
+		unit.apply_buff(BloodGolemBuff())
 		
-		thorns_damage = 7
-		if self.get_stat('super_thorns'):
-			thorns_damage += self.get_stat('minion_damage')
-		
-		unit.buffs.append(Thorns(thorns_damage))
+		thorns_damage = self.get_stat('minion_damage', base=7)
+
+		unit.apply_buff(Thorns(thorns_damage))
 
 		if self.get_stat('pain_aura'):
-			radius = 5 + self.get_stat('radius')
+			radius = self.get_stat('radius', base=5)
 			aura = DamageAuraBuff(damage=2, damage_type=[Tags.Poison, Tags.Fire], radius=radius)
-			unit.buffs.append(aura)
+			unit.apply_buff(aura)
 
-		unit.spells.append(SimpleMeleeAttack(self.get_stat('minion_damage')))
+		unit.add_spell(SimpleMeleeAttack(self.get_stat('minion_damage')))
 
 		if self.get_stat('vampirism'):
-			unit.buffs.append(BloodGolemVampirism())
+			unit.apply_buff(BloodGolemVampirism())
 
 		return unit
 
@@ -12762,33 +13376,54 @@ class BloodTapDebuff(Buff):
 				dmg = u.deal_damage(self.spell.get_stat('damage'), Tags.Dark, self)
 				if dmg:
 					self.spell.caster.deal_damage(-dmg, Tags.Heal, self.spell)
-		
-		
+
+class BloodHexes(Upgrade):
+
+	def on_init(self):
+		self.level = 4
+		self.name = "Blood Hexes"
+		self.description = "Whenever you cast an [enchantment] spell other than Lifedrain targeting an enemy unit, Lifedrain is cast for free on that target."
+		self.owner_triggers[EventOnSpellCast] = self.on_cast
+
+	def on_cast(self, evt):
+		if Tags.Enchantment not in evt.spell.tags:
+			return
+
+		if isinstance(evt.spell, BloodTapSpell):
+			return
+
+		unit = self.owner.level.get_unit_at(evt.x, evt.y)
+		if not unit:
+			return
+
+		if not are_hostile(self.owner, unit):
+			return
+
+		spell = self.owner.get_spell(BloodTapSpell)
+		if not spell:
+			return
+
+		self.owner.level.act_cast(self.owner, spell, evt.x, evt.y, pay_costs=False)
+
 
 class BloodTapSpell(Spell):
 
 	def on_init(self):
 		self.name = "Lifedrain"
 		self.tags = [Tags.Blood, Tags.Dark, Tags.Enchantment]
+		self.damage_type = [Tags.Dark]
 		self.level = 1
 		self.hp_cost = 1
-
 		self.max_charges = 20
-
 		self.duration = 15
 		self.damage = 3
-
 		self.range = 6
-
-		self.upgrades['bond'] = (1, 4, "Blood Bond", "Lifedrain also heals [2:num_targets] random [living] allies.", "ultimate")
-		self.upgrades['chain'] = (1, 4, "Life Funnel", "Lifedrain also drains life from [2:num_targets] random enemy units up to [3_tiles:radius] away from the target.", "ultimate")
-		self.upgrades['requires_los'] = (-1, 2, "Blindcasting", "Lifedrain can be cast without line of sight")
-		
-		self.stacking = 0
-
-		# Mass Lifedrain: Apply in a 3x3 area
-		# Soul Drain: If a unit dies under the effect of lifedrain, regain a charge of life drain
 		self.can_target_empty = False
+
+		self.upgrades['bond'] = (1, 2, "Blood Bond", "Lifedrain also heals [2:num_targets] random [living] allies.")
+		self.upgrades['chain'] = (1, 5, "Life Funnel", "Lifedrain also drains life from [2:num_targets] random enemy units up to [3_tiles:radius] away from the target.")
+		self.upgrades['requires_los'] = (-1, 1, "Blindcasting", "Lifedrain can be cast without line of sight")
+		self.add_upgrade(BloodHexes())
 
 	def get_impacted_tiles(self, x, y):
 		if not self.get_stat('chain'):
@@ -12803,14 +13438,10 @@ class BloodTapSpell(Spell):
 		for p in self.owner.level.get_points_in_line(self.caster, Point(x, y)):
 			self.owner.level.show_effect(p.x, p.y, Tags.Blood, minor=True)
 		u = self.owner.level.get_unit_at(x, y)
-		if u:
-			debuff = BloodTapDebuff(self)
-			if self.stacking:
-				debuff.stack_type = STACK_INTENSITY
-			u.apply_buff(debuff, self.get_stat('duration'))  
+		if u: u.apply_buff(BloodTapDebuff(self), self.get_stat('duration'))
 
 	def get_ai_target(self):
-		potentials = [u for u in self.owner.level.units if self.can_cast(u.x, u.y) and are_hostile(u, self.caster)]
+		potentials = [u for u in self.owner.level.units if self.can_cast(u.x, u.y) and are_hostile(u, self.caster) and not u.has_buff(BloodTapDebuff)]
 		if potentials:
 			return random.choice(potentials)
 
@@ -12833,16 +13464,10 @@ class RitualOfRevelation(Spell):
 		self.num_summons = 7
 		self.num_targets = 3
 
-		# Mechanic - summon ever increasing numbers of false prophets, then holy blast all enemies in LOS after duration finishes
-
-		# upgrades:
-		#  Start by summoning 2 seraphs?
-		#  Each turn shoot holy blast at nearest enemy?
-		#  num summons?
 
 		self.upgrades['num_summons'] = (4, 7, "Holy Horde")
-		self.upgrades['blasphemy'] = (1, 5, "Blasphemy", "Summoned Prophets are liches.")
-		self.upgrades['arcane_revelation'] = (1, 8, "Arcane Revelation", "Also casts your Blazerip on [3:num_targets] enemies.")
+		self.upgrades['blasphemy'] = (1, 5, "Blasphemy", "Summoned Prophets are liches.", [Tags.Dark])
+		self.upgrades['arcane_revelation'] = (1, 8, "Arcane Revelation", "Also casts your Blazerip on [3:num_targets] enemies.", [Tags.Arcane])
 
 
 	def get_description(self):
@@ -12899,8 +13524,6 @@ class RitualOfRevelation(Spell):
 				self.summon(unit, radius=7)
 				yield
 
-
-
 class DevourFlesh(Spell):
 
 	def on_init(self):
@@ -12912,8 +13535,8 @@ class DevourFlesh(Spell):
 		self.melee = True
 
 		self.upgrades['control'] = (1, 1, "Controlled Appetite", "Instead of killing the target, only steal as much HP as you are missing.")
-		self.upgrades['heal_allies'] = (1, 2, "Mass Feeding", "Also heal allies in a 2 tile radius.") #same value?
-		self.upgrades['charred_flesh'] = (1, 5, "Charred Flesh", "Slain Living units are raised as Burning Skeletons.") #Added Living requirement due to raise_skeleton(), can change to normal summon to remove req
+		self.upgrades['heal_allies'] = (1, 2, "Mass Feeding", "Also heal allies in a 2 tile radius.")
+		self.upgrades['charred_flesh'] = (1, 4, "Charred Flesh", "Slain Living units are raised as Burning Skeletons.", [Tags.Dark, Tags.Fire])
 
 	def get_description(self):
 		return "Devour an allied [living] unit to heal yourself for its current hp."
@@ -12960,24 +13583,18 @@ class Bloodshift(Spell):
 
 	def on_init(self):
 		self.name = "Bloodshift"
-		
+		self.level = 3
 		self.tags = [Tags.Blood, Tags.Dark, Tags.Sorcery]
-		
+		self.damage_type = [Tags.Dark]
+		self.damage = 18
 		self.range = 6
 		self.radius = 4
-		
 		self.max_charges = 9
 		self.hp_cost = 8
 
-		self.level = 3
-
-		self.damage = 18
-
-		self.upgrades['radius'] = (2, 4)
-		self.upgrades['damage'] = (13, 3)
-		self.upgrades['max_charges'] = (5, 2)
-		self.upgrades['range'] = (3, 2)
-		self.upgrades['toxicity'] = (1, 4, "Toxic Shift", "Bloodshift also deals [poison] damage, though this damage does not cause healing.")
+		self.upgrades['freeze'] = (1, 2, "Blood Freeze", "Affected enemies are Frozen for [3_turns:duration]", [Tags.Ice])
+		self.upgrades['toxicity'] = (1, 4, "Toxic Shift", "Bloodshift also deals [poison] damage, though this damage does not cause healing.", None, [Tags.Poison])
+		self.upgrades['greed'] = (1, 3, "Blood Greed", "You and only you are healed by this spell, even if you are out of the targeted area.")
 
 	def get_description(self):
 		return ("Enemies in a [{radius}_tile:radius] burst take [{damage}_dark:dark] damage.\n"
@@ -12988,15 +13605,18 @@ class Bloodshift(Spell):
 
 		ally_candidates = []
 		# First gather heal candidaes
-		for stage in Burst(self.caster.level, target, self.get_stat('radius')):
-			for point in stage:
+		if self.get_stat('greed'):
+			ally_candidates = [self.caster]
+		else:
+			for stage in Burst(self.caster.level, target, self.get_stat('radius')):
+				for point in stage:
 
-				unit = self.owner.level.get_unit_at(point.x, point.y)
-				if not unit:
-					continue
+					unit = self.owner.level.get_unit_at(point.x, point.y)
+					if not unit:
+						continue
 
-				if not are_hostile(unit, self.caster) and unit.cur_hp <= unit.max_hp:
-					ally_candidates.append(unit)
+					if not are_hostile(unit, self.caster) and unit.cur_hp <= unit.max_hp:
+						ally_candidates.append(unit)
 
 		for stage in Burst(self.caster.level, target, self.get_stat('radius')):
 			for point in stage:
@@ -13007,6 +13627,8 @@ class Bloodshift(Spell):
 					self.caster.level.show_effect(point.x, point.y, Tags.Blood, minor=True)
 					if self.get_stat('toxicity'):
 						self.caster.level.show_effect(point.x, point.y, Tags.Poison, minor=True)
+					if self.get_stat('freeze'):
+						self.caster.level.show_effect(point.x, point.y, Tags.Ice, minor=True)
 					continue
 
 				if not are_hostile(self.caster, unit):
@@ -13015,6 +13637,8 @@ class Bloodshift(Spell):
 				dmg = unit.deal_damage(self.get_stat('damage'),  Tags.Dark, self)
 				if self.get_stat('toxicity'):
 					self.caster.level.deal_damage(point.x, point.y, self.get_stat('damage'), Tags.Poison, self)
+				if self.get_stat('freeze') and unit:
+					unit.apply_buff(FrozenBuff(), self.get_stat('duration', base=3))
 
 				heal = dmg // 2
 				if heal:
@@ -13048,7 +13672,7 @@ class FleshFiendSpell(Spell):
 		self.minion_damage = ex.spells[0].damage
 
 		self.upgrades['belly_flop'] = (1, 3, "Belly Flop", "Gains a [25:damage] damage leap attack with a 7 turn cooldown.")
-		self.upgrades['char_fiend'] = (1, 5, "Barbeque Fiends", "Summons burning flesh fiends instead of normal ones.")
+		self.upgrades['char_fiend'] = (1, 6, "Barbeque Fiends", "Summons burning flesh fiends instead of normal ones.", [Tags.Fire])
 		self.upgrades['worm_lord'] = (1, 8, "Worm Lord", "Flesh Fiends can cast your Lumbriogenesis spell on a 13 turn cooldown.")
 
 
@@ -13078,95 +13702,20 @@ class FleshFiendSpell(Spell):
 	def get_extra_examine_tooltips(self):
 		return [FleshFiend(), self.spell_upgrades[0], self.spell_upgrades[1], BossSpawns.Flametouched(FleshFiend()), self.spell_upgrades[2]]
 
-class WitchCoven(Spell):
-
-	def on_init(self):
-		self.name = "Witch Coven"
-		self.tags = [Tags.Dark, Tags.Conjuration]
-		self.level = 4
-		self.max_charges = 1
-		self.range = 3
-
-	def can_cast(self, x, y):
-		if self.owner.level.tiles[x][y].prop:
-			return False
-		return Spell.can_cast(self, x, y)
-
-	def cast(self, x, y):
-		prop = PlaceOfPower(Tags.Dark)
-		self.owner.level.show_effect(x, y, Tags.Dark)
-		self.owner.level.add_obj(prop, x, y)
-		yield
-
-		adj = list(self.owner.level.get_adjacent_points(Point(x, y)))
-		random.shuffle(adj)
-		for p in adj:
-			witch = Witch()
-			apply_minion_bonuses(self, witch)
-			self.summon(witch, target=p)
-			yield
-
-	def get_impacted_tiles(self, x, y):
-		adj = list(self.owner.level.get_adjacent_points(Point(x, y)))
-		return [Point(x, y)] + adj
-
-	def get_description(self):
-		return ("Summons a Dark Circle surrounded by Witches.")
-
-class SatyrCoven(Spell):
-
-	def on_init(self):
-		self.name = "Satyr Circle"
-		self.tags = [Tags.Nature, Tags.Conjuration]
-		self.level = 4
-		self.max_charges = 1
-		self.range = 3
-
-	def can_cast(self, x, y):
-		if self.owner.level.tiles[x][y].prop:
-			return False
-		return Spell.can_cast(self, x, y)
-
-	def cast(self, x, y):
-		prop = PlaceOfPower(Tags.Nature)
-		self.owner.level.show_effect(x, y, Tags.Poison)
-		self.owner.level.add_obj(prop, x, y)
-		yield
-
-		adj = list(self.owner.level.get_adjacent_points(Point(x, y)))
-		random.shuffle(adj)
-		for p in adj:
-			satyr = Satyr()
-			apply_minion_bonuses(self, satyr)
-			self.summon(satyr, target=p)
-			yield
-
-	def get_impacted_tiles(self, x, y):
-		adj = list(self.owner.level.get_adjacent_points(Point(x, y)))
-		return [Point(x, y)] + adj
-
-	def get_description(self):
-		return ("Summons a Nature Circle surrounded by Satyrs.")
-
 class HelgateSpell(Spell):
 
 	def on_init(self):
 		self.name = "Gates of Helheim"
 		self.tags = [Tags.Dark, Tags.Lightning, Tags.Conjuration]
 		self.level = 8
-
 		self.max_charges = 13
-
 		self.range = 0
-
-		example = Elf()
-
-		self.minion_health = example.max_hp
-		self.minion_damage = example.spells[0].damage
-		self.minion_range = example.spells[0].range
+		self.minion_health = 18
+		self.minion_damage = 6
+		self.minion_range = 12
 
 		self.upgrades['aelf_horde'] = (1, 5, "Aelf Horde", "The spawn time is shortened to 4 to 5 turns instead.")
-		self.upgrades['fae_aelves'] = (1, 6, "Fae Aelves", "The Spawners spawn Fae Aelves instead of normal Aelves.")
+		self.upgrades['fae_aelves'] = (1, 6, "Fae Aelves", "The Spawners spawn Fae Aelves instead of normal Aelves.", [Tags.Arcane])
 		self.upgrades['elite_aelves'] = (1, 8, "Elite Aelves", "The Spawners spawn Aelf Lightning Artists instead of normal Aelves.")
 
 	def get_description(self):
@@ -13226,8 +13775,8 @@ class HordeOfHalfmen(Spell):
 		self.range = 9
 
 		self.upgrades['trollblooded'] = (1, 5, "Trollblooded Halfmen", "Summons are [Trollblooded:nature].")
-		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "Summons are [Metallic:metallic].")
-		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "Summons are [Burning:fire].")
+		self.upgrades['metallic'] = (1, 6, "Metallic Halfmen", "Summons are [Metallic:metallic].", [Tags.Metallic])
+		self.upgrades['burning'] = (1, 7, "Burning Halfmen", "Summons are [Burning:fire].", [Tags.Fire])
 
 	def tooltip_monster(self, modifier, unit):
 		unit = unit()
@@ -13286,6 +13835,11 @@ class GoatOffering(Spell):
 		maggot = MindMaggot()
 		return maggot
 
+	def make_maggot(self): # for tt only, since applying bonuses before putting it in spawnondeath would double dip.
+		u = MindMaggot()
+		apply_minion_bonuses(self, u)
+		return u
+
 	def gotia(self):
 		unit = GoatHead()
 		apply_minion_bonuses(self, unit)
@@ -13295,8 +13849,7 @@ class GoatOffering(Spell):
 		if self.get_stat('pain'):
 			unit.buffs.append(RetaliationBuff(self.get_stat('minion_damage'), Tags.Dark))
 		if self.get_stat('maggot_host'):
-			# Gets flat numsummons buffs... but not %age ones?  hmm.....  dont want to show num_summons on the unupgraded spell tho
-			unit.buffs.append(SpawnOnDeath(self.maggot, 2 + self.get_stat('num_summons')))
+			unit.buffs.append(SpawnOnDeath(self.maggot, self.get_stat('num_summons', base=2)))
 
 		return unit
 
@@ -13305,7 +13858,7 @@ class GoatOffering(Spell):
 		self.summon(unit, target=Point(x, y))
 
 	def get_extra_examine_tooltips(self):
-		return [self.gotia()] + self.spell_upgrades
+		return [self.gotia()] + self.spell_upgrades + [self.make_maggot()]
 
 	def get_description(self):
 		return "Summon a Goatia."
@@ -13356,6 +13909,14 @@ class BurningHungerBuff(Buff):
 			self.owner.level.show_beam(ally, u, Tags.Fire, minor=True)
 			u.deal_damage(self.spell.get_stat('damage'), Tags.Fire, self.spell)
 
+		if self.spell.get_stat('indiscriminate_hunger'):
+			self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Dark)
+			if self.owner.team == TEAM_PLAYER:
+				self.owner.team = TEAM_ENEMY
+			elif self.owner.team == TEAM_ENEMY:
+				self.owner.team = TEAM_PLAYER
+
+
 class IdolOfBurningHunger(Spell):
 
 	def on_init(self):
@@ -13369,8 +13930,9 @@ class IdolOfBurningHunger(Spell):
 		self.damage = 20
 		self.must_target_empty = True
 		
-		self.upgrades['bone_explosion'] = (1, 3, "Bone Explosion", "Also deals [physical:physical] damage equal to half of the sacrificed unit's hp to all units within 4 tiles of the sacrificed unit.")
-		self.upgrades['archon_beam'] = (1, 3, "Archon Beam", "Shoots lightning along the path to the sacrificed unit, damaging enemies and shielding allies")
+		self.upgrades['bone_explosion'] = (1, 2, "Bone Explosion", "Also deals [physical:physical] damage equal to half of the sacrificed unit's hp to all units within 4 tiles of the sacrificed unit.")
+		self.upgrades['archon_beam'] = (1, 3, "Archon Beam", "Shoots lightning along the path to the sacrificed unit, damaging enemies and shielding allies", [Tags.Lightning])
+		self.upgrades['indiscriminate_hunger'] = (1, 4, "Indiscriminate Hunger", "The Idol of Burning Sacrifice will switch teams each turn.")
 
 	def get_impacted_tiles(self, x, y):
 		# dont show radius
@@ -13416,13 +13978,20 @@ class DrainPulse(Spell):
 		# Repeat pulse
 		# Redeal dealt damage as holy (arcane?) 4SP
 
-		self.upgrades['felomancy'] = (1, 4, "Felomancy", "Slain targets are raised as cursed cats.")
-		self.upgrades['ursomancy'] = (1, 4, "Ursomancy", "Healing over the wizards max health is converted into blood bears.")
+		self.upgrades['felomancy'] = (1, 4, "Felomancy", "Slain targets are raised as cursed cats.", [Tags.Conjuration])
+		self.upgrades['ursomancy'] = (1, 4, "Ursomancy", "Healing over the wizards max health is converted into blood bears, using up to 75 points of healing per bear.", [Tags.Conjuration])
 		self.upgrades['radius'] = (3, 4)
 
 	def get_description(self):
 		return ("Deals [{damage}:damage] [dark] and [poison] damage to units in a [{radius}_tile:radius] burst.\n"
 				"You are healed for half the damage dealt.").format(**self.fmt_dict())
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0],
+				self.make_cat(),
+				self.spell_upgrades[1],
+				self.make_bear(),
+				self.spell_upgrades[2]]
 
 	def get_impacted_tiles(self, x, y):
 		radius = self.get_stat('radius')
@@ -13463,20 +14032,47 @@ class DrainPulse(Spell):
 			self.caster.heal(heal, self)
 
 			if self.get_stat('ursomancy') and overheal > 0:
-				num_bears = (overheal // 75) + 1
-				bear_hp = overheal / num_bears
-
-				for _ in range(int(num_bears)):
+				remaining = overheal
+				while remaining > 0:
+					bear_hp = min(remaining, 75)
 					bear = BloodBear()
-					apply_minion_bonuses(self, bear)
 					bear.max_hp = bear_hp
+					apply_minion_bonuses(self, bear)
 					self.summon(bear)
+					remaining -= bear_hp
 
 		if self.get_stat('felomancy'):
 			for u in kills:
 				cat = BlackCat()
 				apply_minion_bonuses(self, cat)
 				self.summon(cat, target=u)
+
+	def make_cat(self):
+		u = BlackCat()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_bear(self):
+		u = BloodBear()
+		apply_minion_bonuses(self, u)
+		return u
+
+class GlobalSummoning(Upgrade):
+
+	def __init__(self, spell):
+		Upgrade.__init__(self)
+		self.spell = spell
+
+	def on_init(self):
+		self.name = "Global Summoning"
+		self.level = 2
+		self.description = "This spell gains global range and doesn't require line of sight."
+
+
+	def on_applied(self, owner):
+		self.spell.range = RANGE_GLOBAL
+		self.spell.requires_los = False
+
 
 class SummonWizard(Spell):
 
@@ -13485,20 +14081,26 @@ class SummonWizard(Spell):
 		self.tags = [Tags.Conjuration, Tags.Arcane]
 		self.level = 8
 		self.max_charges = 1
+		self.must_target_empty = True
+		self.must_target_walkable = True
 
-		# Upgrades
-		#  Clay Wizard - 5 SP CLAY
-		#  Ghost Wizard - 5 SP GHOST
-		#  Wizard Council - 8 SP SUMMON 3NUMSMMONS
-
-		self.upgrades['clay_wizard'] = (1, 6, "Clay Wizard", "The summoned wizards are made of clay")
-		self.upgrades['ghost_wizard'] = (1, 5, "Ghost Wizard", "The summoned wizards are ghostly")
 		self.upgrades['wizard_army'] = (1, 9, "Wizard Gang", "Summon [3:num_summons] wizards")
-
-		#  Affinity - always summon a wizard with a tag matching your most common spell (skill?) tag
+		self.upgrades['jealousy'] = (1, 7, "Jealousy", "When you cast this spell, an enemy wizard in line of sight of the summoned wizard becomes your ally.")
+		self.upgrades['dragon_wizard'] = (1, 4, "Dragon Wizard", "You always summon the Dragon Wizard.", [Tags.Dragon])
+		self.upgrades['mutant_wizard'] = (1, 2, "Mutant Wizard", "A random boss modifier is applied to the summoned wizard.", [Tags.Chaos])
+		self.add_upgrade(GlobalSummoning(self))
 
 	def get_description(self):
 		return "Summons a random wizard."
+
+	def get_extra_examine_tooltips(self):
+		return [self.spell_upgrades[0], self.spell_upgrades[1], self.spell_upgrades[2], self.make_dragon_wizard(), self.spell_upgrades[3], self.spell_upgrades[4]]
+
+	def make_dragon_wizard(self):
+		from RareMonsters import DragonWizard
+		u = DragonWizard()
+		apply_minion_bonuses(self, u)
+		return u
 
 	def cast_instant(self, x, y):
 		import RareMonsters  # GROSS.  But neccecary.
@@ -13508,13 +14110,23 @@ class SummonWizard(Spell):
 		for i in range(number_summoned):
 			wizard = random.choice(RareMonsters.all_wizards)[0]()  
 
-			if self.get_stat('clay_wizard'):
-				BossSpawns.apply_modifier(BossSpawns.Claytouched, wizard)
+			if self.get_stat('mutant_wizard'):
+				modifier = random.choice(BossSpawns.modifiers)[0]
+				wizard = BossSpawns.apply_modifier(modifier, wizard)
+			if self.get_stat('dragon_wizard'):
+				wizard = RareMonsters.DragonWizard()
 
-			if self.get_stat('ghost_wizard'):
-				BossSpawns.apply_modifier(BossSpawns.Ghostly, wizard)
+
+			apply_minion_bonuses(self, wizard)
 
 			self.summon(wizard, target=Point(x, y))
+
+			if self.get_stat('jealousy'):
+				wizards = [u for u in self.caster.level.get_units_in_los(Point(x, y)) if hasattr(u, 'is_wizard') and u.is_wizard and are_hostile(u, self.caster)]
+				if wizards:
+					target = random.choice(wizards)
+					target.team = self.caster.team
+					self.caster.level.show_effect(target.x, target.y, Tags.Arcane)
 
 class BrainSeedParasiteBuff(Buff):
 
@@ -13531,13 +14143,10 @@ class BrainSeedParasiteBuff(Buff):
 		self.owner.deal_damage(self.spell.get_stat('damage', base=1), Tags.Arcane, self.spell)
 
 	def on_death(self, evt):
-		if self.owner.max_hp < 40:
-			return
 		self.owner.level.queue_spell(self.do_summon())
 
 	def do_summon(self):
-		unit = BrainBush()
-		apply_minion_bonuses(self.spell, unit)
+		unit = self.spell.make_brain_bush()
 		self.spell.summon(unit, target=self.owner)
 		yield
 
@@ -13549,16 +14158,16 @@ class BrainSeedSpell(Spell):
 		self.max_charges = 5
 		self.tags = [Tags.Conjuration, Tags.Arcane, Tags.Nature]
 
-		self.upgrades['psychic_forest'] = (1, 6, "Psychic Fields", "Plant 5 seedlings instead of 1")
-		self.upgrades['eternal_forest'] = (1, 8, "Immortal Forest", "Grow an Immortal Seedling instead of a normal one.")
-		self.upgrades['parasite'] = (1, 4, "Parasitic Growth", "May target an enemy instead of an empty tile.  Targeted enemy takes [1_arcane:arcane] damage per turn for 25 turns.  If the enemy dies, if it had 40 or more max hp, spawn a brain tree where it died.") 
+		self.upgrades['parasite'] = (1, 4, "Parasitic Growth", "May target an enemy instead of an empty tile.  Targeted enemy takes [1_arcane:arcane] damage per turn for [25_turns:duration].  If the enemy dies spawn a brain tree where it died.", [Tags.Enchantment])
+		self.upgrades['psychic_forest'] = (1, 5, "Psychic Fields", "Plant [5:num_summons] seedlings instead of 1")
+		self.upgrades['eternal_forest'] = (1, 6, "Immortal Forest", "Grow an Immortal Seedling instead of a normal one.", [Tags.Holy])
 
 	def get_description(self):
-		return "Plant a brain bush seedling.  It will eventually mature into a forest of brain bushes."
+		return "Plant a brain bush seedling. It will eventually mature into a forest of brain bushes."
 
 	def can_cast(self, x, y):
 		unit = self.owner.level.get_unit_at(x, y)
-		if unit:
+		if unit and Spell.can_cast(self, x, y):
 			return self.get_stat('parasite')
 
 		return Spell.can_cast(self, x, y)
@@ -13570,29 +14179,43 @@ class BrainSeedSpell(Spell):
 			target.apply_buff(BrainSeedParasiteBuff(self), self.get_stat('duration', base=25))
 			return
 
-
 		num_units = 1
 		if self.get_stat('psychic_forest'):
 			num_units = self.get_stat('num_summons', base=5)
 
 		for i in range(num_units):
-			unit = BrainSapling()
-
+			unit = self.make_brain_sapling()
 			if self.get_stat('eternal_forest'):
 				BossSpawns.apply_modifier(BossSpawns.Immortal, unit)
-
-			apply_minion_bonuses(self, unit)
-
 			self.summon(unit, target=(Point(x, y)))
 
+	def make_brain_sapling(self):
+		u = BrainSapling()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_brain_bush(self):
+		u = BrainBush()
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_immortal_sapling(self):
+		u = self.make_brain_sapling()
+		BossSpawns.apply_modifier(BossSpawns.Immortal, u)
+		return u
+
+	def make_immortal_bush(self):
+		u = self.make_brain_bush()
+		BossSpawns.apply_modifier(BossSpawns.Immortal, u)
+		return u
 
 	def get_extra_examine_tooltips(self):
-		return [BrainSapling(), BrainBush()] + self.spell_upgrades
+		return [self.make_brain_sapling(), self.make_brain_bush()] + self.spell_upgrades + [self.make_immortal_sapling(), self.make_immortal_bush()]
 
 class SoulWindSpell(Spell):
 
 	def on_init(self):
-		self.tags = [Tags.Blood, Tags.Holy, Tags.Dark, Tags.Sorcery]
+		self.tags = [Tags.Blood, Tags.Holy, Tags.Dark, Tags.Sorcery, Tags.Conjuration]
 		self.hp_cost = 54
 		self.requires_los = False
 		self.range = RANGE_GLOBAL
@@ -13600,17 +14223,14 @@ class SoulWindSpell(Spell):
 		self.level = 7
 		self.damage = 37
 		self.name = "Soul Wind"
+		self.damage_type = [Tags.Dark, Tags.Holy]
 
-		# Upgrade 1: All souls ripped
-		# Upgrade 2: Mirror
-		# Upgrade 3: All units additionally take arcane damage
-
-		self.upgrades['ensoulment'] = (1, 4, "Ensoulment", "Spawn ghosts from non [living] units as well")
-		self.upgrades['arcane_wind'] = (1, 5, "Arcane Wind", "Also deals [arcane] damage to all units in the area of effect")
+		self.upgrades['arcane_wind'] = (1, 5, "Arcane Wind", "Also deals [arcane] damage to all units in the area of effect", [Tags.Arcane], [Tags.Arcane])
 		self.upgrades['mirror'] = (1, 4, "Dual Wind", "Soul Wind also casts behind the caster.")
+		self.upgrades['ensoulment'] = (1, 4, "Ensoulment", "Spawn ghosts from non [living] units as well")
 
 	def get_description(self):
-		return ("Invokes a soul wind.  All units in the area take [{damage}_dark:dark] damage.\n"
+		return ("Invokes a soul wind.  All units in a [3_tile:radius] wide line perpendicular to the caster take [{damage}_dark:dark] damage.\n"
 			   "All [undead], [dark], and [demon] units in the area take [{damage}_holy:holy] damage instead.\n"
 			   "Summons a spirit from each [Living] unit in the area.\n"
 			   "The spirits may have extra abilities and resistances based on the tags of the units they originated from.").format(**self.fmt_dict())
@@ -13677,6 +14297,14 @@ class SoulWindSpell(Spell):
 
 			if random.random() < .4:
 				yield
+
+	def make_ghost(self):
+		ghost = Ghost()
+		apply_minion_bonuses(self, ghost)
+		return ghost
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_ghost()]
 
 class ElephantFormBuff(Buff):
 
@@ -13746,13 +14374,9 @@ class StampedeFormSpell(Spell):
 		self.damage = 14
 		self.num_summons = 10
 
-		# Fae Stampede - gain arcane resist, faephants, can cast arcane spells and not end 
-		# Burning Stampede - gain fire reists, burning elephants, can cast fire spells and not end
-		# Metal Stampede - gain phys, fire, light resist, metal elephants, can cast metal spells and not end
-
-		self.upgrades['fae'] = (1, 6, "Fae Stampede", "Summon Faetouched elephants instead of normal ones.  Gain 50 arcane resist.  [Arcane] spells do not end elephant form.")
-		self.upgrades['burning'] = (1, 7, "Burning Stampede", "Summon Burning elephants instead of normal ones.  Gain 50 fire resist.  [Fire] spells do not end elephant form.")
-		self.upgrades['metallic'] = (1, 7, "Metal Stampede", "Summon Metallic elephants instead of normal ones.  Gain 25 fire and 50 lightning resist.  [Metallic] spells do not end elephant form.")
+		self.upgrades['fae'] = (1, 6, "Fae Stampede", "Summon Faetouched elephants instead of normal ones.  Gain 50 arcane resist.  [Arcane] spells do not end elephant form.", [Tags.Arcane])
+		self.upgrades['burning'] = (1, 7, "Burning Stampede", "Summon Burning elephants instead of normal ones.  Gain 50 fire resist.  [Fire] spells do not end elephant form.", [Tags.Fire])
+		self.upgrades['metallic'] = (1, 7, "Metal Stampede", "Summon Metallic elephants instead of normal ones.  Gain 25 fire and 50 lightning resist.  [Metallic] spells do not end elephant form.", [Tags.Metallic])
 	
 	def get_description(self):
 		return ("Become a pachyderm and also summon [{num_summons}:num_summons] pachyderms around you.\n"
@@ -13775,6 +14399,24 @@ class StampedeFormSpell(Spell):
 		apply_minion_bonuses(self, elephant)
 		return elephant
 
+	def make_fae_elephant(self):
+		u = Elephant()
+		BossSpawns.apply_modifier(BossSpawns.Faetouched, u)
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_burning_elephant(self):
+		u = Elephant()
+		BossSpawns.apply_modifier(BossSpawns.Flametouched, u)
+		apply_minion_bonuses(self, u)
+		return u
+
+	def make_metallic_elephant(self):
+		u = Elephant()
+		BossSpawns.apply_modifier(BossSpawns.Metallic, u)
+		apply_minion_bonuses(self, u)
+		return u
+
 	def cast(self, x, y):
 		buff = ElephantFormBuff(self)
 		self.owner.apply_buff(buff, self.get_stat('duration'))
@@ -13786,7 +14428,7 @@ class StampedeFormSpell(Spell):
 			yield
 
 	def get_extra_examine_tooltips(self):
-		return [self.get_elephant()] + self.spell_upgrades
+		return [self.get_elephant(), self.spell_upgrades[0], self.make_fae_elephant(), self.spell_upgrades[1], self.make_burning_elephant(), self.spell_upgrades[2], self.make_metallic_elephant()]
 
 class ChannelMalevolence(Spell):
 
@@ -13807,7 +14449,7 @@ class ChannelMalevolence(Spell):
 		#  tormentor charges
 
 		self.upgrades['return'] = (1, 3, "Boomerang", "The bolts also return after they reach their target, damaging units in the middle a second time.")
-		self.upgrades['toxic'] = (1, 3, "Toxic Hatred", "The bolts also [poison] enemies for [13_turns:duration]")
+		self.upgrades['toxic'] = (1, 3, "Toxic Hatred", "The bolts also [poison] enemies for [13_turns:duration]", [Tags.Nature])
 		self.upgrades['harvest'] = (1, 3, "Torment Harvest", "If this spell kills an enemy, gain a charge of Summon Fiery Tormentor")
 
 
@@ -13894,102 +14536,6 @@ class ChannelMalevolence(Spell):
 			self.owner.deal_damage(2, dtype, self)
 			yield
 
-
-
-class GiftOfLycanthropy(Spell):
-
-	def on_init(self):
-		self.name = "Gift of Lycanthropy"
-		self.tags = [Tags.Enchantment, Tags.Blood, Tags.Nature]
-
-		self.can_target_empty = False
-
-		self.hp_cost = 6
-		self.max_charges = 7
-		self.level = 3
-
-		self.upgrades['hp_bonus'] = (1, 3, "Greater Werewolf", "The targeted unit gains 80 max HP")
-		self.upgrades['shaman'] = (1, 5, "Werewolf Shaman", "The targeted unit gains your lifetap spell on a 7 turn cooldown")
-		self.upgrades['howler'] = (1, 8, "Werewolf Howler", "The targeted unit gains your summon wolf spell on a 7 turn cooldown")
-
-	def get_description(self):
-		return ("Target unit becomes a Lycanthrope, regenerating 5 hp per turn and turning into a wolf on death.  If the wolf survives, it returns to its original form.\n"
-			   "Cannot target units that already respawn or split.\n")
-
-	def can_cast(self, x, y):
-		unit = self.owner.level.get_unit_at(x, y)
-		
-		if not unit:
-			return False
-
-		if not BossSpawns.check_death_buffs(unit):
-			return False
-
-		if are_hostile(self.caster, unit):
-			return False
-
-		return Spell.can_cast(self, x, y)
-
-
-	def cast_instant(self, x, y):
-		unit = self.owner.level.get_unit_at(x, y)
-		if not unit:
-			return
-
-		unit.Anim = None
-
-		BossSpawns.apply_modifier(BossSpawns.Lycanthrope, unit)
-
-		if self.get_stat('hp_bonus'):
-			unit.max_hp += 80
-			unit.cur_hp += 80
-
-		if self.get_stat('shaman'):
-			grant_minion_spell(BloodTapSpell, unit, self.caster, cool_down=7)
-
-		if self.get_stat('howler'):
-			grant_minion_spell(SummonWolfSpell, unit, self.caster, cool_down=7)
-
-
-
-class BloodflameBuff(Buff):
-
-	def on_init(self):
-		self.name = "Bloodfire"
-		self.color = Tags.Fire.color
-		self.buff_type = BUFF_TYPE_BLESS
-		self.tag_bonuses[Tags.Fire]['quick_cast'] = 1
-		self.owner_triggers[EventOnSpellCast] = self.on_cast
-		self.charges = 4
-
-	def on_cast(self, evt):
-		self.charges -= 1
-
-		if self.charges == 0:
-			self.owner.remove_buff(self)
-	
-
-class BloodflameSpell(Spell):
-
-	def on_init(self):
-		self.name = "Bloodflame"
-		self.tags = [Tags.Blood, Tags.Fire, Tags.Enchantment]
-		self.duration = 5
-		self.hp_cost = 30
-		self.max_charges = 1
-		self.level = 5
-		self.quick_cast = True
-		self.range = 0
-
-
-	def get_description(self):
-		return ("For [{duration}_turns:duration] your [fire] spells gain quickcast.\n")
-
-	def cast_instant(self, x, y):
-		self.owner.apply_buff(BloodflameBuff(), 1)
-		self.owner.level.show_effect(self.owner.x, self.owner.y, Tags.Blood)
-
-
 class EnergyCascadeBuff(Buff):
 
 	def __init__(self, spell):
@@ -14002,6 +14548,12 @@ class EnergyCascadeBuff(Buff):
 		self.color = Tags.Arcane.color
 		self.buff_type = BUFF_TYPE_BLESS
 		self.stack_type = STACK_REPLACE
+		if self.spell.get_stat('bloody_tendrils'):
+			self.global_triggers[EventOnDamaged] = self.on_damaged
+		self.num_known_eyes = 0
+		if self.spell.get_stat('cthulhu'):
+			self.num_known_eyes = len([s for s in self.spell.owner.spells if Tags.Eye in s.tags])
+		self.damage = self.spell.get_stat('damage')
 
 	def on_applied(self, owner):
 		self.counter = self.turns_left // 2
@@ -14010,27 +14562,42 @@ class EnergyCascadeBuff(Buff):
 		self.owner.level.queue_spell(self.do_effect())
 
 	def get_description(self):
-		return "%s" % self.counter
+		num_targets = self.spell.get_stat('num_targets',base=self.spell.num_targets + self.charge + self.num_known_eyes)
+		damage = self.damage
+		if self.spell.get_stat('growing_power'):
+			damage += self.charge * self.spell.get_stat('damage', base=1)
+		return "Deals either [%s_Arcane:arcane] or [%s_Lightning:lightning] damage to the nearest [%s:num_targets] enemies next turn." % (damage, damage, num_targets)
 
 	def do_effect(self):
-		# Hit only enemies?  Upgrade to only hit enemies maybe?
 		enemies = [u for u in self.owner.level.units if are_hostile(u, self.owner)]
 		random.shuffle(enemies)
 		enemies.sort(key=lambda u: distance(u, self.owner))
 
-		num_targets = self.spell.get_stat('num_targets', base=self.spell.num_targets + self.charge)
+		num_targets = self.spell.get_stat('num_targets', base=self.spell.num_targets + self.charge + self.num_known_eyes)
+
 		for t in enemies[:num_targets]:
-			damage = self.spell.get_stat('damage')
+			damage = self.damage
+			if self.spell.get_stat('growing_power'):
+				damage += self.charge * self.spell.get_stat('damage', base=1)
 			dtype = random.choice([Tags.Arcane, Tags.Lightning])
 			t.deal_damage(damage, dtype, self.spell)
 			self.owner.level.show_path_effect(self.owner, t, dtype, minor=True)
 			yield
 		
 		self.counter -= 1
-		if self.counter > 0:
+		if self.counter >= 0:
 			self.charge += 1
 		else:
 			self.charge -= 1
+
+	def on_damaged(self, evt):
+		if evt.damage <= 0:
+			return
+		if not evt.source:
+			return
+		if evt.source == self.spell:
+			heal = evt.damage // 2
+			self.owner.heal(heal, self.spell)
 
 class EnergyCascadeSpell(Spell):
 
@@ -14045,13 +14612,11 @@ class EnergyCascadeSpell(Spell):
 		self.range = 0
 		self.max_charges = 1
 
-		# TODO- upgrades
-		# minion spawning somehow
-		# poison?
-		# stuns?
+		self.upgrades['growing_power'] = (1, 4, "Growing Power", "The damage dealt also increases by [1:damage] each turn for the first half of the duration, and decreases by [1:damage] each turn for the second half.")
+		self.upgrades['bloody_tendrils'] = (1, 6, "Bloody Tendrils", "Damage dealt by the spell heals the caster for 50% of the damage dealt.", [Tags.Blood])
+		self.upgrades['cthulhu'] = (1, 3, "Cthulhu Form", "Increase the starting number of targets by 1 for each [Eye] spell you know.", [Tags.Eye])
 
 	def get_description(self):
-		# TODO- real desc
 		return ("Deals either [{damage}_arcane:arcane] or [{damage}_lightning:lightning] damage the nearest [{num_targets}:num_targets] enemies each turn.\n"
 			    "Number of targets increases by 1 each turn for the first half of the duration, and decreases by 1 each turn for the second half.\n"
 			    "Lasts [{duration}_turns:duration].").format(**self.fmt_dict())
@@ -14070,14 +14635,15 @@ class WaveOfDread(Spell):
 
 
 		self.tags = [Tags.Sorcery, Tags.Dark]
+		self.damage_type =[Tags.Dark]
 		self.level = 3
 
 		self.range = 12
 		self.angle = math.pi / 6.0
 
-		self.upgrades['poison'] = (1, 4, "Wilting Wave", "Also deals [22_poison:poison] damage and poisons targets for [5_duration:duration] turns")
+		self.upgrades['poison'] = (1, 4, "Wilting Wave", "Also deals [22_poison:poison] damage and poisons targets for [5_duration:duration] turns", [Tags.Nature], [Tags.Poison])
 		self.upgrades['domination'] = (1, 5, "Wave of Tyranny", "If Wave of Dread deals 50 or more damage in total, regain a charge of Dominate")
-		self.upgrades['fearfaces'] = (1, 6, "Fear Spirits", "On killing a unit, summon a Fearface at that point for [6_turns:minion_duration].")
+		self.upgrades['fearfaces'] = (1, 6, "Fear Spirits", "On killing a unit, summon a Fearface at that point for [6_turns:minion_duration].", [Tags.Conjuration])
 
 	def get_description(self):
 		return "Deals [{damage}_dark:dark] damage and applies [{duration}_turns:duration] of fear to units in a cone".format(**self.fmt_dict())
@@ -14114,11 +14680,7 @@ class WaveOfDread(Spell):
 							unit.apply_buff(Poison(), self.get_stat('duration'))
 
 					if not unit.is_alive() and self.get_stat('fearfaces'):
-						fearface = Fearface()
-						fearface.turns_to_death = self.get_stat('minion_duration', base=6)
-						apply_minion_bonuses(self, fearface)
-						self.summon(fearface, target=point)
-
+						self.summon(self.make_fearface(), target=point)
 
 			yield
 
@@ -14127,6 +14689,15 @@ class WaveOfDread(Spell):
 			if spell:
 				spell.refund_charges(1)
 
+	def make_fearface(self):
+		u = Fearface()
+		u.turns_to_death = self.get_stat('minion_duraiton', base=4)
+		apply_minion_bonuses(self, u)
+		return u
+
+	def get_extra_examine_tooltips(self):
+		return self.spell_upgrades + [self.make_fearface()]
+
 	def get_impacted_tiles(self, x, y):
 		return [p for stage in self.aoe(x, y) for p in stage]
 
@@ -14134,7 +14705,7 @@ class LivingRainBuff(Upgrade):
 
 	def on_init(self):
 		self.name = "Living Rain"
-		self.level = 5
+		self.level = 2
 		self.description = "Each turn, summon a water elemental from Rain Cloud you control."
 
 	def on_advance(self):
@@ -14150,6 +14721,12 @@ class LivingRainBuff(Upgrade):
 		apply_minion_bonuses(self.owner.get_spell(RainStormSpell), unit)
 		self.summon(unit, target=target)
 
+	def on_applied(self, owner):
+		self.spell_tag_update(RainStormSpell, Tags.Conjuration)
+
+	def on_unapplied(self):
+		self.spell_tag_update(RainStormSpell, Tags.Conjuration, add=False)
+
 class RainStormSpell(Spell):
 
 	def on_init(self):
@@ -14163,8 +14740,8 @@ class RainStormSpell(Spell):
 
 		self.max_charges = 9
 
-		self.upgrades['poison'] = (1, 5, "Acid Rain", "The rainclouds deal [9_poison:poison] damage each turn")
-		self.upgrades['healing'] = (1, 4, "Healing Rain", "Allies are healed for 7 hp per turn while they are in the rainclouds")
+		self.upgrades['poison'] = (1, 4, "Acid Rain", "The rainclouds deal [9_poison:poison] damage each turn")
+		self.upgrades['healing'] = (1, 4, "Healing Rain", "The wizard and their allies are healed for 7 hp per turn while they are in the rainclouds")
 		self.add_upgrade(LivingRainBuff())
 
 
@@ -14450,8 +15027,6 @@ class StarwhaleDream(Spell):
 		return [self.Starwhale()] + self.spell_upgrades
 
 all_player_spell_constructors = [
-	#FlameTongue,
-	#SparkSpell,
 	FireballSpell, 
 	LightningBoltSpell,
 	AnnihilateSpell,
@@ -14461,12 +15036,10 @@ all_player_spell_constructors = [
 	BlinkSpell,
 	VoidBeamSpell,
 	ThunderStrike,
-	#GiantStrengthSpell,
 	ChaosBarrage,
 	DispersalSpell,
 	PetrifySpell,
 	SummonWolfSpell,
-	#SummonDireWolfSpell,
 	SummonGiantBear,
 	FeedingFrenzySpell,
 	StormSpell,
@@ -14481,8 +15054,10 @@ all_player_spell_constructors = [
 	EyeOfFireSpell,
 	EyeOfLightningSpell,
 	EyeOfIceSpell,
+	EyeOfBloodSpell,
+	Vampiricism,
 	NightmareSpell,
-	CockatriceSkinSpell,
+	BasiliskArmorSpell,
 	WatcherFormSpell,
 	ImpGateSpell,
 	LightningHaloSpell,
@@ -14503,7 +15078,6 @@ all_player_spell_constructors = [
 	SummonEarthElemental,
 	CallSpirits,
 	MysticMemory,
-	#ConjureMemories,
 	Permenance,
 	DeathGazeSpell,
 	MagicMissile,
@@ -14517,7 +15091,6 @@ all_player_spell_constructors = [
 	WordOfBeauty,
 	SummonFloatingEye,
 	EyeOfRageSpell,
-	#ChimeraFarmiliar,
 	ArcLightning,
 	Flameblast,
 	PoisonSting,
@@ -14536,15 +15109,12 @@ all_player_spell_constructors = [
 	HolyShieldSpell,
 	BlindingLightSpell,
 	FlockOfEaglesSpell,
-	#FlamingSwordSpell,
 	HeavenlyIdol,
 	SummonGoldDrakeSpell,
 	SummonSeraphim,
 	SummonArchon,
 	PainMirrorSpell,
 	PyrostaticPulse,
-	#ThunderStones,
-	#FireStones,  
 	VoidRip,
 	ShieldSiphon,
 	VoidMaw,
@@ -14566,9 +15136,7 @@ all_player_spell_constructors = [
 	SummonKnights,
 	ToxinBurst,
 	ToxicSpore,
-	#AmplifyPoisonSpell,
 	IgnitePoison,
-	#VenomBeast,
 	SummonSpiderQueen,
 	Freeze,
 	Iceball,
@@ -14579,8 +15147,6 @@ all_player_spell_constructors = [
 	SummonIcePhoenix,
 	WordOfIce,
 	FrozenOrbSpell,
-	#IceWeave,
-	#ShatterShards,
 	Icicle,
 	IceWind,
 	IceWall,
@@ -14594,7 +15160,6 @@ all_player_spell_constructors = [
 	Blazerip,
 	IceVortex,
 	RestlessDead,
-	#GustOfWind,
 	PyrostaticHexSpell,
 	SpikeballFactory,
 	MercurizeSpell,
@@ -14604,11 +15169,9 @@ all_player_spell_constructors = [
 	LightningSpire,
 	EssenceFlux,
 	FaehauntGardenSpell,
-	#DisintegrationCascadeSpell,
 	FurnaceOfSorcerySpell,
 	GoldSkullSummonSpell,
 	WyrmEggs,
-	#DeathchillConjuringSpell,
 	MoonGlaive,
 	CarnivalOfPain,
 	DreamwalkSpell,
@@ -14627,8 +15190,6 @@ all_player_spell_constructors = [
 	FleshFiendSpell,
 	HelgateSpell,
 	HordeOfHalfmen,
-	#WitchCoven,
-	#SatyrCoven,
 	IdolOfBurningHunger,
 	GoatOffering,
 	DrainPulse,
@@ -14637,14 +15198,17 @@ all_player_spell_constructors = [
 	SoulWindSpell,
 	StampedeFormSpell,
 	ChannelMalevolence,
-	#GiftOfLycanthropy,
-	#BloodflameSpell,
 	EnergyCascadeSpell,
 	WaveOfDread,
 	RainStormSpell,
 	StarwhaleDream,
 	RainOfThunderbolts,
-	WizardReplica
+	WizardReplica,
+	Slimeshot,
+	Slimify,
+	SlimeOrbSpell,
+	AmalgamateSlime,
+	SummonSlimeDrake
 ]
 
 def make_player_spells():

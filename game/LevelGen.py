@@ -178,10 +178,19 @@ def mutant_level(levelgen):
 	levelgen.primary_spawn = levelgen.random.choice([m for m, l, in spawn_options if l == spawn_level])
 	levelgen.secondary_spawn = levelgen.random.choice([m for m, l, in spawn_options if l == spawn_level])
 
-	modifier = BossSpawns.roll_modifiers(levelgen.difficulty, levelgen.primary_spawn, prng=levelgen.random)[0]
-
 	spawn_func_p = levelgen.primary_spawn
 	spawn_func_s = levelgen.secondary_spawn
+
+	allowed_modifiers = []
+	for m in modifiers:
+		if len(m) < 4:
+			allowed_modifiers.append(m)
+		else:
+			if m[3](spawn_func_p()) and m[3](spawn_func_s()):
+				allowed_modifiers.append(m)
+
+	weights = [m[2] for m in allowed_modifiers]
+	modifier = levelgen.random.choices(allowed_modifiers, weights=weights)[0][0]
 
 	levelgen.primary_spawn = lambda : BossSpawns.apply_modifier(modifier, spawn_func_p(), apply_hp_bonus=True)
 	levelgen.secondary_spawn = lambda : BossSpawns.apply_modifier(modifier, spawn_func_s(), apply_hp_bonus=True)

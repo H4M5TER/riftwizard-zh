@@ -161,6 +161,7 @@ class SimpleRangedAttack(Spell):
 
 		self.drain = drain
 		self.suicide = False
+		self.damage_type_random = True
 
 	def get_description(self):
 		
@@ -609,8 +610,9 @@ class RainCloud(Cloud):
 		self.asset= ['tiles', 'clouds', 'rainstorm_cloud']
 		self.name = "Rain Cloud"
 		self.description = ("Every turn, applies Soaked to any unit standing within for 2 turns, reducing [ice] and [lightning] resistance by 50 but increasing [fire] resistance by 50.\n"
-							"On taking [fire] damage, dissapears.\n")
+							"On taking [fire] damage, disappears.\n")
 		self.owner = owner
+		self.duration = 5
 
 		self.spell = spell
 
@@ -629,7 +631,7 @@ class RainCloud(Cloud):
 					unit.heal(10, self.spell)
 
 				if self.spell.get_stat('poison'):
-					unit.deal_damage(9, Tags.Poison, self)
+					unit.deal_damage(self.spell.get_stat('damage', base=9), Tags.Poison, self.spell)
 
 	def on_damage(self, dtype):
 		if dtype == Tags.Fire:
@@ -847,7 +849,7 @@ class DamageAuraBuff(Buff):
 
 			unit = self.owner.level.get_unit_at(p.x, p.y)
 
-			if isinstance(self.damage_type, list):
+			if isinstance(self.damage_type, list) and self.damage_type: # fixes a crash from if damage_type is and empty list
 				damage_type = random.choice(self.damage_type)
 			else:
 				damage_type = self.damage_type
@@ -1059,23 +1061,6 @@ class ElementalEyeBuff(Buff):
 
 		self.owner.level.deal_damage(target.x, target.y, self.damage, self.damage_type, self)
 
-class cockatriceScaleArmorBuff(Buff):
-
-	def on_init(self):
-		self.name = "Petrify Armor"
-
-	def on_applied(self, owner):
-		self.global_triggers[EventOnSpellCast] = self.on_spell_cast
-
-	def on_spell_cast(self, evt):
-		if evt.caster == self.owner:
-			return
-		if evt.x != self.owner.x:
-			return
-		if evt.y != self.owner.y:
-			return
-		evt.caster.apply_buff(PetrifyBuff(), 2)
-
 class ElementalReincarnationBuff(Buff):
 
 	def on_applied(self, owner):
@@ -1193,7 +1178,7 @@ class MonsterLeap(Spell):
 
 
 def randomly_teleport(unit, radius, flash=True, requires_los=False):
-		blink_targets = [p for p in unit.level.get_points_in_ball(unit.x, unit.y, radius) if unit.level.can_stand(p.x, p.y, unit)]
+		blink_targets = [p for p in unit.level.get_points_in_ball(unit.x, unit.y, radius) if unit.level.can_move(unit, p.x, p.y, teleport=True)]
 		if not blink_targets:
 			return
 
@@ -1411,7 +1396,7 @@ class Soulbound(Buff):
 		Buff.__init__(self)
 		self.owner_triggers[EventOnDamaged] = self.on_self_damage
 		self.global_triggers[EventOnDeath] = self.on_death
-		self.guardian = guardian
+		self.connected_unit = guardian
 		self.name = "Soul Jarred"
 		self.asset = ['status', 'soulbound']
 		self.color = Tags.Dark.color
@@ -1420,13 +1405,12 @@ class Soulbound(Buff):
 		return "Cannot die until it's jar %s is killed"
 
 	def on_advance(self):
-		if not self.guardian.is_alive():
+		if not self.connected_unit.is_alive():
 			self.owner.remove_buff(self)
-
 
 	def on_self_damage(self, damage):
 		# Do not protect if guardian is gone.  This can happen if the guardian is banished by mordred.
-		if not self.guardian.is_alive():
+		if not self.connected_unit.is_alive():
 			self.owner.remove_buff(self)
 			return
 
@@ -1434,7 +1418,7 @@ class Soulbound(Buff):
 			self.owner.cur_hp = 1
 
 	def on_death(self, evt):
-		if evt.unit == self.guardian:
+		if evt.unit == self.connected_unit:
 			self.owner.remove_buff(self)
 
 class BloodrageBuff(Buff):
@@ -1455,16 +1439,6 @@ def bloodrage(amount):
 	def onhit(caster, target):
 		caster.apply_buff(BloodrageBuff(amount), 10)
 	return onhit
-
-class ClarityBuff(Buff):
-
-	def on_init(self):
-		self.description = "Cannot be stunned"
-
-	def on_pre_advance(self):
-		buffs = [b for b in self.owner.buffs if isinstance(b, Stun)]
-		for b in buffs:
-			self.owner.remove_buff(b)
 
 def ProjectileUnit():
 
@@ -1509,6 +1483,8 @@ class Thorns(Buff):
 		self.owner.level.queue_spell(self.do_thorns(evt.caster))
 
 	def do_thorns(self, unit):
+		if not are_hostile(self.owner, unit):
+			return
 		unit.deal_damage(self.damage, self.dtype, self)
 		yield
 
@@ -1579,9 +1555,7 @@ class ChanceToBecome(Buff):
 		if new_unit.source:
 			apply_minion_bonuses(self.owner.source, new_unit)
 
-		p = self.owner.level.get_summon_point(self.owner.x, self.owner.y, radius_limit=8, flying=new_unit.flying)
-		if p:
-			self.owner.level.add_obj(new_unit, p.x, p.y)
+		self.owner.level.summon(self.owner, new_unit)
 
 class MatureInto(Buff):
 
@@ -1619,6 +1593,8 @@ class SpawnOnDeath(Buff):
 		self.spawner = spawner
 		self.num_spawns = num_spawns
 		self.description = "On death, spawn %d %ss" % (self.num_spawns, self.spawner().name)
+		self.name = self.description
+		self.buff_type = BUFF_TYPE_PASSIVE
 		self.owner_triggers[EventOnDeath] = self.on_death
 		self.apply_bonuses = True
 
@@ -1842,7 +1818,7 @@ class KingSpell(Spell):
 		self.max_charges = 0
 
 	def get_description(self):
-		return "Summon 2 %s gates" % self.spawner().name
+		return "Summon 2 %s spawners" % self.spawner().name
 
 	def cast_instant(self, x, y):
 		for i in range(2):
@@ -1851,7 +1827,7 @@ class KingSpell(Spell):
 				return
 			lair = MonsterSpawner(self.spawner)
 			lair.team = self.caster.team
-			
+
 			if self.owner.source:
 				lair.source = self.owner.source
 				apply_minion_bonuses(lair.source, lair)
@@ -1898,7 +1874,6 @@ def MonsterSpawner(spawn_func):
 
 	unit.sprite.bg_color = Color(255, 255, 255)
 	summon = SimpleSummon(spawn_func, cool_down=random.randint(7, 10), sort_dist=True)
-	summon.cool_down
 	unit.spells.append(summon)
 	unit.cool_downs[summon] = random.randint(5, 10)
 	unit.stationary = True
@@ -1908,10 +1883,11 @@ def MonsterSpawner(spawn_func):
 class WizardNightmare(Spell):
 
 	def __init__(self, damage_type=None):
+		Spell.__init__(self) # have this first so the new damage_type = [] in spell init doesn't override it
 		if not damage_type:
 			damage_type = [Tags.Dark, Tags.Arcane]
 		self.damage_type = damage_type
-		Spell.__init__(self)
+
 
 	def on_init(self):
 		self.name = "Nightmare Aura"
@@ -2244,6 +2220,13 @@ def grant_minion_spell(spell_class, unit, master, cool_down=1, pre_insert=True):
 	spell.statholder = master
 	spell.caster = unit
 	spell.owner = unit
+
+	master_spell = master.get_or_make_spell(spell_class)
+	if getattr(master_spell, 'damage_type', None): # so upgrades which change the spell's damage type can register for AI targeting
+		if isinstance(master_spell.damage_type, list):
+			spell.damage_type = master_spell.damage_type.copy()
+		else:
+			spell.damage_type = master_spell.damage_type
 
 	# Erase charges and add cooldown 
 	spell.max_charges = 0

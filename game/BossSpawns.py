@@ -101,14 +101,12 @@ def Ghostly(monster):
 		monster.tags.append(Tags.Undead)
 	
 	monster.resists[Tags.Physical] = 100
-
+	monster.flying = True
 	monster.name = "Ghostly %s" % monster.name
 	monster.recolor_primary = Color(255, 255, 255)
 
 	if Tags.Living in monster.tags:
 		monster.tags.remove(Tags.Living)
-
-	# Todo- darkinize melee attacks?
 
 	return monster
 
@@ -206,23 +204,10 @@ def Trollblooded(monster):
 	return monster
 
 def Slimy(monster):
-	candidates = [GreenSlime] # can always spawn greens
-
-	# Can spawn other color slimes based on matching creature tags
-	if Tags.Fire in monster.tags:
-		candidates.append(RedSlime)
-	if Tags.Ice in monster.tags:
-		candidates.append(IceSlime)
-	if Tags.Arcane in monster.tags:
-		candidates.append(VoidSlime)
-
+	candidates = get_matching_slimes(monster)
 	monster.apply_buff(SlimyBuff(spawner=candidates))
-
-	if Tags.Slime not in monster.tags: # make it a slime if it isn't one already
+	if Tags.Slime not in monster.tags: # readded for edge cases
 		monster.tags.append(Tags.Slime)
-
-	# if SlimeBuff in monster.buffs: # get rid of base slime buff, since this one is stronger, makes propagation of this buff
-	# 	monster.remove_buff(SlimeBuff)
 
 	monster.name = "Slimy %s" % monster.name
 	monster.recolor_primary = Tags.Slime.color
@@ -236,52 +221,36 @@ def Slimy(monster):
 
 class SlimyBuff(Buff):
 
-	def __init__(self, spawner, name='slimes'):
+	def __init__(self, spawner, name='slimes', growth_chance=.5):
 		Buff.__init__(self)
 		self.name = "Slimy"
 		self.color = Tags.Slime.color
 		self.spawner = spawner
 		self.spawner_name = name
-		self.spawns = 1
+		self.buff_type = BUFF_TYPE_PASSIVE # for showing description if applied post unit-creation
 		self.stack_type = STACK_REPLACE
-		self.description = ("50% chance to gain 10% of base hp as current and max hp per turn. Upon reaching double its base HP, splits, releasing 5 slimes.\n"
-							"When this creature is damaged, a slime is spawned nearby.")
+		self.growth_chance = growth_chance
+		self.description = ("50% chance to heal for 2 HP each turn.\n"
+							"Excess healing from this effect raises max HP.\n"
+							"When this creature is damaged, a slime is spawned nearby.\n"
+							"Spawned slimes will match this unit's tags when possible, and be green slimes in all other cases.")
+
 
 	def on_applied(self, owner):
-		self.start_hp = self.owner.max_hp # return to this on split
-		self.spawns = 5 # num of spawns
-		self.to_split = self.start_hp * 2 # split when hp reaches this
-		self.growth = max(1, self.start_hp // 10) # how much to grow by per tick, little slimes need to grow too so min of 1
-		self.description = ("50%% chance to gain %d hp and max hp per turn.  Upon reaching %d HP, splits, releasing %d %s.\n"
-							"When this creature is damaged, a slime is spawned nearby.") % (self.growth, self.to_split, self.spawns, self.spawner_name)
+		self.growth = 2
 		self.owner_triggers[EventOnDamaged] = self.on_damaged
 
 	def on_advance(self):
-		if random.random() < 0.5: # 50% chance to activate growth
+		if random.random() < self.growth_chance: # 50% base chance to activate growth
 			return
 
-		if self.owner.cur_hp == self.owner.max_hp: # only grow if they're at max hp
-			self.owner.max_hp += self.growth
-		self.owner.deal_damage(-self.growth, Tags.Heal, self) # always heal either up to new max, or if already damaged
-		if self.owner.cur_hp >= self.to_split: # if they've reached the split threshold
-			self.owner.max_hp = self.start_hp # set their hp back to original
-			self.owner.cur_hp = self.start_hp
-			for i in range(self.spawns): # for how many spawns they will spit out
-				p = self.owner.level.get_summon_point(self.owner.x, self.owner.y) # grab a spawn point
-				if p:
-					unit = random.choice(self.spawner)() # spawn the unit based on the spawner fxn
-					unit.team = self.owner.team
-
-					unit.max_hp = max(10, self.owner.max_hp // (self.spawns * 2)) # units hp should be proportionate to how much hp it siphoned off the monster
-
-					self.owner.level.add_obj(unit, p.x, p.y) # spawn it in
+		if (self.owner.cur_hp + self.growth) >= self.owner.max_hp:
+			self.owner.max_hp = self.owner.cur_hp + self.growth
+		self.owner.deal_damage(-self.growth, Tags.Heal, self)
 
 	def on_damaged(self, evt):
-		p = self.owner.level.get_summon_point(self.owner.x, self.owner.y)  # grab a spawn point
-		if p:
-			unit = random.choice(self.spawner)()  # spawn the unit based on the spawner fxn
-			unit.team = self.owner.team
-			self.owner.level.add_obj(unit, p.x, p.y)  # spawn it in
+		unit = random.choice(self.spawner)()  # spawn the unit based on the spawner fxn
+		self.summon(unit, self.owner)
 
 def Stormtouched(monster):
 	monster.apply_buff(Thorns(damage=2, dtype=Tags.Lightning))
@@ -345,6 +314,7 @@ def Claytouched(monster):
 			monster.resists[dtype] = 50
 
 	monster.apply_buff(RegenBuff(3))
+	monster.burrowing = True
 
 	monster.name = "Clay %s" % monster.name
 	monster.recolor_primary = Color(160, 135, 126)
@@ -354,11 +324,21 @@ def Claytouched(monster):
 # damage taken is evenly divided amongst all monsters with same name
 class HivemindBuff(Buff):
 
+	members = set() # track all fleshbound units here, rather than recalcing them all for every instance of the buff
+
 	def on_init(self):
-		self.owner_triggers[EventOnPreDamaged] = self.on_damaged
-		self.color = Tags.Blood.color
-		self.description = "All damage taken is shared evenly amongst all monsters with the same name"
 		self.name = "Fleshbound"
+		self.color = Tags.Blood.color
+		self.description = ("All damage taken is shared evenly amongst Fleshbound allies\n"
+							"Regenerate HP each turn equal to the number of Fleshbound allies.")
+
+		self.owner_triggers[EventOnPreDamaged] = self.on_damaged
+
+	def on_applied(self, owner):
+		HivemindBuff.members.add(owner)
+
+	def on_unapplied(self):
+		HivemindBuff.members.discard(self.owner)
 
 	def on_damaged(self, evt):
 		# Do not trigger on 0 damage, do not trigger on damage which is 100% resisted
@@ -372,7 +352,6 @@ class HivemindBuff(Buff):
 		# Shield self to prevent damage
 		self.owner.add_shields(1)
 
-
 		# But then queue new damage afterwards
 		self.owner.level.queue_spell(self.dist_damage(evt))
 
@@ -383,7 +362,7 @@ class HivemindBuff(Buff):
 	def dist_damage(self, evt):
 		old_damage = evt.damage
 
-		units = [u for u in self.owner.level.units if u.name == self.owner.name]
+		units = [u for u in HivemindBuff.members if not are_hostile(self.owner, u)]
 		if not units:
 			return
 
@@ -394,15 +373,22 @@ class HivemindBuff(Buff):
 			if u != self.owner:
 				self.owner.level.show_path_effect(self.owner, u, Tags.Blood, minor=True, inclusive=False)
 		yield
+
+	def on_advance(self):
+		units = [u for u in HivemindBuff.members if not are_hostile(self.owner, u)]
+		if not units:
+			return
+		if self.owner.cur_hp < self.owner.max_hp:
+			self.owner.heal(len(units), self)
 		
 
 def Hivemind(monster):
 	monster.apply_buff(HivemindBuff())
-	monster.apply_buff(RegenBuff(1))
 	monster.recolor_primary = Tags.Blood.color
 	monster.name = "Fleshbound %s" % monster.name
 
-	monster.tags.append(Tags.Blood)
+	if not Tags.Blood in monster.tags:
+		monster.tags.append(Tags.Blood)
 
 	return monster
 
@@ -453,7 +439,7 @@ modifiers = [
 	(Chaostouched, 4, 2, lambda m: check_tag(Tags.Chaos, m)),
 	(Claytouched, 5, 2),
 	(Hivemind, 5, 2),
-	(Slimy, 2, 2)
+	(Slimy, 2, 2, lambda m: check_tag(Tags.Slime, m))
 ]
 
 def apply_modifier(modifier, unit, propogate=True, apply_hp_bonus=False):
@@ -472,16 +458,12 @@ def apply_modifier(modifier, unit, propogate=True, apply_hp_bonus=False):
 			buffs = [b for b in unit.buffs if isinstance(b, b_type)]
 			for buff in buffs:
 				# Capture spawner fn so we dont infinitely recurse
-				def make_child(spawner=buff.spawner, modifier=modifier):
-					# Special case
-					unit = spawner()
-
-					# Apply hp bonus except for splitting buff (since that results in exponentially higher hp values) 
-					#  or for SpawnOnDeaths > 2 (stuff llike burning bag of bugs shouldnt spawn enourmous fly swarms, but it should spawn burning ones)
-					should_apply_hp_bonus = b_type == SplittingBuff or b_type == SpawnOnDeath and b_type.num_spawns > 2
-					apply_modifier(modifier, unit, apply_hp_bonus=should_apply_hp_bonus)
-
-					return unit
+				def make_child(spawner=buff.spawner, modifier=modifier, apply_hp_bonus=apply_hp_bonus):
+					child = spawner()
+					# if the parent gets hp_bonus, so should the non-splitting children, it's a boss, and these are usually low in number.
+					apply = apply_hp_bonus and not isinstance(buff, SplittingBuff) #
+					apply_modifier(modifier, child, apply_hp_bonus=apply)
+					return child
 
 				buff.spawner = make_child
 

@@ -644,7 +644,7 @@ class SmokeBomb(Spell):
 			tp_target = random.choice(tp_targets)
 			self.caster.level.act_move(self.caster, tp_target.x, tp_target.y, teleport=True)
 			self.caster.level.show_effect(self.caster.x, self.caster.y, Tags.Dark)
-		self.caster.apply_buff(CowardBuff(), self.cool_down)
+		self.caster.apply_buff(FearBuff(), self.cool_down)
 		return
 
 
@@ -1575,6 +1575,7 @@ def VampireNecromancer():
 	freeze.range = 7
 	unit.spells.insert(0, freeze)
 	unit.get_buff(RespawnAs).spawner = Necrobat
+	unit.is_wizard = True
 	return unit
 
 def GnomeGiant():

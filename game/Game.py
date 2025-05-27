@@ -63,6 +63,13 @@ def abort_game():
 			if os.path.exists(filename):
 				os.remove(filename)
 
+def is_game_victory(game):
+	if game.level_num == LAST_LEVEL and not any(u for u in game.cur_level.units if u.name == "Mordred" and are_hostile(u, game.p1)):
+		game.victory = True
+		game.victory_evt = True
+		game.finalize_save(victory=True)
+
+
 class Game():
 #	cur_game = None
 
@@ -217,6 +224,7 @@ class Game():
 		self.trial_name = trial_name
 
 		self.p1 = self.make_player_character()
+		self.p1.game = self # allow access to the game via the player
 
 		self.run_number = self.get_run_number()
 
@@ -556,7 +564,6 @@ class Game():
 		if all([u.team == TEAM_PLAYER for u in self.cur_level.units]) and self.p1.cur_hp > 0:
 				
 			if not self.has_granted_xp:
-				#self.p1.xp += 3
 				self.has_granted_xp = True
 				self.victory_evt = True
 				self.finalize_level(victory=True)
@@ -568,10 +575,7 @@ class Game():
 			self.gameover = True
 			self.finalize_save(victory=False)
 
-		if self.level_num == LAST_LEVEL and not any(u for u in self.cur_level.units if u.name == "Mordred"):
-			self.victory = True
-			self.victory_evt = True
-			self.finalize_save(victory=True)
+		is_game_victory(self)
 
 	def is_awaiting_input(self):
 
