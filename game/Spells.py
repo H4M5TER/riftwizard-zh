@@ -40,13 +40,19 @@ class FireballSpell(Spell):
 		for stage in self.get_aoe(x, y):
 			for point in stage:
 				unit = self.caster.level.get_unit_at(point.x, point.y)
+
 				if unit and self.get_stat('shaped_blast'):
 					if not are_hostile(self.caster, unit):
 						continue
-				if unit and self.get_stat('chaos'):
-					dtype = min(((unit.resists[t], t) for t in self.damage_type), key=lambda t : t[0])[1]
+
+				if self.get_stat('chaos'):
+					if unit:
+						dtype = min(((unit.resists[t], t) for t in self.damage_type), key=lambda t : t[0])[1]
+					else:
+						dtype = random.choice(self.damage_type)
 				else:
-					dtype = random.choice(self.damage_type)
+					dtype = Tags.Fire
+
 				if unit and self.get_stat('ash_ball'):
 					unit.apply_buff(BlindBuff(), self.get_stat('duration', base=4))
 					unit.apply_buff(Poison(), self.get_stat('duration', base=4))
@@ -421,7 +427,7 @@ class Teleport(Spell):
 		self.upgrades['void_teleport'] = (1, 5, "Void Teleport", "Teleport deals arcane damage to all enemy units in line of sight of the targeted tile equal to its maximum number of charges.")
 
 	def get_description(self):
-		return "Teleport to target tile"
+		return "Teleport to target tile."
 
 	def can_cast(self, x, y):
 		return Spell.can_cast(self, x, y) and self.caster.level.can_move(self.caster, x, y, teleport=True)
@@ -3172,7 +3178,7 @@ class EyeOfRageSpell(Spell):
 		self.berserk_duration = 2
 		self.stats.append('berserk_duration')
 
-		self.upgrades['lycanthrophy'] = (1, 3, "Lycanthropy", "When Eye of Rage targets a [living] unit with 25% or less HP, that unit is instantly killed and raised as friendly Werewolf.  That Werewolf is berserked for 14 turns.")
+		self.upgrades['lycanthrophy'] = (1, 3, "Lycanthropy", "When Eye of Rage targets a [living] unit with 25% or less HP, that unit is instantly killed and raised as a friendly Werewolf.  That Werewolf is berserked for 14 turns.")
 		self.upgrades['connected_group'] = (1, 5, "Infectious Rage", "Eye of Rage targets a connected group")
 		self.upgrades['fiery_aura'] = (1, 3, "Burning Rage", "Targeted units gain a fiery aura that damages nearby units.", [Tags.Fire])
 
@@ -3324,11 +3330,20 @@ class BasiliskArmorBuff(Buff):
 		if not are_hostile(evt.caster, self.owner):
 			return
 		if self.spell.get_stat('reaction_cast'):
-			self.owner.level.act_cast(self.owner, self.owner.get_or_make_spell(PetrifySpell), evt.caster.x, evt.caster.y, pay_costs=False)
+			self.owner.level.queue_spell(self.retributive_cast(evt.caster))  # double queuing to make sure the location of the killer is captured correctly
 		else:
 			evt.caster.apply_buff(PetrifyBuff(), self.spell.get_stat('duration', base=2))
 			if self.spell.get_stat('venomous'):
 				evt.caster.apply_buff(Poison(), self.spell.get_stat('duration', base=15))
+
+	def retributive_cast(self, unit):
+		yield
+		s = self.owner.get_or_make_spell(PetrifySpell)
+		s.statholder = self.spell.owner
+		s.caster = self.owner
+		s.owner = self.owner
+		self.owner.level.act_cast(self.owner, s, unit.x, unit.y, pay_costs=False)
+		yield
 
 class BasiliskArmorSpell(Spell):
 
@@ -4158,7 +4173,7 @@ class ChainLightningSpell(Spell):
 		return ("Fire an arcing bolt of electricity dealing [{damage}_lightning:lightning] damage.\n"
 				"The bolt repeatably arcs to new targets within the cascade range.\n"
 				"Each arc deals damage to all units along a beam.\n"
-				"The bolt can arc up to [{cascade_range}_tiles:radius], and cannot pass through walls.\n"
+				"The bolt can arc up to [{cascade_range}_tiles:cascade_range], and cannot pass through walls.\n"
 				"The bolt terminates when it cannot arc to any new targets.").format(**self.fmt_dict())
 
 
@@ -4836,7 +4851,7 @@ class SummonEarthElemental(Spell):
 	def get_description(self):
 		return ("Summon an Earth Elemental.\n"
 				"Earth elementals have [{minion_health}_HP:minion_health], [50_physical:physical] resist, [50_fire:fire] resist, [50_lightning:lightning] resist, and cannot move.\n"
-				"Earth elementals have a melee attack which deals [{minion_damage}_physical:physical]."
+				"Earth elementals have a melee attack which deals [{minion_damage}_physical:physical] damage.\n"
 				"The elemental vanishes after [{minion_duration}_turns:minion_duration].").format(**self.fmt_dict())
 
 	def get_extra_examine_tooltips(self):
@@ -7448,7 +7463,7 @@ class BlindingLightSpell(Spell):
 	def get_description(self):
 		return ("[Blind] all units in line of sight of the caster for [{duration}_turns:duration].\n"
 				+ text.blind_desc +
-				"Deals [{damage}_holy:holy] damage to affected [undead] and [demon] units.").format(**self.fmt_dict())
+				"\nDeals [{damage}_holy:holy] damage to affected [undead] and [demon] units.").format(**self.fmt_dict())
 
 	def cast(self, x, y):
 		targets = [u for u in self.caster.level.get_units_in_los(self.caster) if u != self.caster]
@@ -8598,8 +8613,8 @@ class ShrapnelBlast(Spell):
 
 	def cast(self, x, y):
 		target = Point(x, y)
-	
 		damage = self.get_stat('damage')
+		self.caster.level.make_floor(x, y)
 
 		for stage in Burst(self.caster.level, target, 1):
 			for point in stage:
@@ -8633,9 +8648,6 @@ class ShrapnelBlast(Spell):
 					self.caster.level.make_floor(target.x, target.y)
 				for i in range(2):
 					yield
-
-		self.caster.level.make_floor(x, y)
-		return
 
 	def get_impacted_tiles(self, x, y):
 		fire_targets = [p for stage in Burst(self.caster.level, Point(x, y), 1) for p in stage]
@@ -10152,7 +10164,7 @@ class DeathChill(Spell):
 
 	def get_description(self):
 		return ("Deal [{damage}_dark:dark] damage to the target each turn for [{duration}_turns:duration].\n"
-				"If the target dies during this time, deals [{damage}_ice:ice] damage and inflicts [frozen] for [{duration}_turns:duration] on all enemies within a [{radius}_tiles:radius] radius.\n"
+				"If the target dies during this time, deals [{damage}_ice:ice] damage and inflicts [frozen] for [{duration}_turns:duration] on all enemies within a [{radius}_tile:radius] radius.\n"
 				+ text.frozen_desc).format(**self.fmt_dict())
 
 	def cast_instant(self, x, y):
@@ -11485,7 +11497,7 @@ class MercurizeSpell(Spell):
 			   "If the target dies while cursed, it is raised as a Quicksilver Geist.\n"
 			   "Geists are flying undead metallic units with many resistances and immunities.\n"
 			   "The Geist has max HP equal to the cursed unit, and an attack dealing [{minion_damage}_physical:physical] damage.\n"
-			   "Geist disappear after [{minion_duration}_turns:minion_duration]".format(**self.fmt_dict()))
+			   "The Geist disappears after [{minion_duration}_turns:minion_duration]".format(**self.fmt_dict()))
 
 	def can_cast(self, x, y):
 		return self.caster.level.get_unit_at(x, y) is not None and Spell.can_cast(self, x, y)
@@ -11630,7 +11642,7 @@ class SilverSpearSpell(Spell):
 
 	def get_description(self):
 		return ("Deals [{damage}_physical:physical] damage to the target.\n"
-				"Deals [{damage}_holy:holy] damage to [dark] and [arcane] units within a [{radius}_tile:radius] away from the projectiles path.".format(**self.fmt_dict()))
+				"Deals [{damage}_holy:holy] damage to [dark] and [arcane] units within a [{radius}_tile:radius] radius of the projectile's path.".format(**self.fmt_dict()))
 
 	def get_impacted_tiles(self, x, y):
 		spear_offsets = [Point(0, 0)]
@@ -12581,7 +12593,7 @@ class MoonGlaive(Spell):
 		self.caster.apply_buff(MoonGlaiveBuff(self, unit), duration=duration)
 
 	def get_description(self):
-		return ("Deals [{damage}_arcane:arcane] and [{damage}_physical:physical] damage in a line to target empty tile."
+		return ("Deals [{damage}_arcane:arcane] and [{damage}_physical:physical] damage in a line to target empty tile.\n"
 				"The glaive will linger on the target tile for 1 turn, and return at the end of your next turn, dealing damage again.").format(**self.fmt_dict())
 
 
@@ -12935,25 +12947,7 @@ class ImmolateSpell(Spell):
 	def get_impacted_tiles(self, x, y):
 
 		if self.get_stat('mass_immolate'):
-
-			candidates = set([Point(x, y)])
-			unit_group = set()
-
-			while candidates:
-				candidate = candidates.pop()
-				unit = self.caster.level.get_unit_at(candidate.x, candidate.y)
-				if unit and unit not in unit_group:
-
-					if not are_hostile(unit, self.caster):
-						continue
-					if unit == self.caster:
-						continue
-					unit_group.add(unit)
-
-					for p in self.caster.level.get_adjacent_points(Point(unit.x, unit.y), filter_walkable=False):
-						candidates.add(p)
-
-			return unit_group
+			return self.caster.level.get_connected_group_from_point(x, y, check_hostile=self.caster)
 		else:
 			return [Point(x, y)]
 

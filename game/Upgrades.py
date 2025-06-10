@@ -2503,10 +2503,10 @@ class FaeMalevolence(Upgrade):
 		if not are_hostile(evt.unit, self.owner):
 			return
 
-		if not evt.source:
+		if not evt.source or not hasattr(evt.source, 'tags'):
 			return
 
-		if not isinstance(evt.source, Spell):
+		if evt.source == self:
 			return
 
 		if Tags.Enchantment not in evt.source.tags:
@@ -3198,14 +3198,15 @@ class RazorShaper(Upgrade):
 
 	def on_spell_cast(self, evt):
 		if Tags.Metallic in evt.spell.tags:
-			self.owner.level.queue_spell(self.do_razors(evt))
+			spell_level = evt.spell.level
+			self.owner.level.queue_spell(self.do_razors(spell_level))
 
-	def do_razors(self, evt):
-		targets = [u for u in self.owner.level.get_units_in_los(evt) if are_hostile(self.owner, u)]
+	def do_razors(self, spell_level):
+		targets = [u for u in self.owner.level.get_units_in_los(self.owner) if are_hostile(self.owner, u)]
 		random.shuffle(targets)
 
-		for t in targets[:evt.spell.level]:
-			for p in self.owner.level.get_points_in_line(evt, t)[1:-1]:
+		for t in targets[:spell_level]:
+			for p in self.owner.level.get_points_in_line(self.owner, t)[1:-1]:
 				self.owner.level.show_effect(p.x, p.y, Tags.Physical, minor=True)
 
 			t.deal_damage(self.get_stat('damage'), Tags.Physical, self)

@@ -325,14 +325,26 @@ def Claytouched(monster):
 class HivemindBuff(Buff):
 
 	members = set() # track all fleshbound units here, rather than recalcing them all for every instance of the buff
+	members_built_turn = -1 # set to -1 initially, to be rebuilt each turn (to account for save/load and corruption non-kill unit removal)
 
 	def on_init(self):
 		self.name = "Fleshbound"
 		self.color = Tags.Blood.color
-		self.description = ("All damage taken is shared evenly amongst Fleshbound allies\n"
-							"Regenerate HP each turn equal to the number of Fleshbound allies.")
+		self.owner_triggers[EventOnPreDamaged] = self.on_pre_damaged
+		self.buff_type = BUFF_TYPE_PASSIVE
 
-		self.owner_triggers[EventOnPreDamaged] = self.on_damaged
+	def get_tooltip(self):
+		desc = ("Damage dealt by enemies is redirected and redistributed randomly amongst Fleshbound allies.\n"
+							"Regenerate HP each turn equal to the number of Fleshbound allies.")
+		if not self.applied:
+			return desc
+		else:
+			return desc + "\nFleshbound Allies: %d" % len([u for u in HivemindBuff.members if not are_hostile(self.owner, u)])
+
+	def build_members_set(self):
+		if self.owner.level.turn_no != HivemindBuff.members_built_turn:
+			HivemindBuff.members = {u for u in self.owner.level.units if u.has_buff(HivemindBuff)}
+			HivemindBuff.members_built_turn = self.owner.level.turn_no
 
 	def on_applied(self, owner):
 		HivemindBuff.members.add(owner)
@@ -340,46 +352,68 @@ class HivemindBuff(Buff):
 	def on_unapplied(self):
 		HivemindBuff.members.discard(self.owner)
 
-	def on_damaged(self, evt):
-		# Do not trigger on 0 damage, do not trigger on damage which is 100% resisted
+	def on_pre_damaged(self, evt):
+		# early out for non-damage
 		if evt.unresisted_damage <= 0:
 			return
 
-		# Do not redist hivemind damage
+		if not evt.source:
+			return
+
+		if not evt.source.owner:
+			return
+
 		if isinstance(evt.source, HivemindBuff):
 			return
 
-		# Shield self to prevent damage
+		if not are_hostile(evt.source.owner, self.owner):
+			return
+
+		# only need to check to see if rebuild necessary if we get past early outs
+		self.build_members_set()
+
+		# Shield self to prevent full damage
 		self.owner.add_shields(1)
 
-		# But then queue new damage afterwards
+		# Queue new damage afterward
 		self.owner.level.queue_spell(self.dist_damage(evt))
-
-		# Also queue a fake damage event to trigger spells ect
-		self.owner.level.event_manager.raise_event(EventOnDamaged(self.owner, evt.damage, evt.damage_type, evt.source))
-
 		
 	def dist_damage(self, evt):
-		old_damage = evt.damage
-
 		units = [u for u in HivemindBuff.members if not are_hostile(self.owner, u)]
 		if not units:
 			return
 
-		new_damage = math.ceil(old_damage / (len(units)))
+		total = int(evt.unresisted_damage)
+		divisor = len(units)
+		to_dist = total // divisor
+		remainder = total % divisor
+
+		remainder_recievers = list(units)
+		remainder_recievers = set(remainder_recievers[:remainder])
 
 		for u in units:
-			u.deal_damage(new_damage, evt.damage_type, self)
+			dmg = to_dist
+			if u in remainder_recievers:
+				dmg += 1
+			if not dmg:
+				continue
+
+			u.deal_damage(dmg, evt.damage_type, self) # if source is preserved, will recurse
+			self.owner.level.event_manager.raise_event(EventOnDamaged(u, dmg, evt.damage_type, evt.source), u) # instead, queue a fake event for everyone hit to trigger retalitation stuff
 			if u != self.owner:
 				self.owner.level.show_path_effect(self.owner, u, Tags.Blood, minor=True, inclusive=False)
 		yield
 
 	def on_advance(self):
+		if self.owner.cur_hp == self.owner.max_hp: # do easy compare for early out first
+			return
+
+		self.build_members_set()
 		units = [u for u in HivemindBuff.members if not are_hostile(self.owner, u)]
 		if not units:
 			return
-		if self.owner.cur_hp < self.owner.max_hp:
-			self.owner.heal(len(units), self)
+
+		self.owner.heal(len(units), self)
 		
 
 def Hivemind(monster):
