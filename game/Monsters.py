@@ -2585,20 +2585,20 @@ class WizardSwap(Spell):
 		return False
 
 	def can_swap(self, u):
-		if u == self.caster:
+		caster = self.caster
+		if u == caster: # don't randomly select themselves
 			return False
-		if not self.caster.flying:
-			if not self.caster.level.tiles[u.x][u.y].can_walk:
-				return False
-		else:
-			if not self.caster.level.tiles[u.x][u.y].can_fly:
-				return False
-		if self.tag not in u.tags:
+		if self.tag not in u.tags: # early out tags first
+			return False
+		if u.radius: # don't swap with giants, unnecessarily complex
 			return False
 
-		# Do not swap 3x3 monsters
-		# Technically maybe possible but tricky so lets not worry about it		
-		if u.radius:
+		# Ensure the caster can be at target's location
+		if not caster.level.can_move(caster, u.x, u.y, teleport=True, force_swap=True):
+			return False
+
+		# Ensure that the target can be where the caster is
+		if not caster.level.can_move(u, caster.x, caster.y, teleport=True, force_swap=True):
 			return False
 
 		return True
@@ -3568,7 +3568,7 @@ def RotFiend():
 		drain_max_hp(target, 3)
 
 	rotball = SimpleRangedAttack(damage=4, range=6, radius=2, damage_type=Tags.Dark, onhit=rot)
-	rotball.description = "Targets permenantly lose 3 max hp."
+	rotball.description = "Targets permanently lose 3 max hp."
 	rotball.name = "Rot Blast"
 
 	unit.spells = [summon_imps, deathgaze, rotball]

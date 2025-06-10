@@ -949,6 +949,9 @@ class RemoveRewards(Mutator):
 
 		opts = [o for o in self.allowed if can_roll(o)]
 
+		if not opts:
+			return None
+
 		if not prng:
 			prng = random
 

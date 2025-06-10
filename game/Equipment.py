@@ -1269,10 +1269,10 @@ class Flamenweaver(Equipment):
 		self.slot = ITEM_SLOT_STAFF
 		self.name = "The Flamenweaver"
 		self.global_triggers[EventOnDamaged] = self.on_damage
-		self.description = "Redeal half of all damage you deal with [enchantment] as [fire] damage."
+		self.description = "Redeal half of all damage you deal with [enchantments:enchantment] as [fire] damage."
 
 	def on_damage(self, evt):
-		if not isinstance(evt.source, Spell):
+		if not evt.source or not hasattr(evt.source, 'tags'):
 			return
 
 		if Tags.Enchantment not in evt.source.tags:
@@ -1533,10 +1533,7 @@ class TricksterStaff(Equipment):
 		if not are_hostile(evt.unit, self.owner):
 			return
 
-		if not evt.source:
-			return
-
-		if not isinstance(evt.source, Spell):
+		if not evt.source or not hasattr(evt.source, 'tags'):
 			return
 
 		if Tags.Enchantment not in evt.source.tags:
@@ -1569,10 +1566,7 @@ class AmuletOfEmeraldFlame(Equipment):
 		if not are_hostile(evt.unit, self.owner):
 			return
 
-		if not evt.source:
-			return
-
-		if not isinstance(evt.source, Spell):
+		if not evt.source or not hasattr(evt.source, 'tags'):
 			return
 
 		if Tags.Enchantment not in evt.source.tags:

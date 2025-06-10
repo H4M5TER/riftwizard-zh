@@ -2886,6 +2886,9 @@ class AmnesiaShop(Shop):
 
 	def on_player_enter(self, player):
 		self.items = [type(s)() for s in player.spells]
+		for s in self.items:
+			s.caster = player # for tooltip display oddities of getting the extra tooltips of spells not owned / being casted by the player
+			s.owner = player
 		Shop.on_player_enter(self, player)
 
 	def buy(self, shopper, spell):
