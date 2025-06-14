@@ -1,0 +1,117 @@
+version = 1
+revision = 2
+requires-python = "==3.8.20"
+
+[[package]]
+name = "cffi"
+version = "1.14.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pycparser" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/66/6a/98e023b3d11537a5521902ac6b50db470c826c682be6a8c661549cb7717a/cffi-1.14.4.tar.gz", hash = "sha256:1a465cbe98a7fd391d47dce4b8f7e5b921e6cd805ef421d04f5f66ba8f06086c", size = 471302, upload-time = "2020-11-24T14:15:25.986Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/60/fa014a4a47ab4b6df5e52a0aacb5be1fb3cd7a2d9990b01b9a5ecb360818/cffi-1.14.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:df5169c4396adc04f9b0a05f13c074df878b6052430e03f50e68adf3a57aa28d", size = 176724, upload-time = "2020-11-24T14:15:08.127Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/b3/abe98e3fac1962718d2d14328dffad6c20fb4ea81377796fa90173dcacf1/cffi-1.14.4-cp38-cp38-manylinux1_i686.whl", hash = "sha256:9ffb888f19d54a4d4dfd4b3f29bc2c16aa4972f1c2ab9c4ab09b8ab8685b9c2b", size = 388001, upload-time = "2020-11-24T14:15:10.118Z" },
+    { url = "https://files.pythonhosted.org/packages/66/c8/56efb65bd9fff582c84f11bbfe2cf70c6abcaa852e35be45583e823bb59d/cffi-1.14.4-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:8d6603078baf4e11edc4168a514c5ce5b3ba6e3e9c374298cb88437957960a53", size = 411052, upload-time = "2020-11-24T14:15:11.952Z" },
+    { url = "https://files.pythonhosted.org/packages/95/51/d9dffc241365b34a078868bf6d1815c86195497a61dd7cdedb6c5c80f086/cffi-1.14.4-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:d5ff0621c88ce83a28a10d2ce719b2ee85635e85c515f12bac99a95306da4b2e", size = 208383, upload-time = "2020-12-03T18:09:44.128Z" },
+    { url = "https://files.pythonhosted.org/packages/56/7a/54ae84dee314306967545d183ab367711c727a47fa66f271a26be99d86fb/cffi-1.14.4-cp38-cp38-win32.whl", hash = "sha256:b4e248d1087abf9f4c10f3c398896c87ce82a9856494a7155823eb45a892395d", size = 167083, upload-time = "2020-11-24T14:15:13.689Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/d4/bf5516922cc914174a936e7094d5f136ee4178b3509069dd3da8e3040a1a/cffi-1.14.4-cp38-cp38-win_amd64.whl", hash = "sha256:ec80dc47f54e6e9a78181ce05feb71a0353854cc26999db963695f950b5fb375", size = 179586, upload-time = "2020-11-24T14:15:15.354Z" },
+]
+
+[[package]]
+name = "dill"
+version = "0.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/12/80/630b4b88364e9a8c8c5797f4602d0f76ef820909ee32f0bacb9f90654042/dill-0.4.0.tar.gz", hash = "sha256:0633f1d2df477324f53a895b02c901fb961bdbf65a17122586ea7019292cbcf0", size = 186976, upload-time = "2025-04-16T00:41:48.867Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/3d/9373ad9c56321fdab5b41197068e1d8c25883b3fea29dd361f9b55116869/dill-0.4.0-py3-none-any.whl", hash = "sha256:44f54bf6412c2c8464c14e8243eb163690a9800dbe2c367330883b19c7561049", size = 119668, upload-time = "2025-04-16T00:41:47.671Z" },
+]
+
+[[package]]
+name = "numpy"
+version = "1.24.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/9b/027bec52c633f6556dba6b722d9a0befb40498b9ceddd29cbe67a45a127c/numpy-1.24.4.tar.gz", hash = "sha256:80f5e3a4e498641401868df4208b74581206afbee7cf7b8329daae82676d9463", size = 10911229, upload-time = "2023-06-26T13:39:33.218Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/10/943cfb579f1a02909ff96464c69893b1d25be3731b5d3652c2e0cf1281ea/numpy-1.24.4-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:1452241c290f3e2a312c137a9999cdbf63f78864d63c79039bda65ee86943f61", size = 19780722, upload-time = "2023-06-26T13:27:49.573Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/ae/f53b7b265fdc701e663fbb322a8e9d4b14d9cb7b2385f45ddfabfc4327e4/numpy-1.24.4-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:04640dab83f7c6c85abf9cd729c5b65f1ebd0ccf9de90b270cd61935eef0197f", size = 13843102, upload-time = "2023-06-26T13:28:12.288Z" },
+    { url = "https://files.pythonhosted.org/packages/25/6f/2586a50ad72e8dbb1d8381f837008a0321a3516dfd7cb57fc8cf7e4bb06b/numpy-1.24.4-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a5425b114831d1e77e4b5d812b69d11d962e104095a5b9c3b641a218abcc050e", size = 14039616, upload-time = "2023-06-26T13:28:35.659Z" },
+    { url = "https://files.pythonhosted.org/packages/98/5d/5738903efe0ecb73e51eb44feafba32bdba2081263d40c5043568ff60faf/numpy-1.24.4-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dd80e219fd4c71fc3699fc1dadac5dcf4fd882bfc6f7ec53d30fa197b8ee22dc", size = 17316263, upload-time = "2023-06-26T13:29:09.272Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/57/8d328f0b91c733aa9aa7ee540dbc49b58796c862b4fbcb1146c701e888da/numpy-1.24.4-cp38-cp38-win32.whl", hash = "sha256:4602244f345453db537be5314d3983dbf5834a9701b7723ec28923e2889e0bb2", size = 12455660, upload-time = "2023-06-26T13:29:33.434Z" },
+    { url = "https://files.pythonhosted.org/packages/69/65/0d47953afa0ad569d12de5f65d964321c208492064c38fe3b0b9744f8d44/numpy-1.24.4-cp38-cp38-win_amd64.whl", hash = "sha256:692f2e0f55794943c5bfff12b3f56f99af76f902fc47487bdfe97856de51a706", size = 14868112, upload-time = "2023-06-26T13:29:58.385Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/fd/8dff40e25e937c94257455c237b9b6bf5a30d42dd1cc11555533be099492/numpy-1.24.4-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:31f13e25b4e304632a4619d0e0777662c2ffea99fcae2029556b17d8ff958aef", size = 19156590, upload-time = "2023-06-26T13:33:10.36Z" },
+    { url = "https://files.pythonhosted.org/packages/42/e7/4bf953c6e05df90c6d351af69966384fed8e988d0e8c54dad7103b59f3ba/numpy-1.24.4-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:95f7ac6540e95bc440ad77f56e520da5bf877f87dca58bd095288dce8940532a", size = 16705744, upload-time = "2023-06-26T13:33:36.703Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/dd/9106005eb477d022b60b3817ed5937a43dad8fd1f20b0610ea8a32fcb407/numpy-1.24.4-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:e98f220aa76ca2a977fe435f5b04d7b3470c0a2e6312907b37ba6068f26787f2", size = 14734290, upload-time = "2023-06-26T13:34:05.409Z" },
+]
+
+[[package]]
+name = "pycparser"
+version = "2.22"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/b2/31537cf4b1ca988837256c910a668b553fceb8f069bedc4b1c826024b52c/pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6", size = 172736, upload-time = "2024-03-30T13:22:22.564Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/a3/a812df4e2dd5696d1f351d58b8fe16a405b234ad2886a0dab9183fb78109/pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc", size = 117552, upload-time = "2024-03-30T13:22:20.476Z" },
+]
+
+[[package]]
+name = "pygame"
+version = "2.6.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/49/cc/08bba60f00541f62aaa252ce0cfbd60aebd04616c0b9574f755b583e45ae/pygame-2.6.1.tar.gz", hash = "sha256:56fb02ead529cee00d415c3e007f75e0780c655909aaa8e8bf616ee09c9feb1f", size = 14808125, upload-time = "2024-09-29T13:41:34.698Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7c/03/8a99bbe20925ea0e1fe77ccb4bbe0168f6f9d0fcf64d8f45f02e9bcfeb7d/pygame-2.6.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:97ac4e13847b6b293ecaffa5ffce9886c98d09c03309406931cc592f0cea6366", size = 12964830, upload-time = "2024-09-29T14:27:29.431Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/50/caae48e97e3e9ac8970caf0763c373f4f70b5bc7827ef5f967fdff777da1/pygame-2.6.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:d1a7f2b66ac2e4c9583b6d4c6d6f346fb10a3392c04163f537061f86a448ed5c", size = 12376818, upload-time = "2024-09-29T14:27:35.648Z" },
+    { url = "https://files.pythonhosted.org/packages/60/15/7cbb41f46678555c7aab6b49eddac38b23e426b1a4244af520b826bbcb57/pygame-2.6.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ac3f033d2be4a9e23660a96afe2986df3a6916227538a6a0061bc218c5088507", size = 13614577, upload-time = "2024-09-29T11:10:59.629Z" },
+    { url = "https://files.pythonhosted.org/packages/e1/0a/57dcdec74445f3fdf3d7dcc786ff38597592a458e8bbfc540aa8a6cb4ce2/pygame-2.6.1-cp38-cp38-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a1bf7ab5311bbced70320f1a56701650b4c18231343ae5af42111eea91e0949a", size = 14308698, upload-time = "2024-09-29T11:40:19.161Z" },
+    { url = "https://files.pythonhosted.org/packages/e8/3b/070a1bbac12a6914ea08a0b8f26bb349638233a56c111b5d4561f716f8f2/pygame-2.6.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:21160d9093533eb831f1b708e630706e5ac16b30750571ec27bc3b8364814f38", size = 13982722, upload-time = "2024-09-29T11:40:22.367Z" },
+    { url = "https://files.pythonhosted.org/packages/af/9e/f4fd29d8a41ef19cbf573a1b0bafc4221aae78f610d307033e1250e1cca3/pygame-2.6.1-cp38-cp38-win32.whl", hash = "sha256:7bffdd3eaf394d9645331d1c3a5df9d782ebcc3c5a78f3b657c7879a828dd111", size = 10255798, upload-time = "2024-09-29T11:32:41.394Z" },
+    { url = "https://files.pythonhosted.org/packages/66/a8/503d52d2a4fe1463207b80661d3fe7793346e515f369abe2c3a6552fec11/pygame-2.6.1-cp38-cp38-win_amd64.whl", hash = "sha256:818b4eaec9c4acb6ac64805d4ca8edd4062bebca77bd815c18739fe2842c97e9", size = 10623008, upload-time = "2024-09-29T12:04:58.482Z" },
+    { url = "https://files.pythonhosted.org/packages/06/56/ea9c785258da9f6da939abe8f961c8ce09a8177524a78f94932fbcb2c5d3/pygame-2.6.1-pp38-pypy38_pp73-macosx_10_9_x86_64.whl", hash = "sha256:b7f9f8e6f76de36f4725175d686601214af362a4f30614b4dae2240198e72e6f", size = 12789119, upload-time = "2024-09-29T14:28:18.976Z" },
+]
+
+[[package]]
+name = "riftwizard2-zh"
+version = "0"
+source = { virtual = "." }
+dependencies = [
+    { name = "cffi" },
+    { name = "dill" },
+    { name = "pygame" },
+    { name = "tcod" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "cffi", specifier = "==1.14.4" },
+    { name = "dill" },
+    { name = "pygame" },
+    { name = "tcod" },
+]
+
+[[package]]
+name = "tcod"
+version = "13.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cffi" },
+    { name = "numpy" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ad/1d/c69ca73f97dc57f8f0afc14e2ae1ce5425fcb000bb38f68521cd64f4f56e/tcod-13.3.0.tar.gz", hash = "sha256:d3423d63a8eace5d89e88692394f4af3f2c9079346493b8b146c4279130692a9", size = 760259, upload-time = "2022-01-08T09:55:57.695Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/6d/8857c89b3bb841aef5b823b60d65879a0108d34e8c1f6e3104536adf0a6a/tcod-13.3.0-cp36-abi3-macosx_10_9_universal2.whl", hash = "sha256:0d84265a35a78dfe760a6e56948d2a5614aea8c598a73279842ae0f192e53c1f", size = 2698728, upload-time = "2022-01-08T10:01:36.938Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/d6/002b4943d83877a9557985be525d48f6b8ee861adeb7535c71f13b7664ad/tcod-13.3.0-cp36-abi3-macosx_10_9_x86_64.whl", hash = "sha256:51918b75c3d6cf489da7eaec825c9cb3b7fb4a9a0d5c3051f0c382608a48f1e3", size = 1977399, upload-time = "2022-01-08T10:01:01.978Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/5c/4f39186504827f105d4de2544ecaf1ac150a1fe494d320decba5254388cf/tcod-13.3.0-cp36-abi3-macosx_11_0_arm64.whl", hash = "sha256:17ea602a75d77671903a59cdaec1d48bb961e41905c5acc8b3fa27dd46263138", size = 1899506, upload-time = "2022-01-08T10:00:15.837Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/66/93a55d42075f74d796041338dc9e381cfb55b74513e8e68c90e0fd2a6f87/tcod-13.3.0-cp36-abi3-win32.whl", hash = "sha256:0e94fe079a028e3b44d3b3e6ec0d7760c383426cc0033c63013f1aafbf3b5541", size = 1039911, upload-time = "2022-01-08T09:56:32.056Z" },
+    { url = "https://files.pythonhosted.org/packages/d7/69/b8d910fecbcbc249b60d9511a00951bbe92f874bb19d8350b7198fde36e3/tcod-13.3.0-cp36-abi3-win_amd64.whl", hash = "sha256:f44c67e63df87ca424a62f12e0f137fb49f8336ba70aab6d9fbdc6e01bace750", size = 1233367, upload-time = "2022-01-08T09:55:56.033Z" },
+]
+
+[[package]]
+name = "typing-extensions"
+version = "4.13.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f6/37/23083fcd6e35492953e8d2aaaa68b860eb422b34627b13f2ce3eb6106061/typing_extensions-4.13.2.tar.gz", hash = "sha256:e6c81219bd689f51865d9e372991c540bda33a0379d5573cddb9a3a23f7caaef", size = 106967, upload-time = "2025-04-10T14:19:05.416Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/54/b1ae86c0973cc6f0210b53d508ca3641fb6d0c56823f288d108bc7ab3cc8/typing_extensions-4.13.2-py3-none-any.whl", hash = "sha256:a439e7c04b49fec3e5d3e2beaa21755cadbbdc391694e28ccdd36ca4a1408f8c", size = 45806, upload-time = "2025-04-10T14:19:03.967Z" },
+]

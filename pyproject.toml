@@ -1,0 +1,10 @@
+[project]
+name = "riftwizard2-zh"
+version = "0"
+requires-python = "==3.8.20"
+dependencies = [
+    "cffi==1.14.4",
+    "dill",
+    "pygame",
+    "tcod",
+]
