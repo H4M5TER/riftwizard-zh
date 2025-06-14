@@ -1,0 +1,122 @@
+{
+  "Healing Potion": {
+    "name": {
+      "en": "Healing Potion",
+      "zh": ""
+    },
+    "description": {
+      "en": "Drinking this potion restores the drinker to full health.\nCannot be used while poisoned.",
+      "zh": ""
+    }
+  },
+  "Mana Potion": {
+    "name": {
+      "en": "Mana Potion",
+      "zh": ""
+    },
+    "description": {
+      "en": "Refresh charges for all of your spells",
+      "zh": ""
+    }
+  },
+  "Teleporter": {
+    "name": {
+      "en": "Teleporter",
+      "zh": ""
+    },
+    "description": {
+      "en": "Teleport anywhere on the map.",
+      "zh": ""
+    }
+  },
+  "Golden Stopwatch": {
+    "name": {
+      "en": "Golden Stopwatch",
+      "zh": ""
+    },
+    "description": {
+      "en": "Stun each enemy unit for 10 turns",
+      "zh": ""
+    }
+  },
+  "Chaos Bell": {
+    "name": {
+      "en": "Chaos Bell",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each enemy unit has a 50% chance to go berserk and attack its friends for 10 turns",
+      "zh": ""
+    }
+  },
+  "Death Dice": {
+    "name": {
+      "en": "Death Dice",
+      "zh": ""
+    },
+    "description": {
+      "en": "Roll the dice to deal 666 Dark damage to 6 random enemies",
+      "zh": ""
+    }
+  },
+  "Portal Key": {
+    "name": {
+      "en": "Portal Key",
+      "zh": ""
+    },
+    "description": {
+      "en": "Create 3 new portals at random locations in the current level",
+      "zh": ""
+    }
+  },
+  "Earthquake Orb": {
+    "name": {
+      "en": "Earthquake Orb",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals 25 physical damage and destroys walls on 50% of all level tiles.",
+      "zh": ""
+    }
+  },
+  "Oculus": {
+    "name": {
+      "en": "Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "For 10 turns, your spells gain 15 range and do not require line of sight",
+      "zh": ""
+    }
+  },
+  "Aether Dagger": {
+    "name": {
+      "en": "Aether Dagger",
+      "zh": ""
+    },
+    "description": {
+      "en": "Enemy units in line of sight of the user lose all resistances and immunities",
+      "zh": ""
+    }
+  },
+  "Bag of Spikes": {
+    "name": {
+      "en": "Bag of Spikes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon 8 friendly rolling spikeballs",
+      "zh": ""
+    }
+  },
+  "Orb of Corruption": {
+    "name": {
+      "en": "Orb of Corruption",
+      "zh": ""
+    },
+    "description": {
+      "en": "An evil and dangerous artifact capable of corrupting creation.  A wise Wizard would surely only use it in the most dire of circumstances.",
+      "zh": ""
+    }
+  }
+}

@@ -1,0 +1,5460 @@
+{
+  "Death Bolt": {
+    "name": {
+      "en": "Death Bolt",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [9_dark:dark] damage to one target.\nSlain living units are raised as skeletons.\nRaised skeletons have max HP equal to that of the slain unit, and deal [5_physical:physical] damage in melee.\nSkeletons of flying units can fly.",
+      "zh": ""
+    },
+    "upgrades": {
+      "soulbattery": {
+        "val": 1,
+        "cost": 3,
+        "name": "Soul Battery",
+        "description": "Deathbolt grants 1 [damage] to your Dark spells and skills whenever it slays a target, lasts until next realm."
+      },
+      "winter": {
+        "val": 1,
+        "cost": 3,
+        "name": "Winter Bolt",
+        "description": "Deathbolt also deals [ice] damage"
+      },
+      "chaos": {
+        "val": 1,
+        "cost": 5,
+        "name": "Chaos Skeletons",
+        "description": "Raised skeletons are Chaos skeletons, gaining resistances, a chaos ball attack, and spawning a number of imps on death proportional to their max hp."
+      }
+    }
+  },
+  "Fireball": {
+    "name": {
+      "en": "Fireball",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [9:damage] [fire] damage to units in a [2_tile:radius] burst.",
+      "zh": ""
+    },
+    "upgrades": {
+      "chaos": {
+        "val": 1,
+        "cost": 5,
+        "name": "Chaos Ball",
+        "description": "Fireball randomly deals [physical], [lightning], or [fire] damage.  If a unit is resistant to one or more of these damage types, fireball deals the damage type that unit is least resistant to."
+      },
+      "shaped_blast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Shaped Blast",
+        "description": "Fireball gains 1 [radius] for every 4 tiles away that you cast it, and never damages the wizard or their allies."
+      },
+      "meteor": {
+        "val": 1,
+        "cost": 3,
+        "name": "Meteor",
+        "description": "Units in the center tile take extra [physical] damage and are stunned for [3:duration] turns."
+      },
+      "ash_ball": {
+        "val": 1,
+        "cost": 2,
+        "name": "Ash Ball",
+        "description": "Fireball blinds and poisons units for [4:duration] turns."
+      }
+    }
+  },
+  "Icicle": {
+    "name": {
+      "en": "Icicle",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [6_physical:physical] damage to the target.\nThen, deal [6_ice:ice] to the target and a [1_tile:radius] area around it.\nIf cast on a chasm tile, creates a floor tile.",
+      "zh": ""
+    },
+    "upgrades": {
+      "freezing": {
+        "val": 1,
+        "cost": 1,
+        "name": "Freezing",
+        "description": "Freeze the main target for 2 turns"
+      },
+      "ice_spear": {
+        "val": 1,
+        "cost": 2,
+        "name": "Ice Spear",
+        "description": "Deals [physical] damage to all units in a beam to the main target"
+      },
+      "storm_spike": {
+        "val": 1,
+        "cost": 5,
+        "name": "Storm Spike",
+        "description": "Deals lightning damage to all units in the radius.\nIcicle can be cast on any tile containing a cloud."
+      },
+      "corrosive_shard": {
+        "val": 1,
+        "cost": 5,
+        "name": "Corrosive Shard",
+        "description": "Deals [Poison] and [Dark] damage to the main target. Reduces a random resistance by 10%."
+      }
+    }
+  },
+  "Lifedrain": {
+    "name": {
+      "en": "Lifedrain",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [3_dark:dark] damage to target unit each turn for [15_turns:duration], healing the caster for the same amount.",
+      "zh": ""
+    },
+    "upgrades": {
+      "bond": {
+        "val": 1,
+        "cost": 2,
+        "name": "Blood Bond",
+        "description": "Lifedrain also heals [2:num_targets] random [living] allies."
+      },
+      "chain": {
+        "val": 1,
+        "cost": 5,
+        "name": "Life Funnel",
+        "description": "Lifedrain also drains life from [2:num_targets] random enemy units up to [3_tiles:radius] away from the target."
+      },
+      "requires_los": {
+        "val": -1,
+        "cost": 1,
+        "name": "Blindcasting",
+        "description": "Lifedrain can be cast without line of sight"
+      }
+    }
+  },
+  "Lightning Bolt": {
+    "name": {
+      "en": "Lightning Bolt",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [12_lightning:lightning] damage in a beam.",
+      "zh": ""
+    },
+    "upgrades": {
+      "channel": {
+        "val": 1,
+        "cost": 1,
+        "name": "Channeling",
+        "description": "Lightning bolt can be channeled for up to 10 turns."
+      },
+      "scrolls": {
+        "val": 1,
+        "cost": 3,
+        "name": "Electric Ink",
+        "description": "Whenever Lightning Bolt kills a unit, spawn a living lightning scroll that can cast your Lightning Bolt spell once."
+      },
+      "energy": {
+        "val": 1,
+        "cost": 5,
+        "name": "Energy Bolt",
+        "description": "Lightning bolt also deals [arcane] damage"
+      }
+    }
+  },
+  "Magic Missile": {
+    "name": {
+      "en": "Magic Missile",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [11_arcane:arcane] damage to the target.",
+      "zh": ""
+    },
+    "upgrades": {
+      "shield_burn": {
+        "val": 1,
+        "cost": 2,
+        "name": "Shield Burn",
+        "description": "Magic Missile removes all SH from the target before dealing damage."
+      },
+      "disruption": {
+        "val": 1,
+        "cost": 2,
+        "name": "Disruption Bolt",
+        "description": "If Magic Missile targets an [arcane] unit, it deals [dark] and [holy] damage instead of [arcane]."
+      },
+      "barrage": {
+        "val": 1,
+        "cost": 3,
+        "name": "Arcane Crossfire",
+        "description": "When you cast Magic Missile, up to [4:num_targets] additional missiles are fired from [arcane] allies in line of sight of the target."
+      },
+      "ricochet": {
+        "val": 1,
+        "cost": 5,
+        "name": "Ricochet",
+        "description": "Magic Missile bounces up to [2:num_targets] times to targets in range and line of sight of the target."
+      }
+    }
+  },
+  "Poison Sting": {
+    "name": {
+      "en": "Poison Sting",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [9_physical:physical] damage to target unit.\nThat unit is [poisoned] for [30_turns:duration].\n[Poisoned] units take 1 [poison] damage each turn and cannot heal.",
+      "zh": ""
+    },
+    "upgrades": {
+      "antigen": {
+        "val": 1,
+        "cost": 2,
+        "name": "Acidity",
+        "description": "Damaged targets lose all poison resist"
+      },
+      "webs": {
+        "val": 1,
+        "cost": 1,
+        "name": "Silk Shot",
+        "description": "Stuns target and spawns webs along a line to the target.  Webs stun enemy units that enter them for 2 turns."
+      },
+      "barrage": {
+        "val": 1,
+        "cost": 3,
+        "name": "Stinger Barrage",
+        "description": "Hits every poisoned enemy in a radius of 3 of the main target."
+      }
+    }
+  },
+  "Wolf": {
+    "name": {
+      "en": "Wolf",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a wolf with a leap attack.",
+      "zh": ""
+    },
+    "upgrades": {
+      "wolf_pack": {
+        "val": 2,
+        "cost": 5,
+        "name": "Wolf Pack",
+        "description": "Summons a pack of [3:num_summons] wolves instead of just 1."
+      },
+      "mutant_wolf": {
+        "val": 1,
+        "cost": 2,
+        "name": "Mutant Wolf",
+        "description": "A random boss modifier is applied to the wolf."
+      },
+      "werewolf": {
+        "val": 1,
+        "cost": 1,
+        "name": "Werewolf",
+        "description": "Summon a Werewolf instead of a wolf."
+      },
+      "fenris": {
+        "val": 1,
+        "cost": 4,
+        "name": "Fenris",
+        "description": "Summon Fenris instead of a wolf.\nConsumes all remaining charges on cast.\nFor each charge consumed, Fenris gains the damage and health of your wolf.\nEach time Fenris kills a unit, he grows more powerful."
+      }
+    }
+  },
+  "Annihilate": {
+    "name": {
+      "en": "Annihilate",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [16_fire:fire] damage, [16_lightning:lightning] damage, and [16_physical:physical] damage to the target.",
+      "zh": ""
+    },
+    "upgrades": {
+      "cascade_range": {
+        "val": 3,
+        "cost": 3,
+        "name": "Cascade",
+        "description": "Remaining hits from Annihilate will jump to nearby targets if the main target is killed"
+      },
+      "extra": {
+        "val": 1,
+        "cost": 4,
+        "name": "Comprehensive Annihilation",
+        "description": "Annihilate deals additional [dark] and [arcane] damage hits"
+      },
+      "doom_storm": {
+        "val": 1,
+        "cost": 3,
+        "name": "Doom Storm",
+        "description": "Annihilate chains to up to [5:num_targets] units standing in storms in line of sight"
+      },
+      "assured_destruction": {
+        "val": 1,
+        "cost": 1,
+        "name": "Assured Destruction",
+        "description": "If you are able, when you cast this spell, use an additional charge to cast it again if the target lives."
+      }
+    }
+  },
+  "Boiling Blood": {
+    "name": {
+      "en": "Boiling Blood",
+      "zh": ""
+    },
+    "description": {
+      "en": "All allied units gain stacking 6 [damage] bonus to their [fire] and [physical] abilities.\nLasts [7_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "twilight_fury": {
+        "val": 1,
+        "cost": 3,
+        "name": "Twilight Fury",
+        "description": "Boiling Blood also impacts [holy] and [dark] abilities"
+      },
+      "combustion_point": {
+        "val": 1,
+        "cost": 3,
+        "name": "Combustion Point",
+        "description": "Affected units receive a [fire] damage aura and a death explosion effect which scales with their health."
+      },
+      "endless_fury": {
+        "val": 1,
+        "cost": 5,
+        "name": "Endless Fury",
+        "description": "Boiling Blood becomes permanent, but causes affected units to take 1 [fire] damage per turn."
+      }
+    }
+  },
+  "Bone Spear": {
+    "name": {
+      "en": "Bone Spear",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [16_physical:physical] damage to all units in a line.\nThis spell can target and destroy a wall tile.",
+      "zh": ""
+    },
+    "upgrades": {
+      "fire": {
+        "val": 1,
+        "cost": 4,
+        "name": "Infernal Spear",
+        "description": "Bone Spear also deals [fire] damage."
+      },
+      "toxic": {
+        "val": 1,
+        "cost": 4,
+        "name": "Toxic Spear",
+        "description": "Whenever the spear kills a unit, enemy units within a [3_tile:radius] radius take [16_poison:poison] damage."
+      },
+      "stun": {
+        "val": 1,
+        "cost": 3,
+        "name": "Stun Spear",
+        "description": "Bone Spear applies stun for [3:duration] turns"
+      }
+    }
+  },
+  "Chaos Barrage": {
+    "name": {
+      "en": "Chaos Barrage",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fire [9_bolts:num_targets] of chaotic energy at random units in a cone.\nEach bolt randomly deals [6_fire:fire], [6_lightning:lightning], or [6_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_targets": {
+        "val": 6,
+        "cost": 4,
+        "name": "Mega Barrage"
+      },
+      "shockwaves": {
+        "val": 1,
+        "cost": 3,
+        "name": "Shockwaves",
+        "description": "Each bolt also deals damage to adjacent enemies"
+      },
+      "smart_targeting": {
+        "val": 1,
+        "cost": 3,
+        "name": "Smart Bolts",
+        "description": "Chaos barrage ignores allies, and always uses the damage type the target resists the least"
+      }
+    }
+  },
+  "Disperse": {
+    "name": {
+      "en": "Disperse",
+      "zh": ""
+    },
+    "description": {
+      "en": "Teleport all units in a [4_tile:radius] radius to random locations\nThe caster is unaffected.",
+      "zh": ""
+    },
+    "upgrades": {
+      "warpdagger": {
+        "val": 1,
+        "cost": 6,
+        "name": "Violent Warp",
+        "description": "Casts Magic Missile on all teleported enemy units"
+      },
+      "shields": {
+        "val": 1,
+        "cost": 2,
+        "name": "Protective Warp",
+        "description": "Teleported allied units in the radius gain 3 SH"
+      },
+      "void_sickness": {
+        "val": 1,
+        "cost": 2,
+        "name": "Void Sickness",
+        "description": "Teleported units receive [10_turns:duration] of Silence and Poisoned"
+      }
+    }
+  },
+  "Dreamwalk": {
+    "name": {
+      "en": "Dreamwalk",
+      "zh": ""
+    },
+    "description": {
+      "en": "Dreamwalk for [5:duration] turns.  Afterwards, you are returned to the location you cast it at, restored to the HP you cast it at.\nCasting Dreamwalk while already active will end the current walk.",
+      "zh": ""
+    },
+    "upgrades": {
+      "dream_form": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dream Form",
+        "description": "While dreamwalking, gain 75% resistance to [arcane], [dark], [physical], and [holy] damage."
+      },
+      "nightmare_form": {
+        "val": 1,
+        "cost": 5,
+        "name": "Nightmare Form",
+        "description": "Damage from [dark] spells and skills while dreamwalking inflict 1 turn of fear."
+      },
+      "astral_projection": {
+        "val": 1,
+        "cost": 2,
+        "name": "Astral Projection",
+        "description": "When dreamwalk ends, reset all [Translocation] spell charge counts to what they were at the beginning of the walk."
+      }
+    }
+  },
+  "Eye of Blood": {
+    "name": {
+      "en": "Eye of Blood",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every [3_turns:shot_cooldown], deals [10_dark:dark] damage to a random enemy unit in line of sight, healing the caster for damage dealt.\nLasts [20_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "replace_cast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Eye of Lifedrain",
+        "description": "Eye of Blood instead casts your Lifedrain spell for free."
+      },
+      "hags_eye": {
+        "val": 1,
+        "cost": 7,
+        "name": "Hag's Eye",
+        "description": "Increase shot cooldown by 3. Shoots at all targets in line of sight"
+      },
+      "plasmoid": {
+        "val": 1,
+        "cost": 4,
+        "name": "Eye of Plasmoid",
+        "description": "When it deals damage, the target's max HP is reduced by the damage dealt, a Blood Slime is summoned nearby."
+      }
+    }
+  },
+  "Eye of Fire": {
+    "name": {
+      "en": "Eye of Fire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every [3_turns:shot_cooldown], deals [15_fire:fire] damage to a random enemy unit in line of sight.\nLasts [30_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "replace_cast": {
+        "val": 1,
+        "cost": 5,
+        "name": "Eye of Immolation",
+        "description": "Eye of Fire instead casts your Immolate spell"
+      },
+      "summon_eyeball": {
+        "val": 1,
+        "cost": 2,
+        "name": "Fiery Onlooker",
+        "description": "Eye of Fire summons a Flaming Eyeball on expiration"
+      },
+      "cascade": {
+        "val": 1,
+        "cost": 2,
+        "name": "Eye of Conflagration",
+        "description": "Whenever eye of fire kills an enemy, it fires again"
+      }
+    }
+  },
+  "Eye of Ice": {
+    "name": {
+      "en": "Eye of Ice",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every [3_turns:shot_cooldown], deals [15_ice:ice] damage to a random enemy unit in line of sight.\nLasts [30_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "summon_eyeball": {
+        "val": 1,
+        "cost": 2,
+        "name": "Frosty Onlooker",
+        "description": "Eye of Ice summons a Frosty Eyeball on expiration."
+      },
+      "array": {
+        "val": 1,
+        "cost": 4,
+        "name": "Icy Array",
+        "description": "You can have multiple instances of Eye of Ice active simultaneously."
+      },
+      "replace_cast": {
+        "val": 1,
+        "cost": 6,
+        "name": "Eye of Iceballs",
+        "description": "Eye of Ice casts your Iceball spell."
+      }
+    }
+  },
+  "Eye of Lightning": {
+    "name": {
+      "en": "Eye of Lightning",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every [3_turns:shot_cooldown], deals [15_lightning:lightning] damage to a random enemy unit in line of sight.\nLasts [30_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "healing": {
+        "val": 1,
+        "cost": 3,
+        "name": "Archon Eye",
+        "description": "Allies along the beam are healed for [15:damage] and gain [1_SH:shields]"
+      },
+      "replace_cast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Eye of Thunderstrike",
+        "description": "Eye of Lightning casts your Thunderstrike spell."
+      },
+      "applies_buff": {
+        "val": 1,
+        "cost": 4,
+        "name": "Penetrating Gaze",
+        "description": "Eye of Lightning applies a non-stacking -50 Lightning resist to target."
+      }
+    }
+  },
+  "Eye of Rage": {
+    "name": {
+      "en": "Eye of Rage",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every [3_turns:shot_cooldown], inflict [berserk] on a random enemy unit in line of sight for [2_turns:berserk].\nLasts [20_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "lycanthrophy": {
+        "val": 1,
+        "cost": 3,
+        "name": "Lycanthropy",
+        "description": "When Eye of Rage targets a [living] unit with 25% or less HP, that unit is instantly killed and raised as a friendly Werewolf.  That Werewolf is berserked for 14 turns."
+      },
+      "connected_group": {
+        "val": 1,
+        "cost": 5,
+        "name": "Infectious Rage",
+        "description": "Eye of Rage targets a connected group"
+      },
+      "fiery_aura": {
+        "val": 1,
+        "cost": 3,
+        "name": "Burning Rage",
+        "description": "Targeted units gain a fiery aura that damages nearby units."
+      }
+    }
+  },
+  "Fan of Flames": {
+    "name": {
+      "en": "Fan of Flames",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [9_fire:fire] damage to all units in a cone.\nThis spell can be channeled for up to [10_turns:duration].  The effect is repeated each turn the spell is channeled.",
+      "zh": ""
+    },
+    "upgrades": {
+      "heal": {
+        "val": 1,
+        "cost": 3,
+        "name": "Healing Hearthfire",
+        "description": "Fan of Flames heals allies instead of damaging them."
+      },
+      "frostfire": {
+        "val": 1,
+        "cost": 4,
+        "name": "Fan of Frostfire",
+        "description": "Fan of flames also deals [Ice] damage."
+      },
+      "wildfire": {
+        "val": 1,
+        "cost": 5,
+        "name": "Wildfire",
+        "description": "Fan of Flames gains 1 range for the next turn for each enemy unit killed."
+      }
+    }
+  },
+  "Floating Eye": {
+    "name": {
+      "en": "Floating Eye",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a floating eye.\nFloating eyes have [1_HP:minion_health], [4_SH:shields], fly, and passively blink.\nFloating eyes vanish after [16_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "stone_gaze": {
+        "val": 1,
+        "cost": 3,
+        "name": "Stone Gaze",
+        "description": "Floating Eye can cast your Petrify on a 3 turn cooldown."
+      },
+      "eyemage": {
+        "val": 1,
+        "cost": 6,
+        "name": "Eyemage",
+        "description": "Floating Eye can cast your other level 2 [eye:eye] spells on 15 turn cooldowns."
+      },
+      "regen_shields": {
+        "val": 1,
+        "cost": 2,
+        "name": "Regenerating Shields",
+        "description": "Floating Eye gains 2 SH per turn up to 4 SH."
+      }
+    }
+  },
+  "Freeze": {
+    "name": {
+      "en": "Freeze",
+      "zh": ""
+    },
+    "description": {
+      "en": "Target unit is [frozen] for [5_turns:duration].\n[Frozen] units cannot act. Frozen units unfreeze upon taking [fire] or [physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "refreezing": {
+        "val": 1,
+        "cost": 4,
+        "name": "Refreezing",
+        "description": "The target is refrozen every turn for the duration."
+      },
+      "freeze_group": {
+        "val": 1,
+        "cost": 4,
+        "name": "Mass Freeze",
+        "description": "Freeze a connected group of enemies."
+      },
+      "quick_cast": {
+        "val": 1,
+        "cost": 2,
+        "name": "Quickcast",
+        "description": "Casting freeze only takes half a turn"
+      }
+    }
+  },
+  "Goatia Offering": {
+    "name": {
+      "en": "Goatia Offering",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Goatia.",
+      "zh": ""
+    },
+    "upgrades": {
+      "reincarnation": {
+        "val": 1,
+        "cost": 3,
+        "name": "Reincarnation",
+        "description": "The Goatia reincarnates once upon death"
+      },
+      "pain": {
+        "val": 1,
+        "cost": 3,
+        "name": "Pain Aura",
+        "description": "The Goatia deals [5:minion_damage] [dark] damage to any unit that damages it"
+      },
+      "maggot_host": {
+        "val": 1,
+        "cost": 3,
+        "name": "Maggot Host",
+        "description": "On death, the Goatia spawns [2:num_summons] mind maggots"
+      }
+    }
+  },
+  "Healing Light": {
+    "name": {
+      "en": "Healing Light",
+      "zh": ""
+    },
+    "description": {
+      "en": "Heal all allies in line of sight for [25_health:heal].",
+      "zh": ""
+    },
+    "upgrades": {
+      "shields": {
+        "val": 1,
+        "cost": 1,
+        "name": "Shielding Light",
+        "description": "Allies in line of sight gain 1 shield"
+      },
+      "remove_debuffs": {
+        "val": 1,
+        "cost": 2,
+        "name": "Purifying Light",
+        "description": "Allies in line of sight lose all debuffs before being healed"
+      },
+      "heart_flame": {
+        "val": 1,
+        "cost": 4,
+        "name": "Heartflame",
+        "description": "Whenever Healing Light heals an ally, the nearest enemy in line of sight of that ally takes that much [fire] and [holy] damage."
+      }
+    }
+  },
+  "Heavenly Blast": {
+    "name": {
+      "en": "Heavenly Blast",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [14_holy:holy] damage to enemies and heal allies for [14_hp:heal] along a beam and in a [1_tile:radius] burst.",
+      "zh": ""
+    },
+    "upgrades": {
+      "spiritbind": {
+        "val": 1,
+        "cost": 3,
+        "name": "Spirit Bind",
+        "description": "Slain enemies create temporary spirits.  Spirits are blinking holy undead with 4 hitpoints and a 2 damage ranged holy attack."
+      },
+      "shield": {
+        "val": 1,
+        "cost": 3,
+        "name": "Shield",
+        "description": "Affected ally units gain 2 SH"
+      },
+      "echo_heal": {
+        "val": 1,
+        "cost": 2,
+        "name": "Echo Heal",
+        "description": "Affected ally units are re-healed for half the initial amount each turn for 5 turns."
+      }
+    }
+  },
+  "Hungry Maw": {
+    "name": {
+      "en": "Hungry Maw",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a hungry maw.\nThe maw is shielded, floats, and is stationary.\nThe maw has a ranged [physical] attack, which pulls enemies towards it.\nThe maw vanishes after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "devour": {
+        "val": 1,
+        "cost": 3,
+        "name": "Gnashing Teeth",
+        "description": "Hungry Maw gains a [physical] melee attack which attacks [4:num_targets] times"
+      },
+      "shields": {
+        "val": 5,
+        "cost": 2,
+        "name": "Invincible Maw"
+      },
+      "void": {
+        "val": 1,
+        "cost": 4,
+        "name": "Void Maw",
+        "description": "Hungry Maw gains a wall melting arcane beam attack"
+      }
+    }
+  },
+  "Iceball": {
+    "name": {
+      "en": "Iceball",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [14_ice:ice] damage in a [2_tile:radius] burst.\nAffected units in the area are [frozen] for [3_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "cloud_combustion": {
+        "val": 1,
+        "cost": 3,
+        "name": "Cloud Combustion",
+        "description": "Gains +2 radius and x2 damage if cast on a Blizzard tile. The Blizzard tile is consumed."
+      },
+      "icecrush": {
+        "val": 1,
+        "cost": 3,
+        "name": "Ice Crush",
+        "description": "Units inside of the area of effect which are already frozen take physical damage before being refrozen."
+      },
+      "summon_faery": {
+        "val": 4,
+        "cost": 4,
+        "name": "Fae Ball",
+        "description": "Whenever you cast Iceball, summon 1 ice faery for every 4 enemies it damages."
+      }
+    }
+  },
+  "Immolate": {
+    "name": {
+      "en": "Immolate",
+      "zh": ""
+    },
+    "description": {
+      "en": "Target enemy takes [3_fire:fire] damage each turn for [8_turns:duration].\nThis damage increases by [3_damage:damage] each turn.",
+      "zh": ""
+    },
+    "upgrades": {
+      "mass_immolate": {
+        "val": 1,
+        "cost": 5,
+        "name": "Conflagration",
+        "description": "Immolate also affects a connected group of enemies."
+      },
+      "radiant_heat": {
+        "val": 1,
+        "cost": 3,
+        "name": "Radiant Heat",
+        "description": "Immolate inflicts [3_turns:duration] of blind and deals half damage to units in a [3_tile:radius] radius around the target each turn."
+      },
+      "dragon_soul": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dragon Soul",
+        "description": "When an immolated enemy dies, regain a charge of a random [dragon] spell you know."
+      },
+      "unquenchable_flames": {
+        "val": 1,
+        "cost": 4,
+        "name": "Unquenchable Flames",
+        "description": "Immolate gains permanent duration"
+      }
+    }
+  },
+  "Invoke Savagery": {
+    "name": {
+      "en": "Invoke Savagery",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each living ally attacks a random enemy unit in melee range.\nThe attack deals [14_physical:physical] damage and inflicts [2_turns:duration] of [stun].",
+      "zh": ""
+    },
+    "upgrades": {
+      "poison": {
+        "val": 10,
+        "cost": 1,
+        "name": "Venomous Bite",
+        "description": "Poisons targets for 10 turns."
+      },
+      "leap_attack": {
+        "val": 1,
+        "cost": 4,
+        "name": "Savage Leap",
+        "description": "Instead of a melee attack, do a leap attack with a range of [3:radius]."
+      },
+      "recharge_wolf": {
+        "val": 1,
+        "cost": 3,
+        "name": "Scavengers",
+        "description": "Every 3 kills gain a wolf charge."
+      }
+    }
+  },
+  "Magnetize": {
+    "name": {
+      "en": "Magnetize",
+      "zh": ""
+    },
+    "description": {
+      "en": "Magnetize target metallic unit.\nEnemy units within a [4_tile:radius] radius of the magnetized unit are pulled [1_tiles:range] towards the unit each turn.\nAfterwards, adjacent enemy units are stunned for 1 turn. and take [3_lightning:lightning] damage.\nLasts [10_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "radioactivity": {
+        "val": 1,
+        "cost": 3,
+        "name": "Radioactivity",
+        "description": "Lowers target's [lightning:lightning] and [arcane:arcane] resist by 75. \n Deals [poison] damage to all units in range each turn."
+      },
+      "electromagnetism": {
+        "val": 1,
+        "cost": 4,
+        "name": "Electromagnetism",
+        "description": "Deals [lightning:lightning] damage to all units in range rather than just adjacent units."
+      },
+      "cast_mercurize": {
+        "val": 1,
+        "cost": 5,
+        "name": "Liquid Magnetism",
+        "description": "Casts your Mercurize with [1_duration:duration] on adjacent enemy units."
+      },
+      "hemomagnetism": {
+        "val": 1,
+        "cost": 2,
+        "name": "Hemomagnetism",
+        "description": "Magnetism can now target living units."
+      }
+    }
+  },
+  "Melt": {
+    "name": {
+      "en": "Melt",
+      "zh": ""
+    },
+    "description": {
+      "en": "Target unit takes [22_fire:fire] damage and loses [100_physical:physical] resist.",
+      "zh": ""
+    },
+    "upgrades": {
+      "plasmify": {
+        "val": 1,
+        "cost": 1,
+        "name": "Plasmify",
+        "description": "Create 2 fire slimes when Melt kills its target."
+      },
+      "mass_melt": {
+        "val": 1,
+        "cost": 2,
+        "name": "Mass Melt",
+        "description": "Chains to up to [6:num_targets] adjacent enemies."
+      }
+    }
+  },
+  "Mercurize": {
+    "name": {
+      "en": "Mercurize",
+      "zh": ""
+    },
+    "description": {
+      "en": "Afflict the target with Mercurize.  The target takes [2_poison:poison] and [2_physical:physical] damage each turn for [6_turns:duration].\nIf the target dies while cursed, it is raised as a Quicksilver Geist.\nGeists are flying undead metallic units with many resistances and immunities.\nThe Geist has max HP equal to the cursed unit, and an attack dealing [10_physical:physical] damage.\nThe Geist disappears after [32_turns:minion_duration]",
+      "zh": ""
+    },
+    "upgrades": {
+      "dark": {
+        "val": 1,
+        "cost": 2,
+        "name": "Morbidity",
+        "description": "Mercurized targets also take [dark] damage"
+      },
+      "vengeance": {
+        "val": 1,
+        "cost": 4,
+        "name": "Mercurial Vengeance",
+        "description": "When a Quicksilver Geist is killed, its killer is afflicted with Mercurize."
+      },
+      "mad_hatter": {
+        "val": 1,
+        "cost": 3,
+        "name": "Mercurial Temper",
+        "description": "At the end of their turn, units affected by Mercurize with less than half health are berserked for the remainder of its duration"
+      }
+    }
+  },
+  "Moon Glaive": {
+    "name": {
+      "en": "Moon Glaive",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [7_arcane:arcane] and [7_physical:physical] damage in a line to target empty tile.\nThe glaive will linger on the target tile for 1 turn, and return at the end of your next turn, dealing damage again.",
+      "zh": ""
+    },
+    "upgrades": {
+      "los_damage": {
+        "val": 1,
+        "cost": 4,
+        "name": "Glimmerblade",
+        "description": "Deals [1_arcane:arcane] damage to all enemies in LOS of the target.  This damage is fixed and cannot be buffed."
+      },
+      "lightning_damage": {
+        "val": 1,
+        "cost": 4,
+        "name": "Electroblade",
+        "description": "Deals [7_lightning:lightning] damage to up to [3:num_targets] enemies up to [2_tiles:radius] away from the blade's destination."
+      },
+      "gravity_blade": {
+        "val": 1,
+        "cost": 3,
+        "name": "Gravityblade",
+        "description": "Pull all enemies within [4_tiles:radius] toward the blade.\nThe blade now lingers at the target tile for [3:duration] turns."
+      }
+    }
+  },
+  "Petrify": {
+    "name": {
+      "en": "Petrify",
+      "zh": ""
+    },
+    "description": {
+      "en": "Inflict [petrify] on the target for [10_turns:duration].\n[Petrified] units cannot act.\n[Petrified] units gain [100_ice:ice] resist.\n[Petrified] units gain [100_lightning:lightning] resist.\n[Petrified] units gain [75_physical:physical] resist.\n[Petrified] units gain [75_fire:fire] resist.",
+      "zh": ""
+    },
+    "upgrades": {
+      "glassify": {
+        "val": 1,
+        "cost": 1,
+        "name": "Glassify",
+        "description": "Turn the target to glass instead of stone.  Glass targets have -100 physical resist."
+      },
+      "arcane_conductivity": {
+        "val": 1,
+        "cost": 2,
+        "name": "Arcane Conductivity",
+        "description": "Target loses [100_arcane:arcane] resist."
+      },
+      "petrified_animation": {
+        "val": 1,
+        "cost": 3,
+        "name": "Rocky Servitude",
+        "description": "On death, raise target as a golem."
+      },
+      "panic": {
+        "val": 1,
+        "cost": 6,
+        "name": "Panic",
+        "description": "Enemies in line of sight of the target are feared for [1:duration] turn."
+      }
+    }
+  },
+  "Plague of Undeath": {
+    "name": {
+      "en": "Plague of Undeath",
+      "zh": ""
+    },
+    "description": {
+      "en": "Curse a group of [living] enemy units with the essence of undeath.\nAffected units become [undead] and lose [living].\nAffected units lose [25%:damage] of their max HP.\nAffected units take [1_poison:poison] damage per turn.\nAffected units lose [100_holy:holy] resist.\nAffected units gain [100_dark:dark] resist.\nAffected units cannot be healed.",
+      "zh": ""
+    },
+    "upgrades": {
+      "raise_zombie": {
+        "val": 1,
+        "cost": 4,
+        "name": "Plague of Undead",
+        "description": "Raise killed units as zombies."
+      },
+      "pandemic": {
+        "val": 1,
+        "cost": 2,
+        "name": "Pandemic",
+        "description": "The curse spreads from cursed units to adjacent living enemies each turn."
+      }
+    }
+  },
+  "Pyrostatic Pulse": {
+    "name": {
+      "en": "Pyrostatic Pulse",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [16_fire:fire] damage in a beam.\nDeal [16_lightning:lightning] damage to tiles adjacent to the beam.",
+      "zh": ""
+    },
+    "upgrades": {
+      "chaos": {
+        "val": 1,
+        "cost": 4,
+        "name": "Chaos Pulse",
+        "description": "Add a [physical] damage layer."
+      },
+      "lesser_cascade": {
+        "val": 1,
+        "cost": 4,
+        "name": "Crackle Cascade",
+        "description": "[Lightning:lightning] damage arcs to [2:num_targets] enemy units in line of sight."
+      },
+      "greater_cascade": {
+        "val": 1,
+        "cost": 7,
+        "name": "Forking Cascade",
+        "description": "Secondary beams triggered from the target to up to [2:num_targets] random enemies in line of sight of the target."
+      },
+      "spirit_calling": {
+        "val": 1,
+        "cost": 4,
+        "name": "Spirit Calling",
+        "description": "Summons fire spirits for units killed by the [fire] beam, and spark spirits for those killed by the [lightning] beams."
+      }
+    }
+  },
+  "Rain Storm": {
+    "name": {
+      "en": "Rain Storm",
+      "zh": ""
+    },
+    "description": {
+      "en": "Creates a Rain Storm.  Units caught within are Soaked, lowering their [ice] and [lightning] resistances, but raising their [fire] resistance.",
+      "zh": ""
+    },
+    "upgrades": {
+      "poison": {
+        "val": 1,
+        "cost": 4,
+        "name": "Acid Rain",
+        "description": "The rainclouds deal [9_poison:poison] damage each turn"
+      },
+      "healing": {
+        "val": 1,
+        "cost": 4,
+        "name": "Healing Rain",
+        "description": "The wizard and their allies are healed for 7 hp per turn while they are in the rainclouds"
+      }
+    }
+  },
+  "Regeneration Aura": {
+    "name": {
+      "en": "Regeneration Aura",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn for [8_turns:duration], all allied units in a [10_tile:radius] radius are healed for [4_HP:heal].",
+      "zh": ""
+    },
+    "upgrades": {
+      "whole_map": {
+        "val": 1,
+        "cost": 4,
+        "name": "Global",
+        "description": "The aura heals all allies on the level"
+      },
+      "death_defiance": {
+        "val": 1,
+        "cost": 6,
+        "name": "Death Defiance",
+        "description": "When you cast this spell, allies in range gain the ability to reincarnate on death"
+      }
+    }
+  },
+  "Scourge": {
+    "name": {
+      "en": "Scourge",
+      "zh": ""
+    },
+    "description": {
+      "en": "The target is stunned for [5_turns:duration].\nEach turn, the target and all units within [1_tiles:radius] take [5_holy:holy] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "ascension": {
+        "val": 1,
+        "cost": 6,
+        "name": "Ascension",
+        "description": "When a enemy Scourged [Demon] dies, casts a random Holy conjuration you know."
+      },
+      "mass_scourge": {
+        "val": 1,
+        "cost": 5,
+        "name": "Mass Scourge",
+        "description": "Targeting an enemy applies Scourged to a connected group of enemies."
+      },
+      "painful_lesson": {
+        "val": 1,
+        "cost": 2,
+        "name": "Painful Lesson",
+        "description": "Target is feared for [5_turns:duration] after Scourged ends."
+      }
+    }
+  },
+  "Slimeshot": {
+    "name": {
+      "en": "Slimeshot",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [12:damage] [poison] damage to units in a [3_tile:radius] burst\nIf cast on an allied [slime] unit, it will explode, adding its max hp to the damage dealt by the spell.\nInflict [10:duration] turns of Soaked on non [slime] units.",
+      "zh": ""
+    },
+    "upgrades": {
+      "slimify": {
+        "val": 1,
+        "cost": 6,
+        "name": "Slimification Shot",
+        "description": "Cast your Slimify on affected enemy units."
+      },
+      "transmute": {
+        "val": 1,
+        "cost": 5,
+        "name": "Storm Transmutation",
+        "description": "Storms in the affected area get turned into slimes of matching types.\nLightning Storms spawn Electric Slimes\nBlizzards spawn Ice Slimes\nRain Clouds spawn Green Slimes"
+      },
+      "slime_rust": {
+        "val": 1,
+        "cost": 2,
+        "name": "Slime Rust",
+        "description": "Slimeshot deals [physical] damage in addition to [poison].\nAffected units receive [Slime_Rust:slime] which reduces all of their resistances by 10%\nDoes not affect [Slime] units."
+      }
+    }
+  },
+  "Soul Swap": {
+    "name": {
+      "en": "Soul Swap",
+      "zh": ""
+    },
+    "description": {
+      "en": "Swap places with a friendly [undead] unit.",
+      "zh": ""
+    },
+    "upgrades": {
+      "forced_transfer": {
+        "val": 1,
+        "cost": 2,
+        "name": "Forced Transfer",
+        "description": "Soul Swap can target enemy undead units as well."
+      },
+      "spirit_tutor": {
+        "val": 1,
+        "cost": 4,
+        "name": "Spirit Tutor",
+        "description": "Swapped [undead] gains your Death Bolt on a 3 turn cooldown."
+      },
+      "soul_ward": {
+        "val": 1,
+        "cost": 3,
+        "name": "Soul Shielding",
+        "description": "Target unit loses up to [1:damage] max HP, and you gain that many SH.\n This will not kill units."
+      }
+    }
+  },
+  "Thunder Strike": {
+    "name": {
+      "en": "Thunder Strike",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [24_lightning:lightning] damage to the target.\nStun all enemies in a [2_tile:radius] burst around the target.",
+      "zh": ""
+    },
+    "upgrades": {
+      "requires_los": {
+        "val": -1,
+        "cost": 2,
+        "name": "Blindcasting",
+        "description": "Thunderstrike can be cast without line of sight"
+      },
+      "storm_power": {
+        "val": 1,
+        "cost": 3,
+        "name": "Storm Power",
+        "description": "Charge cost is refunded if the target tile already has a thunder storm."
+      },
+      "heaven_strike": {
+        "val": 1,
+        "cost": 4,
+        "name": "Heaven Strike",
+        "description": "Thunder Strike also deals holy damage"
+      }
+    }
+  },
+  "Touch of Death": {
+    "name": {
+      "en": "Touch of Death",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [200_dark:dark] damage to one unit in melee range.",
+      "zh": ""
+    },
+    "upgrades": {
+      "fire_damage": {
+        "val": 1,
+        "cost": 3,
+        "name": "Flametouch",
+        "description": "Touch of Death also deals [fire] damage."
+      },
+      "vampire": {
+        "val": 1,
+        "cost": 3,
+        "name": "Touch of the Vampire",
+        "description": "When a [living] target dies to touch of death, it is raised as a friendly Vampire."
+      },
+      "hand_of_death": {
+        "val": 1,
+        "cost": 3,
+        "name": "Hand of Death",
+        "description": "Touch of death hits up to [4:num_targets] more adjacent targets"
+      },
+      "final_touch": {
+        "val": 1,
+        "cost": 5,
+        "name": "Final Touch",
+        "description": "Touch of death deals additional damage equal to the target's max HP."
+      }
+    }
+  },
+  "Toxic Spores": {
+    "name": {
+      "en": "Toxic Spores",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons [2:num_summons] Mushbooms.\nMushbooms have [11_HP:minion_health].\nMushbooms have a ranged attack dealing [1_poison:poison] damage and inflicting [4_turns:duration] of [poison].\nMushbooms inflict [12_turns:duration] of [poison] on units in melee range when they die.",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_summons": {
+        "val": 2,
+        "cost": 3
+      },
+      "grey_mushboom": {
+        "val": 1,
+        "cost": 2,
+        "name": "Grey Mushbooms",
+        "description": "Summon grey mushbooms instead, which apply stun instead of poison."
+      },
+      "red_mushboom": {
+        "val": 1,
+        "cost": 5,
+        "name": "Red Mushbooms",
+        "description": "Summon red mushbooms instead, which do not apply poison but deal fire damage"
+      },
+      "glass_mushboom": {
+        "val": 1,
+        "cost": 6,
+        "name": "Glass Mushbooms",
+        "description": "Summon glass mushbooms instead, which apply glassify instead of poison"
+      }
+    }
+  },
+  "Toxin Burst": {
+    "name": {
+      "en": "Toxin Burst",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [1_poison:poison] damage and inflict [poison] on all units in a [4_tile:radius] radius for [20_turns:duration].\n[Poisoned] units take 1 [poison] damage each turn and cannot heal.",
+      "zh": ""
+    },
+    "upgrades": {
+      "chemical_remedy": {
+        "val": 4,
+        "cost": 1,
+        "name": "Herbal Remedy",
+        "description": "All allies in the radius are healed instead of damaged and poisoned."
+      },
+      "deal_dark": {
+        "val": 1,
+        "cost": 3,
+        "name": "Withertoxin",
+        "description": "Toxin Burst also deals [15_dark:dark] damage."
+      },
+      "summon_bomber": {
+        "val": 1,
+        "cost": 3,
+        "name": "Toxin Bomber",
+        "description": "Summons a Poison Bomber in the center of the burst that deals [15_poison:poison] damage."
+      },
+      "gas_cloud": {
+        "val": 1,
+        "cost": 3,
+        "name": "Gas Cloud",
+        "description": "Affected units are afflicted with blinded and soaked for [5_turns:duration]"
+      }
+    }
+  },
+  "Aether Swap": {
+    "name": {
+      "en": "Aether Swap",
+      "zh": ""
+    },
+    "description": {
+      "en": "Swap places with target unit.\nThat unit takes [16_arcane:arcane] damage.\nCannot target [arcane] immune units.",
+      "zh": ""
+    },
+    "upgrades": {
+      "petrify": {
+        "val": 1,
+        "cost": 2,
+        "name": "Petrification",
+        "description": "Casts your Petrify on the target."
+      },
+      "requires_los": {
+        "val": -1,
+        "cost": 4,
+        "name": "Blindcasting",
+        "description": "Aether Swap can be cast without line of sight"
+      },
+      "quick_cast": {
+        "val": 1,
+        "cost": 3,
+        "name": "Quickcast",
+        "description": "Casting Aether Swap only takes half a turn"
+      }
+    }
+  },
+  "Amalgamate Slime": {
+    "name": {
+      "en": "Amalgamate Slime",
+      "zh": ""
+    },
+    "description": {
+      "en": "Allied [slime] units in a connected group are amalgamated onto the target.\nThe target gains the max hp, resists, spells, and spell damage, of the affected units.\nTarget loses the base slime buff, and gains the Slimy boss buff.\nThis spell must target a friendly [slime] unit.",
+      "zh": ""
+    },
+    "upgrades": {
+      "global_network": {
+        "val": 1,
+        "cost": 2,
+        "name": "Global Network",
+        "description": "Affects all friendly slimes in the level instead of those in a connected group"
+      },
+      "can_self_target": {
+        "val": 1,
+        "cost": 2,
+        "name": "Slime Drinking",
+        "description": "You may target yourself with this spell.\nCasting it on yourself causes you to ignore its other effects and heal for the total health of slimes absorbed."
+      },
+      "absorption": {
+        "val": 1,
+        "cost": 3,
+        "name": "Absorption",
+        "description": "Slimes steal [1:damage] max hp from adjacent enemy units before amalgamating"
+      },
+      "slimy_mimic": {
+        "val": 1,
+        "cost": 4,
+        "name": "Slimy Mimic",
+        "description": "Instead of consolidating into the target slime, summons a random monster with the slimy boss modifier.\nThe monster summoned depends on the total health of the absorbed slimes, with higher health pools yielding more powerful monsters.\nThe summoned monster's health is set to the total health of the absorbed slimes."
+      }
+    }
+  },
+  "Arcane Orb": {
+    "name": {
+      "en": "Arcane Orb",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an arcane orb next to the caster.\nThe orb can cast your magic missile spell.\nThe orb has no will of its own, each turn it will float one tile towards the target.\nThe orb can be destroyed by arcane damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "cast_blazerip": {
+        "val": 1,
+        "cost": 4,
+        "name": "Blazerip Orb",
+        "description": "Arcane Orb casts your Blazerip spell instead of your Magic Missile spell."
+      },
+      "double_shot": {
+        "val": 1,
+        "cost": 5,
+        "name": "Double Shot",
+        "description": "Arcane Orb fires twice."
+      },
+      "orb_walk": {
+        "val": 1,
+        "cost": 3,
+        "name": "Orb Detonation",
+        "description": "Targeting an existing arcane orb detonates it, casting your Magic Missile [12:num_targets] times."
+      }
+    }
+  },
+  "Basilisk Armor": {
+    "name": {
+      "en": "Basilisk Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit targets you with a spell or attack, that unit is [petrified] for [2:duration] turns.\nLasts [15_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "venomous": {
+        "val": 1,
+        "cost": 2,
+        "name": "Venomous",
+        "description": "Affected enemies are also [poisoned] for [15:duration] turns."
+      },
+      "king_of_serpents": {
+        "val": 1,
+        "cost": 3,
+        "name": "King of Serpents",
+        "description": "Your [Dragon] allies also receive the buff when you cast this spell."
+      },
+      "reaction_cast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Reaction Cast",
+        "description": "Casts your Petrify spell on enemies instead."
+      }
+    }
+  },
+  "Blazerip": {
+    "name": {
+      "en": "Blazerip",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [12_arcane:arcane] and [12_fire:fire] damage in a [7_tile:radius] line perpendicular to the caster.\nMelts walls in the affected area.",
+      "zh": ""
+    },
+    "upgrades": {
+      "mirror": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dual Blazerip",
+        "description": "Blazerip also affects a symmetric area behind the player."
+      },
+      "aether_poison": {
+        "val": 1,
+        "cost": 3,
+        "name": "Aether Poison",
+        "description": "Inflicts Aether Poison on units it hits. Aether Poison lasts [10:duration] turns, and deals [1_arcane:damage] damage per turn, and causes the enemy to lose 50 [arcane] resistance during the duration."
+      },
+      "blazebugs": {
+        "val": 1,
+        "cost": 5,
+        "name": "Blazebugs",
+        "description": "On kill, summon a swarm of either Fae Flies or Burning Flies."
+      }
+    }
+  },
+  "Blinding Light": {
+    "name": {
+      "en": "Blinding Light",
+      "zh": ""
+    },
+    "description": {
+      "en": "[Blind] all units in line of sight of the caster for [4_turns:duration].\n[Blind] units have all their spell ranges reduced to 1.\nDeals [5_holy:holy] damage to affected [undead] and [demon] units.",
+      "zh": ""
+    },
+    "upgrades": {
+      "inflict_stun": {
+        "val": 1,
+        "cost": 2,
+        "name": "Halting Light",
+        "description": "Deals [1_turn:duration] of stun to all enemy units."
+      },
+      "deal_fire": {
+        "val": 1,
+        "cost": 3,
+        "name": "Searing Light",
+        "description": "Deals [5_fire:fire] damage to all enemy units in LOS."
+      },
+      "quick_cast": {
+        "val": 1,
+        "cost": 2,
+        "name": "Quickcast",
+        "description": "Casting Blinding Light only takes half a turn"
+      }
+    }
+  },
+  "Blink": {
+    "name": {
+      "en": "Blink",
+      "zh": ""
+    },
+    "description": {
+      "en": "Teleport to target tile.",
+      "zh": ""
+    },
+    "upgrades": {
+      "requires_los": {
+        "val": -1,
+        "cost": 2,
+        "name": "Blindcasting",
+        "description": "Blink can be cast without line of sight"
+      },
+      "dispersal": {
+        "val": 1,
+        "cost": 2,
+        "name": "Dissolution",
+        "description": "Casting blink also casts disperse"
+      },
+      "thunder": {
+        "val": 1,
+        "cost": 2,
+        "name": "Thunderblink",
+        "description": "Casting blink casts thunderstrike on the [2:num_targets] closest enemy targets in line of sight."
+      }
+    }
+  },
+  "Bloodshift": {
+    "name": {
+      "en": "Bloodshift",
+      "zh": ""
+    },
+    "description": {
+      "en": "Enemies in a [4_tile:radius] burst take [18_dark:dark] damage.\nWhenever an enemy is dealt damage this way, you or a random wounded ally in the targeted area is healed for half that amount.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "freeze": {
+        "val": 1,
+        "cost": 2,
+        "name": "Blood Freeze",
+        "description": "Affected enemies are Frozen for [3_turns:duration]"
+      },
+      "toxicity": {
+        "val": 1,
+        "cost": 4,
+        "name": "Toxic Shift",
+        "description": "Bloodshift also deals [poison] damage, though this damage does not cause healing."
+      },
+      "greed": {
+        "val": 1,
+        "cost": 3,
+        "name": "Blood Greed",
+        "description": "You and only you are healed by this spell, even if you are out of the targeted area."
+      }
+    }
+  },
+  "Chain Lightning": {
+    "name": {
+      "en": "Chain Lightning",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fire an arcing bolt of electricity dealing [12_lightning:lightning] damage.\nThe bolt repeatably arcs to new targets within the cascade range.\nEach arc deals damage to all units along a beam.\nThe bolt can arc up to [5_tiles:cascade_range], and cannot pass through walls.\nThe bolt terminates when it cannot arc to any new targets.",
+      "zh": ""
+    },
+    "upgrades": {
+      "chain_fireball": {
+        "val": 1,
+        "cost": 7,
+        "name": "Chain Fireball",
+        "description": "Cast Fireball for free on each target chain lightning bounces to"
+      },
+      "weathercraft": {
+        "val": 1,
+        "cost": 3,
+        "name": "Cloud Conductance",
+        "description": "Chain Lightning can arc to blizzards, rain clouds, and storm clouds"
+      },
+      "shield": {
+        "val": 1,
+        "cost": 4,
+        "name": "Lightning Shield",
+        "description": "Chain Lightning can arc to friendly targets.\nFriendly units hit by Chain Lightning gain 1 SH, up to a max of 3, instead of damaged."
+      }
+    }
+  },
+  "Choir of Angels": {
+    "name": {
+      "en": "Choir of Angels",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a choir of [4:num_summons] angelic singers.\nThe singers have [10_HP:minion_health], [1_SH:shields], 50% resistance to [fire] and [holy] damage, and 100% resistance to [dark] damage.\nThe angels can sing, dealing [2_fire:fire] and [2_holy:holy] damage to all [undead], [demon], and [dark] units in a [5_tile:radius] radius. [Living] and [holy] units in the song's radius are healed for [1_HP:heal].\nThe angels vanish after [10:minion_duration] turns.",
+      "zh": ""
+    },
+    "upgrades": {
+      "cast_deathbolt": {
+        "val": 1,
+        "cost": 4,
+        "name": "Dual Angels",
+        "description": "Angels can cast your Death Bolt on a 4 turn cooldown."
+      },
+      "conversion": {
+        "val": 1,
+        "cost": 3,
+        "name": "Mercy",
+        "description": "When an enemy is healed for a cumulative total more than its max health, it becomes an ally."
+      },
+      "num_summons": {
+        "val": 4,
+        "cost": 4,
+        "name": "Massive Chorus"
+      }
+    }
+  },
+  "Darkness": {
+    "name": {
+      "en": "Darkness",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, [blind] all units for [1_turn:duration].\n[Blind] units have all their spell ranges reduced to 1.\nLasts [5_turns:duration]",
+      "zh": ""
+    },
+    "upgrades": {
+      "darkvision": {
+        "val": 1,
+        "cost": 3,
+        "name": "Darkvision",
+        "description": "Doesn't blind you or your allies"
+      },
+      "deal_clouds": {
+        "val": 1,
+        "cost": 5,
+        "name": "Dark Clouds",
+        "description": "Deal [5_dark:dark] damage to all enemies under clouds each turn."
+      },
+      "duration": {
+        "val": 15,
+        "cost": 2,
+        "name": "Eternal Darkness"
+      }
+    }
+  },
+  "Death Chill": {
+    "name": {
+      "en": "Death Chill",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [11_dark:dark] damage to the target each turn for [5_turns:duration].\nIf the target dies during this time, deals [11_ice:ice] damage and inflicts [frozen] for [5_turns:duration] on all enemies within a [3_tile:radius] radius.\n[Frozen] units cannot act. Frozen units unfreeze upon taking [fire] or [physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "raise_skeleton": {
+        "val": 1,
+        "cost": 3,
+        "name": "Icy Necromancy",
+        "description": "Raise slain [living] units as Icy Skeletons."
+      },
+      "deal_poison": {
+        "val": 1,
+        "cost": 2,
+        "name": "Slaughter Chill",
+        "description": "Also deals [poison] damage to main target."
+      },
+      "mass_deathchill": {
+        "val": 1,
+        "cost": 6,
+        "name": "Mass Death Chill",
+        "description": "Applies Death Chill to a connected group of enemies."
+      }
+    }
+  },
+  "Devour Flesh": {
+    "name": {
+      "en": "Devour Flesh",
+      "zh": ""
+    },
+    "description": {
+      "en": "Devour an allied [living] unit to heal yourself for its current hp.",
+      "zh": ""
+    },
+    "upgrades": {
+      "control": {
+        "val": 1,
+        "cost": 1,
+        "name": "Controlled Appetite",
+        "description": "Instead of killing the target, only steal as much HP as you are missing."
+      },
+      "heal_allies": {
+        "val": 1,
+        "cost": 2,
+        "name": "Mass Feeding",
+        "description": "Also heal allies in a 2 tile radius."
+      },
+      "charred_flesh": {
+        "val": 1,
+        "cost": 4,
+        "name": "Charred Flesh",
+        "description": "Slain Living units are raised as Burning Skeletons."
+      }
+    }
+  },
+  "Devour Mind": {
+    "name": {
+      "en": "Devour Mind",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [24_arcane:arcane] and [24_dark:dark] damage to an enemy unit.\nThen, if the target is under 50% HP, deal that damage again.\nIf this kills the target, they are raised as a zombie.\nCan only target [living], [demon], and [arcane] units.",
+      "zh": ""
+    },
+    "upgrades": {
+      "horde_mode": {
+        "val": 1,
+        "cost": 5,
+        "name": "Horde Mode",
+        "description": "Zombies raised by this spell can cast it on a 7 turn cooldown."
+      },
+      "gluttony": {
+        "val": 1,
+        "cost": 4,
+        "name": "Gluttony",
+        "description": "If Devour Mind kills the target, heal for the half the target's max HP"
+      },
+      "brain_freeze": {
+        "val": 1,
+        "cost": 3,
+        "name": "Brain Freeze",
+        "description": "Devour Mind deals [ice] damage in addition to [arcane] and [dark].\nIf the target lives, they are [frozen:ice] for [3:duration] turns.\nAdditionally, each of their abilities gains +[3:duration] cooldown."
+      }
+    }
+  },
+  "Dominate": {
+    "name": {
+      "en": "Dominate",
+      "zh": ""
+    },
+    "description": {
+      "en": "Target enemy unit with no more than [40_max_HP:heal] becomes your minion.",
+      "zh": ""
+    },
+    "upgrades": {
+      "hp_threshold": {
+        "val": 40,
+        "cost": 3,
+        "name": "HP Threshold",
+        "description": "Increase the maximum HP units which can be targeted"
+      },
+      "check_cur_hp": {
+        "val": 1,
+        "cost": 4,
+        "name": "Brute Force",
+        "description": "Dominate targets based on current hp instead of maximum hp."
+      },
+      "make_lich": {
+        "val": 1,
+        "cost": 4,
+        "name": "Undead Servitude",
+        "description": "Transforms the target into a lich."
+      },
+      "cult_leader": {
+        "val": 1,
+        "cost": 7,
+        "name": "Cult Leader",
+        "description": "Dominated targets gain your Dominate spell on a 30 turn cooldown."
+      }
+    }
+  },
+  "Earthen Sentinel": {
+    "name": {
+      "en": "Earthen Sentinel",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an Earth Elemental.\nEarth elementals have [120_HP:minion_health], [50_physical:physical] resist, [50_fire:fire] resist, [50_lightning:lightning] resist, and cannot move.\nEarth elementals have a melee attack which deals [20_physical:physical] damage.\nThe elemental vanishes after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "earthquake_totem": {
+        "val": 1,
+        "cost": 4,
+        "name": "Earthquake Totem",
+        "description": "Earthen Sentinel gains your Earthquake spell on a 3 turn cool down."
+      },
+      "stinging_totem": {
+        "val": 1,
+        "cost": 3,
+        "name": "Stinging Totem",
+        "description": "Earthen Sentinel gains your Poison Sting spell."
+      },
+      "holy_totem": {
+        "val": 1,
+        "cost": 6,
+        "name": "Holy Totem",
+        "description": "Earthen Sentinel gains your Heavenly Blast spell on a 2 turn cool down."
+      }
+    }
+  },
+  "Flame Gate": {
+    "name": {
+      "en": "Flame Gate",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [fire] spell, summon a fire elemental at the target of that spell.\nFire elementals have [22_HP:minion_health], [100_fire:fire] resist, [50_physical:physical] resist, and [-50_ice:ice] resist.\nFire elementals have an attack which deals [7_fire:fire] damage with a [4_tile:minion_range] range.\nFire elementals vanish after [9_turns:minion_duration].\nThis effect ends if you move or cast a spell without the [fire] tag.",
+      "zh": ""
+    },
+    "upgrades": {
+      "radius": {
+        "val": 1,
+        "cost": 3,
+        "name": "Burst Fire",
+        "description": "Elemental attacks gain 1 radius."
+      },
+      "cast_eye": {
+        "val": 1,
+        "cost": 5,
+        "name": "Eye Gate",
+        "description": "Your elementals instantly cast your Eye of Fire spell when summoned"
+      },
+      "starfire_summon": {
+        "val": 1,
+        "cost": 5,
+        "name": "Starfire Gate",
+        "description": "Starfire Gate can sustain off of both [Fire] and [Arcane] spells. Starfire Gate summons Starfire Elementals instead of Fire Elementals."
+      },
+      "searing_gate": {
+        "val": 1,
+        "cost": 4,
+        "name": "Searing Gate",
+        "description": "Deal [1:damage] [fire] damage to enemy units in a [1_tile:radius] radius around you each turn.\nThis radius increases by 1 each time you cast a [fire] spell."
+      }
+    }
+  },
+  "Frostfire Hydra": {
+    "name": {
+      "en": "Frostfire Hydra",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a frostfire hydra.\nThe hydra has [16_HP:minion_health], and is stationary.\nThe hydra has a beam attack which deals [7_fire:fire] damage with a [9_tile:minion_range] range.\nThe hydra has a beam attack which deals [7_ice:ice] damage with a [9_tile:minion_range] range.\nThe hydra vanishes after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "crystal_eyes": {
+        "val": 1,
+        "cost": 4,
+        "name": "Crystal Eyes Hydra",
+        "description": "50% of damage dealt by Frostfire Hydra is redealt as Arcane damage."
+      },
+      "freezing": {
+        "val": 1,
+        "cost": 5,
+        "name": "Freezing Ice",
+        "description": "Frostfire Hydra's Ice beam freezes units for 2 turns."
+      }
+    }
+  },
+  "Ghostball": {
+    "name": {
+      "en": "Ghostball",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [11_dark:dark] damage to enemy units in a [1_tile:radius] radius.\nSummon ghosts at empty tiles in the radius.\nGhosts have [4_HP:minion_health], fly, [100_physical:physical] resist, [50_dark:dark] resist, and passively blink.\nGhosts have a melee attack which deals [1_dark:dark] damage.\nThe ghosts vanish after [14_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "haunted": {
+        "val": 1,
+        "cost": 3,
+        "name": "Haunting",
+        "description": "Curses affected enemies with Haunted, which summons a ghost near them each turn.\nLasts for [10:duration] turns."
+      },
+      "king": {
+        "val": 1,
+        "cost": 5,
+        "name": "Ghost King",
+        "description": "A Ghost King is summoned at the center of the ghost ball."
+      },
+      "mass": {
+        "val": 1,
+        "cost": 4,
+        "name": "Ghost Mass",
+        "description": "A Ghostly Mass is summoned at the center of the ghost ball."
+      }
+    }
+  },
+  "Giant Bear": {
+    "name": {
+      "en": "Giant Bear",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a giant bear.\nThe bear has [75_HP:minion_health].\nThe bear has a melee attack which deals [10_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "armored": {
+        "val": 1,
+        "cost": 3,
+        "name": "Metal Bear",
+        "description": "Summons a metallic bear instead of a giant bear."
+      },
+      "venom": {
+        "val": 1,
+        "cost": 3,
+        "name": "Venom Bear",
+        "description": "Summons a venom bear instead of a giant bear.  Venom Bears have a poison bite, and heal whenever an enemy takes poison damage."
+      },
+      "blood": {
+        "val": 1,
+        "cost": 3,
+        "name": "Blood Bear",
+        "description": "Summons a blood bear instead of a giant bear.  Blood bears are resistant to dark damage, and deal increasing damage with each attack."
+      }
+    }
+  },
+  "Glass Orb": {
+    "name": {
+      "en": "Glass Orb",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a glass orb next to the caster.\nEach turn the orb inflicts [glassify] on enemy units in a [3_tile:radius] area.\n[Glassified] units cannot act.\n[Glassified] units gain [-100_physical:physical] resist.\n[Glassified] units gain [100_ice:ice] resist.\n[Glassified] units gain [100_lightning:lightning] resist.\n[Glassified] units gain [75_fire:fire] resist.\nThe orb has no will of its own, each turn it will float one tile towards the target.\nThe orb can be destroyed by physical damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "petrification": {
+        "val": 1,
+        "cost": 3,
+        "name": "Petrification Orb",
+        "description": "Casts your petrify every turn."
+      },
+      "shards": {
+        "val": 1,
+        "cost": 4,
+        "name": "Orb Shards",
+        "description": "Each turn the orb shoots out [2:num_targets] glass shards that deal [16:minion_damage] [physical] damage to random enemies in LOS"
+      },
+      "refraction": {
+        "val": 1,
+        "cost": 4,
+        "name": "Enchantment Refraction",
+        "description": "Glass orb recasts any self-targeted [enchantment] spell you cast."
+      }
+    }
+  },
+  "Holy Armor": {
+    "name": {
+      "en": "Holy Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gain [50_physical:physical] resist.\nGain [50_fire:fire] resist.\nGain [50_lightning:lightning] resist.\nGain [50_dark:dark] resist.\nLasts [9_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "resist": {
+        "val": 25,
+        "cost": 1,
+        "name": "Greater Armor"
+      },
+      "crystal_armor": {
+        "val": 1,
+        "cost": 2,
+        "name": "Crystal Armor",
+        "description": "Also provides resistance to [arcane:arcane], [holy:holy], and [ice:ice]."
+      },
+      "smiting_thorns": {
+        "val": 1,
+        "cost": 4,
+        "name": "Smiting Thorns",
+        "description": "Whenever you take damage from an enemy, deal [7_lightning:lightning] damage to the source."
+      }
+    }
+  },
+  "Holy Fire": {
+    "name": {
+      "en": "Holy Fire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [22_fire:fire] damage in a vertical line and [22_holy:holy] damage in a horizontal line.\n[Stun] [demon] and [undead] units in the affected area.",
+      "zh": ""
+    },
+    "upgrades": {
+      "holy_smite": {
+        "val": 1,
+        "cost": 3,
+        "name": "Holy Smite",
+        "description": "Holy Fire deals additional lightning damage on the center tile."
+      },
+      "divine_blaze": {
+        "val": 1,
+        "cost": 4,
+        "name": "Divine Blaze",
+        "description": "Holy Fire casts your Blazerip spell."
+      },
+      "heaven_call": {
+        "val": 1,
+        "cost": 5,
+        "name": "Heaven Call",
+        "description": "When Holy Fire kills a unit, gain a charge of Call Seraph."
+      }
+    }
+  },
+  "Ironize": {
+    "name": {
+      "en": "Ironize",
+      "zh": ""
+    },
+    "description": {
+      "en": "All allied units gain [50_physical:physical] resist, [50_fire:fire] resist, and [50_lightning:lightning] resist and become metallic.\nLasts [10_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "armor_plating": {
+        "val": 1,
+        "cost": 1,
+        "name": "Armor Plating",
+        "description": "Grants 1 SH to all minions."
+      },
+      "permanence": {
+        "val": 1,
+        "cost": 2,
+        "name": "Permanent Transmutation",
+        "description": "Permanent duration."
+      },
+      "resist_arcane": {
+        "val": 1,
+        "cost": 2,
+        "name": "Arcane Insulation"
+      }
+    }
+  },
+  "Lightning Halo": {
+    "name": {
+      "en": "Lightning Halo",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [15_lightning:lightning] damage to all units in a [3_tile:radius] ring each turn.\nLasts [9_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "ring_of_fire": {
+        "val": 1,
+        "cost": 3,
+        "name": "Ring of Fire",
+        "description": "Lightning Halo creates an additional ring with 1 greater radius that deals [fire:fire] damage."
+      },
+      "radioactivity": {
+        "val": 1,
+        "cost": 3,
+        "name": "Radioactive Field",
+        "description": "Deals 50% [poison:poison] damage to enemies inside the halo."
+      },
+      "expanding": {
+        "val": 1,
+        "cost": 3,
+        "name": "Lightning Nova",
+        "description": "Every turn, Lightning Halo gets +1 radius"
+      }
+    }
+  },
+  "Lightning Spire": {
+    "name": {
+      "en": "Lightning Spire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Lightning Spire.\nLightning Spires are stationary [metallic] constructs with [25:minion_health] max hp.\nEach turn, the spire will zap up to [4:num_targets] enemy units up to [5:minion_range] tiles away, dealing [8_lightning:lightning] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_targets": {
+        "val": 4,
+        "cost": 4,
+        "name": "Mass Blasting"
+      },
+      "blindcasting": {
+        "val": 1,
+        "cost": 5,
+        "name": "Wall Penetration",
+        "description": "The spires can zap enemies through walls."
+      },
+      "resistance_debuff": {
+        "val": 1,
+        "cost": 5,
+        "name": "Resistance Penetration",
+        "description": "Zapped units permenantly lose 10 [lightning] resistance."
+      }
+    }
+  },
+  "Lumbriogenesis": {
+    "name": {
+      "en": "Lumbriogenesis",
+      "zh": ""
+    },
+    "description": {
+      "en": "Sacrifice half your HP rounded up and summon a wormball with that much hp.\nWormballs regenerate 3 HP per turn and have a melee attack dealing damage equal to half their max HP.\nIf you sacrificed 50 or more hp, summon a worm shambler instead of a worm ball.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "toxic": {
+        "val": 1,
+        "cost": 4,
+        "name": "Toxogenesis",
+        "description": "Summons a toxic worm ball instead.  Toxic wormballs have a poison aura."
+      },
+      "iron": {
+        "val": 1,
+        "cost": 5,
+        "name": "Mechanogenesis",
+        "description": "Summons an iron worm ball instead.  Iron wormballs have many resistances."
+      },
+      "ghostly": {
+        "val": 1,
+        "cost": 5,
+        "name": "Ectogenesis",
+        "description": "Summons a ghost worm ball instead.  Ghost wormballs have many resistances, are undead, and teleport."
+      }
+    }
+  },
+  "Mystic Power": {
+    "name": {
+      "en": "Mystic Power",
+      "zh": ""
+    },
+    "description": {
+      "en": "All spells and skills gain [7_bonus_damage:damage].\nLasts [8_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "stackable": {
+        "val": 1,
+        "cost": 4,
+        "name": "Intensity",
+        "description": "Mystic Power stacks in intensity instead of duration"
+      },
+      "explosive_power": {
+        "val": 1,
+        "cost": 4,
+        "name": "Explosive Power",
+        "description": "Your spells and skills also gain +2 [radius]."
+      },
+      "occult_power": {
+        "val": 1,
+        "cost": 4,
+        "name": "Occult Power",
+        "description": "Sacrifice allied units in a [4:radius] tile radius.\nIncrease the duration and damage bonus by the number of allies sacrificed.\nDoes not stack."
+      }
+    }
+  },
+  "Mystic Vision": {
+    "name": {
+      "en": "Mystic Vision",
+      "zh": ""
+    },
+    "description": {
+      "en": "All other spells gain [5_range:range].\nLasts [8_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "bonus": {
+        "val": 5,
+        "cost": 4
+      },
+      "aura": {
+        "val": 1,
+        "cost": 5,
+        "name": "Vision Aura",
+        "description": "Mystic vision affects all allied units"
+      },
+      "overwatch": {
+        "val": 1,
+        "cost": 6,
+        "name": "Overwatch",
+        "description": "When you cast Mystic Vision, cast your Floating Eye on unoccupied adjacent tiles."
+      }
+    }
+  },
+  "Nightmare Aura": {
+    "name": {
+      "en": "Nightmare Aura",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, randomly deals [2_arcane:arcane] or [2_dark:dark] damage to each enemy in a [6_tile:radius] radius.\nThis damage is fixed, and cannot be modified.\nLasts [20_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "dark_dream": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dark Dream",
+        "description": "Upon ending, summon Ravens, Werewolves, and Old Witches based on the total damage dealt by the spell."
+      },
+      "electric_dream": {
+        "val": 1,
+        "cost": 5,
+        "name": "Electric Dream",
+        "description": "Upon ending, summon Spark Spirits, Thunderbirds, and Aelves based on the total damage dealt by the spell."
+      },
+      "fever_dream": {
+        "val": 1,
+        "cost": 5,
+        "name": "Fever Dream",
+        "description": "Upon ending, summon Fire Lizards, Fire Spirits, and Flame Rifts based on the total damage dealt by the spell."
+      }
+    }
+  },
+  "Plague of Filth": {
+    "name": {
+      "en": "Plague of Filth",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a group of [2:num_summons] toads and fly swarms.\nToads have [12_HP:minion_health].\nToads have a ranged tongue attack which deals [2_physical:physical] damage and pulls enemies towards it.\nToads can hop up to [4_tiles:range] away.\nFly swarms have [6_HP:minion_health], [75_dark:dark] resist, [75_physical:physical] resist, [-50_ice:ice] resist, and can fly.\nFly swarms have a melee attack which deals [1_physical:physical] damage.\nThe summons vanish after [7_turns:minion_duration].\nThis spell can be channeled for up to [15_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_summons": {
+        "val": 2,
+        "cost": 3
+      },
+      "snakes": {
+        "val": 1,
+        "cost": 1,
+        "name": "Serpent Plague",
+        "description": "Plague of Filth has a 50% chance of summoning a snake instead of a fly swarm or frog.  Snakes have 3/4 the health of toads, deal 1 more damage.  Snakes apply 5 stacks of poison on hit."
+      },
+      "plague_horseman": {
+        "val": 1,
+        "cost": 4,
+        "name": "Plague Horseman",
+        "description": "If you channel this spell for its full duration, summons a Black Rider."
+      }
+    }
+  },
+  "Prison of Thorns": {
+    "name": {
+      "en": "Prison of Thorns",
+      "zh": ""
+    },
+    "description": {
+      "en": "Surround a group of enemies with carnivorous plants.\nThe plants have [7_HP:minion_health] and cannot move.\nThe plants have a melee attack which deals [3_physical:physical] damage.\nThe plants vanish after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "grasping_vines": {
+        "val": 1,
+        "cost": 3,
+        "name": "Grasping Vines",
+        "description": "Thorns gain a [2:minion_range] range [physical] attack, which pulls enemies towards it."
+      },
+      "iron": {
+        "val": 1,
+        "cost": 5,
+        "name": "Iron Prison",
+        "description": "Summon iron thorns instead, which deal 3 more damage and are resistant to many forms of damage."
+      },
+      "icy": {
+        "val": 1,
+        "cost": 6,
+        "name": "Icy Prison",
+        "description": "Summon icy thorns instead, which have a ranged ice attack."
+      }
+    }
+  },
+  "Psychic Seedling": {
+    "name": {
+      "en": "Psychic Seedling",
+      "zh": ""
+    },
+    "description": {
+      "en": "Plant a brain bush seedling. It will eventually mature into a forest of brain bushes.",
+      "zh": ""
+    },
+    "upgrades": {
+      "parasite": {
+        "val": 1,
+        "cost": 4,
+        "name": "Parasitic Growth",
+        "description": "May target an enemy instead of an empty tile.  Targeted enemy takes [1_arcane:arcane] damage per turn for [25_turns:duration].  If the enemy dies spawn a brain tree where it died."
+      },
+      "psychic_forest": {
+        "val": 1,
+        "cost": 5,
+        "name": "Psychic Fields",
+        "description": "Plant [5:num_summons] seedlings instead of 1"
+      },
+      "eternal_forest": {
+        "val": 1,
+        "cost": 6,
+        "name": "Immortal Forest",
+        "description": "Grow an Immortal Seedling instead of a normal one."
+      }
+    }
+  },
+  "Pyrostatic Curse": {
+    "name": {
+      "en": "Pyrostatic Curse",
+      "zh": ""
+    },
+    "description": {
+      "en": "Curses targets in a [7_tile:radius] radius for [6_turns:duration].\nWhenever a cursed target takes [fire] damage, [2:num_targets] random enemy units in line of sight of that unit are dealt that much [lightning] damage.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "remove_resistance": {
+        "val": 1,
+        "cost": 3,
+        "name": "Resistance Melting",
+        "description": "Removes 50 [Fire] resist from targets."
+      },
+      "beam": {
+        "val": 1,
+        "cost": 3,
+        "name": "Linear Conductance",
+        "description": "Redealt [lightning] damage is dealt along a beam instead of just to one target."
+      }
+    }
+  },
+  "Seal Fate": {
+    "name": {
+      "en": "Seal Fate",
+      "zh": ""
+    },
+    "description": {
+      "en": "After [4_turns:duration], deal [160_dark:dark] damage to target unit.",
+      "zh": ""
+    },
+    "upgrades": {
+      "requires_los": {
+        "val": -1,
+        "cost": 2,
+        "name": "Blindcasting",
+        "description": "Seal Fate can be cast without line of sight"
+      },
+      "spreads": {
+        "val": 1,
+        "cost": 2,
+        "name": "Spreading Curse",
+        "description": "When Sealed Fate's duration expires, it jumps to a random enemy in line of sight."
+      },
+      "genocide": {
+        "val": 1,
+        "cost": 8,
+        "name": "Genocide",
+        "description": "Seal Fate affects all enemies with the same name as target."
+      }
+    }
+  },
+  "Shrapnel Blast": {
+    "name": {
+      "en": "Shrapnel Blast",
+      "zh": ""
+    },
+    "description": {
+      "en": "Detonate target wall tile.\nEnemies adjacent to the wall tile take [12_fire:fire] damage.\nThe explosion fires [16_shards:num_targets] at random tiles in a [4_tile:radius] burst.\nEach shard deals [12_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_targets": {
+        "val": 12,
+        "cost": 6,
+        "name": "More Shrapnel",
+        "description": "12 more shrapnel shards are shot"
+      },
+      "puncture": {
+        "val": 1,
+        "cost": 2,
+        "name": "Puncturing Blast",
+        "description": "The shrapnel can penetrate or destroy walls"
+      },
+      "homing": {
+        "val": 1,
+        "cost": 7,
+        "name": "Magnetized Shards",
+        "description": "The shrapnel shards always target enemies if possible."
+      }
+    }
+  },
+  "Sight of Blood": {
+    "name": {
+      "en": "Sight of Blood",
+      "zh": ""
+    },
+    "description": {
+      "en": "Must target a damaged [living] enemy.\nThe target is [stunned] for [4_turns:duration].\n[Stunned] units cannot act.\nAll [living] enemies in line of sight of the target go [berserk] for [4_turns:duration].\n[Berserk] units are hostile to all other units, they will attack and be attacked by their allies.",
+      "zh": ""
+    },
+    "upgrades": {
+      "duration": {
+        "val": 3,
+        "cost": 3
+      },
+      "demon_units": {
+        "val": 1,
+        "cost": 2,
+        "name": "Demon Frenzy",
+        "description": "Demon units are also affected"
+      },
+      "requires_los": {
+        "val": -1,
+        "cost": 2,
+        "name": "Blindcasting",
+        "description": "Sight of Blood can be cast without line of sight"
+      }
+    }
+  },
+  "Silver Spear": {
+    "name": {
+      "en": "Silver Spear",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [27_physical:physical] damage to the target.\nDeals [27_holy:holy] damage to [dark] and [arcane] units within a [1_tile:radius] radius of the projectile's path.",
+      "zh": ""
+    },
+    "upgrades": {
+      "deal_lightning": {
+        "val": 1,
+        "cost": 3,
+        "name": "Copper Shaft",
+        "description": "Deals Lightning damage to all enemies in the spear's radius."
+      },
+      "cast_holyblast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Consecration",
+        "description": "Cast your Heavenly Blast on slain targets."
+      },
+      "requires_los": {
+        "val": -1,
+        "cost": 4,
+        "name": "Astral Spear"
+      }
+    }
+  },
+  "Slime Form": {
+    "name": {
+      "en": "Slime Form",
+      "zh": ""
+    },
+    "description": {
+      "en": "Assume slime form for [12_turns:duration].\nGain [50_physical:physical] resist while in slime form.\nGain [100_poison:poison] resist while in slime form.\nSummon a friendly slime each turn while in slime form.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "fire_slimes": {
+        "val": 1,
+        "cost": 3,
+        "name": "Fire Slime",
+        "description": "Instead of Green Slimes, summons Fire Slimes."
+      },
+      "ice_slimes": {
+        "val": 1,
+        "cost": 3,
+        "name": "Ice Slime",
+        "description": "Instead of Green Slimes, summons Ice Slimes."
+      },
+      "electric_slimes": {
+        "val": 1,
+        "cost": 3,
+        "name": "Electric Slime",
+        "description": "Instead of Green Slimes, summon Electric Slimes."
+      },
+      "void_slimes": {
+        "val": 1,
+        "cost": 3,
+        "name": "Void Slime",
+        "description": "Instead of Green Slimes, summons Void Slimes."
+      },
+      "blood_slimes": {
+        "val": 1,
+        "cost": 3,
+        "name": "Blood Slime",
+        "description": "Instead of Green Slimes, summons Blood Slimes."
+      }
+    }
+  },
+  "Suspend Mortality": {
+    "name": {
+      "en": "Suspend Mortality",
+      "zh": ""
+    },
+    "description": {
+      "en": "Target unit gains the ability to reincarnate on death.",
+      "zh": ""
+    },
+    "upgrades": {
+      "lives": {
+        "val": 2,
+        "cost": 2,
+        "name": "Endlessness",
+        "description": "The target gains 3 reincarnations instead of just 1."
+      },
+      "mass": {
+        "val": 1,
+        "cost": 6,
+        "name": "Mass Immortality",
+        "description": "All allies with the same name as the target are also affected."
+      },
+      "essence": {
+        "val": 1,
+        "cost": 2,
+        "name": "Twilight Essence",
+        "description": "Targeted unit gains the [holy] and [undead] tags and 25 [holy] and [dark] resist."
+      }
+    }
+  },
+  "Underworld Passage": {
+    "name": {
+      "en": "Underworld Passage",
+      "zh": ""
+    },
+    "description": {
+      "en": "Teleport to any tile adjacent to a chasm.\nCan only be cast while adjacent to a chasm.",
+      "zh": ""
+    },
+    "upgrades": {
+      "quick_cast": {
+        "val": 1,
+        "cost": 2,
+        "name": "Quickcast",
+        "description": "Casting underworld passage only takes half a turn"
+      },
+      "summon_rockworms": {
+        "val": 1,
+        "cost": 3,
+        "name": "Tremorsensitivity",
+        "description": "Summons [2:num_summons] Rockworms on each end."
+      },
+      "make_entrance": {
+        "val": 1,
+        "cost": 1,
+        "name": "Make Entrance",
+        "description": "You can cast this spell from any location. Creates a chasm in the location you cast from."
+      }
+    }
+  },
+  "Vampiricism": {
+    "name": {
+      "en": "Vampiricism",
+      "zh": ""
+    },
+    "description": {
+      "en": "Grants an ally Vampiricism, causing them to heal for any damage they deal.",
+      "zh": ""
+    },
+    "upgrades": {
+      "vampiric_regent": {
+        "val": 1,
+        "cost": 7,
+        "name": "Vampiric Regent",
+        "description": "Grant the target your Dominate spell on a 20 turn cool down."
+      },
+      "wicked_fangs": {
+        "val": 1,
+        "cost": 3,
+        "name": "Wicked Fangs",
+        "description": "The target's melee attacks gain +[7:damage] damage."
+      },
+      "enthrall": {
+        "val": 1,
+        "cost": 6,
+        "name": "Enthrall",
+        "description": "You may cast this on [living] enemies if you have more health than them.\nIf you do, they become your ally."
+      }
+    }
+  },
+  "Wave of Dread": {
+    "name": {
+      "en": "Wave of Dread",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [22_dark:dark] damage and applies [5_turns:duration] of fear to units in a cone",
+      "zh": ""
+    },
+    "upgrades": {
+      "poison": {
+        "val": 1,
+        "cost": 4,
+        "name": "Wilting Wave",
+        "description": "Also deals [22_poison:poison] damage and poisons targets for [5_duration:duration] turns"
+      },
+      "domination": {
+        "val": 1,
+        "cost": 5,
+        "name": "Wave of Tyranny",
+        "description": "If Wave of Dread deals 50 or more damage in total, regain a charge of Dominate"
+      },
+      "fearfaces": {
+        "val": 1,
+        "cost": 6,
+        "name": "Fear Spirits",
+        "description": "On killing a unit, summon a Fearface at that point for [6_turns:minion_duration]."
+      }
+    }
+  },
+  "Armageddon Blade": {
+    "name": {
+      "en": "Armageddon Blade",
+      "zh": ""
+    },
+    "description": {
+      "en": "Grants target ally a melee version of Annihilate, gaining any bonuses you have to that spell.",
+      "zh": ""
+    },
+    "upgrades": {
+      "armor": {
+        "val": 1,
+        "cost": 2,
+        "name": "Armor of Armageddon",
+        "description": "Grants 25 resist to [fire:fire], [lightning:lightning], and [physical:physical] damage and provides thorns buff that deals 2 damage for each chaos type to enemies that attack buffed units."
+      },
+      "connected_group": {
+        "val": 1,
+        "cost": 5,
+        "name": "Mass Armaments",
+        "description": "Cast on a connected group of allies."
+      },
+      "mega": {
+        "val": 1,
+        "cost": 8,
+        "name": "Mega Armageddon",
+        "description": "Provides unit with a melee version of Mega Annihilate instead of Annihilate."
+      }
+    }
+  },
+  "Blizzard": {
+    "name": {
+      "en": "Blizzard",
+      "zh": ""
+    },
+    "description": {
+      "en": "Create a blizzard with a [4_tile:radius] radius.\nEach turn, units in the blizzard take [5_ice:ice] damage, and have a 50% chance to be [frozen].\n[Frozen] units cannot act. Frozen units unfreeze upon taking [fire] or [physical] damage.The blizzard lasts [5_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "freezing": {
+        "val": 1,
+        "cost": 2,
+        "name": "Flash Freeze",
+        "description": "Freeze all units in affected tiles for 2 turns."
+      },
+      "cast_icicle": {
+        "val": 1,
+        "cost": 7,
+        "name": "Hailstorm",
+        "description": "For each cloud in your Blizzard, there is a 25% chance for you to cast your Icicle spell on it each turn."
+      }
+    }
+  },
+  "Blood Golem": {
+    "name": {
+      "en": "Blood Golem",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Blood Golem.\nThe golem never takes damage, instead redistributing damage to its master and any [living] allies.\nThe Golem has a [25:minion_damage] [physical] damage melee attack, and thorns which deal [7:minion_damage] [physical] damage to units that attack the golem in melee.",
+      "zh": ""
+    },
+    "upgrades": {
+      "pain_aura": {
+        "val": 1,
+        "cost": 3,
+        "name": "Pain Aura",
+        "description": "The Blood Golem gains a [5_tile:radius] damage aura that randomly deals randomly deals 2 [poison] or [fire] damage each turn."
+      },
+      "vampirism": {
+        "val": 1,
+        "cost": 5,
+        "name": "Vampire Golem",
+        "description": "Whenever the Blood Golem deals damage, half that much healing is distributed amongst its [living] allies."
+      },
+      "iron_blood": {
+        "val": 1,
+        "cost": 2,
+        "name": "Iron Blood",
+        "description": "Blood Golems receive [Metallic] unit resistances."
+      }
+    }
+  },
+  "Bone Barrage": {
+    "name": {
+      "en": "Bone Barrage",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned allies in line of sight of the target take [physical] damage equal to half their health.\nEach affected ally deals that much [physical] damage to the target.",
+      "zh": ""
+    },
+    "upgrades": {
+      "beam": {
+        "val": 1,
+        "cost": 6,
+        "name": "Bone Spears",
+        "description": "Bone Barrage damages all targets in a beam from the minion to the target"
+      },
+      "dark": {
+        "val": 1,
+        "cost": 5,
+        "name": "Cursed Bones",
+        "description": "Bone Barrage also deals [dark] damage"
+      },
+      "pistons": {
+        "val": 1,
+        "cost": 3,
+        "name": "Piston Spears",
+        "description": "Damage dealt by [Metallic] allies is multiplied by 4."
+      }
+    }
+  },
+  "Burning Idol": {
+    "name": {
+      "en": "Burning Idol",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons an Idol of Burning Sacrifice.\nEach turn the idol consumes its lowest HP ally, dealing fire damage to enemies near the sacrificed unit.\nThe Idol and the wizard are both legal sacrifices.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "bone_explosion": {
+        "val": 1,
+        "cost": 2,
+        "name": "Bone Explosion",
+        "description": "Also deals [physical:physical] damage equal to half of the sacrificed unit's hp to all units within 4 tiles of the sacrificed unit."
+      },
+      "archon_beam": {
+        "val": 1,
+        "cost": 3,
+        "name": "Archon Beam",
+        "description": "Shoots lightning along the path to the sacrificed unit, damaging enemies and shielding allies"
+      },
+      "indiscriminate_hunger": {
+        "val": 1,
+        "cost": 4,
+        "name": "Indiscriminate Hunger",
+        "description": "The Idol of Burning Sacrifice will switch teams each turn."
+      }
+    }
+  },
+  "Call Seraph": {
+    "name": {
+      "en": "Call Seraph",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a seraph.\nSeraphim have [33_HP:minion_health], [3_SH:shields], and can fly.\nSeraphim have a cleaving melee attack which deals [14_fire:fire] and [14_holy:holy] damage.\nThe seraph vanishes after [20_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "moonblade": {
+        "val": 1,
+        "cost": 3,
+        "name": "Moonblade",
+        "description": "The Seraph deals [arcane] damage in addition to [fire] and [holy] damage with its cleave attack."
+      },
+      "heal": {
+        "val": 4,
+        "cost": 4,
+        "name": "Heal Aura",
+        "description": "The Seraph heals all allies within 4 tiles for 4 HP each turn."
+      },
+      "holy_fire": {
+        "val": 1,
+        "cost": 5,
+        "name": "Holy Fire Aura",
+        "description": "The Seraph gains a damage aura, randomly dealing either [2_fire:fire] or [2_holy:holy] damage to enemies within 5 tiles each turn."
+      }
+    }
+  },
+  "Carnival of Pain": {
+    "name": {
+      "en": "Carnival of Pain",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [physical], [fire], or [lightning] damage, the [3:num_targets] nearest enemies take that much [dark] damage.\nLasts [4_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "lifesteal": {
+        "val": 1,
+        "cost": 5,
+        "name": "Lifesteal",
+        "description": "You heal for 50% of all damage dealt by this spell."
+      },
+      "death_power": {
+        "val": 1,
+        "cost": 5,
+        "name": "Death Power",
+        "description": "If the damage killed the enemy, the bolt coming out of that enemy deals 2x damage."
+      },
+      "summon_tormentor": {
+        "val": 1,
+        "cost": 8,
+        "name": "Torment",
+        "description": "Every 3 kills casts your Fiery Tormentor spell where the slain enemy was."
+      }
+    }
+  },
+  "Combust Poison": {
+    "name": {
+      "en": "Combust Poison",
+      "zh": ""
+    },
+    "description": {
+      "en": "Consume all [poison] on enemy units.\nDeal [fire] damage in a [2_tile:radius] burst around each affected enemy equal to [1x:damage] the amount of poison consumed.",
+      "zh": ""
+    },
+    "upgrades": {
+      "stun": {
+        "val": 1,
+        "cost": 3,
+        "name": "Paralyzing Combustion",
+        "description": "Stuns targets for 3 turns."
+      },
+      "healing": {
+        "val": 1,
+        "cost": 3,
+        "name": "Flame Rave",
+        "description": "Heal allies instead of hurting them."
+      },
+      "deal_poison": {
+        "val": 1,
+        "cost": 4,
+        "name": "Toxic Embers",
+        "description": "The explosion applies poison to damaged targets for one half of the [fire] damage taken."
+      }
+    }
+  },
+  "Conductance": {
+    "name": {
+      "en": "Conductance",
+      "zh": ""
+    },
+    "description": {
+      "en": "Curse an enemy with the essence of conductivity.\nThat enemy loses [50_lightning:lightning] resist.\nWhenever you cast a [lightning] spell targeting that enemy, copy that spell.\nLasts [10_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "copies": {
+        "val": 1,
+        "cost": 2,
+        "name": "Multicopy",
+        "description": "Make 1 extra copy of lightning spells cast on the target"
+      },
+      "resistance_debuff": {
+        "val": 50,
+        "cost": 2
+      },
+      "target_group": {
+        "val": 1,
+        "cost": 4,
+        "name": "Mass Conductance",
+        "description": "Targets a connected group of enemies."
+      }
+    }
+  },
+  "Death Cleave": {
+    "name": {
+      "en": "Death Cleave",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a spell you cast kills its primary target, that spell is recast on a random valid enemy target.\nLasts [3_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "lightning_cleave": {
+        "val": 1,
+        "cost": 3,
+        "name": "Lightning Cleave",
+        "description": "Your [lightning] spells and skills gain the following bonuses:\n+100% [num_targets:num_targets]\n+100% [cascade_range:cascade_range]\n+100% [radius]."
+      },
+      "cleaving_whirlwind": {
+        "val": 1,
+        "cost": 4,
+        "name": "Cleaving Whirlwind",
+        "description": "When your spell kills its primary target, attempt to teleport to that location."
+      },
+      "marked_for_death": {
+        "val": 1,
+        "cost": 5,
+        "name": "Marked for Death",
+        "description": "If a spell you cast targeting an enemy fails to kill its primary target, summon a Reaper near their location.\nThe Reaper will disappear if the marked target dies."
+      }
+    }
+  },
+  "Dispersion Field": {
+    "name": {
+      "en": "Dispersion Field",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, teleport [3_enemies:num_targets] in a [6_tile:radius] radius to random locations on the map.\nLasts [10_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_targets": {
+        "val": 3,
+        "cost": 2
+      },
+      "planar_travel": {
+        "val": 1,
+        "cost": 3,
+        "name": "Planar Travel",
+        "description": "Teleported enemies take damage of a random type equal to the distance traveled."
+      },
+      "bombs_away": {
+        "val": 1,
+        "cost": 5,
+        "name": "Bombs Away",
+        "description": "Teleported enemies receive the Time Bomb debuff.\nThis effect deals [1_arcane:arcane] damage per turn.\nIf the debuff is removed or the unit dies, the bomb explodes, destroying walls and dealing [25_arcane:arcane] damage to all units in a [4_tile:radius] radius."
+      }
+    }
+  },
+  "Drain Pulse": {
+    "name": {
+      "en": "Drain Pulse",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [13:damage] [dark] and [poison] damage to units in a [8_tile:radius] burst.\nYou are healed for half the damage dealt.",
+      "zh": ""
+    },
+    "upgrades": {
+      "felomancy": {
+        "val": 1,
+        "cost": 4,
+        "name": "Felomancy",
+        "description": "Slain targets are raised as cursed cats."
+      },
+      "ursomancy": {
+        "val": 1,
+        "cost": 4,
+        "name": "Ursomancy",
+        "description": "Healing over the wizards max health is converted into blood bears, using up to 75 points of healing per bear."
+      },
+      "radius": {
+        "val": 3,
+        "cost": 4
+      }
+    }
+  },
+  "Earthquake": {
+    "name": {
+      "en": "Earthquake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Invoke an earthquake with a [7_tile:radius] radius.\nEach tile in the area has a 50% chance to be affected.\nEnemies on affected tiles take [21_physical:physical] damage.\nWalls on affected tiles are destroyed.",
+      "zh": ""
+    },
+    "upgrades": {
+      "radius_buff": {
+        "val": 1,
+        "cost": 4,
+        "name": "Aftershocks",
+        "description": "Whenever you cast Earthquake, Earthquake gains +2 radius for [2:duration] turns."
+      },
+      "stun": {
+        "val": 1,
+        "cost": 4,
+        "name": "Magnitude 8.0",
+        "description": "Stuns for [7:duration] turns."
+      },
+      "shrapnel_quake": {
+        "val": 1,
+        "cost": 7,
+        "name": "Shrapnel Quake",
+        "description": "Casts your Shrapnel Blast on affected wall tiles."
+      }
+    }
+  },
+  "Essence Flux": {
+    "name": {
+      "en": "Essence Flux",
+      "zh": ""
+    },
+    "description": {
+      "en": "Swap the polarity of the resistances of all other units in a [4_tile:radius] area.\n[Fire] resistance is swapped with [ice].\n[Lightning] resistance is swapped with [physical].\n[Dark] resistance is swapped with [holy].\n[Poison] resistance is swapped with [arcane].\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "stabilize": {
+        "val": 1,
+        "cost": 4,
+        "name": "Essence Stabilizer",
+        "description": "Allies affected by the spell match the higher of each pair, rather than swapping resistances."
+      },
+      "degrade": {
+        "val": 1,
+        "cost": 3,
+        "name": "Essence Degradation",
+        "description": "Enemies affected by the spell match the lower of each pair, rather than swapping resistances."
+      },
+      "banish": {
+        "val": 1,
+        "cost": 2,
+        "name": "Banishment",
+        "description": "Temporary creatures in the affected area are killed."
+      }
+    }
+  },
+  "Fiery Tormentor": {
+    "name": {
+      "en": "Fiery Tormentor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a fiery tormentor.\nThe tormentor has [34_HP:minion_health].\nThe tormentor has a burst attack dealing [7_fire:fire] damage with a [4_tile:radius] radius.\nThe tormentor has a lifesteal attack dealing [2_dark:dark] damage with a [2_tile:minion_range] range.\nThe tormentor vanishes after [40_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "frostfire": {
+        "val": 1,
+        "cost": 3,
+        "name": "Frostfire Tormentor",
+        "description": "Summons a frostfire tormentor instead."
+      },
+      "metallic": {
+        "val": 1,
+        "cost": 3,
+        "name": "Metallic Tormentor",
+        "description": "Summons a metallic fiery tormentor instead."
+      },
+      "mass": {
+        "val": 1,
+        "cost": 6,
+        "name": "Tormenting Mass",
+        "description": "Summons a Fiery Tormenting Mass instead."
+      }
+    }
+  },
+  "Fire Drake": {
+    "name": {
+      "en": "Fire Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Fire Drake at target square.\nFire Drakes have [45_HP:minion_health], fly, and have [100_fire:fire] resist.\nFire Drakes have a breath weapon which deals [8_fire:fire] damage.\nFire Drakes have a melee attack which deals [8_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "broodlings": {
+        "val": 1,
+        "cost": 5,
+        "name": "Broodlings",
+        "description": "Summoned Fire Drakes can summon 2 Fire Lizards on a 9 turn cooldown."
+      },
+      "metal": {
+        "val": 1,
+        "cost": 3,
+        "name": "Metal Dragon",
+        "description": "Summoned Fire Drakes are metallic"
+      },
+      "dragon_mage": {
+        "val": 1,
+        "cost": 5,
+        "name": "Dragon Mage",
+        "description": "Summoned Fire Drakes can cast your Blazerip with a 4 turn cooldown.\n"
+      }
+    }
+  },
+  "Flame Burst": {
+    "name": {
+      "en": "Flame Burst",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [40_fire:fire] damage in a [8_tile:radius] burst around the caster.",
+      "zh": ""
+    },
+    "upgrades": {
+      "meltflame": {
+        "val": 1,
+        "cost": 2,
+        "name": "Melting Flame",
+        "description": "Melt walls adjacent to the blast"
+      },
+      "dawnflame": {
+        "val": 1,
+        "cost": 5,
+        "name": "Bright Flame",
+        "description": "Flame Burst deals [holy] instead of [fire], and shields allied units instead of damaging them."
+      },
+      "spreadflame": {
+        "val": 1,
+        "cost": 7,
+        "name": "Spreading Flame",
+        "description": "Each cast of flame burst consumes all remaining charges.\nFor each charge consumed, flame burst gets +1 radius and +1 damage.\nSlain enemies create additional explosions with half radius and damage."
+      }
+    }
+  },
+  "Ice Drake": {
+    "name": {
+      "en": "Ice Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an Ice Drake at target square.\nIce Drakes have [45_HP:minion_health], fly, and have [100_ice:ice] resist.\nIce Drakes have a breath weapon which deals [8_ice:ice] damage and [freezes] units.\nIce Drakes have a melee attack which deals [8_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "broodlings": {
+        "val": 1,
+        "cost": 4,
+        "name": "Broodlings",
+        "description": "Summoned Ice Drakes can summon 2 Ice Lizards on a 9 turn cooldown."
+      },
+      "dragon_mage": {
+        "val": 1,
+        "cost": 5,
+        "name": "Dragon Mage",
+        "description": "Summoned Ice Drakes can cast Death Chill with an 8 turn cooldown.\nThis Death Chill gains all of your upgrades and bonuses."
+      },
+      "dracolich": {
+        "val": 1,
+        "cost": 6,
+        "name": "Dracolich",
+        "description": "Summons a Dracolich instead of an Ice Drake."
+      }
+    }
+  },
+  "Ice Orb": {
+    "name": {
+      "en": "Ice Orb",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an ice orb next to the caster.\nEach turn the orb deals [6_ice:ice] damage to enemy units in a [4_tile:radius] radius.\nThe orb has no will of its own, each turn it will float one tile towards the target.\nThe orb can be destroyed by fire damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "freeze_damage": {
+        "val": 1,
+        "cost": 4,
+        "name": "Frostgleam",
+        "description": "Frozen enemies in radius additionally take [arcane:arcane] damage."
+      },
+      "summon_winter_faery": {
+        "val": 1,
+        "cost": 5,
+        "name": "Faebound Orb",
+        "description": "The Orb summons an Ice Faery for every 75 damage it deals."
+      },
+      "cast_blizzard": {
+        "val": 1,
+        "cost": 8,
+        "name": "Blizzard Orb",
+        "description": "Ice Orb casts your Blizzard on an 8 turn cooldown."
+      }
+    }
+  },
+  "Ice Vortex": {
+    "name": {
+      "en": "Ice Vortex",
+      "zh": ""
+    },
+    "description": {
+      "en": "Must target a frozen unit.\nAll other enemy units in a [5_tile:radius] radius of the target are pulled towards it, [frozen] for [2_turns:duration], and dealt [11_arcane:arcane] and [11_ice:ice] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "embodied": {
+        "val": 1,
+        "cost": 2,
+        "name": "Embodied Vortex",
+        "description": "You may cast Ice Vortex on yourself."
+      },
+      "drake_call": {
+        "val": 1,
+        "cost": 6,
+        "name": "Drake Calling",
+        "description": "If a target is killed by this spell, casts your Ice Drake spell at their location."
+      },
+      "channel": {
+        "val": 1,
+        "cost": 1,
+        "name": "Channeling",
+        "description": "Ice Vortex can be channeled for up to 2 turns."
+      }
+    }
+  },
+  "Imp Swarm": {
+    "name": {
+      "en": "Imp Swarm",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, summon [2_imps:num_summons] near the caster.\nImps have [5_HP:minion_health] and can fly.\nImps have a ranged attack dealing [3_damage:minion_damage] with a [3_tile:minion_range] range.\nEach imp is either a [fire], [iron:physical], or [spark:lightning] imp.\nThe imps each last [11_turns:minion_duration], and this effect lasts [7_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "metalswarm": {
+        "val": 1,
+        "cost": 4,
+        "name": "Metal Swarm",
+        "description": "Imp swarm summons copper imps instead of spark imps, tungsten imps instead of iron imps, and furnace imps instead of fire imps."
+      },
+      "darkswarm": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dark Swarm",
+        "description": "Imp swarm summons rot imps, void imps, and insanity imps instead of fire, spark, and iron imps."
+      }
+    }
+  },
+  "Lightning Form": {
+    "name": {
+      "en": "Lightning Form",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [lightning] spell, teleport to that spell's target.\nGain [100_lightning:lightning] resistance.\nGain [100_physical:physical] resistance.\nThis effect ends the first turn that you fail to cast a [lightning] spell.",
+      "zh": ""
+    },
+    "upgrades": {
+      "lingering_form": {
+        "val": 1,
+        "cost": 2,
+        "name": "Lingering Form",
+        "description": "Lasts 3 turns after you cast a [lightning:lightning] spell instead of vanishing instantly."
+      },
+      "fire_form": {
+        "val": 1,
+        "cost": 3,
+        "name": "Fire Form",
+        "description": "Also works on [fire:fire] spells and gives [100_fire:fire] resist."
+      },
+      "crackling_aura": {
+        "val": 1,
+        "cost": 4,
+        "name": "Crackling Aura",
+        "description": "In lightning form, deal [5_lightning:lightning] damage to up to [4:num_targets] enemies in a 5 tile radius each turn."
+      }
+    }
+  },
+  "Lightning Storm": {
+    "name": {
+      "en": "Lightning Storm",
+      "zh": ""
+    },
+    "description": {
+      "en": "Create a thunderstorm with a [4_tile:radius] radius.\nEach turn, each tile in the storm has a [50%_chance:strikechance] of taking [12_lightning:lightning] damage.\nThe storm lasts for [10_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "strikechance": {
+        "val": 50,
+        "cost": 2,
+        "name": "Surestrike"
+      }
+    }
+  },
+  "Mass Calcification": {
+    "name": {
+      "en": "Mass Calcification",
+      "zh": ""
+    },
+    "description": {
+      "en": "All non undead allies are instantly killed and raised as bone shamblers.\nBone Shamblers have the same HP as the raised units, a quarter that much melee damage, and split into smaller shamblers on death.",
+      "zh": ""
+    },
+    "upgrades": {
+      "fae_bones": {
+        "val": 1,
+        "cost": 4,
+        "name": "Fae Bones",
+        "description": "Arcane Allies are raised as fae bone shamblers instead of normal ones."
+      },
+      "burning_bones": {
+        "val": 1,
+        "cost": 4,
+        "name": "Burning Bones",
+        "description": "Fire allies are raised as burning bone shamblers instead of normal ones."
+      },
+      "bone_shards": {
+        "val": 1,
+        "cost": 5,
+        "name": "Bone Shards",
+        "description": "Each slain ally deals [7_physical:physical] damage to up to [3:num_targets] enemies in line of sight."
+      }
+    }
+  },
+  "Orb Control": {
+    "name": {
+      "en": "Orb Control",
+      "zh": ""
+    },
+    "description": {
+      "en": "Retarget all allied [orbs:orb] to target tile.",
+      "zh": ""
+    },
+    "upgrades": {
+      "orb_magnets": {
+        "val": 1,
+        "cost": 5,
+        "name": "Orb Magnets",
+        "description": "Allied [orbs:orb] become [Metallic].\nCasts your Magnetize spell on each of your allied [orbs:orb]."
+      },
+      "orb_fortification": {
+        "val": 1,
+        "cost": 2,
+        "name": "Orb Fortification",
+        "description": "Set all allied [orbs:orb] resistances to 100%."
+      },
+      "orb_pulse": {
+        "val": 1,
+        "cost": 3,
+        "name": "Orb Pulse",
+        "description": "Deal [25:damage] [arcane] damage to enemy units in a [3:radius] tile radius around each of your allied [orbs:orb]."
+      }
+    }
+  },
+  "Pain Mirror": {
+    "name": {
+      "en": "Pain Mirror",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you take damage or spend HP to cast a spell, deal that much [dark] damage to all enemies in line of sight.\nLasts [14_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "flesh_harvest": {
+        "val": 1,
+        "cost": 3,
+        "name": "Flesh Harvest",
+        "description": "For every 100 damage taken during Pain Mirror, gain a charge of Summon Flesh Fiend."
+      },
+      "gain_resists": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dulled Pain",
+        "description": "Gain 25% resist to [dark:dark], [arcane:arcane], [fire:fire], [lightning:lightning], and [physical:physical] damage during pain mirror."
+      },
+      "deal_fire": {
+        "val": 1,
+        "cost": 6,
+        "name": "Burning Pain",
+        "description": "Additionally deal [fire:fire] damage."
+      }
+    }
+  },
+  "Permanence": {
+    "name": {
+      "en": "Permanence",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your spells and temporary summons last an extra [5_turns:duration].\nThis effect lasts [20_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "true_permanence": {
+        "val": 1,
+        "cost": 3,
+        "name": "True Permanence",
+        "description": "Permanence duration is now permanent."
+      },
+      "solidify": {
+        "val": 1,
+        "cost": 4,
+        "name": "Reality Hold",
+        "description": "On cast, temporary allies become permanent."
+      },
+      "immutable": {
+        "val": 1,
+        "cost": 4,
+        "name": "Immutable Flesh",
+        "description": "You heal for half of all damage dealt to you."
+      }
+    }
+  },
+  "Petrification Aura": {
+    "name": {
+      "en": "Petrification Aura",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, inflict [petrify] on up to [3:num_targets] unpetrified enemy units in a [7_tile:radius] radius each turn.\n[Petrified] units cannot act.\n[Petrified] units gain [100_ice:ice] resist.\n[Petrified] units gain [100_lightning:lightning] resist.\n[Petrified] units gain [75_physical:physical] resist.\n[Petrified] units gain [75_fire:fire] resist.\nLasts [6_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "crumbling_aura": {
+        "val": 1,
+        "cost": 3,
+        "name": "Crumbling Aura",
+        "description": "Each turn, all petrified enemies within the aura with [16:damage] or less hp are instantly killed."
+      },
+      "wormification": {
+        "val": 1,
+        "cost": 4,
+        "name": "Wormification Aura",
+        "description": "Enemies slain while petrified within the range of the aura are raised as rock worms.\nThe rock worm's max HP is equal to the killed unit's. "
+      },
+      "glassify": {
+        "val": 1,
+        "cost": 5,
+        "name": "Glassify",
+        "description": "Turn enemies to glass instead of stone, making them take double physical damage instead of one quarter."
+      }
+    }
+  },
+  "Purity": {
+    "name": {
+      "en": "Purity",
+      "zh": ""
+    },
+    "description": {
+      "en": "Lose all debuffs.\nYou cannot gain new debuffs.\nLasts [6_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "sin_eater": {
+        "val": 1,
+        "cost": 2,
+        "name": "Sin Eater",
+        "description": "Each debuff removed grants 3 SH"
+      },
+      "crusader": {
+        "val": 1,
+        "cost": 3,
+        "name": "Crusader",
+        "description": "Casting a [Holy] spell extends this buff's duration by [1_turn:duration]"
+      },
+      "aura": {
+        "val": 1,
+        "cost": 2,
+        "name": "Aura of Purity",
+        "description": "The purity buff is also applied to allies in a [5:radius] tile radius."
+      }
+    }
+  },
+  "Ring of Spiders": {
+    "name": {
+      "en": "Ring of Spiders",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a ring of giant spiders at the target, surrounded by a ring of webs.\nUnits blocking the spider ring are [poisoned] for [10_turns:duration].\nUnits blocking the web ring are [stunned] for [1_turns:duration].\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "turbo_toxin": {
+        "val": 1,
+        "cost": 3,
+        "name": "Turbo Toxin",
+        "description": "Units blocking the spider ring instantly take 30 [poison] damage."
+      },
+      "stun_duration": {
+        "val": 1,
+        "cost": 3,
+        "name": "Long Webs",
+        "description": "Units blocking the web ring are [stunned] for [5_turns:duration]."
+      },
+      "aether_spiders": {
+        "val": 1,
+        "cost": 6,
+        "name": "Aether Spiders",
+        "description": "Summons Aether Spiders instead of Giant Spiders."
+      }
+    }
+  },
+  "Searing Seal": {
+    "name": {
+      "en": "Searing Seal",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gain Seal of Searing.\nWhenever a unit takes [fire] damage, the seal gains that many charges.\nWhen the seal expires, it deals [1_fire:fire] damage to all enemies in line of sight for every 5 charges it has.\nThe seal lasts [6_turns:duration].\nRecasting the spell will expire the current seal and create a new one.",
+      "zh": ""
+    },
+    "upgrades": {
+      "slow_burn": {
+        "val": 1,
+        "cost": 3,
+        "name": "Slow Burn",
+        "description": "On expiring and dealing damage, gain a buff that redeals half the damage, then, finally, one that deals a third of it."
+      },
+      "chaos_seal": {
+        "val": 1,
+        "cost": 5,
+        "name": "Chaos Seal",
+        "description": "Gains charges separately from [fire:fire], [lightning:lightning], and [physical:physical] damage, and redeals each on expiration."
+      },
+      "fire_harvest": {
+        "val": 1,
+        "cost": 5,
+        "name": "Fire Harvest",
+        "description": "For every 100 charges stored, summon a flame spirit."
+      }
+    }
+  },
+  "Siege Golems": {
+    "name": {
+      "en": "Siege Golems",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a crew of [3:num_summons] siege golems.\nThe siege golems will assemble an inferno cannon, or operate one if it is within [3_tiles:range].\nThe inferno cannon deals [30_fire:fire] damage to units in a [3_tile:radius] radius.\nThe cannon will explode when destroyed, dealing [30_fire:fire] damage to units in a fixed [3_tile:radius] radius.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "assistant_cannoneers": {
+        "val": 1,
+        "cost": 2,
+        "name": "Assistant Cannoneers",
+        "description": "In addition to Siege Golems, summon 5 Goblin Assistants that can repair and operate inferno cannons."
+      },
+      "recycling": {
+        "val": 1,
+        "cost": 3,
+        "name": "Recycling",
+        "description": "Constructs and Metallic units killed by the Inferno Cannon's [Fire_Blast:fire] are summoned as Siege Golems."
+      },
+      "chaos_cannon": {
+        "val": 1,
+        "cost": 5,
+        "name": "Chaos Cannon",
+        "description": "Instead of summoning Siege Golems, summon Chaos Siege Golems. Chaos Siege Golems make a Chaos Cannon that shoots a [Fire] projectile, a [Lightning] projectile, and a [Physical] projectile with lowered radiuses."
+      }
+    }
+  },
+  "Siphon Shields": {
+    "name": {
+      "en": "Siphon Shields",
+      "zh": ""
+    },
+    "description": {
+      "en": "Steal up to [3_SH:shields] from all enemy units in line of sight.",
+      "zh": ""
+    },
+    "upgrades": {
+      "shield_burn": {
+        "val": 5,
+        "cost": 3,
+        "name": "Shield Burn",
+        "description": "Deal 5 fire damage per shield stolen"
+      },
+      "shield_steal": {
+        "val": 7,
+        "cost": 2
+      }
+    }
+  },
+  "Slimify": {
+    "name": {
+      "en": "Slimify",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [10:damage] [physical] damage to the target each turn for [5:duration] turns.\nTheir maximum health is decreased by the damage dealt, and a slime is spawned nearby.",
+      "zh": ""
+    },
+    "upgrades": {
+      "rainbow": {
+        "val": 1,
+        "cost": 3,
+        "name": "Rainbow Slimes",
+        "description": "Slimes can be of any variety, not just Green Slimes."
+      },
+      "contagion": {
+        "val": 1,
+        "cost": 5,
+        "name": "Contagion",
+        "description": "Slimify will jump to the nearest enemy unit in line of sight if the affected target dies."
+      },
+      "rapid_decomposition": {
+        "val": 1,
+        "cost": 6,
+        "name": "Rapid Decomposition",
+        "description": "The damage and spawning effects are triggered any time the affected target takes damage from a slime."
+      }
+    }
+  },
+  "Stampede Form": {
+    "name": {
+      "en": "Stampede Form",
+      "zh": ""
+    },
+    "description": {
+      "en": "Become a pachyderm and also summon [10:num_summons] pachyderms around you.\nWhile in pachyderm form, you can walk over enemies, knocking them away and dealing [14_physical:physical] damage to them.\nGain 50 [physical] resist in pachyderm form.\nWhen you cast a spell, stampede form ends and all the elephants are unsummoned.",
+      "zh": ""
+    },
+    "upgrades": {
+      "fae": {
+        "val": 1,
+        "cost": 6,
+        "name": "Fae Stampede",
+        "description": "Summon Faetouched elephants instead of normal ones.  Gain 50 arcane resist.  [Arcane] spells do not end elephant form."
+      },
+      "burning": {
+        "val": 1,
+        "cost": 7,
+        "name": "Burning Stampede",
+        "description": "Summon Burning elephants instead of normal ones.  Gain 50 fire resist.  [Fire] spells do not end elephant form."
+      },
+      "metallic": {
+        "val": 1,
+        "cost": 7,
+        "name": "Metal Stampede",
+        "description": "Summon Metallic elephants instead of normal ones.  Gain 25 fire and 50 lightning resist.  [Metallic] spells do not end elephant form."
+      }
+    }
+  },
+  "Storm Burst": {
+    "name": {
+      "en": "Storm Burst",
+      "zh": ""
+    },
+    "description": {
+      "en": "Unleashes a [8_tile:radius] burst of storm energy.\nEach tile in the burst takes either [20_ice:ice] damage or [20_lightning:lightning] damage.\nUnits dealt ice damage are [frozen] for [4_turns:duration].\nUnits dealt lightning damage are [stunned] for [4_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "grants_immunity": {
+        "val": 100,
+        "cost": 2,
+        "name": "Stormshield",
+        "description": "Allies in radius are not affected, and instead gain [ice:ice] and [lightning:lightning] immunity for [4_turns:duration]."
+      },
+      "dual_burst": {
+        "val": 1,
+        "cost": 4,
+        "name": "Dual Nova",
+        "description": "Enemies take both [lightning] and [ice] damage instead of just one, and are both frozen and stunned."
+      },
+      "summon_threshold": {
+        "val": 40,
+        "cost": 5,
+        "name": "Spirit Nova",
+        "description": "Summons a Storm Spirit for every 40 damage dealt in a single cast"
+      }
+    }
+  },
+  "Storm Drake": {
+    "name": {
+      "en": "Storm Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a storm drake at target square.\nStorm drakes have [45_HP:minion_health], fly, and have [100_lightning:lightning] resist.\nStorm drakes have a breath weapon which creates storm clouds that deal [8_lightning:lightning] damage.\nStorm drakes have a melee attack which deals [8_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "storm_legion": {
+        "val": 1,
+        "cost": 4,
+        "name": "Storm Summoning",
+        "description": "Whenever you cast Storm Drake, up to [2:num_summons] lightning storms in line of sight of the target are converted into drakes"
+      },
+      "ghost_drake": {
+        "val": 1,
+        "cost": 3,
+        "name": "Ghost Drake",
+        "description": "Summoned Storm Drakes are ghostly."
+      },
+      "drake_swap": {
+        "val": 1,
+        "cost": 1,
+        "name": "Drake Swap",
+        "description": "Whenever you target a summoned Storm Drake with a lightning spell, swap places with it."
+      },
+      "dragon_mage": {
+        "val": 1,
+        "cost": 5,
+        "name": "Dragon Mage",
+        "description": "Summoned Storm Drakes can cast your Chain Lightning with a 16 turn cooldown.\n"
+      }
+    }
+  },
+  "The Restless Dead": {
+    "name": {
+      "en": "The Restless Dead",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a living enemy dies, raise it as a skeleton.\nRaised skeletons have max HP equal to that of the slain unit, and deal [5_physical:physical] damage in melee.\nSkeletons of flying units can fly.\nThis effect lasts [20_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "salvage": {
+        "val": 1,
+        "cost": 2,
+        "name": "Junk Golems",
+        "description": "Whenever an enemy constructs dies, raise it as a junk golem."
+      },
+      "spirit_catcher": {
+        "val": 1,
+        "cost": 3,
+        "name": "Elemental Spirits",
+        "description": "Whenever an enemy fire, ice or lightning unit dies, a random summoned ally gains 100 resistance to that element and a ranged attack of that type.  Each ally can gain only 1 such buff."
+      },
+      "friendly": {
+        "val": 1,
+        "cost": 2,
+        "name": "Restless Minions",
+        "description": "Allies can also be raised by Restless Dead"
+      }
+    }
+  },
+  "Vampiric Gaze": {
+    "name": {
+      "en": "Vampiric Gaze",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fire a bolt from each ally dealing [6_dark:dark] damage to a random enemy in line of sight.Heal each ally for the damage dealt by the corresponding bolt.",
+      "zh": ""
+    },
+    "upgrades": {
+      "toxic_gaze": {
+        "val": 1,
+        "cost": 3,
+        "name": "Toxic Gaze",
+        "description": "Vampiric Gaze also deals [poison] damage"
+      },
+      "vampire_tax": {
+        "val": 1,
+        "cost": 4,
+        "name": "Vampiric Tax",
+        "description": "You heal for 100% of the damage dealt"
+      },
+      "refract": {
+        "val": 1,
+        "cost": 6,
+        "name": "Refracting Gaze",
+        "description": "Each bolt bounces once to a random enemy in line of sight of the original target"
+      }
+    }
+  },
+  "Void Beam": {
+    "name": {
+      "en": "Void Beam",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [25_arcane:arcane] damage and destroy walls in a beam.",
+      "zh": ""
+    },
+    "upgrades": {
+      "voidbomber": {
+        "val": 1,
+        "cost": 2,
+        "name": "Void Binding",
+        "description": "Slain enemies are raised as void bombers"
+      },
+      "starbeam": {
+        "val": 1,
+        "cost": 3,
+        "name": "Star Beam",
+        "description": "Void beam also deals [fire] damage"
+      },
+      "voidcurse": {
+        "val": 1,
+        "cost": 3,
+        "name": "Voidcurse",
+        "description": "Enemies in the aoe gain a stacking debuff that causes them to lose 25 [arcane] resistance"
+      }
+    }
+  },
+  "Void Drake": {
+    "name": {
+      "en": "Void Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Void Drake at target square.\nVoid Drakes have [45_HP:minion_health], fly, and have [100_arcane:arcane] resist.\nVoid Drakes have a breath weapon which deals [8_arcane:arcane] damage and melts walls.\nVoid Drakes have a melee attack which deals [8_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "shields": {
+        "val": 3,
+        "cost": 3
+      },
+      "dragon_mage": {
+        "val": 1,
+        "cost": 5,
+        "name": "Dragon Mage",
+        "description": "Summoned Void Drakes can cast your Magic Missile with on 3 turn cooldown."
+      },
+      "essence_drake": {
+        "val": 1,
+        "cost": 4,
+        "name": "Essence Drake",
+        "description": "Whenever a summoned Void Drake kills an enemy unit, a random temporary ally becomes permanent."
+      }
+    }
+  },
+  "Volcanic Eruption": {
+    "name": {
+      "en": "Volcanic Eruption",
+      "zh": ""
+    },
+    "description": {
+      "en": "Create a [6_tile:radius] burst of lava in a chasm.\nThe burst flows up to [3_tiles:radius] out of the chasm.\nThe lava deals [52_fire:fire] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "flow_range": {
+        "val": 2,
+        "cost": 3
+      },
+      "requires_los": {
+        "val": -1,
+        "cost": 2,
+        "name": "Blindcasting",
+        "description": "Volcano can be cast without line of sight"
+      },
+      "wall_cast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Wallcano",
+        "description": "In addition to chasms, volcano may target walls.  Doing so turns the walls into chasms"
+      }
+    }
+  },
+  "Wall of Ice": {
+    "name": {
+      "en": "Wall of Ice",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a line of ice elementals with a length of [7_tiles:num_summons].\nIce elementals have [36_HP:minion_health], [50_physical:physical] resist, [100_ice:ice] resist, [-100_fire:fire] resist, and cannot move.\nIce elementals have a ranged attack which deals [5_ice:ice] damage at a range of up to [3_tiles:minion_range].\nThe elementals vanish after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "hungry_wall": {
+        "val": 1,
+        "cost": 3,
+        "name": "Hungry Wall",
+        "description": "+1 minion duration whenever an enemy dies of ice damage"
+      },
+      "fae_wall": {
+        "val": 1,
+        "cost": 5,
+        "name": "Fae Wall",
+        "description": "Ice Walls gain fae modifier."
+      },
+      "endless_wall": {
+        "val": 99,
+        "cost": 7,
+        "name": "Endless Wall",
+        "description": "Infinite radius, make floors out of tiles in AoE."
+      }
+    }
+  },
+  "Watcher Form": {
+    "name": {
+      "en": "Watcher Form",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, casts your Lightning Bolt at the farthest enemy in line of sight.\nYou cannot move or cast spells.\nGain 100 [physical] resist.\nGain 75 [fire] resist.\nGain 100 [lightning] resist.\nGain 100 [poison] resist.\nLasts [5_turns:duration]",
+      "zh": ""
+    },
+    "upgrades": {
+      "pyrostatic_watcher": {
+        "val": 1,
+        "cost": 3,
+        "name": "Pyrostatic Watcher Form",
+        "description": "Instead casts your Pyrostatic Pulse, gain [100_fire:fire] resist instead of 75."
+      },
+      "void_watcher": {
+        "val": 1,
+        "cost": 4,
+        "name": "Void Watcher Form",
+        "description": "Instead casts your Void Beam, gain [100_arcane:arcane] resist.  Can fire at targets outside of line of sight."
+      },
+      "chain_lightning_watcher": {
+        "val": 1,
+        "cost": 5,
+        "name": "Chain Watcher Form",
+        "description": "Instead casts your Chain Lightning."
+      }
+    }
+  },
+  "Wheel of Death": {
+    "name": {
+      "en": "Wheel of Death",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [200_dark:dark] damage to a random enemy unit.",
+      "zh": ""
+    },
+    "upgrades": {
+      "cheater": {
+        "val": 1,
+        "cost": 4,
+        "name": "Cheat Fate",
+        "description": "Wheel of Death avoids shielded and dark immune enemies, and weights its target selection by current resistance adjusted hitpoints instead of uniformly."
+      },
+      "channel": {
+        "val": 1,
+        "cost": 4,
+        "name": "Channeling",
+        "description": "Wheel of Death can be channeled for up to 4 turns."
+      },
+      "shared": {
+        "val": 1,
+        "cost": 4,
+        "name": "Shared Misfortune",
+        "description": "Wheel of Death instead deals damage to [2:num_targets] targets. The damage dealt to each target is divided by the number of targets hit."
+      }
+    }
+  },
+  "Ball Lightning": {
+    "name": {
+      "en": "Ball Lightning",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a lighting orb next to the caster.\nEach turn the orb fires [3_beams:num_targets] of electricity at random enemy units in line of sight. The beams deal [6_lightning:lightning] damage.\nThe orb has no will of its own, each turn it will float one tile towards the target.\nThe orb can be destroyed by lightning damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "final_burst": {
+        "val": 1,
+        "cost": 4,
+        "name": "Final Burst",
+        "description": "Casts your Arc Lightning when it dies."
+      },
+      "drakebirth": {
+        "val": 1,
+        "cost": 4,
+        "name": "Drakebirth",
+        "description": "Casts your Storm Drake when it dies."
+      },
+      "pyrostatics": {
+        "val": 1,
+        "cost": 7,
+        "name": "Pyrostatics",
+        "description": "Instead of beams of lightning, fires your Pyrostatic Pulse."
+      }
+    }
+  },
+  "Blue Lion": {
+    "name": {
+      "en": "Blue Lion",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a blue lion.\nBlue lions have [28_HP:minion_health], fly, have [50_arcane:arcane] resist and [50_physical:physical] resist.\nBlue lions have a spell that grants [1_SH:shield] to themselves and allies in their line of sight, up to a maximum of [2_SH:shield] with a cooldown of [3_turns:duration].\nBlue lions also have a melee attack which deals [7_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "holy_bolt": {
+        "val": 1,
+        "cost": 3,
+        "name": "Holy Bolt",
+        "description": "The Blue Lion's melee attack is replaced by a range 6 holy bolt attack."
+      },
+      "healing_light_spell": {
+        "val": 1,
+        "cost": 4,
+        "name": "Shimmermane",
+        "description": "The Blue Lion gains your Healing Light spell on a 7 turn cooldown."
+      },
+      "burning_lion": {
+        "val": 1,
+        "cost": 5,
+        "name": "Burning Lion",
+        "description": "Summon a Burning Lion instead of a Blue Lion."
+      }
+    }
+  },
+  "Call Archon": {
+    "name": {
+      "en": "Call Archon",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an Archon.\nArchons have [77_HP:minion_health], [3_SH:shields], and can fly.\nArchons have beam attacks which deal [14_lightning:lightning] damage to enemies and shield allies.\nThe Archon vanishes after [17_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "healing": {
+        "val": 1,
+        "cost": 3,
+        "name": "Heal Beam",
+        "description": "Archon's attack heals allies it passes through."
+      },
+      "cascade": {
+        "val": 1,
+        "cost": 4,
+        "name": "Beam Arc",
+        "description": "Archon's attack arcs a maximum of one time to a nearby enemy."
+      },
+      "storm_archon": {
+        "val": 1,
+        "cost": 4,
+        "name": "Storm Archon",
+        "description": "Archon gains 50 Ice resist and its attack also deals Ice damage."
+      }
+    }
+  },
+  "Cantrip Cascade": {
+    "name": {
+      "en": "Cantrip Cascade",
+      "zh": ""
+    },
+    "description": {
+      "en": "Cast each of your level 1 sorcery spells on each enemy in a cone.",
+      "zh": ""
+    },
+    "upgrades": {
+      "cantrip_burst": {
+        "val": 1,
+        "cost": 3,
+        "name": "Cantrip Burst",
+        "description": "Instead of a cone, Cantrip Cascade casts in a [5_tile:radius] burst."
+      },
+      "orb_cantrips": {
+        "val": 1,
+        "cost": 4,
+        "name": "Orb Cascade",
+        "description": "In addition to casting in a cone, all of your orbs cast a random known cantrip on the nearest foe in line of sight."
+      },
+      "cast_twos": {
+        "val": 1,
+        "cost": 6,
+        "name": "Evocation Amalgamation",
+        "description": "Additionally cast one random level 2 [sorcery] spell from your spellbook on all targets."
+      }
+    }
+  },
+  "Chill Wind": {
+    "name": {
+      "en": "Chill Wind",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [21_ice:ice] damage and inflicts [6_turns:duration] of [frozen] on units in a [3_tile:radius] wide line perpendicular to the caster.",
+      "zh": ""
+    },
+    "upgrades": {
+      "refresh_conjuration": {
+        "val": 1,
+        "cost": 3,
+        "name": "Ice Guardians",
+        "description": "For each 100 damage dealt by a single cast, gain a charge of a random ice conjuration spell."
+      },
+      "mirror": {
+        "val": 1,
+        "cost": 4,
+        "name": "Dual Wind",
+        "description": "Chill Wind also affects a symmetric area behind the caster."
+      },
+      "cast_blazerip": {
+        "val": 1,
+        "cost": 7,
+        "name": "Arcane Storm",
+        "description": "On kill, Chill Wind casts your Blazerip spell."
+      }
+    }
+  },
+  "Death Shock": {
+    "name": {
+      "en": "Death Shock",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [17_lightning:lightning] damage and [17_dark:dark] damage to the target.\nIf the target is slain, this effect bounces to a random enemy in line of sight up to [5_tiles:range] away.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "fire": {
+        "val": 1,
+        "cost": 5,
+        "name": "Fire Shock",
+        "description": "After dealing [dark] and [lightning] damage, deals [fire] damage as well"
+      },
+      "shield_burn": {
+        "val": 3,
+        "cost": 4,
+        "name": "Shield Burn",
+        "description": "Before dealing damage, removes 3 SH"
+      },
+      "corpse": {
+        "val": 1,
+        "cost": 4,
+        "name": "Corpse Construct",
+        "description": "If Death Shock kills one or more enemies, summon an electric zombie with hp equal to half the total hp of all slain enemies."
+      }
+    }
+  },
+  "Fae Court": {
+    "name": {
+      "en": "Fae Court",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a group of [5:num_summons] faeries near the caster.\nThe faeries fly, and have [9_HP:minion_health], [1_SH:shields], [75_arcane:arcane] resistance, and a passive blink.\nThe faeries can heal allies for [5_HP:heal], with a range of [4_tiles:minion_range].\nThe faeries have a [4_arcane:arcane] damage attack, with a range of [4_tiles:minion_range].\nThe faeries vanish after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "winter_fae": {
+        "val": 1,
+        "cost": 5,
+        "name": "Winter Faery",
+        "description": "Summon winter faeries instead of normal ones. Winter faeries resist ice and can cast your Freeze spell on a 5 turn cooldown."
+      },
+      "summon_queen": {
+        "val": 1,
+        "cost": 7,
+        "name": "Summon Queen",
+        "description": "A fae queen is summoned as well"
+      },
+      "glass_fae": {
+        "val": 1,
+        "cost": 9,
+        "name": "Glass Faery",
+        "description": "Summon glass faeries instead of normal ones."
+      }
+    }
+  },
+  "Flesh Fiend": {
+    "name": {
+      "en": "Flesh Fiend",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a Fleshy Mass.\nFleshy Masses have [431_HP:minion_health] and regenerate 21 HP per turn.\nFleshy Masses have a melee attack which deals [19_physical:physical] damage.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "belly_flop": {
+        "val": 1,
+        "cost": 3,
+        "name": "Belly Flop",
+        "description": "Gains a [25:damage] damage leap attack with a 7 turn cooldown."
+      },
+      "char_fiend": {
+        "val": 1,
+        "cost": 6,
+        "name": "Barbeque Fiends",
+        "description": "Summons burning flesh fiends instead of normal ones."
+      },
+      "worm_lord": {
+        "val": 1,
+        "cost": 8,
+        "name": "Worm Lord",
+        "description": "Flesh Fiends can cast your Lumbriogenesis spell on a 13 turn cooldown."
+      }
+    }
+  },
+  "Flock of Eagles": {
+    "name": {
+      "en": "Flock of Eagles",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons [3_eagles:num_summons] near the caster.\nEagles have [18_HP:minion_health] and can fly.\nEagles have a melee attack which deals [6_physical:physical] damage.\nEagles also have a [5_tile:range] leap attack which deals [6_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_summons": {
+        "val": 4,
+        "cost": 6,
+        "name": "Army of Eagles"
+      },
+      "shields": {
+        "val": 3,
+        "cost": 3,
+        "name": "Shielded Eagles"
+      },
+      "thunderbirds": {
+        "val": 1,
+        "cost": 5,
+        "name": "Thunder Claw",
+        "description": "Eagles gain your Thunder Strike spell on a 15 turn cool down."
+      },
+      "awe": {
+        "val": 1,
+        "cost": 3,
+        "name": "Untouchable Majesty",
+        "description": "Eagles deal 1 [holy] damage to anyone dealing them damage."
+      }
+    }
+  },
+  "Golden Skull": {
+    "name": {
+      "en": "Golden Skull",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a golden skull.\nGolden skulls are teleporting, floating, shielded stationary units.\nGolden skulls have a [holy] beam attack and a single target healing spell.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "ghost_ball": {
+        "val": 1,
+        "cost": 6,
+        "name": "Ghost Caller",
+        "description": "The Golden Skull gains your Ghostball spell with a 6 turn cooldown"
+      },
+      "wheel": {
+        "val": 1,
+        "cost": 5,
+        "name": "Bone Wheel",
+        "description": "The Golden Skull gains your Wheel of Death spell with a 12 turn cooldown"
+      },
+      "bloodshift": {
+        "val": 1,
+        "cost": 4,
+        "name": "Blood Skull",
+        "description": "The Golden Skull gains your Bloodshift spell with a 3 turn cooldown"
+      }
+    }
+  },
+  "Heavenly Idol": {
+    "name": {
+      "en": "Heavenly Idol",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an Idol of Beauty.\nThe idol has [35_HP:minion_health], [2_SH:shields], and is stationary.\nThe idol has a passive aura which affects all units in line of sight of the idol each turn.\nAffected allies are healed for [1_HP:heal].\nAffected enemies take [1_holy:holy] damage.\nAffected [undead] and [demon] units take an additional [1_lightning:lightning] damage.\nThe idol vanishes after [15_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "fire_gaze": {
+        "val": 1,
+        "cost": 4,
+        "name": "Fire Gaze",
+        "description": "The Idol gains a fire beam attack"
+      },
+      "shield_gaze": {
+        "val": 1,
+        "cost": 4,
+        "name": "Shield Gaze",
+        "description": "The Idol gains a single-target +4 SH ability, which sets the SH of a unit with less than 4 SH to 4 SH."
+      },
+      "immortality": {
+        "val": 1,
+        "cost": 6,
+        "name": "Bastion of Immortality",
+        "description": "Casts your Suspend Mortality on summoned ally units with a 5 turn cooldown"
+      }
+    }
+  },
+  "Ice Phoenix": {
+    "name": {
+      "en": "Ice Phoenix",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an ice phoenix.\nThe phoenix has [74_HP:minion_health], flies, and reincarnates once upon death.\nThe phoenix has a ranged attack which deals [9_ice:ice] damage with a [4_tile:minion_range] range.\nWhen the phoenix dies, it explodes in a [6_tile:radius] burst, freezing enemies for 4 turns and dealing them [25_ice:ice] damage, and granting [2_SH:shields] to allies.",
+      "zh": ""
+    },
+    "upgrades": {
+      "lives": {
+        "val": 2,
+        "cost": 3,
+        "name": "Reincarnations",
+        "description": "The phoenix will reincarnate 2 more times"
+      },
+      "ice_aura": {
+        "val": 1,
+        "cost": 4,
+        "name": "Ice Aura",
+        "description": "The phoenix gains 2 damage ice aura with a 6 tile radius"
+      },
+      "heal_aura": {
+        "val": 1,
+        "cost": 3,
+        "name": "Heal Aura",
+        "description": "The phoenix gains a 1 hp regen aura with a 6 tile radius"
+      }
+    }
+  },
+  "Mega Annihilate": {
+    "name": {
+      "en": "Mega Annihilate",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals [99_fire:fire] damage, [99_lightning:lightning] damage, and [99_physical:physical] damage to the target.",
+      "zh": ""
+    },
+    "upgrades": {
+      "cascade_range": {
+        "val": 4,
+        "cost": 3,
+        "name": "Cascade",
+        "description": "Remaining hits from Mega Annihilate will jump to nearby targets if the main target is killed"
+      },
+      "crystal": {
+        "val": 1,
+        "cost": 2,
+        "name": "Crystal Annihilation",
+        "description": "Mega Annihilate deals additional [ice] and [holy] damage hits"
+      },
+      "giant_slayer": {
+        "val": 1,
+        "cost": 4,
+        "name": "Giant Slayer",
+        "description": "Mega Annihilate deals its damage to every tile of multi-tile units."
+      }
+    }
+  },
+  "Night Hag": {
+    "name": {
+      "en": "Night Hag",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Night Hag.\nNight Hags can summon ghosts and drain HP from all living units in line of sight when they are wounded.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "bone_spear": {
+        "val": 1,
+        "cost": 5,
+        "name": "Spear Hag",
+        "description": "The Night Hag gains your Bone Spear spell on a 4 turn cooldown"
+      },
+      "nightmare": {
+        "val": 1,
+        "cost": 4,
+        "name": "Nightmare Hag",
+        "description": "The Night hag can cast your Nightmare Aura spell"
+      },
+      "bone_lady": {
+        "val": 1,
+        "cost": 6,
+        "name": "Bone Queen",
+        "description": "The Night Hag gains the ability to summon [2:num_summons] small bone shamblers"
+      }
+    }
+  },
+  "Pillar of Fire": {
+    "name": {
+      "en": "Pillar of Fire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [50_fire:fire] in a [1_tile:radius] burst.\nDeal double damage to the center tile.",
+      "zh": ""
+    },
+    "upgrades": {
+      "channel": {
+        "val": 1,
+        "cost": 3,
+        "name": "Channeling",
+        "description": "Pillar of Flame becomes a channeled spell"
+      },
+      "disruption": {
+        "val": 1,
+        "cost": 3,
+        "name": "Disrupting Flames",
+        "description": "Strips main target of shields and applies -50 [Fire] resist for [10:duration] turns."
+      },
+      "cast_annihilate": {
+        "val": 1,
+        "cost": 4,
+        "name": "Pillar of Annihilation",
+        "description": "On kill, casts your Annihilate spell on up to [4:num_targets] enemy units in line of sight of the target tile."
+      }
+    }
+  },
+  "Slime Orb": {
+    "name": {
+      "en": "Slime Orb",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon an slime orb next to the caster.\nEach turn the orb summons a slime next to enemy units in a [4_tile:radius] radius.\nThe orb has no will of its own, each turn it will float one tile towards the target.\nThe orb can be destroyed by dark damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "adaptive": {
+        "val": 1,
+        "cost": 5,
+        "name": "Adaptive Slime",
+        "description": "Slime Orb will attempt to summon the type of slime that enemies are weakest to, rather than a Green Slime."
+      },
+      "explosive_growth": {
+        "val": 1,
+        "cost": 5,
+        "name": "Explosive Growth",
+        "description": "Slime Orb will summon [3:num_summons] slimes instead of just 1 per enemy."
+      },
+      "orb_walk": {
+        "val": 1,
+        "cost": 3,
+        "name": "Orb Detonation",
+        "description": "Targeting an existing slime orb detonates it.\nDeals [100:damage] [poison] damage in a [4:radius] tile burst.\nSummons a Green Slime Cube in the orb's location."
+      }
+    }
+  },
+  "Soul Tax": {
+    "name": {
+      "en": "Soul Tax",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal damage to target unit equal to one third of its health as [holy] damage, and then one third of its remaining health as [dark] damage.\nHeal the caster for the total amount of damage dealt.",
+      "zh": ""
+    },
+    "upgrades": {
+      "arcane": {
+        "val": 1,
+        "cost": 3,
+        "name": "Arcane Taxation",
+        "description": "Soul tax deals an additional third of the target's remaining HP as arcane damage."
+      },
+      "quick_cast": {
+        "val": 1,
+        "cost": 2,
+        "name": "Insta Tax",
+        "description": "Casting Soul Tax only takes half a turn"
+      },
+      "target_group": {
+        "val": 1,
+        "cost": 6,
+        "name": "Mass Taxation",
+        "description": "Targets a connected group of enemies."
+      }
+    }
+  },
+  "Spider Queen": {
+    "name": {
+      "en": "Spider Queen",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a spider queen.\nThe spider queen has [96_HP:minion_health].\nThe spider queen hatches [4:num_summons] baby spiders every [12_turns:duration].\nBaby spiders have [3_HP:minion_health] and prefer to flee than attack, but they mature into giant spiders after [8_turns:duration] which have [14_HP:minion_health].\nGiant spiders and the spider queen have melee attacks which deal [2_physical:physical] physical damage and inflicts 10 turns of [poison].",
+      "zh": ""
+    },
+    "upgrades": {
+      "aether": {
+        "val": 1,
+        "cost": 3,
+        "name": "Aether Queen",
+        "description": "Summon an aether spider queen instead."
+      },
+      "steel": {
+        "val": 1,
+        "cost": 3,
+        "name": "Steel Queen",
+        "description": "Summon a steel spider queen instead."
+      }
+    }
+  },
+  "Teleport": {
+    "name": {
+      "en": "Teleport",
+      "zh": ""
+    },
+    "description": {
+      "en": "Teleport to target tile.",
+      "zh": ""
+    },
+    "upgrades": {
+      "quick_cast": {
+        "val": 1,
+        "cost": 4,
+        "name": "Quickcast",
+        "description": "Casting Teleport only takes half a turn."
+      },
+      "group_teleport": {
+        "val": 1,
+        "cost": 4,
+        "name": "Group Teleport",
+        "description": "Teleport also teleports up to [10:num_targets] ally units with you."
+      },
+      "void_teleport": {
+        "val": 1,
+        "cost": 5,
+        "name": "Void Teleport",
+        "description": "Teleport deals arcane damage to all enemy units in line of sight of the targeted tile equal to its maximum number of charges."
+      }
+    }
+  },
+  "Arc Lightning": {
+    "name": {
+      "en": "Arc Lightning",
+      "zh": ""
+    },
+    "description": {
+      "en": "Lightning arcs to [4_enemies:num_targets] visible from the target tile.\nEach arc deals [32_lightning:lightning] damage to units in a beam.\nThen, this process repeats once for half damage at each targeted enemy.",
+      "zh": ""
+    },
+    "upgrades": {
+      "arcane_arcs": {
+        "val": 1,
+        "cost": 5,
+        "name": "Proton Storm",
+        "description": "Arc Lightning deals [4_arcane:arcane] damage to all units in line of sight of each arc target"
+      },
+      "enervation": {
+        "val": 1,
+        "cost": 4,
+        "name": "Enervation",
+        "description": "Arc Lightning heals allies instead of damaging them"
+      },
+      "num_targets": {
+        "val": 4,
+        "cost": 5,
+        "name": "Multi Flash"
+      }
+    }
+  },
+  "Dragon Roar": {
+    "name": {
+      "en": "Dragon Roar",
+      "zh": ""
+    },
+    "description": {
+      "en": "All allied dragons gain [25_max_HP:minion_health], [12:damage] attack damage, and [1_turn:duration] cooldown reduction on their breath weapon attacks.\nThis buff stacks and lasts for [25_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "vitality": {
+        "val": 1,
+        "cost": 2,
+        "name": "Draconic Vitality",
+        "description": "Dragons also gain 6 HP regen for the duration."
+      },
+      "vigor": {
+        "val": 1,
+        "cost": 2,
+        "name": "Draconic Vigor",
+        "description": "Dragons gain +2 range to their breath attack"
+      },
+      "majesty": {
+        "val": 1,
+        "cost": 3,
+        "name": "Draconic Majesty",
+        "description": "On cast, all enemy units adjacent to your dragon minions are stunned for [5_turns:duration]."
+      }
+    }
+  },
+  "Faehaunt Garden": {
+    "name": {
+      "en": "Faehaunt Garden",
+      "zh": ""
+    },
+    "description": {
+      "en": "For [10:duration] turns, whenever you deal 50 or more [lightning] or [arcane] damage, summon a butterfly demon.\nButterfly demons fly and have [50_HP:minion_health] and [3_SH:shields].\nButterfly demons have [lightning] and [arcane] beam attacks which deal [7_lightning:lightning] and [9_arcane:damage], both with a range of [6_tiles:minion_range]. The arcane beam can melt through walls.\nButterfly demons are immune to [lightning], [arcane] and [dark] damage, but take 50% extra damage from [ice] and double damage from [holy].\nButterfly demons last [8_turns:minion_duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "gnomes": {
+        "val": 1,
+        "cost": 4,
+        "name": "Guardian Gnomes",
+        "description": "Summon [6:num_summons] electric gnomes on casting faehaunt garden."
+      },
+      "flies": {
+        "val": 1,
+        "cost": 4,
+        "name": "Fae Flies",
+        "description": "Summon a Fae Fly Swarm every 15 damage."
+      },
+      "glass": {
+        "val": 1,
+        "cost": 4,
+        "name": "Glass Garden",
+        "description": "Summon Glass Butterflies instead of Butterfly Demons."
+      }
+    }
+  },
+  "Furnace of Sorcery": {
+    "name": {
+      "en": "Furnace of Sorcery",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a crucible of pain which summons furnace hounds whenever you deal 100 damage with [sorcery].\nFurnace hounds have a [6_damage:damage] leap attack with a [4_tile:minion_range] range, a [1_fire:fire] damage aura with a [4_tile:radius] radius, and deal [4_fire:fire] damage to enemies that attack them in melee.\nFurnace hounds are immune to [fire] and [lightning] damage, and take half damage from [physical] and [dark].\nFurnace hounds take double damage from [holy] and 50% extra damage from [ice].\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "flames": {
+        "val": 1,
+        "cost": 5,
+        "name": "Flames of Sorcery",
+        "description": "The furnace can cast your Flame Burst spell on a 5 turn coodlown."
+      },
+      "smithy": {
+        "val": 1,
+        "cost": 4,
+        "name": "Imp Smithy",
+        "description": "The furnace also produces an Copper Imp every 30 damage."
+      },
+      "lasers": {
+        "val": 1,
+        "cost": 7,
+        "name": "Arcane Eyebolts",
+        "description": "The hounds can cast your magic missile spell on a 4 turn cooldown."
+      }
+    }
+  },
+  "Gold Drake": {
+    "name": {
+      "en": "Gold Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Gold Drake.\nGold drakes have [45_HP:minion_health], [100_holy:holy] resist, and can fly.\nGold drakes have a breath weapon which deals [8_holy:holy] damage to enemies and heals allies for [8_HP:heal].\nGold drakes have a melee attack which deals [8_physical:physical] damage",
+      "zh": ""
+    },
+    "upgrades": {
+      "dragon_mage": {
+        "val": 1,
+        "cost": 4,
+        "name": "Dragon Mage",
+        "description": "Summoned Gold Drakes can cast Healing Light with a 8 turn cooldown.\nThis Healing Light gains all of your upgrades and bonuses."
+      },
+      "dragon_saint": {
+        "val": 1,
+        "cost": 3,
+        "name": "Dragon Saint",
+        "description": "Deals 14 [holy_damage:holy] to anything that deals damage to the Gold Drake."
+      },
+      "immortal_dragon": {
+        "val": 1,
+        "cost": 3,
+        "name": "Immortal Dragon",
+        "description": "Gold Drake gains the Immortal modifier."
+      }
+    }
+  },
+  "Heaven's Wrath": {
+    "name": {
+      "en": "Heaven's Wrath",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deal [22_lightning:lightning] damage and [22_holy:holy] damage to [3_units:num_targets] with the highest current HP.\nDoes not target friendly units or gates.",
+      "zh": ""
+    },
+    "upgrades": {
+      "culling": {
+        "val": 1,
+        "cost": 4,
+        "name": "Culling",
+        "description": "Heaven's Wrath also damages the units with the lowest current HP."
+      },
+      "stun_duration": {
+        "val": 3,
+        "cost": 2,
+        "name": "Halt Heretics",
+        "description": "Heaven's Wrath also applies Stun for [3_turns:duration]."
+      },
+      "deal_fire": {
+        "val": 1,
+        "cost": 3,
+        "name": "Fiery Wrath",
+        "description": "Heaven's Wrath also deals fire damage."
+      }
+    }
+  },
+  "Knightly Oath": {
+    "name": {
+      "en": "Knightly Oath",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a void knight, a chaos knight, and a storm knight.\nEach knight has [90_HP:minion_health], various resistances, and an arsenal of unique magical abilities.\nThe caster takes [40_holy:holy] damage whenever a knight dies.",
+      "zh": ""
+    },
+    "upgrades": {
+      "void_court": {
+        "val": 1,
+        "cost": 4,
+        "name": "Void Court",
+        "description": "Summon only void knights.  Summon a void champion as well."
+      },
+      "storm_court": {
+        "val": 1,
+        "cost": 4,
+        "name": "Storm Court",
+        "description": "Summon only storm knights.  Summon a storm champion as well."
+      },
+      "chaos_court": {
+        "val": 1,
+        "cost": 4,
+        "name": "Chaos Court",
+        "description": "Summon only chaos knights.  Summon a chaos champion as well."
+      }
+    }
+  },
+  "Mystic Memory": {
+    "name": {
+      "en": "Mystic Memory",
+      "zh": ""
+    },
+    "description": {
+      "en": "While channeling, regain a charge of a random other spell. Channels for 5 turns.",
+      "zh": ""
+    },
+    "upgrades": {
+      "distant_memory": {
+        "val": 1,
+        "cost": 2,
+        "name": "Distant Memory",
+        "description": "Prioritize regaining charges of depleted spells."
+      },
+      "max_channel": {
+        "val": 5,
+        "cost": 3,
+        "name": "Deep Reflection"
+      },
+      "memory_shield": {
+        "val": 1,
+        "cost": 3,
+        "name": "Shield of Memories",
+        "description": "Gain 2 SH each time you gain charges from this spell."
+      }
+    }
+  },
+  "Searing Orb": {
+    "name": {
+      "en": "Searing Orb",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a searing orb next to the caster.\nThe orb deals [3_fire:fire] damage each turn to all units in line of sight.\nThe caster is immune to this damage.\nThe orb has no will of its own, each turn it will float one tile towards the target.\nThe orb can be destroyed by ice damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "explosive": {
+        "val": 1,
+        "cost": 2,
+        "name": "Explosive Orb",
+        "description": "Searing Orb casts your Flameburst on expiration."
+      },
+      "melt_walls": {
+        "val": 1,
+        "cost": 2,
+        "name": "Matter Melting",
+        "description": "Searing Orb can melt and be cast through walls"
+      },
+      "flame_rift": {
+        "val": 1,
+        "cost": 5,
+        "name": "Flame Rift",
+        "description": "For each 20 damage dealt by an orb, summon a flame rift for [10_turns:minion_duration] near the orb."
+      }
+    }
+  },
+  "Twilight Gaze": {
+    "name": {
+      "en": "Twilight Gaze",
+      "zh": ""
+    },
+    "description": {
+      "en": "All enemies in line of sight lose [50_dark:dark] resist and [50_holy:holy] resist.\nLasts [10_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "resistance_debuff": {
+        "val": 50,
+        "cost": 3
+      },
+      "piercing_gaze": {
+        "val": 1,
+        "cost": 3,
+        "name": "Piercing Gaze",
+        "description": "Twlight Gaze affects all enemies, not just those in light of sight."
+      },
+      "arcane": {
+        "val": 1,
+        "cost": 3,
+        "name": "Arcane Gaze",
+        "description": "Twilight Gaze also reduces [arcane] resist."
+      }
+    }
+  },
+  "Multicast": {
+    "name": {
+      "en": "Multicast",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [sorcery] spell, copy it.\nLasts [3_turns:duration]",
+      "zh": ""
+    },
+    "upgrades": {
+      "copies": {
+        "val": 1,
+        "cost": 4
+      },
+      "spell_weaving": {
+        "val": 1,
+        "cost": 5,
+        "name": "Spell Weaving",
+        "description": "Your non-sorcery spells gain quickcast for the duration of the buff."
+      }
+    }
+  },
+  "Rain of Thunderbolts": {
+    "name": {
+      "en": "Rain of Thunderbolts",
+      "zh": ""
+    },
+    "description": {
+      "en": "Casts your thunderstrike spell targeting [12:num_targets] random Storm Clouds each turn.\nClouds with enemies in them are prioritized over ones without.\nWill not target allies or the Wizard.\nThis spell can be channeled for up to [12_turns:duration].  The effect is repeated each turn the spell is channeled.",
+      "zh": ""
+    },
+    "upgrades": {
+      "dragons": {
+        "val": 1,
+        "cost": 8,
+        "name": "Tempest Drakes",
+        "description": "Each strike has a 25% chance of casting your storm drake spell as well"
+      },
+      "all_weather": {
+        "val": 1,
+        "cost": 6,
+        "name": "Cryostorm",
+        "description": "May instead cast your Iceball on Blizzards or Rain Clouds"
+      },
+      "stormbringer": {
+        "val": 1,
+        "cost": 7,
+        "name": "Stormbringer",
+        "description": "Each turn you channel this spell, summons [12:num_summons] Storm Clouds across the map."
+      }
+    }
+  },
+  "Soul Wind": {
+    "name": {
+      "en": "Soul Wind",
+      "zh": ""
+    },
+    "description": {
+      "en": "Invokes a soul wind.  All units in a [3_tile:radius] wide line perpendicular to the caster take [37_dark:dark] damage.\nAll [undead], [dark], and [demon] units in the area take [37_holy:holy] damage instead.\nSummons a spirit from each [Living] unit in the area.\nThe spirits may have extra abilities and resistances based on the tags of the units they originated from.",
+      "zh": ""
+    },
+    "upgrades": {
+      "arcane_wind": {
+        "val": 1,
+        "cost": 5,
+        "name": "Arcane Wind",
+        "description": "Also deals [arcane] damage to all units in the area of effect"
+      },
+      "mirror": {
+        "val": 1,
+        "cost": 4,
+        "name": "Dual Wind",
+        "description": "Soul Wind also casts behind the caster."
+      },
+      "ensoulment": {
+        "val": 1,
+        "cost": 4,
+        "name": "Ensoulment",
+        "description": "Spawn ghosts from non [living] units as well"
+      }
+    }
+  },
+  "Spikeball Factory": {
+    "name": {
+      "en": "Spikeball Factory",
+      "zh": ""
+    },
+    "description": {
+      "en": "Surrounds the caster with spikeball gates, which will spawn spikeballs.",
+      "zh": ""
+    },
+    "upgrades": {
+      "defense": {
+        "val": 1,
+        "cost": 3,
+        "name": "Defense System",
+        "description": "The summoned lairs gain a projectile attack with 10 range that deals [5_physical:physical] damage."
+      },
+      "manufactory": {
+        "val": 1,
+        "cost": 6,
+        "name": "Manufactory",
+        "description": "Surrounds the initially summoned gates with another layer of gates"
+      },
+      "copper": {
+        "val": 1,
+        "cost": 7,
+        "name": "Copper Spikeballs",
+        "description": "Summons copper spikeballs instead of normal ones"
+      }
+    }
+  },
+  "Word of Beauty": {
+    "name": {
+      "en": "Word of Beauty",
+      "zh": ""
+    },
+    "description": {
+      "en": "Heal yourself and all living units fully.\nDeal [25_lightning:lightning] damage to [demon] and [undead] units.\n[Stun] all [arcane] units for [7_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "beauty_steel": {
+        "val": 1,
+        "cost": 2,
+        "name": "Beauty of Steel",
+        "description": "Also heals allied [metallic:metallic] units."
+      },
+      "shield_strip": {
+        "val": 1,
+        "cost": 2,
+        "name": "Shield Strip",
+        "description": "Damaged units lose 1 SH before being damaged."
+      },
+      "echo": {
+        "val": 1,
+        "cost": 4,
+        "name": "Echoing Beauty",
+        "description": "Auto recast in 10 turns."
+      }
+    }
+  },
+  "Word of Chaos": {
+    "name": {
+      "en": "Word of Chaos",
+      "zh": ""
+    },
+    "description": {
+      "en": "[Stun] each enemy for [6_turns:duration] and teleport them to random tiles.\nDeal [45_lightning:lightning] damage to all [fire] enemies.\nDeal [45_fire:fire] damage to all [lightning] enemies.\nEach enemy construct loses all [physical] resist and takes [45_physical:physical] damage.",
+      "zh": ""
+    },
+    "upgrades": {
+      "reanimation": {
+        "val": 1,
+        "cost": 4,
+        "name": "Animated Chaos",
+        "description": "Slain units are reanimated as Chaos Spirits."
+      },
+      "chaos_gifts": {
+        "val": 1,
+        "cost": 4,
+        "name": "Infernal Gifts",
+        "description": "Up to [3:num_targets] random non-chaos allies get the infernal boss modifier."
+      },
+      "echo": {
+        "val": 1,
+        "cost": 5,
+        "name": "Echoing Chaos",
+        "description": "Auto recasts in 10 turns."
+      }
+    }
+  },
+  "Word of Ice": {
+    "name": {
+      "en": "Word of Ice",
+      "zh": ""
+    },
+    "description": {
+      "en": "All non [ice] immune enemies are [frozen] for [5_turns:duration].\nDeals [50_ice:ice] damage to all fire units.",
+      "zh": ""
+    },
+    "upgrades": {
+      "echo": {
+        "val": 1,
+        "cost": 5,
+        "name": "Echoing Ice",
+        "description": "Auto recast in 10 turns."
+      },
+      "endless_ice": {
+        "val": 1,
+        "cost": 5,
+        "name": "Endless Ice",
+        "description": "Gain a charge of all other ice spells on cast."
+      },
+      "word_of_wind": {
+        "val": 1,
+        "cost": 7,
+        "name": "Word of Wind",
+        "description": "Casts your Chill Wind on up to [3:num_targets] enemies."
+      }
+    }
+  },
+  "Word of Madness": {
+    "name": {
+      "en": "Word of Madness",
+      "zh": ""
+    },
+    "description": {
+      "en": "[Berserk] all units except the caster for [5_turns:duration].\nDeal [dark] damage to all [construct] units equal to half their current HP.\nFully heal all [demon] and [arcane] units.",
+      "zh": ""
+    },
+    "upgrades": {
+      "selective_madness": {
+        "val": 1,
+        "cost": 1,
+        "name": "Selective Madness",
+        "description": "No longer heals enemies."
+      },
+      "echo": {
+        "val": 1,
+        "cost": 5,
+        "name": "Echoing Madness",
+        "description": "Auto recast in 10 turns."
+      },
+      "guardians": {
+        "val": 1,
+        "cost": 6,
+        "name": "Guardians of Madness",
+        "description": "Summon [3:num_summons] mind devourers, [5:num_summons] floating eyeballs, and [6:num_summons] troublers for 10 turns at random locations."
+      }
+    }
+  },
+  "Word of Undeath": {
+    "name": {
+      "en": "Word of Undeath",
+      "zh": ""
+    },
+    "description": {
+      "en": "All undead units have their current and maximum HP doubled.\nAll other units except the caster lose half their current and maximum HP.",
+      "zh": ""
+    },
+    "upgrades": {
+      "hatred_of_life": {
+        "val": 1,
+        "cost": 3,
+        "name": "Hatred of Life",
+        "description": "All other [living:living] units take [36:poison] poison damage."
+      },
+      "spirit_gift": {
+        "val": 1,
+        "cost": 4,
+        "name": "Spirit Gift",
+        "description": "Up to [3:num_targets] allies (excluding [undead]) get the ghostly modifier."
+      },
+      "spirit_lich": {
+        "val": 1,
+        "cost": 5,
+        "name": "Spirit of Lichdom",
+        "description": "Up to [3:num_targets] random [living:living] allies get the lich modifier."
+      }
+    }
+  },
+  "Wyrm Eggs": {
+    "name": {
+      "en": "Wyrm Eggs",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons [4:num_summons] Wyrm eggs near the caster.\nEach egg will hatch into either a [fire] or an [ice] wyrm on death.\n",
+      "zh": ""
+    },
+    "upgrades": {
+      "magic_eggs": {
+        "val": 1,
+        "cost": 4,
+        "name": "Magic Eggs",
+        "description": "Fire eggs cast your Fireball on a 3 turn cooldown, and Ice eggs cast your Icicle on a 3 turn cooldown."
+      },
+      "radiant_eggs": {
+        "val": 1,
+        "cost": 5,
+        "name": "Radiant Eggs",
+        "description": "Wyrm Eggs gain a 1 damage [3_radius:radius] aura of their element type."
+      }
+    }
+  },
+  "Dream the Starwhale": {
+    "name": {
+      "en": "Dream the Starwhale",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Starwhale.  Channel for up to 20 turns, unsummon the starwhale and freeze yourself for 3 turns afterwards.\nGain 100% [ice] and [arcane] damage resistance while channeling this spell.",
+      "zh": ""
+    },
+    "upgrades": {
+      "starhost": {
+        "val": 1,
+        "cost": 5,
+        "name": "Starhost",
+        "description": "The whale gains the ability to summon [2:num_summons] starswimmers for [10:minion_duration] turns on a 6 turn cooldown"
+      },
+      "icedream": {
+        "val": 1,
+        "cost": 4,
+        "name": "Ice Dream",
+        "description": "The whale's aura applies freeze for [2:duration] turns"
+      },
+      "starbask": {
+        "val": 1,
+        "cost": 4,
+        "name": "Starbask",
+        "description": "You and the whale heal for 50% of all [arcane] damage dealt during the channel"
+      }
+    }
+  },
+  "Gates of Helheim": {
+    "name": {
+      "en": "Gates of Helheim",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons an Aelf spawner at a random location.",
+      "zh": ""
+    },
+    "upgrades": {
+      "aelf_horde": {
+        "val": 1,
+        "cost": 5,
+        "name": "Aelf Horde",
+        "description": "The spawn time is shortened to 4 to 5 turns instead."
+      },
+      "fae_aelves": {
+        "val": 1,
+        "cost": 6,
+        "name": "Fae Aelves",
+        "description": "The Spawners spawn Fae Aelves instead of normal Aelves."
+      },
+      "elite_aelves": {
+        "val": 1,
+        "cost": 8,
+        "name": "Elite Aelves",
+        "description": "The Spawners spawn Aelf Lightning Artists instead of normal Aelves."
+      }
+    }
+  },
+  "Hatebolts": {
+    "name": {
+      "en": "Hatebolts",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fires bolts at [4:num_targets] random enemies each turn, alternatingly dealing [14_fire:fire] or [14_dark:dark] damage to all units on the path.\nCan be channeled for up to 5 turns.Afterwards, all remaining enemies deal 2 [fire] or [dark] damage to the caster.",
+      "zh": ""
+    },
+    "upgrades": {
+      "return": {
+        "val": 1,
+        "cost": 3,
+        "name": "Boomerang",
+        "description": "The bolts also return after they reach their target, damaging units in the middle a second time."
+      },
+      "toxic": {
+        "val": 1,
+        "cost": 3,
+        "name": "Toxic Hatred",
+        "description": "The bolts also [poison] enemies for [13_turns:duration]"
+      },
+      "harvest": {
+        "val": 1,
+        "cost": 3,
+        "name": "Torment Harvest",
+        "description": "If this spell kills an enemy, gain a charge of Summon Fiery Tormentor"
+      }
+    }
+  },
+  "Horde of Halfmen": {
+    "name": {
+      "en": "Horde of Halfmen",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons [5:num_summons] Satyr and [5:num_summons] Minotaurs.",
+      "zh": ""
+    },
+    "upgrades": {
+      "trollblooded": {
+        "val": 1,
+        "cost": 5,
+        "name": "Trollblooded Halfmen",
+        "description": "Summons are [Trollblooded:nature]."
+      },
+      "metallic": {
+        "val": 1,
+        "cost": 6,
+        "name": "Metallic Halfmen",
+        "description": "Summons are [Metallic:metallic]."
+      },
+      "burning": {
+        "val": 1,
+        "cost": 7,
+        "name": "Burning Halfmen",
+        "description": "Summons are [Burning:fire]."
+      }
+    }
+  },
+  "Ion Tentacles": {
+    "name": {
+      "en": "Ion Tentacles",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals either [7_arcane:arcane] or [7_lightning:lightning] damage the nearest [1:num_targets] enemies each turn.\nNumber of targets increases by 1 each turn for the first half of the duration, and decreases by 1 each turn for the second half.\nLasts [14_turns:duration].",
+      "zh": ""
+    },
+    "upgrades": {
+      "growing_power": {
+        "val": 1,
+        "cost": 4,
+        "name": "Growing Power",
+        "description": "The damage dealt also increases by [1:damage] each turn for the first half of the duration, and decreases by [1:damage] each turn for the second half."
+      },
+      "bloody_tendrils": {
+        "val": 1,
+        "cost": 6,
+        "name": "Bloody Tendrils",
+        "description": "Damage dealt by the spell heals the caster for 50% of the damage dealt."
+      },
+      "cthulhu": {
+        "val": 1,
+        "cost": 3,
+        "name": "Cthulhu Form",
+        "description": "Increase the starting number of targets by 1 for each [Eye] spell you know."
+      }
+    }
+  },
+  "Ritual of Revelation": {
+    "name": {
+      "en": "Ritual of Revelation",
+      "zh": ""
+    },
+    "description": {
+      "en": "Channel the Ritual of Revelation for [7_turns:duration].\nEach turn while you channel the ritual, Holy Fire will be cast for free on [3:num_targets] enemy units in line of sight.\nIf not enough enemy units are in line of sight, you or an ally will be targeted as well.\nUnits will never be targeted more than once.When the channel is complete, [7:num_summons] False Prophets will be summoned.",
+      "zh": ""
+    },
+    "upgrades": {
+      "num_summons": {
+        "val": 4,
+        "cost": 7,
+        "name": "Holy Horde"
+      },
+      "blasphemy": {
+        "val": 1,
+        "cost": 5,
+        "name": "Blasphemy",
+        "description": "Summoned Prophets are liches."
+      },
+      "arcane_revelation": {
+        "val": 1,
+        "cost": 8,
+        "name": "Arcane Revelation",
+        "description": "Also casts your Blazerip on [3:num_targets] enemies."
+      }
+    }
+  },
+  "Slime Drake": {
+    "name": {
+      "en": "Slime Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summon a Slime Drake",
+      "zh": ""
+    },
+    "upgrades": {
+      "infernal": {
+        "val": 1,
+        "cost": 5,
+        "name": "Infernal Drake",
+        "description": "Slime Drake gets the Infernal boss modifier."
+      },
+      "dragon_mage": {
+        "val": 1,
+        "cost": 5,
+        "name": "Dragon Mage",
+        "description": "Slime Drake can cast your Slimeshot with a 6 turn cooldown."
+      },
+      "oozing_trail": {
+        "val": 1,
+        "cost": 4,
+        "name": "Oozing Trail",
+        "description": "When the Slime Drake moves, it will attempt to summon a Slime nearby."
+      }
+    }
+  },
+  "Summon Wizard": {
+    "name": {
+      "en": "Summon Wizard",
+      "zh": ""
+    },
+    "description": {
+      "en": "Summons a random wizard.",
+      "zh": ""
+    },
+    "upgrades": {
+      "wizard_army": {
+        "val": 1,
+        "cost": 9,
+        "name": "Wizard Gang",
+        "description": "Summon [3:num_summons] wizards"
+      },
+      "jealousy": {
+        "val": 1,
+        "cost": 7,
+        "name": "Jealousy",
+        "description": "When you cast this spell, an enemy wizard in line of sight of the summoned wizard becomes your ally."
+      },
+      "dragon_wizard": {
+        "val": 1,
+        "cost": 4,
+        "name": "Dragon Wizard",
+        "description": "You always summon the Dragon Wizard."
+      },
+      "mutant_wizard": {
+        "val": 1,
+        "cost": 2,
+        "name": "Mutant Wizard",
+        "description": "A random boss modifier is applied to the summoned wizard."
+      }
+    }
+  },
+  "Rain of Fire": {
+    "name": {
+      "en": "Rain of Fire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Casts your fireball spell targeting [9:num_targets] random tiles in a [7_tile:radius] radius each turn.\nThis spell can be channeled for up to [10_turns:duration].  The effect is repeated each turn the spell is channeled.",
+      "zh": ""
+    },
+    "upgrades": {
+      "chaos": {
+        "val": 1,
+        "cost": 7,
+        "name": "Chaos Storm",
+        "description": "Each meteor casts your Annihilate on [3:num_targets] enemy units within [4:radius] tiles"
+      },
+      "dragons": {
+        "val": 1,
+        "cost": 8,
+        "name": "Rain of Dragons",
+        "description": "Each meteor has a 25% chance of casting your fire drake spell as well"
+      },
+      "pyrostatic": {
+        "val": 1,
+        "cost": 8,
+        "name": "Pyrostatic Storm",
+        "description": "Each meteor casts your Lightning Bolt on up to [2:num_targets] enemies in line of sight"
+      }
+    }
+  },
+  "Wizard Replica": {
+    "name": {
+      "en": "Wizard Replica",
+      "zh": ""
+    },
+    "description": {
+      "en": "Forges a living replica of the wizard and their equipment.",
+      "zh": ""
+    },
+    "upgrades": {
+      "reclamation": {
+        "val": 1,
+        "cost": 3,
+        "name": "Blood Reclamation",
+        "description": "If the Wizard Replica dies, the charge cost is refunded."
+      },
+      "idolatry": {
+        "val": 1,
+        "cost": 4,
+        "name": "Wizard Colossus",
+        "description": "Rather than a mortal sized Wizard Replica, you create a Colossus.\n A giant immobile version of the Wizard Replica, whose health and melee damage are multiplied by the number of equipments you own."
+      },
+      "investiture": {
+        "val": 1,
+        "cost": 5,
+        "name": "Investiture",
+        "description": "The Wizard Replica gains up to three of your cantrips and can cast each of them on a 3 turn cooldown."
+      }
+    }
+  }
+}

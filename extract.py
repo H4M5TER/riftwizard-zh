@@ -1,19 +1,27 @@
 import sys
 import os
+from pathlib import Path
+
+src_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = Path(src_dir)
+extract_dir = src_dir / "extracted"
+
+import orjson
+from icecream import ic
 
 sys.path.append(os.path.abspath("game"))
-import Spells
-import Upgrades
-import Consumables
-import Equipment
-import LevelGen
+from RiftWizard2 import tooltip_colors
+from Spells import make_player_spells
+from Upgrades import make_player_skills
+from Consumables import all_consumables
+from LevelGen import all_monster_names
 from Equipment import (
+    all_items,
     RandomSheild,
     RandomLittleRing,
     ring_tags,
     ring_stats,
 )
-from Level import damage_tags, Knowledges, attr_colors, Tags
 from Shrines import (
     chest_opts,
     reward_table,
@@ -21,52 +29,53 @@ from Shrines import (
     ring_chest,
     random,
 )
-from functools import reduce
-
-spells = Spells.make_player_spells()
-skills = Upgrades.make_player_skills()
-upgrades = [
-    u.name
-    for u in reduce(lambda a, b: a + b, [spell.spell_upgrades for spell in spells])
-]
-deduped = []
-s = set()
-# 直接把 list 喂进 set 会丢失顺序
-for u in upgrades:
-    if u not in s:
-        s.add(u)
-        deduped.append(u)
-
-s = set()
-tags = []
-for tag in damage_tags + Knowledges + Tags.elements:
-    if tag.name not in s:
-        s.add(tag.name)
-        tags.append(tag.name.lower())
-for n, _ in attr_colors.items():
-    tags.append(n)
-tags = tags + [
-    "petrify",
-    "petrified",
-    "petrifies",
-    "glassify",
-    "glassified",
-    "frozen",
-    "freezes",
-    "freeze",
-    "stunned",
-    "stun",
-    "stuns",
-    "berserk",
-    "poisoned",
-    "blind",
-    "blinded",
-    "quick_cast",
-]
 
 
 class MockObject:
     pass
+
+
+def items2dict(items):
+    dic = {}
+    for item in items:
+        name = item.name
+        dic[name] = {
+            "name": {
+                "en": name,
+                "zh": "",
+            },
+        }
+        description = getattr(item, "description", None)
+        if not description and hasattr(item, "get_description"):
+            description = item.get_description()
+        if description:
+            dic[name]["description"] = {
+                "en": description,
+                "zh": "",
+            }
+    return dic
+
+
+spells = make_player_spells()
+spell_dict = items2dict(spells)
+for spell in spells:
+    upgrades = {}
+    for k, v in spell.upgrades.items():
+        upgrades[k] = {
+            "val": v[0],
+            "cost": v[1],
+        }
+        if len(v) >= 3:
+            upgrades[k]["name"] = v[2]
+            if len(v) >= 4:
+                upgrades[k]["description"] = v[3]
+    spell_dict[spell.name]["upgrades"] = upgrades
+
+skills = make_player_skills()
+skill_dict = items2dict(skills)
+
+equipments = [e() for e in all_items if e not in [RandomSheild, RandomLittleRing]]
+equipment_dict = items2dict(equipments)
 
 
 fake_player = MockObject()
@@ -77,43 +86,38 @@ fake_player.game.all_player_skills = []
 chest_opts = [c[0] for c in chest_opts]
 # chest_opts = [c for c in chest_opts if c not in [ring_chest]]
 chest_opts = filter(lambda c: c not in [ring_chest], chest_opts)
-chests = [c(1, random).name for c in chest_opts]
-
+chests = [c(1, random) for c in chest_opts]
 shrine_opts = [s[0] for s in reward_table]
 shrine_opts = filter(lambda s: s not in [roll_chest], shrine_opts)
-shrines = [s(1, random, fake_player).name for s in shrine_opts]
-
+shrines = [s(1, random, fake_player) for s in shrine_opts]
 shrines = chests + shrines
+shrine_dict = items2dict(shrines)
 
+consumables = [c() for (c, _) in all_consumables]
+consumable_dict = items2dict(consumables)
+
+tags = {
+    "tags": tooltip_colors.keys(),
+    "ring_tags": [tag[1] for tag in ring_tags],
+    "ring_stats": [stat[1].capitalize() for stat in ring_stats],
+}
+dic = {}
+for key in tags.keys():
+    dic[key] = {}
+    for name in tags[key]:
+        dic[key][name] = ""
 
 tasks = [
-    ("tags", tags),
-    ("spells", [spell.name for spell in spells]),
-    ("skills", [skill.name for skill in skills]),
-    ("upgrades", deduped),
-    ("consumables", [c().name for (c, _) in Consumables.all_consumables]),
-    ("ring_tags", [tag[1] for tag in ring_tags]),
-    ("ring_stats", [stat[1].capitalize() for stat in ring_stats]),
-    ("shrines", shrines),
-    (
-        "equipments",
-        [
-            c().name
-            for c in Equipment.all_items
-            if c not in [RandomSheild, RandomLittleRing]
-        ],
-    ),
-    ("monsters", LevelGen.make_bestiary() or LevelGen.all_monster_names),
+    ("spells.json", spell_dict),
+    ("skills.json", skill_dict),
+    ("equipments.json", equipment_dict),
+    ("consumables.json", consumable_dict),
+    ("shrines.json", shrine_dict),
+    ("dictionary.json", dic),
 ]
 
-
-def process(type, names):
-    return "".join([f'\n    "{n}": "{n}",' for n in names])
-
-
-# jsons = [f"{type} = {{{"".join([f"\n\t\"{n}\" = \"{n}\"," for n in names])}\n}}\n" for (type, names) in tasks]
-jsons = [f"{type} = {{{process(type, names)}\n}}\n" for (type, names) in tasks]
-
-f = open("extracted.py", "w")
-f.write("\n".join(jsons))
-f.close()
+extract_dir.mkdir(parents=True, exist_ok=True)
+for filename, data in tasks:
+    file_path = extract_dir / filename
+    with open(file_path, "wb") as f:
+        f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))

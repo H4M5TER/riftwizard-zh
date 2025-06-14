@@ -1,0 +1,1790 @@
+{
+  "Fire Staff": {
+    "name": {
+      "en": "Fire Staff",
+      "zh": ""
+    }
+  },
+  "Ice Staff": {
+    "name": {
+      "en": "Ice Staff",
+      "zh": ""
+    }
+  },
+  "Lightning Staff": {
+    "name": {
+      "en": "Lightning Staff",
+      "zh": ""
+    }
+  },
+  "Nature Staff": {
+    "name": {
+      "en": "Nature Staff",
+      "zh": ""
+    }
+  },
+  "Dark Staff": {
+    "name": {
+      "en": "Dark Staff",
+      "zh": ""
+    }
+  },
+  "Holy Staff": {
+    "name": {
+      "en": "Holy Staff",
+      "zh": ""
+    }
+  },
+  "Arcane Staff": {
+    "name": {
+      "en": "Arcane Staff",
+      "zh": ""
+    }
+  },
+  "Sorcery Staff": {
+    "name": {
+      "en": "Sorcery Staff",
+      "zh": ""
+    }
+  },
+  "Enchantment Staff": {
+    "name": {
+      "en": "Enchantment Staff",
+      "zh": ""
+    }
+  },
+  "Conjuration Staff": {
+    "name": {
+      "en": "Conjuration Staff",
+      "zh": ""
+    }
+  },
+  "The Bladestaff": {
+    "name": {
+      "en": "The Bladestaff",
+      "zh": ""
+    }
+  },
+  "Geometer's Staff": {
+    "name": {
+      "en": "Geometer's Staff",
+      "zh": ""
+    }
+  },
+  "Memory Staff": {
+    "name": {
+      "en": "Memory Staff",
+      "zh": ""
+    }
+  },
+  "Banner of the Horde": {
+    "name": {
+      "en": "Banner of the Horde",
+      "zh": ""
+    }
+  },
+  "Storm Legion's Banner": {
+    "name": {
+      "en": "Storm Legion's Banner",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally is summoned, if it is on or adjacent to a Storm Cloud, the summon consumes it, and gains the Electric modifier.",
+      "zh": ""
+    }
+  },
+  "Blizzard Legion's Banner": {
+    "name": {
+      "en": "Blizzard Legion's Banner",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally is summoned, if it is on or adjacent to a Blizzard, the summon consumes it, and gains the Frostspew modifier.",
+      "zh": ""
+    }
+  },
+  "Death Legion's Banner": {
+    "name": {
+      "en": "Death Legion's Banner",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally is summoned, if it is on or adjacent to a Chasm, the summon consumes it, and gains the Ghostly modifier.",
+      "zh": ""
+    }
+  },
+  "Terracotta Legion's Banner": {
+    "name": {
+      "en": "Terracotta Legion's Banner",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally is summoned, if it is on or adjacent to a Wall, the summon consumes it, and gains the Clay modifier.",
+      "zh": ""
+    }
+  },
+  "Blood Legion's Banner": {
+    "name": {
+      "en": "Blood Legion's Banner",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally is summoned, if it is on or adjacent to a Wizard, the summon consumes it, and gains the Fleshbound modifier.",
+      "zh": ""
+    }
+  },
+  "Storm Oculus": {
+    "name": {
+      "en": "Storm Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit takes [Ice] or [Lightning] damage, it gets -25 [Ice] and [Lightning] resist.  This debuff does not stack.",
+      "zh": ""
+    }
+  },
+  "Void Oculus": {
+    "name": {
+      "en": "Void Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit takes [Dark] or [Arcane] damage, it gets -25 [Dark] and [Arcane] resist.  This debuff does not stack.",
+      "zh": ""
+    }
+  },
+  "Pyrostatic Oculus": {
+    "name": {
+      "en": "Pyrostatic Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit takes [Fire] or [Lightning] damage, it gets -25 [Fire] and [Lightning] resist.  This debuff does not stack.",
+      "zh": ""
+    }
+  },
+  "Twilight Oculus": {
+    "name": {
+      "en": "Twilight Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit takes [Dark] or [Holy] damage, it gets -25 [Dark] and [Holy] resist.  This debuff does not stack.",
+      "zh": ""
+    }
+  },
+  "Crystal Oculus": {
+    "name": {
+      "en": "Crystal Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit takes [Ice] or [Arcane] damage, it gets -25 [Ice] and [Arcane] resist.  This debuff does not stack.",
+      "zh": ""
+    }
+  },
+  "Purity Oculus": {
+    "name": {
+      "en": "Purity Oculus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit takes [Fire] or [Holy] damage, it gets -25 [Fire] and [Holy] resist.  This debuff does not stack.",
+      "zh": ""
+    }
+  },
+  "Arcane Amplifier": {
+    "name": {
+      "en": "Arcane Amplifier",
+      "zh": ""
+    },
+    "description": {
+      "en": "Redeal half of all damage you deal with [sorcery] as [arcane] damage.",
+      "zh": ""
+    }
+  },
+  "The Flamenweaver": {
+    "name": {
+      "en": "The Flamenweaver",
+      "zh": ""
+    },
+    "description": {
+      "en": "Redeal half of all damage you deal with [enchantments:enchantment] as [fire] damage.",
+      "zh": ""
+    }
+  },
+  "Treelord Staff": {
+    "name": {
+      "en": "Treelord Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a level 1 or 2 [nature] spell, summon a spriggan.\nWhenever you cast a level 3 or higher [nature] spell, summon a treant.",
+      "zh": ""
+    }
+  },
+  "Aetherlord Staff": {
+    "name": {
+      "en": "Aetherlord Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a level 1 or 2 [arcane] spell, summon a boggart.\nWhenever you cast a level 3 or higher [arcane] spell, summon a phase spider.",
+      "zh": ""
+    }
+  },
+  "Filthlord Staff": {
+    "name": {
+      "en": "Filthlord Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a level 1 or 2 [dark] spell, summon a fly swarm.\nWhenever you cast a level 3 or higher [dark] spell, summon a bag of bugs.",
+      "zh": ""
+    }
+  },
+  "Flaming Claw Staff": {
+    "name": {
+      "en": "Flaming Claw Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a minion you control deals damage to an enemy, redeal half that much damage as [fire] damage.",
+      "zh": ""
+    }
+  },
+  "Icy Claw Staff": {
+    "name": {
+      "en": "Icy Claw Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a minion you control deals damage to an enemy, redeal half that much damage as [ice] damage.",
+      "zh": ""
+    }
+  },
+  "Scepter of Mischief": {
+    "name": {
+      "en": "Scepter of Mischief",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 50 damage dealt to enemies by [enchantments:enchantment], summon 3 Troublers for 7 turns.",
+      "zh": ""
+    }
+  },
+  "Drakenstaff": {
+    "name": {
+      "en": "Drakenstaff",
+      "zh": ""
+    }
+  },
+  "Draco Antiphony Scepter": {
+    "name": {
+      "en": "Draco Antiphony Scepter",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you cast a level 4 or lower [sorcery] spell, your [dragon] allies with matching types will attempt to cast that spell also.",
+      "zh": ""
+    }
+  },
+  "Annihilator Staff": {
+    "name": {
+      "en": "Annihilator Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Deals 2 [physical], 2 [fire], and 2 [lightning] damage to units before they would be damaged by your [sorcery] spells.",
+      "zh": ""
+    }
+  },
+  "Heavenrender": {
+    "name": {
+      "en": "Heavenrender",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [holy] spell, deal [fire] and [lightning] damage to all enemies in a 2 tile burst around the target.\nThe damage dealt is equal to the sum of all SP spent on [fire] and [lightning] magics, respectively.",
+      "zh": ""
+    }
+  },
+  "Staff of Heaven's Vengeance": {
+    "name": {
+      "en": "Staff of Heaven's Vengeance",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you or one of your [living] or [holy] allies takes damage from an enemy, this staff deals 7 [holy] damage to the source of that damage.",
+      "zh": ""
+    }
+  },
+  "The Purifier": {
+    "name": {
+      "en": "The Purifier",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 50 damage dealt to enemies with Holy spells, cast Immolate on a random enemy",
+      "zh": ""
+    }
+  },
+  "Silvermelt": {
+    "name": {
+      "en": "Silvermelt",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 60 damage dealt to enemies with Fire spells, cast Mercurize on a random enemy",
+      "zh": ""
+    }
+  },
+  "Sorcwinter": {
+    "name": {
+      "en": "Sorcwinter",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 75 damage dealt to enemies with Sorcery spells, cast Death Chill on a random enemy",
+      "zh": ""
+    }
+  },
+  "The Dynamo": {
+    "name": {
+      "en": "The Dynamo",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 40 damage dealt to enemies with Lightning spells, cast Annihilate on a random enemy",
+      "zh": ""
+    }
+  },
+  "The Blazeloom": {
+    "name": {
+      "en": "The Blazeloom",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 50 damage dealt to enemies with Enchantment spells, cast Blazerip on a random enemy",
+      "zh": ""
+    }
+  },
+  "Starblesser": {
+    "name": {
+      "en": "Starblesser",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 40 damage dealt to enemies with Arcane spells, cast Heavenly Blast on a random enemy",
+      "zh": ""
+    }
+  },
+  "The Sparkloom": {
+    "name": {
+      "en": "The Sparkloom",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 50 damage dealt to enemies with Enchantment spells, cast Lightning Bolt on a random enemy",
+      "zh": ""
+    }
+  },
+  "Wintersting": {
+    "name": {
+      "en": "Wintersting",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 30 damage dealt to enemies with Ice spells, cast Poison Sting on a random enemy",
+      "zh": ""
+    }
+  },
+  "Red Majesty": {
+    "name": {
+      "en": "Red Majesty",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 30 damage dealt to enemies with Blood spells, cast Scourge on a random enemy",
+      "zh": ""
+    }
+  },
+  "Blastmaker": {
+    "name": {
+      "en": "Blastmaker",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies, summon a Fire Bomber where it was",
+      "zh": ""
+    }
+  },
+  "Embermaker": {
+    "name": {
+      "en": "Embermaker",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies, summon a Fire Fly Swarm where it was",
+      "zh": ""
+    }
+  },
+  "Mantismaker": {
+    "name": {
+      "en": "Mantismaker",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies, summon a Mantis where it was",
+      "zh": ""
+    }
+  },
+  "Sprigganmaker": {
+    "name": {
+      "en": "Sprigganmaker",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies, summon a Spriggan where it was",
+      "zh": ""
+    }
+  },
+  "Impmaker": {
+    "name": {
+      "en": "Impmaker",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies, summon a random imp where it was for 5 turns",
+      "zh": ""
+    }
+  },
+  "Rift Key Staff": {
+    "name": {
+      "en": "Rift Key Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Creates a Rift at the wizard's location upon level victory.",
+      "zh": ""
+    }
+  },
+  "Crackledarkener": {
+    "name": {
+      "en": "Crackledarkener",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [dark] damage, deal that much [lightning] damage to up to 3 units in a 3 tile burst.",
+      "zh": ""
+    }
+  },
+  "Scepter of Sorrows": {
+    "name": {
+      "en": "Scepter of Sorrows",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [ice] and [dark] damage in the same turn, summon a spirit of sorrow near that enemy for 10 turns.",
+      "zh": ""
+    }
+  },
+  "Glassy Fae Staff": {
+    "name": {
+      "en": "Glassy Fae Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a glassified enemy takes physical damage, it is unglassified and a glass faery is summoned.",
+      "zh": ""
+    }
+  },
+  "Quill Staff": {
+    "name": {
+      "en": "Quill Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a [living] ally deals damage to an enemy, if that enemy is in your line of sight, deal 8 [physical] damage to that enemy.",
+      "zh": ""
+    }
+  },
+  "Volcanic Lance": {
+    "name": {
+      "en": "Volcanic Lance",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you cast a [fire] spell targeting an enemy, send out a destructive beam toward the target, destroying walls and dealing [fire] damage equal to the sum of all SP spent on [fire] magic.",
+      "zh": ""
+    }
+  },
+  "Erebus Lance": {
+    "name": {
+      "en": "Erebus Lance",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you cast a [dark] spell targeting an enemy, send out a destructive beam toward the target, destroying walls and dealing [dark] damage equal to the sum of all SP spent on [dark] magic.",
+      "zh": ""
+    }
+  },
+  "Hallucinogenic Spore Staff": {
+    "name": {
+      "en": "Hallucinogenic Spore Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever [poison] is inflicted on an unpoisoned enemy, they are berserked for three turns.",
+      "zh": ""
+    }
+  },
+  "Mathamabacus": {
+    "name": {
+      "en": "Mathamabacus",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a spell, if your most recently cast spell was exactly one level lower, casts a random known cantrip on one random enemy in your line of sight.\n",
+      "zh": ""
+    }
+  },
+  "Multicolored Rage Rod": {
+    "name": {
+      "en": "Multicolored Rage Rod",
+      "zh": ""
+    },
+    "description": {
+      "en": "All spells and skills gain +1 damage for each unique tag amongst all the spells you have cast this level.",
+      "zh": ""
+    }
+  },
+  "The Boiler": {
+    "name": {
+      "en": "The Boiler",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, all soaked enemies take [25_fire:fire] damage.",
+      "zh": ""
+    }
+  },
+  "Balor's Eye Staff": {
+    "name": {
+      "en": "Balor's Eye Staff",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you deal damage with an [eye] spell, deal that much damage again but in a beam to the target, destroying walls and clouds in the way.",
+      "zh": ""
+    }
+  },
+  "Robe of Ice": {
+    "name": {
+      "en": "Robe of Ice",
+      "zh": ""
+    }
+  },
+  "Robe of Fire": {
+    "name": {
+      "en": "Robe of Fire",
+      "zh": ""
+    }
+  },
+  "Robe of Void": {
+    "name": {
+      "en": "Robe of Void",
+      "zh": ""
+    }
+  },
+  "Robe of Storms": {
+    "name": {
+      "en": "Robe of Storms",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [ice] or [lightning] damage, gain 1 SH up to a max of 1",
+      "zh": ""
+    }
+  },
+  "Robe of the Druids": {
+    "name": {
+      "en": "Robe of the Druids",
+      "zh": ""
+    }
+  },
+  "Fae Plate": {
+    "name": {
+      "en": "Fae Plate",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gain 1 SH each turn, up to a maximum of 1",
+      "zh": ""
+    }
+  },
+  "Vampiric Vestments": {
+    "name": {
+      "en": "Vampiric Vestments",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a [Living] unit dies, gain 5 HP",
+      "zh": ""
+    }
+  },
+  "Dwarven Chainmail": {
+    "name": {
+      "en": "Dwarven Chainmail",
+      "zh": ""
+    }
+  },
+  "Elven Chainmail": {
+    "name": {
+      "en": "Elven Chainmail",
+      "zh": ""
+    }
+  },
+  "Soulmail": {
+    "name": {
+      "en": "Soulmail",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a [living] unit dies, gain 1 SH, up to a max of 2",
+      "zh": ""
+    }
+  },
+  "Basilisk Scale Armor": {
+    "name": {
+      "en": "Basilisk Scale Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "On taking damage from another unit, the source is petrified for 1 turn",
+      "zh": ""
+    }
+  },
+  "Earthtroll Armor": {
+    "name": {
+      "en": "Earthtroll Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Regenerate 1 HP each turn",
+      "zh": ""
+    }
+  },
+  "Stormtroll Armor": {
+    "name": {
+      "en": "Stormtroll Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Regenerate 1 HP each turn",
+      "zh": ""
+    }
+  },
+  "Robe of Twilight": {
+    "name": {
+      "en": "Robe of Twilight",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Dark] or [Holy] spell, deal 8 [Dark] to a random enemy in line of sight, and 8 [Holy] damage to another.",
+      "zh": ""
+    }
+  },
+  "Robe of Agony": {
+    "name": {
+      "en": "Robe of Agony",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Lightning] or [Dark] spell, deal 8 [Lightning] to a random enemy in line of sight, and 8 [Dark] damage to another.",
+      "zh": ""
+    }
+  },
+  "Robe of Frostfire": {
+    "name": {
+      "en": "Robe of Frostfire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Fire] or [Ice] spell, deal 8 [Fire] to a random enemy in line of sight, and 8 [Ice] damage to another.",
+      "zh": ""
+    }
+  },
+  "Robe of Crystals": {
+    "name": {
+      "en": "Robe of Crystals",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Arcane] or [Ice] spell, deal 8 [Arcane] to a random enemy in line of sight, and 8 [Ice] damage to another.",
+      "zh": ""
+    }
+  },
+  "Raiment of Eyes": {
+    "name": {
+      "en": "Raiment of Eyes",
+      "zh": ""
+    },
+    "description": {
+      "en": "When allies are summoned, grants them your [eye] [enchantment] spells that they have matching tags for. \nEach level, a number of allies may be granted these spells equal to the sum of all SP spent on [eye] magic.",
+      "zh": ""
+    }
+  },
+  "Oozing Scale Armor": {
+    "name": {
+      "en": "Oozing Scale Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Spawn a slime of a matching type when you take damage from an enemy.\nIf there is no slime which matches the damage type, spawns a random slime",
+      "zh": ""
+    }
+  },
+  "Slimy Voodoo Mantle": {
+    "name": {
+      "en": "Slimy Voodoo Mantle",
+      "zh": ""
+    },
+    "description": {
+      "en": "If you would take damage, deal that much damage to an adjacent slime ally instead.",
+      "zh": ""
+    }
+  },
+  "Tundra Mantle": {
+    "name": {
+      "en": "Tundra Mantle",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, soaked enemies in a 5 tile radius are [frozen] for 3 turns.",
+      "zh": ""
+    }
+  },
+  "Wyrm Spirit Armor": {
+    "name": {
+      "en": "Wyrm Spirit Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "When a [Dragon] ally dies, gain 10% resistance to damage types matching their tags until the end of the realm.",
+      "zh": ""
+    }
+  },
+  "Marksman Cap": {
+    "name": {
+      "en": "Marksman Cap",
+      "zh": ""
+    }
+  },
+  "Warlord Helm": {
+    "name": {
+      "en": "Warlord Helm",
+      "zh": ""
+    }
+  },
+  "Spirit Visor": {
+    "name": {
+      "en": "Spirit Visor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Upon taking damage, gain 1 SH",
+      "zh": ""
+    }
+  },
+  "Brain Hat": {
+    "name": {
+      "en": "Brain Hat",
+      "zh": ""
+    }
+  },
+  "Cannibal Mask": {
+    "name": {
+      "en": "Cannibal Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a [living] ally dies, a random wounded ally up to 3 tiles away receives healing equal to the dead ally's max hp.",
+      "zh": ""
+    }
+  },
+  "Helm of the Host": {
+    "name": {
+      "en": "Helm of the Host",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, all allied units heal for 1 hp per 100 damage dealt to enemies by allied units.",
+      "zh": ""
+    }
+  },
+  "Icy Chill Mask": {
+    "name": {
+      "en": "Icy Chill Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast an [ice] spell, deal 2 [ice] damage to all enemy units in line of sight of the target",
+      "zh": ""
+    }
+  },
+  "Stone Mask": {
+    "name": {
+      "en": "Stone Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, petrify a random unpetrified enemy in line of sight for 3 turns",
+      "zh": ""
+    }
+  },
+  "Eye Helm": {
+    "name": {
+      "en": "Eye Helm",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast an [eye] spell, gain 3 SH, up to a maximum of 20.",
+      "zh": ""
+    }
+  },
+  "Talking Hat": {
+    "name": {
+      "en": "Talking Hat",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your [Enchantment] spells gain quickcast (the first one cast each turn does not conclude the turn).",
+      "zh": ""
+    }
+  },
+  "Crown of Ragnarok": {
+    "name": {
+      "en": "Crown of Ragnarok",
+      "zh": ""
+    },
+    "description": {
+      "en": "Nine turns after you enter a realm, cast Earthquake, Flameburst, Stormburst, and Word of Chaos",
+      "zh": ""
+    }
+  },
+  "Macrophagic Mask": {
+    "name": {
+      "en": "Macrophagic Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "When a [living] or [slime] ally deals damage to an enemy, they gain 1 max HP",
+      "zh": ""
+    }
+  },
+  "Fire Helm": {
+    "name": {
+      "en": "Fire Helm",
+      "zh": ""
+    }
+  },
+  "Ice Helm": {
+    "name": {
+      "en": "Ice Helm",
+      "zh": ""
+    }
+  },
+  "Lightning Helm": {
+    "name": {
+      "en": "Lightning Helm",
+      "zh": ""
+    }
+  },
+  "Dark Helm": {
+    "name": {
+      "en": "Dark Helm",
+      "zh": ""
+    }
+  },
+  "Nature Helm": {
+    "name": {
+      "en": "Nature Helm",
+      "zh": ""
+    }
+  },
+  "Holy Helm": {
+    "name": {
+      "en": "Holy Helm",
+      "zh": ""
+    }
+  },
+  "Arcane Helm": {
+    "name": {
+      "en": "Arcane Helm",
+      "zh": ""
+    }
+  },
+  "Metallic Helm": {
+    "name": {
+      "en": "Metallic Helm",
+      "zh": ""
+    }
+  },
+  "Fire Frenzy Mask": {
+    "name": {
+      "en": "Fire Frenzy Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Fire] spell, your [Fire] spells and skills gain [2_damage:damage] for [6_turns:duration]",
+      "zh": ""
+    }
+  },
+  "Ice Frenzy Mask": {
+    "name": {
+      "en": "Ice Frenzy Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Ice] spell, your [Ice] spells and skills gain [2_damage:damage] for [6_turns:duration]",
+      "zh": ""
+    }
+  },
+  "Arcane Frenzy Mask": {
+    "name": {
+      "en": "Arcane Frenzy Mask",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [Arcane] spell, your [Arcane] spells and skills gain [2_damage:damage] for [6_turns:duration]",
+      "zh": ""
+    }
+  },
+  "Summer Crown": {
+    "name": {
+      "en": "Summer Crown",
+      "zh": ""
+    },
+    "description": {
+      "en": "After 25 turns, summon 11 Fire Fly Swarms and 4 Fire Spirits.",
+      "zh": ""
+    }
+  },
+  "Winter Crown": {
+    "name": {
+      "en": "Winter Crown",
+      "zh": ""
+    },
+    "description": {
+      "en": "After 25 turns, summon 2 Yetis and 3 Storm Spirits.",
+      "zh": ""
+    }
+  },
+  "Spring Crown": {
+    "name": {
+      "en": "Spring Crown",
+      "zh": ""
+    },
+    "description": {
+      "en": "After 25 turns, summon 7 Gnomes and 2 Mycobeasts.",
+      "zh": ""
+    }
+  },
+  "Autumn Crown": {
+    "name": {
+      "en": "Autumn Crown",
+      "zh": ""
+    },
+    "description": {
+      "en": "After 25 turns, summon 7 Ravens and 4 Witchs.",
+      "zh": ""
+    }
+  },
+  "Bloodspike Helm": {
+    "name": {
+      "en": "Bloodspike Helm",
+      "zh": ""
+    },
+    "description": {
+      "en": "On spending HP to cast a [blood] spell, deal that much [physical] damage to up to 3 enemies in line of sight.",
+      "zh": ""
+    }
+  },
+  "Chaos Scale Crown": {
+    "name": {
+      "en": "Chaos Scale Crown",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, one of your Dragon minions instantly casts Annihilate on a random enemy.",
+      "zh": ""
+    }
+  },
+  "Crown of Bony Fingers": {
+    "name": {
+      "en": "Crown of Bony Fingers",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, one of your Undead minions instantly casts Touch of Death on a random enemy.",
+      "zh": ""
+    }
+  },
+  "Moon Crown": {
+    "name": {
+      "en": "Moon Crown",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, one of your Holy minions instantly casts Void Beam on a random enemy.",
+      "zh": ""
+    }
+  },
+  "Jormancrown": {
+    "name": {
+      "en": "Jormancrown",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an allied dragon dies, it spawns a two headed flametouched, stormtouched, chaos touched, or metallic snake.",
+      "zh": ""
+    }
+  },
+  "Dwarf Hat": {
+    "name": {
+      "en": "Dwarf Hat",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each level, when you cast your seventh unique spell, summon 7 duergar.",
+      "zh": ""
+    }
+  },
+  "Helm of Hexes": {
+    "name": {
+      "en": "Helm of Hexes",
+      "zh": ""
+    },
+    "description": {
+      "en": "When an enemy receives a debuff, there is a 50% chance they will receive another random debuff for the same duration up to a maximum of 10 turns.\nThis item can apply any of the following:\nBlind, Poison, Frozen, Petrified, Feared, Silenced",
+      "zh": ""
+    }
+  },
+  "Mask of Woe": {
+    "name": {
+      "en": "Mask of Woe",
+      "zh": ""
+    },
+    "description": {
+      "en": "At the end of your turn, increase the duration of debuffs on enemies in a 3 tile radius by 1.",
+      "zh": ""
+    }
+  },
+  "Veilpiercer's Monocle": {
+    "name": {
+      "en": "Veilpiercer's Monocle",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gain clarity when you cast a [translocation] spell.\nThe buff's duration is equal to the spell's level.",
+      "zh": ""
+    }
+  },
+  "Earthmeld Boots": {
+    "name": {
+      "en": "Earthmeld Boots",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gain 2 HP each turn unless you moved",
+      "zh": ""
+    }
+  },
+  "Travellers Shoes": {
+    "name": {
+      "en": "Travellers Shoes",
+      "zh": ""
+    }
+  },
+  "Cantrip Clogs": {
+    "name": {
+      "en": "Cantrip Clogs",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 7 steps, regain a charge of each level 1 spell you know",
+      "zh": ""
+    }
+  },
+  "Timestriders": {
+    "name": {
+      "en": "Timestriders",
+      "zh": ""
+    },
+    "description": {
+      "en": "Upon entering a level, all enemies are stunned for 1 turns",
+      "zh": ""
+    }
+  },
+  "Drill Shoes": {
+    "name": {
+      "en": "Drill Shoes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Grants Burrowing",
+      "zh": ""
+    }
+  },
+  "Winged Shoes": {
+    "name": {
+      "en": "Winged Shoes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Grants Flying",
+      "zh": ""
+    }
+  },
+  "Boots of Imminent Doom": {
+    "name": {
+      "en": "Boots of Imminent Doom",
+      "zh": ""
+    },
+    "description": {
+      "en": "Upon entering a rift, cast your [Seal:dark] [Fate:dark] on all enemies within the spell's range.",
+      "zh": ""
+    }
+  },
+  "Boots of Heaven's Assault": {
+    "name": {
+      "en": "Boots of Heaven's Assault",
+      "zh": ""
+    },
+    "description": {
+      "en": "Upon entering a rift, immediately cast your [Heavenly_Blast:holy] on all demons and undead in line of sight.",
+      "zh": ""
+    }
+  },
+  "Silken Sandals": {
+    "name": {
+      "en": "Silken Sandals",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you take a step, you gain 1 SH",
+      "zh": ""
+    }
+  },
+  "Snow Shoes": {
+    "name": {
+      "en": "Snow Shoes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a unit is frozen, you heal for 2 HP",
+      "zh": ""
+    }
+  },
+  "Translocation Boots": {
+    "name": {
+      "en": "Translocation Boots",
+      "zh": ""
+    }
+  },
+  "Gnome Shoes": {
+    "name": {
+      "en": "Gnome Shoes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 6 steps, summon a Gnome",
+      "zh": ""
+    }
+  },
+  "Slime Shoes": {
+    "name": {
+      "en": "Slime Shoes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 4 steps, summon a Green Slime",
+      "zh": ""
+    }
+  },
+  "Kobold Clogs": {
+    "name": {
+      "en": "Kobold Clogs",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 3 steps, summon a Kobold",
+      "zh": ""
+    }
+  },
+  "Ogre Boots": {
+    "name": {
+      "en": "Ogre Boots",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 8 steps, summon a Ogre",
+      "zh": ""
+    }
+  },
+  "Ghost Slippers": {
+    "name": {
+      "en": "Ghost Slippers",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 3 steps, summon a Ghost",
+      "zh": ""
+    }
+  },
+  "Storm Boots": {
+    "name": {
+      "en": "Storm Boots",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 15 steps, casts your Storm Burst spell.\n15 steps until cast.",
+      "zh": ""
+    }
+  },
+  "Exploding Boots": {
+    "name": {
+      "en": "Exploding Boots",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 15 steps, casts your Flame Burst spell.\n15 steps until cast.",
+      "zh": ""
+    }
+  },
+  "Earthquake Boots": {
+    "name": {
+      "en": "Earthquake Boots",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 8 steps, casts your Earthquake spell.\n8 steps until cast.",
+      "zh": ""
+    }
+  },
+  "Chalice of Light": {
+    "name": {
+      "en": "Chalice of Light",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you pick up an SP orb, your Holy spells regain all charges.",
+      "zh": ""
+    }
+  },
+  "Chalice of Iron": {
+    "name": {
+      "en": "Chalice of Iron",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you pick up an SP orb, your Metallic spells regain all charges.",
+      "zh": ""
+    }
+  },
+  "Chalice of Warp": {
+    "name": {
+      "en": "Chalice of Warp",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you pick up an SP orb, your Translocation spells regain all charges.",
+      "zh": ""
+    }
+  },
+  "Chalice of Dragons": {
+    "name": {
+      "en": "Chalice of Dragons",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you pick up an SP orb, your Dragon spells regain all charges.",
+      "zh": ""
+    }
+  },
+  "Codex of Sacrifice": {
+    "name": {
+      "en": "Codex of Sacrifice",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you complete a level, permanently sacrifice 25 HP to activate the Codex.\nWhen you activate the Codex, learn a [word] spell. \nIf you know every available [word] spell, this item ceases to function. \n",
+      "zh": ""
+    }
+  },
+  "Crisis Charm": {
+    "name": {
+      "en": "Crisis Charm",
+      "zh": ""
+    },
+    "description": {
+      "en": "Restores all life and protects you for one turn if you would die. Broken after use.",
+      "zh": ""
+    }
+  },
+  "Finger 6": {
+    "name": {
+      "en": "Finger 6",
+      "zh": ""
+    }
+  },
+  "Ankh": {
+    "name": {
+      "en": "Ankh",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, each of your minions deals [1_holy:holy] damage to a random adjacent enemy",
+      "zh": ""
+    }
+  },
+  "Drakentooth": {
+    "name": {
+      "en": "Drakentooth",
+      "zh": ""
+    }
+  },
+  "Eye Rock Pendant": {
+    "name": {
+      "en": "Eye Rock Pendant",
+      "zh": ""
+    }
+  },
+  "Amber Cube": {
+    "name": {
+      "en": "Amber Cube",
+      "zh": ""
+    }
+  },
+  "Skull Necklace": {
+    "name": {
+      "en": "Skull Necklace",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [dark] spell, all [undead] allies gain +1 damage for 25 turns.",
+      "zh": ""
+    }
+  },
+  "Red Obsidian Shard": {
+    "name": {
+      "en": "Red Obsidian Shard",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, each enemy adjacent to an allied [demon] or [undead] unit takes 2 [fire] damage.",
+      "zh": ""
+    }
+  },
+  "Jade Shard": {
+    "name": {
+      "en": "Jade Shard",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, each enemy adjacent to an allied [living] unit is poisoned for 3 turns.",
+      "zh": ""
+    }
+  },
+  "Fanged Amulet": {
+    "name": {
+      "en": "Fanged Amulet",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, deal [physical] damage equal to the sum of all SP spent on [blood] magic to an adjacent unit and heal for the damage dealt. ",
+      "zh": ""
+    }
+  },
+  "Stoneeater Amulet": {
+    "name": {
+      "en": "Stoneeater Amulet",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, eat an adjacent wall. Gain 1 HP if you do.",
+      "zh": ""
+    }
+  },
+  "Stormeater Amulet": {
+    "name": {
+      "en": "Stormeater Amulet",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, consume all adjacent lightning storms. When you do, you regain a charge of your highest level lightning spell of level equal to or less than the number of storms eaten.",
+      "zh": ""
+    }
+  },
+  "Blizzard Beacon": {
+    "name": {
+      "en": "Blizzard Beacon",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, summons a random number of blizzards across the level. The maximum number summoned each turn is the sum of all SP spent on [ice] magic.",
+      "zh": ""
+    }
+  },
+  "Reality Anchor": {
+    "name": {
+      "en": "Reality Anchor",
+      "zh": ""
+    }
+  },
+  "Amulet of Undeath": {
+    "name": {
+      "en": "Amulet of Undeath",
+      "zh": ""
+    },
+    "description": {
+      "en": "Undead allies regenerate 3 HP per turn",
+      "zh": ""
+    }
+  },
+  "Vial of Ambrosia": {
+    "name": {
+      "en": "Vial of Ambrosia",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you enter a new level, gain immunity to stun effects for 10 turns.",
+      "zh": ""
+    }
+  },
+  "Amulet of Emerald Flame": {
+    "name": {
+      "en": "Amulet of Emerald Flame",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 30 damage dealt to enemies by [enchantments:enchantment], the closest enemy takes 10 fire damage.",
+      "zh": ""
+    }
+  },
+  "Monkey Skull Amulet": {
+    "name": {
+      "en": "Monkey Skull Amulet",
+      "zh": ""
+    }
+  },
+  "Neanderthal's Tooth": {
+    "name": {
+      "en": "Neanderthal's Tooth",
+      "zh": ""
+    }
+  },
+  "Blood Ruby": {
+    "name": {
+      "en": "Blood Ruby",
+      "zh": ""
+    }
+  },
+  "Blood Shield": {
+    "name": {
+      "en": "Blood Shield",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you cast a spell, lose 1 HP and gain 1 [SH:shield].",
+      "zh": ""
+    }
+  },
+  "Ring of Magnetic Charisma": {
+    "name": {
+      "en": "Ring of Magnetic Charisma",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you enter a level, turns the nearest enemy spawner or construct into an ally",
+      "zh": ""
+    }
+  },
+  "Bramblethorn": {
+    "name": {
+      "en": "Bramblethorn",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned allies deal 6 [Physical] damage to melee attackers",
+      "zh": ""
+    }
+  },
+  "Toadthorn": {
+    "name": {
+      "en": "Toadthorn",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned allies deal 6 [Poison] damage to melee attackers",
+      "zh": ""
+    }
+  },
+  "Devilthorn": {
+    "name": {
+      "en": "Devilthorn",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned allies deal 6 [Fire] damage to melee attackers",
+      "zh": ""
+    }
+  },
+  "Witch Whistle": {
+    "name": {
+      "en": "Witch Whistle",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 100 [Dark] damage dealt to enemies, summon a Witch.\nCurrent: 0",
+      "zh": ""
+    }
+  },
+  "Snowy Fursphere": {
+    "name": {
+      "en": "Snowy Fursphere",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 300 [Ice] damage dealt to enemies, summon a Yeti.\nCurrent: 0",
+      "zh": ""
+    }
+  },
+  "Living Emberstone": {
+    "name": {
+      "en": "Living Emberstone",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 100 [Fire] damage dealt to enemies, summon a Fire Spirit.\nCurrent: 0",
+      "zh": ""
+    }
+  },
+  "Silken Links": {
+    "name": {
+      "en": "Silken Links",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [Poison] or [Arcane] damage, deal 9 damage of that type to a random enemy in line of sight of the target up to 5 tiles away.",
+      "zh": ""
+    }
+  },
+  "Winter Links": {
+    "name": {
+      "en": "Winter Links",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [Ice] or [Dark] damage, deal 9 damage of that type to a random enemy in line of sight of the target up to 5 tiles away.",
+      "zh": ""
+    }
+  },
+  "Wrath Links": {
+    "name": {
+      "en": "Wrath Links",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [Holy] or [Lightning] damage, deal 9 damage of that type to a random enemy in line of sight of the target up to 5 tiles away.",
+      "zh": ""
+    }
+  },
+  "Jar of Trollblood": {
+    "name": {
+      "en": "Jar of Trollblood",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each ally you summon has a one in three chance to be Trollblooded.\n",
+      "zh": ""
+    }
+  },
+  "Jar of Embers": {
+    "name": {
+      "en": "Jar of Embers",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each non-Fire ally you summon has a one in three chance to be Burning.\n",
+      "zh": ""
+    }
+  },
+  "Jar of Quicksilver": {
+    "name": {
+      "en": "Jar of Quicksilver",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each non-Metallic ally you summon has a one in three chance to be Metallic.\n",
+      "zh": ""
+    }
+  },
+  "Jar of Ectoplasm": {
+    "name": {
+      "en": "Jar of Ectoplasm",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each non-Undead ally you summon has a one in three chance to be Ghostly.\n",
+      "zh": ""
+    }
+  },
+  "Poison Pipe": {
+    "name": {
+      "en": "Poison Pipe",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 3 turns, the nearest 3 enemy units are afflicted with Poison for 3 turns.\nDoes not target units already afflicted with Poison.",
+      "zh": ""
+    }
+  },
+  "Time Pipe": {
+    "name": {
+      "en": "Time Pipe",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 10 turns, the nearest 7 enemy units are afflicted with Stunned for 3 turns.\nDoes not target units already afflicted with Stunned.",
+      "zh": ""
+    }
+  },
+  "Ink Pipe": {
+    "name": {
+      "en": "Ink Pipe",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 3 turns, the nearest 2 enemy units are afflicted with Blind for 4 turns.\nDoes not target units already afflicted with Blind.",
+      "zh": ""
+    }
+  },
+  "Ice Pipe": {
+    "name": {
+      "en": "Ice Pipe",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 6 turns, the nearest 2 enemy units are afflicted with Frozen for 4 turns.\nDoes not target units already afflicted with Frozen.",
+      "zh": ""
+    }
+  },
+  "Purple Curse Doll": {
+    "name": {
+      "en": "Purple Curse Doll",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever one of your [Arcane] minions dies, it casts your Magic Missile on the killer.",
+      "zh": ""
+    }
+  },
+  "Ugly Curse Doll": {
+    "name": {
+      "en": "Ugly Curse Doll",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever one of your [Holy] minions dies, it casts your Ghostball on the killer.",
+      "zh": ""
+    }
+  },
+  "Red Curse Doll": {
+    "name": {
+      "en": "Red Curse Doll",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever one of your [Demon] minions dies, it casts your Annihilate on the killer.",
+      "zh": ""
+    }
+  },
+  "Scaly Curse Doll": {
+    "name": {
+      "en": "Scaly Curse Doll",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever one of your [Dragon] minions dies, it casts your Death Shock on the killer.",
+      "zh": ""
+    }
+  },
+  "Fae Toxin Pouch": {
+    "name": {
+      "en": "Fae Toxin Pouch",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, deal 15 Arcane damage to one random enemy currently afflicted with Poison",
+      "zh": ""
+    }
+  },
+  "Icy Cruciform": {
+    "name": {
+      "en": "Icy Cruciform",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, deal 15 Holy damage to one random enemy currently afflicted with Frozen",
+      "zh": ""
+    }
+  },
+  "Evermelting Cube": {
+    "name": {
+      "en": "Evermelting Cube",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy is unfrozen, it is soaked for 3 turns",
+      "zh": ""
+    }
+  },
+  "Fast Hand Gloves": {
+    "name": {
+      "en": "Fast Hand Gloves",
+      "zh": ""
+    }
+  },
+  "Caustic Sprig": {
+    "name": {
+      "en": "Caustic Sprig",
+      "zh": ""
+    },
+    "description": {
+      "en": "Poisoned enemies lose one temporary buff each turn.",
+      "zh": ""
+    }
+  },
+  "Wound Rot Amulet": {
+    "name": {
+      "en": "Wound Rot Amulet",
+      "zh": ""
+    },
+    "description": {
+      "en": "Enemies receive 3 turns of [poison] when they take [physical] damage.",
+      "zh": ""
+    }
+  },
+  "Explosive Spore Manual": {
+    "name": {
+      "en": "Explosive Spore Manual",
+      "zh": ""
+    },
+    "description": {
+      "en": "Casts your Combust Poison for free at the end of each turn.",
+      "zh": ""
+    }
+  }
+}

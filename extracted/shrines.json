@@ -1,0 +1,152 @@
+{
+  "Treasure Chest": {
+    "name": {
+      "en": "Treasure Chest",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Box of Wizard Caps": {
+    "name": {
+      "en": "Box of Wizard Caps",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Hat Chest": {
+    "name": {
+      "en": "Hat Chest",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Staff Chest": {
+    "name": {
+      "en": "Staff Chest",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Shoe Box": {
+    "name": {
+      "en": "Shoe Box",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Armor Chest": {
+    "name": {
+      "en": "Armor Chest",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Trinket Box": {
+    "name": {
+      "en": "Trinket Box",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Ruby Heart": {
+    "name": {
+      "en": "Ruby Heart",
+      "zh": ""
+    },
+    "description": {
+      "en": "Increase max hp by 25",
+      "zh": ""
+    }
+  },
+  "Exotic Pet Shop": {
+    "name": {
+      "en": "Exotic Pet Shop",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Sigil Chest": {
+    "name": {
+      "en": "Sigil Chest",
+      "zh": ""
+    },
+    "description": {
+      "en": " ",
+      "zh": ""
+    }
+  },
+  "Scroll of Spells": {
+    "name": {
+      "en": "Scroll of Spells",
+      "zh": ""
+    },
+    "description": {
+      "en": "One spell may be learned for free from this text",
+      "zh": ""
+    }
+  },
+  "Scroll of Skills": {
+    "name": {
+      "en": "Scroll of Skills",
+      "zh": ""
+    },
+    "description": {
+      "en": "One skill may be learned for free from this text",
+      "zh": ""
+    }
+  },
+  "Miniaturization Shrine": {
+    "name": {
+      "en": "Miniaturization Shrine",
+      "zh": ""
+    },
+    "description": {
+      "en": "Turns a piece of equipment into a miniature version of itself.",
+      "zh": ""
+    }
+  },
+  "Amnesia Shrine": {
+    "name": {
+      "en": "Amnesia Shrine",
+      "zh": ""
+    },
+    "description": {
+      "en": "Forget a spell and its upgrade. Refunds SP. Reusable",
+      "zh": ""
+    }
+  },
+  "Duplication Shrine": {
+    "name": {
+      "en": "Duplication Shrine",
+      "zh": ""
+    },
+    "description": {
+      "en": "Obtain a duplicate of an existing trinket.",
+      "zh": ""
+    }
+  }
+}

@@ -1,0 +1,1014 @@
+{
+  "Arcane Accounting": {
+    "name": {
+      "en": "Arcane Accounting",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast the last charge of an [arcane] spell, your next non arcane spell is free for 1 turn.",
+      "zh": ""
+    }
+  },
+  "Arcane Combustion": {
+    "name": {
+      "en": "Arcane Combustion",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a unit is killed by arcane damage, that unit explodes for [12_arcane:arcane] damage in a square with a [1_tile:radius] radius, melting walls on effected tiles.",
+      "zh": ""
+    }
+  },
+  "Arcane Shield": {
+    "name": {
+      "en": "Arcane Shield",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast an [arcane] spell, if you have no shields, gain [1_SH:shields].",
+      "zh": ""
+    }
+  },
+  "Bone Guard": {
+    "name": {
+      "en": "Bone Guard",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 5 turns, if you have less than [2:num_summons] Bone Knights, summon a Bone Knight.\nBone knights are shielded melee units with a [dark] melee attack that drains max life.\n",
+      "zh": ""
+    }
+  },
+  "Chaos Familiar": {
+    "name": {
+      "en": "Chaos Familiar",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 5 turns, summon a chaos chimera familiar if you do not currently have one.\nThe familiar has ranged [fire] and [lightning] attacks, and splits into a lightning snake and a fire lion on death.\nThe familiar can cast your Fireball, Lightning Bolt, Thunder Strike, Pyrostatic Pulse, Immolate, and Chaos Barrage spells on a 3 turn cooldown.\n",
+      "zh": ""
+    }
+  },
+  "Conjured Aggression": {
+    "name": {
+      "en": "Conjured Aggression",
+      "zh": ""
+    }
+  },
+  "Conjured Vitality": {
+    "name": {
+      "en": "Conjured Vitality",
+      "zh": ""
+    }
+  },
+  "Crystal Power": {
+    "name": {
+      "en": "Crystal Power",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your [sorcery] spells gain [2_damage:damage] for each [frozen] or [glassified] unit.",
+      "zh": ""
+    }
+  },
+  "Deathchill Familiar": {
+    "name": {
+      "en": "Deathchill Familiar",
+      "zh": ""
+    },
+    "description": {
+      "en": "Every 5 turns, summon a deathchill chimera familiar if you do not currently have one.\nThe familiar has ranged [ice] and [dark] attacks, and splits into a death snake and an ice lion on death.\nThe familiar can cast your Deathbolt, Icicle, Freeze, Iceball, Life Drain, Touch of Death, and Plague of Undeath spells on a 3 turn cooldown.\n",
+      "zh": ""
+    }
+  },
+  "Faestone": {
+    "name": {
+      "en": "Faestone",
+      "zh": ""
+    },
+    "description": {
+      "en": " each level with a friendly Fae Stone.  The Fae Stone is a sturdy immobile melee unit.\n\nWhenever you cast an arcane spell, the Fae Stone teleports near the target and gains 1 shield.\n\nWhenever you cast a nature spell, the Fae Stone heals 10 HP.",
+      "zh": ""
+    }
+  },
+  "Frostbite": {
+    "name": {
+      "en": "Frostbite",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn all frozen enemies take [6_dark:dark] damage.",
+      "zh": ""
+    }
+  },
+  "Frozen Fragility": {
+    "name": {
+      "en": "Frozen Fragility",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy is [frozen], reduces that enemy's [physical] and [ice] resist by 100 until it is unfrozen.",
+      "zh": ""
+    }
+  },
+  "Glittering Dance": {
+    "name": {
+      "en": "Glittering Dance",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you cast three [arcane] spells in a row, regain a charge of a random [translocation] spell and summon [2_faeries:num_summons].\nThe faeries fly, blink, are shielded, can heal their allies, and have an [arcane] ranged attack.\nThe faeries vanish after [10_turns:minion_duration].\n",
+      "zh": ""
+    }
+  },
+  "Hibernation": {
+    "name": {
+      "en": "Hibernation",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your living minions gain [75_ice:ice] resist.\nYour living minions freeze for [3_turns:duration] upon taking ice damage.\nYour living minions heal for [15_HP:heal] each turn while [frozen].\n",
+      "zh": ""
+    }
+  },
+  "Holy Water": {
+    "name": {
+      "en": "Holy Water",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a [frozen] enemy takes [holy] damage, you and all allies in line of sight gain [1_SH:shields], up to a max of [5:shields].\nWhenever a [frozen] enemy is slain by [holy] damage, deal [17_holy:holy] damage to 3 random enemies in line of sight of the slain unit.",
+      "zh": ""
+    }
+  },
+  "Houndlord": {
+    "name": {
+      "en": "Houndlord",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [fire] spell, if you have less than [4:num_summons] hellhounds, summon a hellhound.\nHell hounds have a leap attack, fiery bodies which deal damage to melee attackers, and [fire] melee attacks.\n",
+      "zh": ""
+    }
+  },
+  "Hungry Dead": {
+    "name": {
+      "en": "Hungry Dead",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned [undead] units gain Hunger.\nHunger deals [7_dark:dark] damage to a target up to [3_tiles:range] away, healing the caster for all damage dealt, and has a [3_turn:cooldown] cooldown.\n",
+      "zh": ""
+    }
+  },
+  "Lifespark Lantern": {
+    "name": {
+      "en": "Lifespark Lantern",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [nature] or [lightning] spell, gain lifespark with duration equal to the spell's level.\nEvery turn you have active lifespark, summon a lightning bug swarm, which disappears after 25 turns.\n",
+      "zh": ""
+    }
+  },
+  "Lightning Warp": {
+    "name": {
+      "en": "Lightning Warp",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [lightning] spell, all non stationary enemy units within [3_tiles:radius] of the target are teleported to random spaces up to [5_tiles:range] away and take [9_lightning:lightning] damage.  Enemies will always be teleported at least 4 tiles away from the wizard.",
+      "zh": ""
+    }
+  },
+  "Master of Memories": {
+    "name": {
+      "en": "Master of Memories",
+      "zh": ""
+    }
+  },
+  "Megavenom": {
+    "name": {
+      "en": "Megavenom",
+      "zh": ""
+    },
+    "description": {
+      "en": "Poisoned enemies take [4:poison] additional [poison] damage each turn.",
+      "zh": ""
+    }
+  },
+  "Melting Armor": {
+    "name": {
+      "en": "Melting Armor",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [fire] damage, it loses [10_physical:physical] resist.",
+      "zh": ""
+    }
+  },
+  "Minion Regeneration": {
+    "name": {
+      "en": "Minion Regeneration",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, heal each of your minions for [2_HP:heal]",
+      "zh": ""
+    }
+  },
+  "Natural Healing": {
+    "name": {
+      "en": "Natural Healing",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [nature] spell, you and all [living] allies heal [5_HP:heal].",
+      "zh": ""
+    }
+  },
+  "Natural Vigour": {
+    "name": {
+      "en": "Natural Vigour",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned units gain [25_physical:physical] resist, [25_lightning:lightning] resist, [25_ice:ice] resist and [25_fire:fire] resist.",
+      "zh": ""
+    }
+  },
+  "Paralyzing Venom": {
+    "name": {
+      "en": "Paralyzing Venom",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [poison] damage, it has a 25% chance to be [stunned] for [1_turn:duration].",
+      "zh": ""
+    }
+  },
+  "Prince of Ruin": {
+    "name": {
+      "en": "Prince of Ruin",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [fire], [physical], or [lightning] damage, deal [13_damage:damage] of that type to a random enemy in line of sight of the target up to [5_tiles:radius] away.",
+      "zh": ""
+    }
+  },
+  "Radiant Chill": {
+    "name": {
+      "en": "Radiant Chill",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast an [ice] spell, [freeze] the nearest unfrozen enemy to that spell's target for [3_turns:duration].",
+      "zh": ""
+    }
+  },
+  "Shielded Minions": {
+    "name": {
+      "en": "Shielded Minions",
+      "zh": ""
+    },
+    "description": {
+      "en": "Arcane minions you summon gain [3_SH:shields].  Other minions you summon gain [1_SH:shields].",
+      "zh": ""
+    }
+  },
+  "Silkshifter": {
+    "name": {
+      "en": "Silkshifter",
+      "zh": ""
+    },
+    "description": {
+      "en": "You are a [spider].\nPassively spawn a web each turn on a random adjacent tile.  Webs will not spawn on top of units or walls.\nWhenever you cast a translocation spell targeting a web, refund 1 charge of that spell and consume the web.",
+      "zh": ""
+    }
+  },
+  "Spell Sniper": {
+    "name": {
+      "en": "Spell Sniper",
+      "zh": ""
+    }
+  },
+  "Spider Spawning": {
+    "name": {
+      "en": "Spider Spawning",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [poison] damage, summon a friendly spider nearby.",
+      "zh": ""
+    }
+  },
+  "Stormbrood Tricksters": {
+    "name": {
+      "en": "Stormbrood Tricksters",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a translocation spell, summon a stormtroll trickster at the location you cast the spell from.",
+      "zh": ""
+    }
+  },
+  "Toadblood Transmutation": {
+    "name": {
+      "en": "Toadblood Transmutation",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a living ally takes damage, gain that much toadblood.\nAt 250 toadblood, summon a towering toadbeast near the most recently damaged ally.\nCurrent toadblood: 0\n",
+      "zh": ""
+    }
+  },
+  "Unholy Alliance": {
+    "name": {
+      "en": "Unholy Alliance",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you summon an [undead] or [demon], if you control a [holy] unit, the newly summoned unit gains [7_damage:damage].\nWhenever you summon a [holy] creature, if you control an [undead] or [demon], the newly summoned unit gains [7_damage:damage].\n",
+      "zh": ""
+    }
+  },
+  "Venom Spit": {
+    "name": {
+      "en": "Venom Spit",
+      "zh": ""
+    },
+    "description": {
+      "en": "Your summoned [living] and [nature] units gain Venom Spit.\nVenom spit is a ranged attack which deals [4_poison:poison] damage and inflicts [poison] for [10_turns:duration].\nVenom spit has a [6_tile:range] range, and a [4_turn:cooldown] cooldown.",
+      "zh": ""
+    }
+  },
+  "Voidflame Lantern": {
+    "name": {
+      "en": "Voidflame Lantern",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [fire] or [arcane] spell, gain starcharged with duration equal to the spell's level.\nStarcharged deals [6_arcane:arcane] damage to one random enemy in line of sight each turn, and then [6_fire:fire] damage to another.",
+      "zh": ""
+    }
+  },
+  "Acid Fumes": {
+    "name": {
+      "en": "Acid Fumes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, a random unacidified enemy is acidified.\nAcidified units lose 100 [poison] resist.",
+      "zh": ""
+    }
+  },
+  "Armorer": {
+    "name": {
+      "en": "Armorer",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, a random summoned ally equips a copy of your armor.",
+      "zh": ""
+    }
+  },
+  "Blood Anima": {
+    "name": {
+      "en": "Blood Anima",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 6 HP spent casting spells, summon a bloodghast for 13 turns.",
+      "zh": ""
+    }
+  },
+  "Blood Reaping": {
+    "name": {
+      "en": "Blood Reaping",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy [demon] or [living] unit dies, gain 2 HP",
+      "zh": ""
+    }
+  },
+  "Chaos Casting": {
+    "name": {
+      "en": "Chaos Casting",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [chaos] spell, you have a 25% chance of regaining a charge of another random [chaos] spell",
+      "zh": ""
+    }
+  },
+  "Collected Agony": {
+    "name": {
+      "en": "Collected Agony",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, deal 2x the sum total of all [poison] damage dealt to all units to the nearest enemy as [dark] damage.",
+      "zh": ""
+    }
+  },
+  "Demonic Cruelty": {
+    "name": {
+      "en": "Demonic Cruelty",
+      "zh": ""
+    },
+    "description": {
+      "en": "Redeal half of all damage dealt to enemy units by [demon] allies as [poison] damage",
+      "zh": ""
+    }
+  },
+  "Earthwrath": {
+    "name": {
+      "en": "Earthwrath",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [nature] or [chaos] spell, send out tremors along the ground from the target to nearby enemies.\nEach tremor deals [9_physical:physical] damage to the target and all units in its path.\nThe base number of targets is equal to the level of the spell.\nThe tremors can target enemies up to [8:radius] tiles away.\n",
+      "zh": ""
+    }
+  },
+  "Fae Malevolence": {
+    "name": {
+      "en": "Fae Malevolence",
+      "zh": ""
+    },
+    "description": {
+      "en": "Redeal 50% of all [physical], [poison], [lightning], and [ice] damage dealt to enemies by [enchantments:enchantment] as [arcane] damage.\nRedeal 50% of all other damage dealt to enemies by [enchantments:enchantment] as [poison] damage.",
+      "zh": ""
+    }
+  },
+  "Fiery Judgement": {
+    "name": {
+      "en": "Fiery Judgement",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [fire] damage, redeal that damage as [holy] damage.",
+      "zh": ""
+    }
+  },
+  "Focused Channeler": {
+    "name": {
+      "en": "Focused Channeler",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gain [4_turns:duration] of Clarity when you cast a channeled spell.",
+      "zh": ""
+    }
+  },
+  "Ghostfire": {
+    "name": {
+      "en": "Ghostfire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [dark] damage and [fire] damage in the same turn, summon a burning ghost near that enemy.\nThe ghosts vanish after [10_turns:minion_duration].",
+      "zh": ""
+    }
+  },
+  "Grey Goo": {
+    "name": {
+      "en": "Grey Goo",
+      "zh": ""
+    },
+    "description": {
+      "en": "Slimes you summon receive the [Metallic] boss modifier and the Ecophagy buff.\nEcophagy causes slimes to eat any adjacent walls at the end of their turn.\nThe slime gains 1 maximum and current health for each wall consumed this way.",
+      "zh": ""
+    }
+  },
+  "Hemocorruption": {
+    "name": {
+      "en": "Hemocorruption",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an allied unit heals, deal that much [poison] damage to up to [2:num_targets] enemy units in a [5_tile:radius] burst.",
+      "zh": ""
+    }
+  },
+  "Hex Specialist": {
+    "name": {
+      "en": "Hex Specialist",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, deal [1:damage] [arcane] damage to enemy units for each debuff they have.",
+      "zh": ""
+    }
+  },
+  "Holy Thunder": {
+    "name": {
+      "en": "Holy Thunder",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [lightning] damage, redeal that damage as [holy] damage.",
+      "zh": ""
+    }
+  },
+  "Hordemancer": {
+    "name": {
+      "en": "Hordemancer",
+      "zh": ""
+    }
+  },
+  "Horror": {
+    "name": {
+      "en": "Horror",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [dark] damage, up to [3:num_targets] random enemies in line of sight of that enemy are afflicted by fear for [5_turns:duration]",
+      "zh": ""
+    }
+  },
+  "Hypocrisy": {
+    "name": {
+      "en": "Hypocrisy",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [dark] spell, if your next spell is a [holy] spell of a lower level, that spell's cost is refunded.\nWhenever you cast a [holy] spell, if your next spell is a [dark] spell of a lower level, that spell's cost is refunded.",
+      "zh": ""
+    }
+  },
+  "Master of Space": {
+    "name": {
+      "en": "Master of Space",
+      "zh": ""
+    }
+  },
+  "Master of Time": {
+    "name": {
+      "en": "Master of Time",
+      "zh": ""
+    }
+  },
+  "Menacing Gaze": {
+    "name": {
+      "en": "Menacing Gaze",
+      "zh": ""
+    },
+    "description": {
+      "en": "When one of your [Eye] spells damages an enemy, inflict [2:duration] turns of fear on them.",
+      "zh": ""
+    }
+  },
+  "Multimancy": {
+    "name": {
+      "en": "Multimancy",
+      "zh": ""
+    }
+  },
+  "Necrostatics": {
+    "name": {
+      "en": "Necrostatics",
+      "zh": ""
+    },
+    "description": {
+      "en": "You get +1 [lightning] damage for each undead ally you control.",
+      "zh": ""
+    }
+  },
+  "Purestrike": {
+    "name": {
+      "en": "Purestrike",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you or an allied unit deals physical damage to an enemy, if the source of that damage is shielded, redeal 50% of that damage as arcane and 50% of that damage as holy.",
+      "zh": ""
+    }
+  },
+  "Pyrophilia": {
+    "name": {
+      "en": "Pyrophilia",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a summoned minion witnesses an enemy take [fire] damage, that minion heals for half that damage.",
+      "zh": ""
+    }
+  },
+  "Righteous March": {
+    "name": {
+      "en": "Righteous March",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [holy] damage, yourself and other allies witnessing it gain [1_SH:shields] if they are not already shielded.",
+      "zh": ""
+    }
+  },
+  "Scalefeather Egregore": {
+    "name": {
+      "en": "Scalefeather Egregore",
+      "zh": ""
+    },
+    "description": {
+      "en": "At the end of your turn, if you control 10 or more [living] or [arcane] allies and no Egregore, summon a Scalefeather Egregore.\nThe Egregore can cast your blizzard, nightmare aura, devour mind, void beam, toxin burst, and lumbriogenesis spells if you have them.\nThe Egregore is unsummoned at the end of your turn if you control fewer than 10 [living] or [arcane] allies.",
+      "zh": ""
+    }
+  },
+  "Searing Heat": {
+    "name": {
+      "en": "Searing Heat",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [fire] spell, deal [1_fire:fire] damage to all enemies in line of sight of the target.\nThis damage is fixed and cannot be modified.",
+      "zh": ""
+    }
+  },
+  "Slime Time": {
+    "name": {
+      "en": "Slime Time",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an allied slime is summoned, their chance to grow is set to 75% rather than the base 50%.",
+      "zh": ""
+    }
+  },
+  "Slimebirth Cantromancy": {
+    "name": {
+      "en": "Slimebirth Cantromancy",
+      "zh": ""
+    },
+    "description": {
+      "en": "When an allied [slime:slime] is spawned, it casts a random cantrip you know that shares a tag with it.",
+      "zh": ""
+    }
+  },
+  "Sonic Shielding": {
+    "name": {
+      "en": "Sonic Shielding",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally loses a shield, deal [3_physical:physical] and [3_arcane:arcane] damage and apply silence for [2_turns:duration] to up to [2_enemies:num_targets] up to [5_tiles:radius] away and in line of sight.",
+      "zh": ""
+    }
+  },
+  "Starfire": {
+    "name": {
+      "en": "Starfire",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [fire] damage, deal that much [arcane] damage to up to [4:num_targets] adjacent enemies.",
+      "zh": ""
+    }
+  },
+  "Thorn Garden": {
+    "name": {
+      "en": "Thorn Garden",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast an [arcane] or [nature] spell, summon [3:num_summons] fae thorns near the target.\nFae Thorns have [10_HP:minion_health], and cannot move.\nFae Thorns have a melee attack which deals [4_physical:physical] damage.\nThe thorns vanish after [9_turns:minion_duration].",
+      "zh": ""
+    }
+  },
+  "Wordspeaker": {
+    "name": {
+      "en": "Wordspeaker",
+      "zh": ""
+    }
+  },
+  "Blazing Bloodfire": {
+    "name": {
+      "en": "Blazing Bloodfire",
+      "zh": ""
+    },
+    "description": {
+      "en": "All of your [Blood] and [Fire] spells gain quickcast (the first one cast each turn does not conclude the turn).",
+      "zh": ""
+    }
+  },
+  "Chastisement": {
+    "name": {
+      "en": "Chastisement",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [holy] damage, it has a 50% chance to be [stunned] for [1_turns:duration].",
+      "zh": ""
+    }
+  },
+  "Cracklevoid": {
+    "name": {
+      "en": "Cracklevoid",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [arcane] damage, deal that much [lightning] damage to up to [2:num_targets] enemy units in a [6_tile:radius] burst.",
+      "zh": ""
+    }
+  },
+  "Echomancer": {
+    "name": {
+      "en": "Echomancer",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast the same [sorcery] spell twice in a row, gain a charge of that spell.\n",
+      "zh": ""
+    }
+  },
+  "Ice Tap": {
+    "name": {
+      "en": "Ice Tap",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast an [arcane] spell targeting a [frozen] unit, make a copy of that spell targeting each other frozen unit in line of sight.\nRemove [frozen] from all affected units.",
+      "zh": ""
+    }
+  },
+  "Icy Vengeance": {
+    "name": {
+      "en": "Icy Vengeance",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever one of your minions dies, up to [3:num_targets] random enemies in a [5_tile:radius] radius take [ice] damage equal to half the dead minion's max HP.",
+      "zh": ""
+    }
+  },
+  "Inferno Engines": {
+    "name": {
+      "en": "Inferno Engines",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [fire] spell, all of your [metallic] allies gain [2_damage:damage] [fire] aura with radius equal to the level of the spell you cast for [10_turns:duration].\nThis damage is fixed and cannot be modified.\n",
+      "zh": ""
+    }
+  },
+  "Lightning Frenzy": {
+    "name": {
+      "en": "Lightning Frenzy",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [lightning] spell, your [lightning] spells and skills gain [4_damage:damage] for [6_turns:duration]",
+      "zh": ""
+    }
+  },
+  "Moonspeaker": {
+    "name": {
+      "en": "Moonspeaker",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy takes [arcane] damage, all [holy] minions in line of sight of that enemy redeal 50% of that damage as [holy] damage.",
+      "zh": ""
+    }
+  },
+  "Razorshaping": {
+    "name": {
+      "en": "Razorshaping",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [metallic] spell, deal 27 [physical] damage to 1 enemy in line of sight per spell level.",
+      "zh": ""
+    }
+  },
+  "Scalespinner": {
+    "name": {
+      "en": "Scalespinner",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an allied [dragon] uses a breath weapon, all your summoned units gain 100 resist to that breath weapon's element for [5_turns:duration]",
+      "zh": ""
+    }
+  },
+  "Shatter Shards": {
+    "name": {
+      "en": "Shatter Shards",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a unit is unfrozen or a [frozen] unit is killed, up to [3_enemies:num_targets] in a [6_tile:radius] burst take [6_ice:ice] and [6_physical:physical] damage.",
+      "zh": ""
+    }
+  },
+  "Steam Anima": {
+    "name": {
+      "en": "Steam Anima",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever a unit is unfrozen by fire damage, spawn 3 friendly steam elementals nearby for 6 turns.\n\nThe steam elemental has a ranged fire attack, and is immune to fire, ice and physical damage.",
+      "zh": ""
+    }
+  },
+  "Storm Caller": {
+    "name": {
+      "en": "Storm Caller",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever [ice] or [lightning] damage is dealt to an enemy unit, create a blizzard or thundercloud nearby.\nThe blizzards deal [5_ice:ice] damage and may freeze enemies, the thunderclouds strike inconsistently but deal twice as much [lightning] damage.\nThe clouds last [5_turns:duration].",
+      "zh": ""
+    }
+  },
+  "Arch Conjurer": {
+    "name": {
+      "en": "Arch Conjurer",
+      "zh": ""
+    }
+  },
+  "Arch Enchanter": {
+    "name": {
+      "en": "Arch Enchanter",
+      "zh": ""
+    }
+  },
+  "Arch Sorcerer": {
+    "name": {
+      "en": "Arch Sorcerer",
+      "zh": ""
+    }
+  },
+  "Blood Lord": {
+    "name": {
+      "en": "Blood Lord",
+      "zh": ""
+    }
+  },
+  "Chaos Lord": {
+    "name": {
+      "en": "Chaos Lord",
+      "zh": ""
+    }
+  },
+  "Chaos Poet": {
+    "name": {
+      "en": "Chaos Poet",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, if at least 13 fire, lightning and physical damage were dealt to enemies, summon a Chaos Quill.",
+      "zh": ""
+    }
+  },
+  "Dark Lord": {
+    "name": {
+      "en": "Dark Lord",
+      "zh": ""
+    }
+  },
+  "Disintegrator": {
+    "name": {
+      "en": "Disintegrator",
+      "zh": ""
+    },
+    "description": {
+      "en": "For every 40 damage dealt by [sorcery] spells you cast, deal [1_physical:physical] damage to all enemy units.\nThis damage cannot be boosted.",
+      "zh": ""
+    }
+  },
+  "Dragon Lord": {
+    "name": {
+      "en": "Dragon Lord",
+      "zh": ""
+    }
+  },
+  "Enchanters Boon": {
+    "name": {
+      "en": "Enchanters Boon",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a self targeted enchantment spell, a random minion also casts it.",
+      "zh": ""
+    }
+  },
+  "Fire Lord": {
+    "name": {
+      "en": "Fire Lord",
+      "zh": ""
+    }
+  },
+  "Ice Lord": {
+    "name": {
+      "en": "Ice Lord",
+      "zh": ""
+    }
+  },
+  "Light Lord": {
+    "name": {
+      "en": "Light Lord",
+      "zh": ""
+    }
+  },
+  "Metal Lord": {
+    "name": {
+      "en": "Metal Lord",
+      "zh": ""
+    }
+  },
+  "Nature Lord": {
+    "name": {
+      "en": "Nature Lord",
+      "zh": ""
+    }
+  },
+  "Orb Lord": {
+    "name": {
+      "en": "Orb Lord",
+      "zh": ""
+    }
+  },
+  "Scent of Blood": {
+    "name": {
+      "en": "Scent of Blood",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever 125 damage is dealt by [blood] or [nature] spells, skills, or summons, summon a blood hound",
+      "zh": ""
+    }
+  },
+  "Serpents of Chaos": {
+    "name": {
+      "en": "Serpents of Chaos",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you deal 6 or more fire, lightning, or physical damage, summon a corresponding snake for 4 turns.  The snakes attacks deal half the dealt damage.",
+      "zh": ""
+    }
+  },
+  "Shock Value": {
+    "name": {
+      "en": "Shock Value",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy dies to [lightning] damage, another random enemy in line of sight of that enemy goes [berserk] for [5_turns:duration].\n[Berserk] units are hostile to all other units, they will attack and be attacked by their allies.",
+      "zh": ""
+    }
+  },
+  "Slime Lord": {
+    "name": {
+      "en": "Slime Lord",
+      "zh": ""
+    }
+  },
+  "Soul Harvest": {
+    "name": {
+      "en": "Soul Harvest",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever an enemy unit dies, each of your [dark] spells has a 10% chance of gaining a charge.\nThis chance is tripled if the unit died to [dark] damage.",
+      "zh": ""
+    }
+  },
+  "Thunder Lord": {
+    "name": {
+      "en": "Thunder Lord",
+      "zh": ""
+    }
+  },
+  "Translocation Master": {
+    "name": {
+      "en": "Translocation Master",
+      "zh": ""
+    }
+  },
+  "Unblinking Eye": {
+    "name": {
+      "en": "Unblinking Eye",
+      "zh": ""
+    }
+  },
+  "Void Lord": {
+    "name": {
+      "en": "Void Lord",
+      "zh": ""
+    }
+  },
+  "Void Spikes": {
+    "name": {
+      "en": "Void Spikes",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you or one of your [arcane] or [undead] allies take damage from an enemy, deal [5_arcane:arcane] damage to the source of that damage.",
+      "zh": ""
+    }
+  }
+}
