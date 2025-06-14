@@ -1,22 +1,24 @@
-import sys, os
+import sys
+import os
 
 sys.path.append(os.path.abspath("game"))
-import Spells, Upgrades, Consumables, Equipment, LevelGen
-from Equipment import RandomWand, RandomSheild, RandomLittleRing, ring_tags, ring_stats
+import Spells
+import Upgrades
+import Consumables
+import Equipment
+import LevelGen
+from Equipment import (
+    RandomSheild,
+    RandomLittleRing,
+    ring_tags,
+    ring_stats,
+)
 from Level import damage_tags, Knowledges, attr_colors, Tags
 from Shrines import (
-    hp_shrine,
-    exotic_pet_chest,
-    scroll,
-    treasure_chest,
-    crown_chest,
-    damage_hat_chest,
-    hat_chest,
-    staff_chest,
-    shoe_chest,
-    armor_chest,
-    trinket_chest,
-    skill_scroll,
+    chest_opts,
+    reward_table,
+    roll_chest,
+    ring_chest,
     random,
 )
 from functools import reduce
@@ -66,24 +68,23 @@ tags = tags + [
 class MockObject:
     pass
 
+
 fake_player = MockObject()
 fake_player.game = MockObject()
+fake_player.game.all_player_spells = []
 fake_player.game.all_player_skills = []
-shrines = [
-    hp_shrine,
-    exotic_pet_chest,
-    lambda level, prng: scroll(level, None),
-    treasure_chest,
-    crown_chest,
-    damage_hat_chest,
-    hat_chest,
-    staff_chest,
-    shoe_chest,
-    armor_chest,
-    trinket_chest,
-    lambda level, prng: skill_scroll(level, fake_player),
-]
-shrines = [s(1, random).name for s in shrines]
+
+chest_opts = [c[0] for c in chest_opts]
+# chest_opts = [c for c in chest_opts if c not in [ring_chest]]
+chest_opts = filter(lambda c: c not in [ring_chest], chest_opts)
+chests = [c(1, random).name for c in chest_opts]
+
+shrine_opts = [s[0] for s in reward_table]
+shrine_opts = filter(lambda s: s not in [roll_chest], shrine_opts)
+shrines = [s(1, random, fake_player).name for s in shrine_opts]
+
+shrines = chests + shrines
+
 
 tasks = [
     ("tags", tags),
@@ -99,7 +100,7 @@ tasks = [
         [
             c().name
             for c in Equipment.all_items
-            if c not in [RandomWand, RandomSheild, RandomLittleRing]
+            if c not in [RandomSheild, RandomLittleRing]
         ],
     ),
     ("monsters", LevelGen.make_bestiary() or LevelGen.all_monster_names),
@@ -116,5 +117,3 @@ jsons = [f"{type} = {{{process(type, names)}\n}}\n" for (type, names) in tasks]
 f = open("extracted.py", "w")
 f.write("\n".join(jsons))
 f.close()
-
-os.unlink("level_log.txt")
