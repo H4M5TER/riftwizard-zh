@@ -127,6 +127,10 @@
     "name": {
       "en": "Blood Legion's Banner",
       "zh": ""
+    },
+    "description": {
+      "en": "Whenever an ally is summoned, if it is on or adjacent to a Wizard, the summon consumes it, and gains the Fleshbound modifier.",
+      "zh": ""
     }
   },
   "Storm Oculus": {
@@ -298,6 +302,10 @@
   "Heavenrender": {
     "name": {
       "en": "Heavenrender",
+      "zh": ""
+    },
+    "description": {
+      "en": "Whenever you cast a [holy] spell, deal [fire] and [lightning] damage to all enemies in a 2 tile burst around the target.\nThe damage dealt is equal to the sum of all SP spent on [fire] and [lightning] magics, respectively.",
       "zh": ""
     }
   },
@@ -505,11 +513,19 @@
     "name": {
       "en": "Volcanic Lance",
       "zh": ""
+    },
+    "description": {
+      "en": "When you cast a [fire] spell targeting an enemy, send out a destructive beam toward the target, destroying walls and dealing [fire] damage equal to the sum of all SP spent on [fire] magic.",
+      "zh": ""
     }
   },
   "Erebus Lance": {
     "name": {
       "en": "Erebus Lance",
+      "zh": ""
+    },
+    "description": {
+      "en": "When you cast a [dark] spell targeting an enemy, send out a destructive beam toward the target, destroying walls and dealing [dark] damage equal to the sum of all SP spent on [dark] magic.",
       "zh": ""
     }
   },
@@ -712,6 +728,10 @@
   "Raiment of Eyes": {
     "name": {
       "en": "Raiment of Eyes",
+      "zh": ""
+    },
+    "description": {
+      "en": "When allies are summoned, grants them your [eye] [enchantment] spells that they have matching tags for. \nEach level, a number of allies may be granted these spells equal to the sum of all SP spent on [eye] magic.",
       "zh": ""
     }
   },
@@ -1381,6 +1401,10 @@
     "name": {
       "en": "Fanged Amulet",
       "zh": ""
+    },
+    "description": {
+      "en": "Each turn, deal [physical] damage equal to the sum of all SP spent on [blood] magic to an adjacent unit and heal for the damage dealt. ",
+      "zh": ""
     }
   },
   "Stoneeater Amulet": {
@@ -1406,6 +1430,10 @@
   "Blizzard Beacon": {
     "name": {
       "en": "Blizzard Beacon",
+      "zh": ""
+    },
+    "description": {
+      "en": "Each turn, summons a random number of blizzards across the level. The maximum number summoned each turn is the sum of all SP spent on [ice] magic.",
       "zh": ""
     }
   },

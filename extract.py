@@ -7,6 +7,7 @@ src_dir = Path(src_dir)
 extract_dir = src_dir / "extracted"
 
 import orjson
+from collections import OrderedDict
 from icecream import ic
 
 sys.path.append(os.path.abspath("game"))
@@ -24,6 +25,7 @@ from RiftWizard2 import (
     UNPURCHASED_TARGET,
     UNVICTORIED_TARGET,
 )
+
 target_names = [
     "LEARN_SPELL_TARGET",
     "LEARN_SKILL_TARGET",
@@ -62,7 +64,7 @@ class MockObject:
 
 
 def items2dict(items):
-    dic = {}
+    dic = OrderedDict()
     for item in items:
         name = item.name
         dic[name] = {
@@ -72,9 +74,20 @@ def items2dict(items):
             },
         }
         description = getattr(item, "description", None)
-        if hasattr(item, "get_description"):
+        alt = False
+        if (
+            description is None
+            or description.strip() == ""
+            or description == "Undescribed"
+        ):
+            alt = True
+        if alt and hasattr(item, "get_description"):
             description = item.get_description()
-        if description and not description == "Undescribed" and not description.strip() == "":
+        if (
+            description
+            and not description == "Undescribed"
+            and not description.strip() == ""
+        ):
             dic[name]["description"] = {
                 "en": description,
                 "zh": "",
@@ -85,7 +98,7 @@ def items2dict(items):
 spells = make_player_spells()
 spell_dict = items2dict(spells)
 for spell in spells:
-    upgrades = {}
+    upgrades = OrderedDict()
     for k, v in spell.upgrades.items():
         upgrades[k] = {
             "amount": v[0],
@@ -104,6 +117,9 @@ for spell in spells:
     spell_dict[spell.name]["upgrades"] = upgrades
 
 skills = make_player_skills()
+for skill in skills:
+    if skill.description:
+        skill.description = skill.get_description()
 skill_dict = items2dict(skills)
 
 equipments = [e() for e in all_items if e not in [RandomSheild, RandomLittleRing]]
@@ -159,7 +175,7 @@ for name in target_names:
 
 
 def names2dict(names):
-    dic = {}
+    dic = OrderedDict()
     for name in names:
         dic[name] = {
             "en": name,
