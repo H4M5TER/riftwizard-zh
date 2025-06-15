@@ -1,0 +1,98 @@
+{
+  "advanced_tips": {
+    "en": "STATUS EFFECTS\n\nStunned: Cannot act.\nPoisoned: Take 1 poison damage per turn and cannot heal.\nFear: Cannot willingly act. Automatically attempt to move away from enemies each turn for the duration.\nPetrified: Cannot act, gain 100 ice and lightning resist, gain 75 physical and fire resist.\nGlassified: Cannot act, gain 100 ice and lightning resist, 75 fire resist, lose 100 physical resist.\nFrozen: Cannot act.  Ends upon taking fire or physical damage.  Cannot affect units with 100 ice resist.\nSoaked: Gain 50 fire resist. Lose 50 ice and lightning resist.\nBerserked: Become hostile to all other units.  Will attack and be attacked by allies.\nBlind: All spell ranges reduced to 1.\nSilenced: Cannot cast spells.\nChanneling: Will continue to cast previous spell with same target if no other action is taken.\nShield (SH): If a unit with SH would be dealt damage, it loses 1 SH instead.\nClarity: Removes and makes the owner immune to Stunned/Fear/Petrified/Glassified/Frozen/Silenced.\n",
+    "zh": ""
+  },
+  "berserk_desc": {
+    "en": "[Berserk] units are hostile to all other units, they will attack and be attacked by their allies.",
+    "zh": ""
+  },
+  "blind_desc": {
+    "en": "[Blind] units have all their spell ranges reduced to 1.",
+    "zh": ""
+  },
+  "frozen_desc": {
+    "en": "[Frozen] units cannot act. Frozen units unfreeze upon taking [fire] or [physical] damage.",
+    "zh": ""
+  },
+  "glassify_desc": {
+    "en": "[Glassified] units cannot act.\n[Glassified] units gain [-100_physical:physical] resist.\n[Glassified] units gain [100_ice:ice] resist.\n[Glassified] units gain [100_lightning:lightning] resist.\n[Glassified] units gain [75_fire:fire] resist.",
+    "zh": ""
+  },
+  "how_to_play": {
+    "en": "HOW TO PLAY\n\nFinish 20 levels and slay your nemesis to win the game.\nDestroy all enemies to finish a level.\n\nAfter completing a level, walk onto a rift to peek inside.\nTeleport through the rift by clicking any empty tile, or abort the teleport using escape.  \nAfter you teleport into a level, you cannot leave until it is finished.  Teleport with care.\n\nSpells and passive skills can all purchased with skillpoints (SP) from the Character Sheet.\nSpells can be individually upgraded from the Character sheet using SP.\n\nSpells have limited charges.  Casting a spell costs one charge from that spell.\nRegain charges by drinking a mana potion or completing the level.\n\nCONTROLS:\n\nH: Help (This Screen)      C: Character Sheet      S: Learn Spells     K: Learn Skills\n\nLeft click: Move, or cast currently selected spell at the cursor's position.\nRight click: Cancel current spell or exit current menu\n\nNumpad:\n7 8 9\n4   6  -> Move one space in the corresponding direction.\n1 2 3\n\nNumpad 5: Wait one turn (Or continue channeling if channeling a spell)\n\n        1 2 3 4 5 6 7 8 9 0: Cast/Select spell 1-10\nShift + 1 2 3 4 5 6 7 8 9 0: Cast/Select spell 11-20)\nAlt   + 1 2 3 4 5 6 7 8 9 0: Use/Select item 1-10\n\nNumpad/mouse: move the targeting reticle.\nEsc: Cancel spell targeting\nEnter: cast current spell or enter portal at current location\n\nAdvanced Controls:\n\nl: Show line of sight           t: Show threatened tiles\nTab:  Next target               m:   Show message log\n\nv: look (target a square to look, tab target to look at interesting places)\nw: walk (target a square to walk there, tab target to walk to interesting places)\na: autopickup all loot (after clearing level)\nShift + up/down arrow on character sheet: change selected spell hotkey\ni: interact with current tile (enter portal, open shop)\npgup/pgdown: view descriptions of spell upgrades (when viewing spell description)\n",
+    "zh": ""
+  },
+  "intro_text": {
+    "en": "Welcome back once again Wizard, to the ruins of the universe.\n\nAeons passed while you slumbered.\nYou have sleptwalk across many worlds.\n\nWeep for Avalon, o lonely old Wizard!\nLove and beauty transmuted to chaos and ruin.\n\nYour beloved Avalon, and you, her loyal servant, as well.\n\nOnce a great Wizard,\nYour memories and magics have faded.\n\nNow a thirst for revenge awakens you.\nThe Dark Wizard Mordred is nearby.\n\nRegain your power.\nSlay Mordred.\nVengeance for Avalon.\n",
+    "zh": ""
+  },
+  "old_victory_text": {
+    "en": "VICTORY\n\nMordred is defeated.\n\nOrder and justice will soon return to the universe.\n\nExhausted, you fade from conciousness back into sleep.\n\nPerhaps this time, you may dream.\n",
+    "zh": ""
+  },
+  "petrify_desc": {
+    "en": "[Petrified] units cannot act.\n[Petrified] units gain [100_ice:ice] resist.\n[Petrified] units gain [100_lightning:lightning] resist.\n[Petrified] units gain [75_physical:physical] resist.\n[Petrified] units gain [75_fire:fire] resist.",
+    "zh": ""
+  },
+  "poison_desc": {
+    "en": "[Poisoned] units take 1 [poison] damage each turn and cannot heal.",
+    "zh": ""
+  },
+  "stun_desc": {
+    "en": "[Stunned] units cannot act.",
+    "zh": ""
+  },
+  "unused_new_intro_text": {
+    "en": "Arise Wizard,\n\nAeons passed while you slumbered.\nYou have sleptwalk across many worlds.\n\nWeep for Avalon!\nThe dread serpent Jormangandr has laid waste to your beautiful empire.\n\nBut the phase of the moon turns,\nAnd the Serpent returns to the material plane.\n\nYou will awaken one last time.\nGather again your lost memories, and put the beasts of chaos to rest.\n",
+    "zh": ""
+  },
+  "victory_text": {
+    "en": "The Dark Wizard is slain.\n\nHis beasts have been broken and made tame.\n\nThe beauty of Avalon will be built again.\n\nYour soul is permitted to sleep and dream once more.\n\n",
+    "zh": ""
+  },
+  "LEARN_SPELL": {
+    "en": "Learn a new spell",
+    "zh": ""
+  },
+  "LEARN_SKILL": {
+    "en": "Learn a new skill",
+    "zh": ""
+  },
+  "CHAR_SHEET": {
+    "en": "Learn new spells and abilities",
+    "zh": ""
+  },
+  "INSTRUCTIONS": {
+    "en": "Learn how to play",
+    "zh": ""
+  },
+  "OPTIONS": {
+    "en": "Adjust options",
+    "zh": ""
+  },
+  "STUNNED": {
+    "en": "You cannot move or cast this turn.\nYou must pass the turn.\n(Click on yourself or press numpad 5).",
+    "zh": ""
+  },
+  "REROLL_PORTALS": {
+    "en": "Reroll the destinations of all rifts.  Limit one use per level.",
+    "zh": ""
+  },
+  "WELCOME": {
+    "en": "WELCOME\nWelcome to Rift Wizard.\nPress H for a full help screen and details on all the game's controls.\nMouseover something for a detailed description of what it does.\nPress S to purchase a spell.",
+    "zh": ""
+  },
+  "DEPLOY": {
+    "en": "You have stepped halfway through the rift.  \nYou may choose any point in the next world to materialize at (Enter, left click), or you may step out of this rift and return to the previous world (ESC, right click).\nBeware, for once you enter, there will be no way to return.",
+    "zh": ""
+  },
+  "UNPURCHASED": {
+    "en": "Only show options that you have never purchased.",
+    "zh": ""
+  },
+  "UNVICTORIED": {
+    "en": "Only show options that you have never gotten a victory with.",
+    "zh": ""
+  }
+}

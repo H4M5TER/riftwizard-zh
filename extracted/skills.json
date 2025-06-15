@@ -87,7 +87,7 @@
       "zh": ""
     },
     "description": {
-      "en": " each level with a friendly Fae Stone.  The Fae Stone is a sturdy immobile melee unit.\n\nWhenever you cast an arcane spell, the Fae Stone teleports near the target and gains 1 shield.\n\nWhenever you cast a nature spell, the Fae Stone heals 10 HP.",
+      "en": "Whenever you enter a new level, summon a Fae Stone nearby.\nThe Fae Stone is stationary and hard to kill, and has a [physical] melee attack.\nWhenever you cast a [nature] spell, the Fae Stone heals for [10_HP:heal].\nWhenever you cast an [arcane] spell, the Fae Stone teleports near the target and gains [1_SH:shields].",
       "zh": ""
     }
   },
@@ -809,7 +809,7 @@
       "zh": ""
     },
     "description": {
-      "en": "Whenever a unit is unfrozen by fire damage, spawn 3 friendly steam elementals nearby for 6 turns.\n\nThe steam elemental has a ranged fire attack, and is immune to fire, ice and physical damage.",
+      "en": "Whenever a unit is unfrozen by fire damage, spawn [3:num_summons] steam elementals nearby.\nSteam elementals have [16_HP:minion_health], [100_physical:physical] resist, [100_ice:ice] resist, and [100_fire:fire] resist.\nSteam elementals have a ranged attack which deals [9_fire:fire] damage, with a range of [6_tiles:minion_range].\nThe elementals vanish after [5_turns:minion_duration].",
       "zh": ""
     }
   },

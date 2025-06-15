@@ -1,0 +1,1838 @@
+{
+  "Goblin": {
+    "name": {
+      "en": "Goblin",
+      "zh": ""
+    }
+  },
+  "Bat": {
+    "name": {
+      "en": "Bat",
+      "zh": ""
+    }
+  },
+  "Void Bomber": {
+    "name": {
+      "en": "Void Bomber",
+      "zh": ""
+    },
+    "description": {
+      "en": "Explodes on death, dealing arcane damage and melting adjacent walls",
+      "zh": ""
+    }
+  },
+  "Fire Bomber": {
+    "name": {
+      "en": "Fire Bomber",
+      "zh": ""
+    },
+    "description": {
+      "en": "Explodes on death, dealing fire damage",
+      "zh": ""
+    }
+  },
+  "Fire Imp": {
+    "name": {
+      "en": "Fire Imp",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fires projectiles",
+      "zh": ""
+    }
+  },
+  "Spark Imp": {
+    "name": {
+      "en": "Spark Imp",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fires projectiles",
+      "zh": ""
+    }
+  },
+  "Mind Maggot": {
+    "name": {
+      "en": "Mind Maggot",
+      "zh": ""
+    }
+  },
+  "Displacer Beast": {
+    "name": {
+      "en": "Displacer Beast",
+      "zh": ""
+    },
+    "description": {
+      "en": "A teleporting cat",
+      "zh": ""
+    }
+  },
+  "Green Mushboom": {
+    "name": {
+      "en": "Green Mushboom",
+      "zh": ""
+    }
+  },
+  "Mantis": {
+    "name": {
+      "en": "Mantis",
+      "zh": ""
+    }
+  },
+  "Snake": {
+    "name": {
+      "en": "Snake",
+      "zh": ""
+    }
+  },
+  "Spriggan": {
+    "name": {
+      "en": "Spriggan",
+      "zh": ""
+    }
+  },
+  "Spriggan Bush": {
+    "name": {
+      "en": "Spriggan Bush",
+      "zh": ""
+    }
+  },
+  "Boggart": {
+    "name": {
+      "en": "Boggart",
+      "zh": ""
+    }
+  },
+  "Orc": {
+    "name": {
+      "en": "Orc",
+      "zh": ""
+    }
+  },
+  "Pachyderm": {
+    "name": {
+      "en": "Pachyderm",
+      "zh": ""
+    }
+  },
+  "Rotting Zombie": {
+    "name": {
+      "en": "Rotting Zombie",
+      "zh": ""
+    }
+  },
+  "Ghost": {
+    "name": {
+      "en": "Ghost",
+      "zh": ""
+    },
+    "description": {
+      "en": "A Malevolent spirit",
+      "zh": ""
+    }
+  },
+  "Iron Imp": {
+    "name": {
+      "en": "Iron Imp",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fires projectiles",
+      "zh": ""
+    }
+  },
+  "Satyr": {
+    "name": {
+      "en": "Satyr",
+      "zh": ""
+    }
+  },
+  "Large Worm Ball": {
+    "name": {
+      "en": "Large Worm Ball",
+      "zh": ""
+    }
+  },
+  "Kobold": {
+    "name": {
+      "en": "Kobold",
+      "zh": ""
+    },
+    "description": {
+      "en": "A small wretched creature",
+      "zh": ""
+    }
+  },
+  "Witch": {
+    "name": {
+      "en": "Witch",
+      "zh": ""
+    }
+  },
+  "Rock Worm": {
+    "name": {
+      "en": "Rock Worm",
+      "zh": ""
+    }
+  },
+  "Giant Spider": {
+    "name": {
+      "en": "Giant Spider",
+      "zh": ""
+    }
+  },
+  "Ice Lizard": {
+    "name": {
+      "en": "Ice Lizard",
+      "zh": ""
+    }
+  },
+  "Fire Lizard": {
+    "name": {
+      "en": "Fire Lizard",
+      "zh": ""
+    }
+  },
+  "Grey Mushboom": {
+    "name": {
+      "en": "Grey Mushboom",
+      "zh": ""
+    }
+  },
+  "Horned Toad": {
+    "name": {
+      "en": "Horned Toad",
+      "zh": ""
+    }
+  },
+  "Raven": {
+    "name": {
+      "en": "Raven",
+      "zh": ""
+    }
+  },
+  "Treant": {
+    "name": {
+      "en": "Treant",
+      "zh": ""
+    }
+  },
+  "Cursed Cat": {
+    "name": {
+      "en": "Cursed Cat",
+      "zh": ""
+    }
+  },
+  "Cultist": {
+    "name": {
+      "en": "Cultist",
+      "zh": ""
+    }
+  },
+  "Two Headed Snake": {
+    "name": {
+      "en": "Two Headed Snake",
+      "zh": ""
+    }
+  },
+  "Breathstealer": {
+    "name": {
+      "en": "Breathstealer",
+      "zh": ""
+    },
+    "description": {
+      "en": "A teleporting cat",
+      "zh": ""
+    }
+  },
+  "Gremlin": {
+    "name": {
+      "en": "Gremlin",
+      "zh": ""
+    }
+  },
+  "Centaur": {
+    "name": {
+      "en": "Centaur",
+      "zh": ""
+    }
+  },
+  "Ogre": {
+    "name": {
+      "en": "Ogre",
+      "zh": ""
+    },
+    "description": {
+      "en": "A fat and hideous abombination longing to consume the flesh of the young and beautiful",
+      "zh": ""
+    }
+  },
+  "Spore Beast": {
+    "name": {
+      "en": "Spore Beast",
+      "zh": ""
+    }
+  },
+  "Bag of Bugs": {
+    "name": {
+      "en": "Bag of Bugs",
+      "zh": ""
+    }
+  },
+  "Troll": {
+    "name": {
+      "en": "Troll",
+      "zh": ""
+    },
+    "description": {
+      "en": "A big dumb regenerating troll.  Regenerates 5hp per turn.  Regeneration is disabled for one turn upon taking fire damage.",
+      "zh": ""
+    }
+  },
+  "Troubler": {
+    "name": {
+      "en": "Troubler",
+      "zh": ""
+    }
+  },
+  "Evil Faery": {
+    "name": {
+      "en": "Evil Faery",
+      "zh": ""
+    },
+    "description": {
+      "en": "A capricious creature who delights in providing comfort to evil beings",
+      "zh": ""
+    }
+  },
+  "Vampire": {
+    "name": {
+      "en": "Vampire",
+      "zh": ""
+    }
+  },
+  "Vampire Bat": {
+    "name": {
+      "en": "Vampire Bat",
+      "zh": ""
+    }
+  },
+  "Gnome": {
+    "name": {
+      "en": "Gnome",
+      "zh": ""
+    }
+  },
+  "Goatia": {
+    "name": {
+      "en": "Goatia",
+      "zh": ""
+    }
+  },
+  "Steel Spider": {
+    "name": {
+      "en": "Steel Spider",
+      "zh": ""
+    }
+  },
+  "Green Slime": {
+    "name": {
+      "en": "Green Slime",
+      "zh": ""
+    }
+  },
+  "Polar Bear": {
+    "name": {
+      "en": "Polar Bear",
+      "zh": ""
+    }
+  },
+  "Hell Hound": {
+    "name": {
+      "en": "Hell Hound",
+      "zh": ""
+    }
+  },
+  "Werewolf": {
+    "name": {
+      "en": "Werewolf",
+      "zh": ""
+    }
+  },
+  "Wild Man": {
+    "name": {
+      "en": "Wild Man",
+      "zh": ""
+    }
+  },
+  "Silent Specter": {
+    "name": {
+      "en": "Silent Specter",
+      "zh": ""
+    },
+    "description": {
+      "en": "A Malevolent spirit",
+      "zh": ""
+    }
+  },
+  "Blizzard Beast": {
+    "name": {
+      "en": "Blizzard Beast",
+      "zh": ""
+    }
+  },
+  "Aelf": {
+    "name": {
+      "en": "Aelf",
+      "zh": ""
+    }
+  },
+  "Flame Maw": {
+    "name": {
+      "en": "Flame Maw",
+      "zh": ""
+    }
+  },
+  "Chaos Chimera": {
+    "name": {
+      "en": "Chaos Chimera",
+      "zh": ""
+    }
+  },
+  "Fire Lion": {
+    "name": {
+      "en": "Fire Lion",
+      "zh": ""
+    }
+  },
+  "Mycobeast": {
+    "name": {
+      "en": "Mycobeast",
+      "zh": ""
+    }
+  },
+  "Thunderbird": {
+    "name": {
+      "en": "Thunderbird",
+      "zh": ""
+    }
+  },
+  "Bone Knight": {
+    "name": {
+      "en": "Bone Knight",
+      "zh": ""
+    }
+  },
+  "Blood Hound": {
+    "name": {
+      "en": "Blood Hound",
+      "zh": ""
+    }
+  },
+  "Spark Spirit": {
+    "name": {
+      "en": "Spark Spirit",
+      "zh": ""
+    },
+    "description": {
+      "en": "Fires projectiles",
+      "zh": ""
+    }
+  },
+  "Fire Spirit": {
+    "name": {
+      "en": "Fire Spirit",
+      "zh": ""
+    },
+    "description": {
+      "en": "Gains 6 HP whenever a fire spell is cast",
+      "zh": ""
+    }
+  },
+  "Golem": {
+    "name": {
+      "en": "Golem",
+      "zh": ""
+    },
+    "description": {
+      "en": "An animated creation of stone and steel",
+      "zh": ""
+    }
+  },
+  "Redcap": {
+    "name": {
+      "en": "Redcap",
+      "zh": ""
+    }
+  },
+  "Green Gorgon": {
+    "name": {
+      "en": "Green Gorgon",
+      "zh": ""
+    }
+  },
+  "Earth Troll": {
+    "name": {
+      "en": "Earth Troll",
+      "zh": ""
+    },
+    "description": {
+      "en": "A big dumb regenerating troll.  Regenerates 5hp per turn.  Regeneration is disabled for one turn upon taking fire damage.",
+      "zh": ""
+    }
+  },
+  "Stonefish": {
+    "name": {
+      "en": "Stonefish",
+      "zh": ""
+    }
+  },
+  "Dancing Blade": {
+    "name": {
+      "en": "Dancing Blade",
+      "zh": ""
+    }
+  },
+  "Fae Huntsman": {
+    "name": {
+      "en": "Fae Huntsman",
+      "zh": ""
+    }
+  },
+  "Fire Belcher": {
+    "name": {
+      "en": "Fire Belcher",
+      "zh": ""
+    }
+  },
+  "Aether Spider": {
+    "name": {
+      "en": "Aether Spider",
+      "zh": ""
+    }
+  },
+  "Spike Beast": {
+    "name": {
+      "en": "Spike Beast",
+      "zh": ""
+    }
+  },
+  "Old Witch": {
+    "name": {
+      "en": "Old Witch",
+      "zh": ""
+    }
+  },
+  "Red Slime": {
+    "name": {
+      "en": "Red Slime",
+      "zh": ""
+    }
+  },
+  "Ice Slime": {
+    "name": {
+      "en": "Ice Slime",
+      "zh": ""
+    }
+  },
+  "Electric Slime": {
+    "name": {
+      "en": "Electric Slime",
+      "zh": ""
+    }
+  },
+  "Blood Slime": {
+    "name": {
+      "en": "Blood Slime",
+      "zh": ""
+    }
+  },
+  "Blood Bear": {
+    "name": {
+      "en": "Blood Bear",
+      "zh": ""
+    }
+  },
+  "Duergar": {
+    "name": {
+      "en": "Duergar",
+      "zh": ""
+    }
+  },
+  "Fiery Tormentor": {
+    "name": {
+      "en": "Fiery Tormentor",
+      "zh": ""
+    }
+  },
+  "Dark Tormentor": {
+    "name": {
+      "en": "Dark Tormentor",
+      "zh": ""
+    }
+  },
+  "Orc Houndlord": {
+    "name": {
+      "en": "Orc Houndlord",
+      "zh": ""
+    }
+  },
+  "Warlock": {
+    "name": {
+      "en": "Warlock",
+      "zh": ""
+    }
+  },
+  "Void Rift": {
+    "name": {
+      "en": "Void Rift",
+      "zh": ""
+    }
+  },
+  "Flame Rift": {
+    "name": {
+      "en": "Flame Rift",
+      "zh": ""
+    }
+  },
+  "Rolling Spike Ball": {
+    "name": {
+      "en": "Rolling Spike Ball",
+      "zh": ""
+    }
+  },
+  "Floating Eyeball": {
+    "name": {
+      "en": "Floating Eyeball",
+      "zh": ""
+    }
+  },
+  "Fearface": {
+    "name": {
+      "en": "Fearface",
+      "zh": ""
+    }
+  },
+  "Storm Drake": {
+    "name": {
+      "en": "Storm Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Breathes stormclouds",
+      "zh": ""
+    }
+  },
+  "Fire Drake": {
+    "name": {
+      "en": "Fire Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Breathes fire",
+      "zh": ""
+    }
+  },
+  "Bone Shambler": {
+    "name": {
+      "en": "Bone Shambler",
+      "zh": ""
+    },
+    "description": {
+      "en": "A disgusting mass of bone, animated by dark magic.  Splits into smaller chunks when destroyed.",
+      "zh": ""
+    }
+  },
+  "Worm Shambler": {
+    "name": {
+      "en": "Worm Shambler",
+      "zh": ""
+    }
+  },
+  "Greater Spore Beast": {
+    "name": {
+      "en": "Greater Spore Beast",
+      "zh": ""
+    }
+  },
+  "Displacer Broodmother": {
+    "name": {
+      "en": "Displacer Broodmother",
+      "zh": ""
+    },
+    "description": {
+      "en": "Mother of displacer beasts",
+      "zh": ""
+    }
+  },
+  "Mind Maggot Queen": {
+    "name": {
+      "en": "Mind Maggot Queen",
+      "zh": ""
+    }
+  },
+  "Flame Toad": {
+    "name": {
+      "en": "Flame Toad",
+      "zh": ""
+    }
+  },
+  "Void Toad": {
+    "name": {
+      "en": "Void Toad",
+      "zh": ""
+    }
+  },
+  "Storm Troll": {
+    "name": {
+      "en": "Storm Troll",
+      "zh": ""
+    },
+    "description": {
+      "en": "A troll touched by thunder spirits.  Storm clouds form in its wake.",
+      "zh": ""
+    }
+  },
+  "Minotaur": {
+    "name": {
+      "en": "Minotaur",
+      "zh": ""
+    },
+    "description": {
+      "en": "A man with the head of a bull",
+      "zh": ""
+    }
+  },
+  "Greater Vampire": {
+    "name": {
+      "en": "Greater Vampire",
+      "zh": ""
+    }
+  },
+  "Vampiric Mist": {
+    "name": {
+      "en": "Vampiric Mist",
+      "zh": ""
+    },
+    "description": {
+      "en": "A Malevolent spirit",
+      "zh": ""
+    }
+  },
+  "Ghostly Mass": {
+    "name": {
+      "en": "Ghostly Mass",
+      "zh": ""
+    },
+    "description": {
+      "en": "A Malevolent spirit",
+      "zh": ""
+    }
+  },
+  "Faery Arcanist": {
+    "name": {
+      "en": "Faery Arcanist",
+      "zh": ""
+    }
+  },
+  "Purple Hand": {
+    "name": {
+      "en": "Purple Hand",
+      "zh": ""
+    }
+  },
+  "Star Swimmer": {
+    "name": {
+      "en": "Star Swimmer",
+      "zh": ""
+    }
+  },
+  "Towering Toadbeast": {
+    "name": {
+      "en": "Towering Toadbeast",
+      "zh": ""
+    }
+  },
+  "Deathchill Chimera": {
+    "name": {
+      "en": "Deathchill Chimera",
+      "zh": ""
+    }
+  },
+  "Ice Lion": {
+    "name": {
+      "en": "Ice Lion",
+      "zh": ""
+    }
+  },
+  "Glass Golem": {
+    "name": {
+      "en": "Glass Golem",
+      "zh": ""
+    },
+    "description": {
+      "en": "An animated creation of stone and steel",
+      "zh": ""
+    }
+  },
+  "Ice Belcher": {
+    "name": {
+      "en": "Ice Belcher",
+      "zh": ""
+    }
+  },
+  "Wailing Banshee": {
+    "name": {
+      "en": "Wailing Banshee",
+      "zh": ""
+    }
+  },
+  "Bark Lord": {
+    "name": {
+      "en": "Bark Lord",
+      "zh": ""
+    }
+  },
+  "Starfire Chimera": {
+    "name": {
+      "en": "Starfire Chimera",
+      "zh": ""
+    }
+  },
+  "Star Lion": {
+    "name": {
+      "en": "Star Lion",
+      "zh": ""
+    }
+  },
+  "Mind Vampire": {
+    "name": {
+      "en": "Mind Vampire",
+      "zh": ""
+    }
+  },
+  "Vampire Eye": {
+    "name": {
+      "en": "Vampire Eye",
+      "zh": ""
+    }
+  },
+  "False Prophet": {
+    "name": {
+      "en": "False Prophet",
+      "zh": ""
+    }
+  },
+  "Mind Devourer": {
+    "name": {
+      "en": "Mind Devourer",
+      "zh": ""
+    }
+  },
+  "Fire Wyrm": {
+    "name": {
+      "en": "Fire Wyrm",
+      "zh": ""
+    }
+  },
+  "Gargoyle": {
+    "name": {
+      "en": "Gargoyle",
+      "zh": ""
+    }
+  },
+  "Gargoyle Statue": {
+    "name": {
+      "en": "Gargoyle Statue",
+      "zh": ""
+    }
+  },
+  "Void Slime": {
+    "name": {
+      "en": "Void Slime",
+      "zh": ""
+    }
+  },
+  "Night Hag": {
+    "name": {
+      "en": "Night Hag",
+      "zh": ""
+    }
+  },
+  "Red Cyclops": {
+    "name": {
+      "en": "Red Cyclops",
+      "zh": ""
+    }
+  },
+  "Giant Floating Skull": {
+    "name": {
+      "en": "Giant Floating Skull",
+      "zh": ""
+    }
+  },
+  "Grey Gorgon": {
+    "name": {
+      "en": "Grey Gorgon",
+      "zh": ""
+    }
+  },
+  "Efreet": {
+    "name": {
+      "en": "Efreet",
+      "zh": ""
+    }
+  },
+  "Purple Pachyderm": {
+    "name": {
+      "en": "Purple Pachyderm",
+      "zh": ""
+    }
+  },
+  "Yeti": {
+    "name": {
+      "en": "Yeti",
+      "zh": ""
+    }
+  },
+  "Void Drake": {
+    "name": {
+      "en": "Void Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Breathes void, destroying walls",
+      "zh": ""
+    }
+  },
+  "Cockatrice": {
+    "name": {
+      "en": "Cockatrice",
+      "zh": ""
+    },
+    "description": {
+      "en": "Its gaze turns foes to stone",
+      "zh": ""
+    }
+  },
+  "Butterfly Demon": {
+    "name": {
+      "en": "Butterfly Demon",
+      "zh": ""
+    }
+  },
+  "Chaos Knight": {
+    "name": {
+      "en": "Chaos Knight",
+      "zh": ""
+    }
+  },
+  "Gold Drake": {
+    "name": {
+      "en": "Gold Drake",
+      "zh": ""
+    },
+    "description": {
+      "en": "Breathes holy fire, damaging enemies but healing allies",
+      "zh": ""
+    }
+  },
+  "Flaming Eyeball": {
+    "name": {
+      "en": "Flaming Eyeball",
+      "zh": ""
+    }
+  },
+  "Frosty Tormentor": {
+    "name": {
+      "en": "Frosty Tormentor",
+      "zh": ""
+    }
+  },
+  "Giant Spider Queen": {
+    "name": {
+      "en": "Giant Spider Queen",
+      "zh": ""
+    }
+  },
+  "Rotting Mass": {
+    "name": {
+      "en": "Rotting Mass",
+      "zh": ""
+    }
+  },
+  "Dryder": {
+    "name": {
+      "en": "Dryder",
+      "zh": ""
+    }
+  },
+  "Dream Hag": {
+    "name": {
+      "en": "Dream Hag",
+      "zh": ""
+    }
+  },
+  "Ice Drake": {
+    "name": {
+      "en": "Ice Drake",
+      "zh": ""
+    }
+  },
+  "Ice Wyrm": {
+    "name": {
+      "en": "Ice Wyrm",
+      "zh": ""
+    }
+  },
+  "Fire Fiend": {
+    "name": {
+      "en": "Fire Fiend",
+      "zh": ""
+    }
+  },
+  "Storm Fiend": {
+    "name": {
+      "en": "Storm Fiend",
+      "zh": ""
+    }
+  },
+  "Iron Fiend": {
+    "name": {
+      "en": "Iron Fiend",
+      "zh": ""
+    }
+  },
+  "Annihilation Goo": {
+    "name": {
+      "en": "Annihilation Goo",
+      "zh": ""
+    }
+  },
+  "Lich": {
+    "name": {
+      "en": "Lich",
+      "zh": ""
+    }
+  },
+  "Aelf Lightning Artist": {
+    "name": {
+      "en": "Aelf Lightning Artist",
+      "zh": ""
+    }
+  },
+  "Fae Queen": {
+    "name": {
+      "en": "Fae Queen",
+      "zh": ""
+    }
+  },
+  "Towering Bone Shambler": {
+    "name": {
+      "en": "Towering Bone Shambler",
+      "zh": ""
+    },
+    "description": {
+      "en": "A disgusting mass of bone, animated by dark magic.  Splits into smaller chunks when destroyed.",
+      "zh": ""
+    }
+  },
+  "Void Knight": {
+    "name": {
+      "en": "Void Knight",
+      "zh": ""
+    }
+  },
+  "Storm Knight": {
+    "name": {
+      "en": "Storm Knight",
+      "zh": ""
+    }
+  },
+  "Nightmare Turtle": {
+    "name": {
+      "en": "Nightmare Turtle",
+      "zh": ""
+    }
+  },
+  "Lamasu": {
+    "name": {
+      "en": "Lamasu",
+      "zh": ""
+    }
+  },
+  "Glass Cockatrice": {
+    "name": {
+      "en": "Glass Cockatrice",
+      "zh": ""
+    },
+    "description": {
+      "en": "Its gaze turns foes to stone",
+      "zh": ""
+    }
+  },
+  "Glass Butterfly": {
+    "name": {
+      "en": "Glass Butterfly",
+      "zh": ""
+    }
+  },
+  "Giant Flaming Skull": {
+    "name": {
+      "en": "Giant Flaming Skull",
+      "zh": ""
+    }
+  },
+  "Phoenix": {
+    "name": {
+      "en": "Phoenix",
+      "zh": ""
+    }
+  },
+  "Steel Spider Queen": {
+    "name": {
+      "en": "Steel Spider Queen",
+      "zh": ""
+    }
+  },
+  "Aether Spider Queen": {
+    "name": {
+      "en": "Aether Spider Queen",
+      "zh": ""
+    }
+  },
+  "Volcano Turtle": {
+    "name": {
+      "en": "Volcano Turtle",
+      "zh": ""
+    }
+  },
+  "Dracolich": {
+    "name": {
+      "en": "Dracolich",
+      "zh": ""
+    }
+  },
+  "Aesir": {
+    "name": {
+      "en": "Aesir",
+      "zh": ""
+    }
+  },
+  "Titan": {
+    "name": {
+      "en": "Titan",
+      "zh": ""
+    }
+  },
+  "Reaper": {
+    "name": {
+      "en": "Reaper",
+      "zh": ""
+    }
+  },
+  "Mass of Eyes": {
+    "name": {
+      "en": "Mass of Eyes",
+      "zh": ""
+    }
+  },
+  "Flesh Fiend": {
+    "name": {
+      "en": "Flesh Fiend",
+      "zh": ""
+    }
+  },
+  "Chaos Fiend": {
+    "name": {
+      "en": "Chaos Fiend",
+      "zh": ""
+    }
+  },
+  "Copper Fiend": {
+    "name": {
+      "en": "Copper Fiend",
+      "zh": ""
+    }
+  },
+  "Furnace Fiend": {
+    "name": {
+      "en": "Furnace Fiend",
+      "zh": ""
+    }
+  },
+  "Insanity Fiend": {
+    "name": {
+      "en": "Insanity Fiend",
+      "zh": ""
+    }
+  },
+  "Rot Fiend": {
+    "name": {
+      "en": "Rot Fiend",
+      "zh": ""
+    }
+  },
+  "Ash Fiend": {
+    "name": {
+      "en": "Ash Fiend",
+      "zh": ""
+    }
+  },
+  "Bone Shambler Megalith": {
+    "name": {
+      "en": "Bone Shambler Megalith",
+      "zh": ""
+    },
+    "description": {
+      "en": "A disgusting mass of bone, animated by dark magic.  Splits into smaller chunks when destroyed.",
+      "zh": ""
+    }
+  },
+  "Golden Skull": {
+    "name": {
+      "en": "Golden Skull",
+      "zh": ""
+    }
+  },
+  "Energy Knight": {
+    "name": {
+      "en": "Energy Knight",
+      "zh": ""
+    }
+  },
+  "Twilight Knight": {
+    "name": {
+      "en": "Twilight Knight",
+      "zh": ""
+    }
+  },
+  "Watcher": {
+    "name": {
+      "en": "Watcher",
+      "zh": ""
+    },
+    "description": {
+      "en": "A tough stationary unit with a long ranged lightning attack",
+      "zh": ""
+    }
+  },
+  "Void Watcher": {
+    "name": {
+      "en": "Void Watcher",
+      "zh": ""
+    },
+    "description": {
+      "en": "A tough stationary unit with a long ranged lightning attack",
+      "zh": ""
+    }
+  },
+  "Idol of Undeath": {
+    "name": {
+      "en": "Idol of Undeath",
+      "zh": ""
+    }
+  },
+  "Fountain of Blood": {
+    "name": {
+      "en": "Fountain of Blood",
+      "zh": ""
+    }
+  },
+  "Fountain of Venom": {
+    "name": {
+      "en": "Fountain of Venom",
+      "zh": ""
+    }
+  },
+  "Idol of Insanity": {
+    "name": {
+      "en": "Idol of Insanity",
+      "zh": ""
+    }
+  },
+  "Slimesoul Idol": {
+    "name": {
+      "en": "Slimesoul Idol",
+      "zh": ""
+    }
+  },
+  "Idol of Agony": {
+    "name": {
+      "en": "Idol of Agony",
+      "zh": ""
+    }
+  },
+  "Idol of Frailty": {
+    "name": {
+      "en": "Idol of Frailty",
+      "zh": ""
+    }
+  },
+  "Idol of Nightmares": {
+    "name": {
+      "en": "Idol of Nightmares",
+      "zh": ""
+    }
+  },
+  "Idol of Invincibiity": {
+    "name": {
+      "en": "Idol of Invincibiity",
+      "zh": ""
+    }
+  },
+  "Idol of Fiends": {
+    "name": {
+      "en": "Idol of Fiends",
+      "zh": ""
+    }
+  },
+  "Medusa": {
+    "name": {
+      "en": "Medusa",
+      "zh": ""
+    }
+  },
+  "Bat Dragon": {
+    "name": {
+      "en": "Bat Dragon",
+      "zh": ""
+    }
+  },
+  "Tombstone": {
+    "name": {
+      "en": "Tombstone",
+      "zh": ""
+    }
+  },
+  "Yggdrasil": {
+    "name": {
+      "en": "Yggdrasil",
+      "zh": ""
+    }
+  },
+  "Idol of Sorcery": {
+    "name": {
+      "en": "Idol of Sorcery",
+      "zh": ""
+    }
+  },
+  "Time Keeper": {
+    "name": {
+      "en": "Time Keeper",
+      "zh": ""
+    }
+  },
+  "Giant Soul Jar": {
+    "name": {
+      "en": "Giant Soul Jar",
+      "zh": ""
+    }
+  },
+  "Swamp Queen": {
+    "name": {
+      "en": "Swamp Queen",
+      "zh": ""
+    }
+  },
+  "Chaos Quill": {
+    "name": {
+      "en": "Chaos Quill",
+      "zh": ""
+    }
+  },
+  "Fire Wyrm Egg": {
+    "name": {
+      "en": "Fire Wyrm Egg",
+      "zh": ""
+    }
+  },
+  "Ice Wyrm Egg": {
+    "name": {
+      "en": "Ice Wyrm Egg",
+      "zh": ""
+    }
+  },
+  "Box of Woe": {
+    "name": {
+      "en": "Box of Woe",
+      "zh": ""
+    }
+  },
+  "Bone Wizard": {
+    "name": {
+      "en": "Bone Wizard",
+      "zh": ""
+    }
+  },
+  "Avian Wizard": {
+    "name": {
+      "en": "Avian Wizard",
+      "zh": ""
+    }
+  },
+  "Raven Mage": {
+    "name": {
+      "en": "Raven Mage",
+      "zh": ""
+    }
+  },
+  "Lightning Master": {
+    "name": {
+      "en": "Lightning Master",
+      "zh": ""
+    }
+  },
+  "Mountain Mage": {
+    "name": {
+      "en": "Mountain Mage",
+      "zh": ""
+    }
+  },
+  "Masked Wizard": {
+    "name": {
+      "en": "Masked Wizard",
+      "zh": ""
+    }
+  },
+  "Arachnid Wizard": {
+    "name": {
+      "en": "Arachnid Wizard",
+      "zh": ""
+    }
+  },
+  "Dragon Mage": {
+    "name": {
+      "en": "Dragon Mage",
+      "zh": ""
+    }
+  },
+  "Troll Geomancer": {
+    "name": {
+      "en": "Troll Geomancer",
+      "zh": ""
+    },
+    "description": {
+      "en": "A big dumb regenerating troll.  Regenerates 5hp per turn.  Regeneration is disabled for one turn upon taking fire damage.",
+      "zh": ""
+    }
+  },
+  "Void Magus": {
+    "name": {
+      "en": "Void Magus",
+      "zh": ""
+    }
+  },
+  "Glass Master": {
+    "name": {
+      "en": "Glass Master",
+      "zh": ""
+    }
+  },
+  "Grand Warlock": {
+    "name": {
+      "en": "Grand Warlock",
+      "zh": ""
+    }
+  },
+  "Twilight Seer": {
+    "name": {
+      "en": "Twilight Seer",
+      "zh": ""
+    }
+  },
+  "Ice Lich": {
+    "name": {
+      "en": "Ice Lich",
+      "zh": ""
+    }
+  },
+  "Fire Lich": {
+    "name": {
+      "en": "Fire Lich",
+      "zh": ""
+    }
+  },
+  "Ice Wizard": {
+    "name": {
+      "en": "Ice Wizard",
+      "zh": ""
+    }
+  },
+  "Goblin Wizard": {
+    "name": {
+      "en": "Goblin Wizard",
+      "zh": ""
+    }
+  },
+  "Frostfire Mage": {
+    "name": {
+      "en": "Frostfire Mage",
+      "zh": ""
+    }
+  },
+  "Starfire Sorcerer": {
+    "name": {
+      "en": "Starfire Sorcerer",
+      "zh": ""
+    }
+  },
+  "Fire Wizard": {
+    "name": {
+      "en": "Fire Wizard",
+      "zh": ""
+    }
+  },
+  "Enchanter": {
+    "name": {
+      "en": "Enchanter",
+      "zh": ""
+    }
+  },
+  "Troubling Mass": {
+    "name": {
+      "en": "Troubling Mass",
+      "zh": ""
+    }
+  },
+  "Vampire Count": {
+    "name": {
+      "en": "Vampire Count",
+      "zh": ""
+    }
+  },
+  "Black Rider": {
+    "name": {
+      "en": "Black Rider",
+      "zh": ""
+    }
+  },
+  "White Rider": {
+    "name": {
+      "en": "White Rider",
+      "zh": ""
+    }
+  },
+  "Red Rider": {
+    "name": {
+      "en": "Red Rider",
+      "zh": ""
+    }
+  },
+  "Pale Rider": {
+    "name": {
+      "en": "Pale Rider",
+      "zh": ""
+    }
+  },
+  "The Furnace": {
+    "name": {
+      "en": "The Furnace",
+      "zh": ""
+    }
+  },
+  "Pillar of Bones": {
+    "name": {
+      "en": "Pillar of Bones",
+      "zh": ""
+    }
+  },
+  "Pillar of Worms": {
+    "name": {
+      "en": "Pillar of Worms",
+      "zh": ""
+    }
+  },
+  "Translocator": {
+    "name": {
+      "en": "Translocator",
+      "zh": ""
+    }
+  },
+  "Mechanomancer": {
+    "name": {
+      "en": "Mechanomancer",
+      "zh": ""
+    }
+  },
+  "Minos, The Golden Bull": {
+    "name": {
+      "en": "Minos, The Golden Bull",
+      "zh": ""
+    },
+    "description": {
+      "en": "A man with the head of a bull",
+      "zh": ""
+    }
+  },
+  "Chronos, Titan Immortal": {
+    "name": {
+      "en": "Chronos, Titan Immortal",
+      "zh": ""
+    }
+  },
+  "Odin, Aesir Immortal": {
+    "name": {
+      "en": "Odin, Aesir Immortal",
+      "zh": ""
+    }
+  },
+  "Gemini Twin": {
+    "name": {
+      "en": "Gemini Twin",
+      "zh": ""
+    }
+  },
+  "The Mischief Maker": {
+    "name": {
+      "en": "The Mischief Maker",
+      "zh": ""
+    }
+  },
+  "Slime Drake": {
+    "name": {
+      "en": "Slime Drake",
+      "zh": ""
+    }
+  },
+  "Void Phoenix": {
+    "name": {
+      "en": "Void Phoenix",
+      "zh": ""
+    }
+  },
+  "Crucible of Pain": {
+    "name": {
+      "en": "Crucible of Pain",
+      "zh": ""
+    }
+  },
+  "Idol of Fiery Vengeance": {
+    "name": {
+      "en": "Idol of Fiery Vengeance",
+      "zh": ""
+    }
+  },
+  "Concussive Idol": {
+    "name": {
+      "en": "Concussive Idol",
+      "zh": ""
+    }
+  },
+  "Idol of Vampirism": {
+    "name": {
+      "en": "Idol of Vampirism",
+      "zh": ""
+    }
+  },
+  "Bone Colossus": {
+    "name": {
+      "en": "Bone Colossus",
+      "zh": ""
+    },
+    "description": {
+      "en": "A disgusting mass of bone, animated by dark magic.  Splits into smaller chunks when destroyed.",
+      "zh": ""
+    }
+  },
+  "Flesh Colossus": {
+    "name": {
+      "en": "Flesh Colossus",
+      "zh": ""
+    }
+  },
+  "Giant Nightmare Turtle": {
+    "name": {
+      "en": "Giant Nightmare Turtle",
+      "zh": ""
+    }
+  },
+  "Giant Mass of Eyes": {
+    "name": {
+      "en": "Giant Mass of Eyes",
+      "zh": ""
+    }
+  },
+  "Giant Gorgon": {
+    "name": {
+      "en": "Giant Gorgon",
+      "zh": ""
+    }
+  },
+  "Beastking of Inferno": {
+    "name": {
+      "en": "Beastking of Inferno",
+      "zh": ""
+    }
+  },
+  "Ultimate Mind Devourer": {
+    "name": {
+      "en": "Ultimate Mind Devourer",
+      "zh": ""
+    }
+  },
+  "Giant Sack of Filth": {
+    "name": {
+      "en": "Giant Sack of Filth",
+      "zh": ""
+    }
+  },
+  "True Lamasu": {
+    "name": {
+      "en": "True Lamasu",
+      "zh": ""
+    }
+  },
+  "Winterbringer": {
+    "name": {
+      "en": "Winterbringer",
+      "zh": ""
+    }
+  },
+  "Mother of Spiders": {
+    "name": {
+      "en": "Mother of Spiders",
+      "zh": ""
+    }
+  },
+  "Shrapnel Beast": {
+    "name": {
+      "en": "Shrapnel Beast",
+      "zh": ""
+    }
+  },
+  "Mothman": {
+    "name": {
+      "en": "Mothman",
+      "zh": ""
+    }
+  },
+  "Animikii": {
+    "name": {
+      "en": "Animikii",
+      "zh": ""
+    }
+  },
+  "Ultimate Troubler": {
+    "name": {
+      "en": "Ultimate Troubler",
+      "zh": ""
+    }
+  },
+  "Moon Mage": {
+    "name": {
+      "en": "Moon Mage",
+      "zh": ""
+    }
+  },
+  "Blood Magus": {
+    "name": {
+      "en": "Blood Magus",
+      "zh": ""
+    }
+  },
+  "Deathchiller": {
+    "name": {
+      "en": "Deathchiller",
+      "zh": ""
+    }
+  },
+  "Brain Tree": {
+    "name": {
+      "en": "Brain Tree",
+      "zh": ""
+    }
+  },
+  "Rot Tree": {
+    "name": {
+      "en": "Rot Tree",
+      "zh": ""
+    }
+  },
+  "Crystal Golem": {
+    "name": {
+      "en": "Crystal Golem",
+      "zh": ""
+    },
+    "description": {
+      "en": "An evolved golem of refracting crystal.",
+      "zh": ""
+    }
+  },
+  "Old Thunderbones": {
+    "name": {
+      "en": "Old Thunderbones",
+      "zh": ""
+    }
+  },
+  "Electric Bone Shambler": {
+    "name": {
+      "en": "Electric Bone Shambler",
+      "zh": ""
+    },
+    "description": {
+      "en": "A disgusting mass of bone, animated by dark magic.  Splits into smaller chunks when destroyed.",
+      "zh": ""
+    }
+  },
+  "Slazephan the Philosopher": {
+    "name": {
+      "en": "Slazephan the Philosopher",
+      "zh": ""
+    }
+  },
+  "Shru the Toad Sorcerer": {
+    "name": {
+      "en": "Shru the Toad Sorcerer",
+      "zh": ""
+    }
+  },
+  "Duergar Fortress": {
+    "name": {
+      "en": "Duergar Fortress",
+      "zh": ""
+    }
+  },
+  "Gnome Castle": {
+    "name": {
+      "en": "Gnome Castle",
+      "zh": ""
+    }
+  },
+  "Kobold Camp": {
+    "name": {
+      "en": "Kobold Camp",
+      "zh": ""
+    }
+  },
+  "Jormungandr": {
+    "name": {
+      "en": "Jormungandr",
+      "zh": ""
+    }
+  },
+  "Ophan": {
+    "name": {
+      "en": "Ophan",
+      "zh": ""
+    }
+  },
+  "Pope the Frog": {
+    "name": {
+      "en": "Pope the Frog",
+      "zh": ""
+    }
+  },
+  "Insanity Queen": {
+    "name": {
+      "en": "Insanity Queen",
+      "zh": ""
+    }
+  },
+  "Mordred": {
+    "name": {
+      "en": "Mordred",
+      "zh": ""
+    }
+  }
+}

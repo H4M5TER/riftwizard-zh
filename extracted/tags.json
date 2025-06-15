@@ -1,0 +1,330 @@
+{
+  "physical": {
+    "en": "physical",
+    "zh": ""
+  },
+  "fire": {
+    "en": "fire",
+    "zh": ""
+  },
+  "lightning": {
+    "en": "lightning",
+    "zh": ""
+  },
+  "ice": {
+    "en": "ice",
+    "zh": ""
+  },
+  "nature": {
+    "en": "nature",
+    "zh": ""
+  },
+  "arcane": {
+    "en": "arcane",
+    "zh": ""
+  },
+  "dark": {
+    "en": "dark",
+    "zh": ""
+  },
+  "holy": {
+    "en": "holy",
+    "zh": ""
+  },
+  "sorcery": {
+    "en": "sorcery",
+    "zh": ""
+  },
+  "conjuration": {
+    "en": "conjuration",
+    "zh": ""
+  },
+  "enchantment": {
+    "en": "enchantment",
+    "zh": ""
+  },
+  "word": {
+    "en": "word",
+    "zh": ""
+  },
+  "orb": {
+    "en": "orb",
+    "zh": ""
+  },
+  "dragon": {
+    "en": "dragon",
+    "zh": ""
+  },
+  "translocation": {
+    "en": "translocation",
+    "zh": ""
+  },
+  "undead": {
+    "en": "undead",
+    "zh": ""
+  },
+  "elemental": {
+    "en": "elemental",
+    "zh": ""
+  },
+  "heal": {
+    "en": "heal",
+    "zh": ""
+  },
+  "acid": {
+    "en": "acid",
+    "zh": ""
+  },
+  "demon": {
+    "en": "demon",
+    "zh": ""
+  },
+  "spider": {
+    "en": "spider",
+    "zh": ""
+  },
+  "poison": {
+    "en": "poison",
+    "zh": ""
+  },
+  "living": {
+    "en": "living",
+    "zh": ""
+  },
+  "construct": {
+    "en": "construct",
+    "zh": ""
+  },
+  "metallic": {
+    "en": "metallic",
+    "zh": ""
+  },
+  "eye": {
+    "en": "eye",
+    "zh": ""
+  },
+  "glass": {
+    "en": "glass",
+    "zh": ""
+  },
+  "chaos": {
+    "en": "chaos",
+    "zh": ""
+  },
+  "blood": {
+    "en": "blood",
+    "zh": ""
+  },
+  "tongue": {
+    "en": "tongue",
+    "zh": ""
+  },
+  "slime": {
+    "en": "slime",
+    "zh": ""
+  },
+  "shield": {
+    "en": "shield",
+    "zh": ""
+  },
+  "buff_apply": {
+    "en": "buff_apply",
+    "zh": ""
+  },
+  "debuff_apply": {
+    "en": "debuff_apply",
+    "zh": ""
+  },
+  "shield_apply": {
+    "en": "shield_apply",
+    "zh": ""
+  },
+  "shield_expire": {
+    "en": "shield_expire",
+    "zh": ""
+  },
+  "sound_effect": {
+    "en": "sound_effect",
+    "zh": ""
+  },
+  "leap": {
+    "en": "leap",
+    "zh": ""
+  },
+  "arrow": {
+    "en": "arrow",
+    "zh": ""
+  },
+  "petrification": {
+    "en": "petrification",
+    "zh": ""
+  },
+  "glassification": {
+    "en": "glassification",
+    "zh": ""
+  },
+  "immolate": {
+    "en": "immolate",
+    "zh": ""
+  },
+  "thunderstrike": {
+    "en": "thunderstrike",
+    "zh": ""
+  },
+  "armageddonblade": {
+    "en": "armageddonblade",
+    "zh": ""
+  },
+  "consumable": {
+    "en": "consumable",
+    "zh": ""
+  },
+  "damage": {
+    "en": "damage",
+    "zh": ""
+  },
+  "range": {
+    "en": "range",
+    "zh": ""
+  },
+  "minion_health": {
+    "en": "minion_health",
+    "zh": ""
+  },
+  "minion_damage": {
+    "en": "minion_damage",
+    "zh": ""
+  },
+  "minion_duration": {
+    "en": "minion_duration",
+    "zh": ""
+  },
+  "minion_range": {
+    "en": "minion_range",
+    "zh": ""
+  },
+  "duration": {
+    "en": "duration",
+    "zh": ""
+  },
+  "max_charges": {
+    "en": "max_charges",
+    "zh": ""
+  },
+  "radius": {
+    "en": "radius",
+    "zh": ""
+  },
+  "num_summons": {
+    "en": "num_summons",
+    "zh": ""
+  },
+  "num_targets": {
+    "en": "num_targets",
+    "zh": ""
+  },
+  "shields": {
+    "en": "shields",
+    "zh": ""
+  },
+  "shot_cooldown": {
+    "en": "shot_cooldown",
+    "zh": ""
+  },
+  "strikechance": {
+    "en": "strikechance",
+    "zh": ""
+  },
+  "cooldown": {
+    "en": "cooldown",
+    "zh": ""
+  },
+  "cascade_range": {
+    "en": "cascade_range",
+    "zh": ""
+  },
+  "petrify": {
+    "en": "petrify",
+    "zh": ""
+  },
+  "petrified": {
+    "en": "petrified",
+    "zh": ""
+  },
+  "petrifies": {
+    "en": "petrifies",
+    "zh": ""
+  },
+  "frozen": {
+    "en": "frozen",
+    "zh": ""
+  },
+  "freezes": {
+    "en": "freezes",
+    "zh": ""
+  },
+  "freeze": {
+    "en": "freeze",
+    "zh": ""
+  },
+  "stunned": {
+    "en": "stunned",
+    "zh": ""
+  },
+  "stun": {
+    "en": "stun",
+    "zh": ""
+  },
+  "stuns": {
+    "en": "stuns",
+    "zh": ""
+  },
+  "berserk": {
+    "en": "berserk",
+    "zh": ""
+  },
+  "poisoned": {
+    "en": "poisoned",
+    "zh": ""
+  },
+  "blind": {
+    "en": "blind",
+    "zh": ""
+  },
+  "blinded": {
+    "en": "blinded",
+    "zh": ""
+  },
+  "glassify": {
+    "en": "glassify",
+    "zh": ""
+  },
+  "glassified": {
+    "en": "glassified",
+    "zh": ""
+  },
+  "quick_cast": {
+    "en": "quick_cast",
+    "zh": ""
+  },
+  "requires_los": {
+    "en": "requires_los",
+    "zh": ""
+  },
+  "wizard": {
+    "en": "wizard",
+    "zh": ""
+  },
+  "enemy": {
+    "en": "enemy",
+    "zh": ""
+  },
+  "ally": {
+    "en": "ally",
+    "zh": ""
+  },
+  "hp_cost": {
+    "en": "hp_cost",
+    "zh": ""
+  }
+}
