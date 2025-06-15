@@ -129,7 +129,7 @@
       "zh": ""
     },
     "description": {
-      "en": "Whenever an ally is summoned, if it is on or adjacent to a Wizard, the summon consumes it, and gains the Fleshbound modifier.",
+      "en": "Whenever you summon a unit with a spell or skill, if it is summoned adjacent to yourself or another Fleshbound unit, the summon gains the Fleshbound modifier.",
       "zh": ""
     }
   },

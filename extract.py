@@ -113,7 +113,7 @@ def items2dict(items):
         }
         if type(item) in equipment_boilerplates:
             continue
-        description = getattr(item, "description", None)
+        description = item.get_description() if hasattr(item, "get_description") else None
         alt = False
         if (
             description is None
@@ -121,8 +121,8 @@ def items2dict(items):
             or description == "Undescribed"
         ):
             alt = True
-        if alt and hasattr(item, "get_description"):
-            description = item.get_description()
+        if alt:
+            description = getattr(item, "description", None)
         if (
             description
             and not description == "Undescribed"
