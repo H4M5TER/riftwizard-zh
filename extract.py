@@ -39,6 +39,8 @@ target_names = [
     "UNPURCHASED_TARGET",
     "UNVICTORIED_TARGET",
 ]
+
+
 from Spells import make_player_spells
 from Upgrades import make_player_skills
 from Consumables import all_consumables
@@ -49,7 +51,43 @@ from Equipment import (
     RandomLittleRing,
     ring_tags,
     ring_stats,
+    GenericOculusEquip,
+    FreeCastStaff,
+    SummonOnDeathStaff,
+    TagHelm,
+    GenericFrenzyMask,
+    SeasonCrown,
+    MinionCastHat,
+    SummonShoes,
+    SpellBoots,
+    ThornItem,
+    DamageToPetsAmulet,
+    PrinceOfRuinLike,
+    JarOfBossness,
+    CursePipe,
+    CurseDoll,
+    DebuffDamager,
 )
+
+equipment_boilerplates = [
+    GenericOculusEquip,
+    FreeCastStaff,
+    SummonOnDeathStaff,
+    TagHelm,
+    GenericFrenzyMask,
+    SeasonCrown,
+    MinionCastHat,
+    SummonShoes,
+    SpellBoots,
+    ThornItem,
+    DamageToPetsAmulet,
+    PrinceOfRuinLike,
+    JarOfBossness,
+    CursePipe,
+    CurseDoll,
+    DebuffDamager,
+]
+
 from Shrines import (
     chest_opts,
     reward_table,
@@ -73,6 +111,8 @@ def items2dict(items):
                 "zh": "",
             },
         }
+        if type(item) in equipment_boilerplates:
+            continue
         description = getattr(item, "description", None)
         alt = False
         if (

@@ -137,19 +137,11 @@
     "name": {
       "en": "Storm Oculus",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy unit takes [Ice] or [Lightning] damage, it gets -25 [Ice] and [Lightning] resist.  This debuff does not stack.",
-      "zh": ""
     }
   },
   "Void Oculus": {
     "name": {
       "en": "Void Oculus",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy unit takes [Dark] or [Arcane] damage, it gets -25 [Dark] and [Arcane] resist.  This debuff does not stack.",
       "zh": ""
     }
   },
@@ -157,19 +149,11 @@
     "name": {
       "en": "Pyrostatic Oculus",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy unit takes [Fire] or [Lightning] damage, it gets -25 [Fire] and [Lightning] resist.  This debuff does not stack.",
-      "zh": ""
     }
   },
   "Twilight Oculus": {
     "name": {
       "en": "Twilight Oculus",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy unit takes [Dark] or [Holy] damage, it gets -25 [Dark] and [Holy] resist.  This debuff does not stack.",
       "zh": ""
     }
   },
@@ -177,19 +161,11 @@
     "name": {
       "en": "Crystal Oculus",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy unit takes [Ice] or [Arcane] damage, it gets -25 [Ice] and [Arcane] resist.  This debuff does not stack.",
-      "zh": ""
     }
   },
   "Purity Oculus": {
     "name": {
       "en": "Purity Oculus",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy unit takes [Fire] or [Holy] damage, it gets -25 [Fire] and [Holy] resist.  This debuff does not stack.",
       "zh": ""
     }
   },
@@ -323,19 +299,11 @@
     "name": {
       "en": "The Purifier",
       "zh": ""
-    },
-    "description": {
-      "en": "For every 50 damage dealt to enemies with Holy spells, cast Immolate on a random enemy",
-      "zh": ""
     }
   },
   "Silvermelt": {
     "name": {
       "en": "Silvermelt",
-      "zh": ""
-    },
-    "description": {
-      "en": "For every 60 damage dealt to enemies with Fire spells, cast Mercurize on a random enemy",
       "zh": ""
     }
   },
@@ -343,19 +311,11 @@
     "name": {
       "en": "Sorcwinter",
       "zh": ""
-    },
-    "description": {
-      "en": "For every 75 damage dealt to enemies with Sorcery spells, cast Death Chill on a random enemy",
-      "zh": ""
     }
   },
   "The Dynamo": {
     "name": {
       "en": "The Dynamo",
-      "zh": ""
-    },
-    "description": {
-      "en": "For every 40 damage dealt to enemies with Lightning spells, cast Annihilate on a random enemy",
       "zh": ""
     }
   },
@@ -363,19 +323,11 @@
     "name": {
       "en": "The Blazeloom",
       "zh": ""
-    },
-    "description": {
-      "en": "For every 50 damage dealt to enemies with Enchantment spells, cast Blazerip on a random enemy",
-      "zh": ""
     }
   },
   "Starblesser": {
     "name": {
       "en": "Starblesser",
-      "zh": ""
-    },
-    "description": {
-      "en": "For every 40 damage dealt to enemies with Arcane spells, cast Heavenly Blast on a random enemy",
       "zh": ""
     }
   },
@@ -383,19 +335,11 @@
     "name": {
       "en": "The Sparkloom",
       "zh": ""
-    },
-    "description": {
-      "en": "For every 50 damage dealt to enemies with Enchantment spells, cast Lightning Bolt on a random enemy",
-      "zh": ""
     }
   },
   "Wintersting": {
     "name": {
       "en": "Wintersting",
-      "zh": ""
-    },
-    "description": {
-      "en": "For every 30 damage dealt to enemies with Ice spells, cast Poison Sting on a random enemy",
       "zh": ""
     }
   },
@@ -403,19 +347,11 @@
     "name": {
       "en": "Red Majesty",
       "zh": ""
-    },
-    "description": {
-      "en": "For every 30 damage dealt to enemies with Blood spells, cast Scourge on a random enemy",
-      "zh": ""
     }
   },
   "Blastmaker": {
     "name": {
       "en": "Blastmaker",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies, summon a Fire Bomber where it was",
       "zh": ""
     }
   },
@@ -423,19 +359,11 @@
     "name": {
       "en": "Embermaker",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies, summon a Fire Fly Swarm where it was",
-      "zh": ""
     }
   },
   "Mantismaker": {
     "name": {
       "en": "Mantismaker",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies, summon a Mantis where it was",
       "zh": ""
     }
   },
@@ -443,19 +371,11 @@
     "name": {
       "en": "Sprigganmaker",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies, summon a Spriggan where it was",
-      "zh": ""
     }
   },
   "Impmaker": {
     "name": {
       "en": "Impmaker",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies, summon a random imp where it was for 5 turns",
       "zh": ""
     }
   },
@@ -935,19 +855,11 @@
     "name": {
       "en": "Fire Frenzy Mask",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever you cast a [Fire] spell, your [Fire] spells and skills gain [2_damage:damage] for [6_turns:duration]",
-      "zh": ""
     }
   },
   "Ice Frenzy Mask": {
     "name": {
       "en": "Ice Frenzy Mask",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever you cast a [Ice] spell, your [Ice] spells and skills gain [2_damage:damage] for [6_turns:duration]",
       "zh": ""
     }
   },
@@ -955,19 +867,11 @@
     "name": {
       "en": "Arcane Frenzy Mask",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever you cast a [Arcane] spell, your [Arcane] spells and skills gain [2_damage:damage] for [6_turns:duration]",
-      "zh": ""
     }
   },
   "Summer Crown": {
     "name": {
       "en": "Summer Crown",
-      "zh": ""
-    },
-    "description": {
-      "en": "After 25 turns, summon 11 Fire Fly Swarms and 4 Fire Spirits.",
       "zh": ""
     }
   },
@@ -975,29 +879,17 @@
     "name": {
       "en": "Winter Crown",
       "zh": ""
-    },
-    "description": {
-      "en": "After 25 turns, summon 2 Yetis and 3 Storm Spirits.",
-      "zh": ""
     }
   },
   "Spring Crown": {
     "name": {
       "en": "Spring Crown",
       "zh": ""
-    },
-    "description": {
-      "en": "After 25 turns, summon 7 Gnomes and 2 Mycobeasts.",
-      "zh": ""
     }
   },
   "Autumn Crown": {
     "name": {
       "en": "Autumn Crown",
-      "zh": ""
-    },
-    "description": {
-      "en": "After 25 turns, summon 7 Ravens and 4 Witchs.",
       "zh": ""
     }
   },
@@ -1015,29 +907,17 @@
     "name": {
       "en": "Chaos Scale Crown",
       "zh": ""
-    },
-    "description": {
-      "en": "Each turn, one of your Dragon minions instantly casts Annihilate on a random enemy.",
-      "zh": ""
     }
   },
   "Crown of Bony Fingers": {
     "name": {
       "en": "Crown of Bony Fingers",
       "zh": ""
-    },
-    "description": {
-      "en": "Each turn, one of your Undead minions instantly casts Touch of Death on a random enemy.",
-      "zh": ""
     }
   },
   "Moon Crown": {
     "name": {
       "en": "Moon Crown",
-      "zh": ""
-    },
-    "description": {
-      "en": "Each turn, one of your Holy minions instantly casts Void Beam on a random enemy.",
       "zh": ""
     }
   },
@@ -1197,19 +1077,11 @@
     "name": {
       "en": "Gnome Shoes",
       "zh": ""
-    },
-    "description": {
-      "en": "Every 6 steps, summon a Gnome",
-      "zh": ""
     }
   },
   "Slime Shoes": {
     "name": {
       "en": "Slime Shoes",
-      "zh": ""
-    },
-    "description": {
-      "en": "Every 4 steps, summon a Green Slime",
       "zh": ""
     }
   },
@@ -1217,19 +1089,11 @@
     "name": {
       "en": "Kobold Clogs",
       "zh": ""
-    },
-    "description": {
-      "en": "Every 3 steps, summon a Kobold",
-      "zh": ""
     }
   },
   "Ogre Boots": {
     "name": {
       "en": "Ogre Boots",
-      "zh": ""
-    },
-    "description": {
-      "en": "Every 8 steps, summon a Ogre",
       "zh": ""
     }
   },
@@ -1237,19 +1101,11 @@
     "name": {
       "en": "Ghost Slippers",
       "zh": ""
-    },
-    "description": {
-      "en": "Every 3 steps, summon a Ghost",
-      "zh": ""
     }
   },
   "Storm Boots": {
     "name": {
       "en": "Storm Boots",
-      "zh": ""
-    },
-    "description": {
-      "en": "Every 15 steps, casts your Storm Burst spell.\n15 steps until cast.",
       "zh": ""
     }
   },
@@ -1257,19 +1113,11 @@
     "name": {
       "en": "Exploding Boots",
       "zh": ""
-    },
-    "description": {
-      "en": "Every 15 steps, casts your Flame Burst spell.\n15 steps until cast.",
-      "zh": ""
     }
   },
   "Earthquake Boots": {
     "name": {
       "en": "Earthquake Boots",
-      "zh": ""
-    },
-    "description": {
-      "en": "Every 8 steps, casts your Earthquake spell.\n8 steps until cast.",
       "zh": ""
     }
   },
@@ -1515,19 +1363,11 @@
     "name": {
       "en": "Bramblethorn",
       "zh": ""
-    },
-    "description": {
-      "en": "Your summoned allies deal 6 [Physical] damage to melee attackers",
-      "zh": ""
     }
   },
   "Toadthorn": {
     "name": {
       "en": "Toadthorn",
-      "zh": ""
-    },
-    "description": {
-      "en": "Your summoned allies deal 6 [Poison] damage to melee attackers",
       "zh": ""
     }
   },
@@ -1535,19 +1375,11 @@
     "name": {
       "en": "Devilthorn",
       "zh": ""
-    },
-    "description": {
-      "en": "Your summoned allies deal 6 [Fire] damage to melee attackers",
-      "zh": ""
     }
   },
   "Witch Whistle": {
     "name": {
       "en": "Witch Whistle",
-      "zh": ""
-    },
-    "description": {
-      "en": "For every 100 [Dark] damage dealt to enemies, summon a Witch.\nCurrent: 0",
       "zh": ""
     }
   },
@@ -1555,19 +1387,11 @@
     "name": {
       "en": "Snowy Fursphere",
       "zh": ""
-    },
-    "description": {
-      "en": "For every 300 [Ice] damage dealt to enemies, summon a Yeti.\nCurrent: 0",
-      "zh": ""
     }
   },
   "Living Emberstone": {
     "name": {
       "en": "Living Emberstone",
-      "zh": ""
-    },
-    "description": {
-      "en": "For every 100 [Fire] damage dealt to enemies, summon a Fire Spirit.\nCurrent: 0",
       "zh": ""
     }
   },
@@ -1575,19 +1399,11 @@
     "name": {
       "en": "Silken Links",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies to [Poison] or [Arcane] damage, deal 9 damage of that type to a random enemy in line of sight of the target up to 5 tiles away.",
-      "zh": ""
     }
   },
   "Winter Links": {
     "name": {
       "en": "Winter Links",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies to [Ice] or [Dark] damage, deal 9 damage of that type to a random enemy in line of sight of the target up to 5 tiles away.",
       "zh": ""
     }
   },
@@ -1595,19 +1411,11 @@
     "name": {
       "en": "Wrath Links",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever an enemy dies to [Holy] or [Lightning] damage, deal 9 damage of that type to a random enemy in line of sight of the target up to 5 tiles away.",
-      "zh": ""
     }
   },
   "Jar of Trollblood": {
     "name": {
       "en": "Jar of Trollblood",
-      "zh": ""
-    },
-    "description": {
-      "en": "Each ally you summon has a one in three chance to be Trollblooded.\n",
       "zh": ""
     }
   },
@@ -1615,19 +1423,11 @@
     "name": {
       "en": "Jar of Embers",
       "zh": ""
-    },
-    "description": {
-      "en": "Each non-Fire ally you summon has a one in three chance to be Burning.\n",
-      "zh": ""
     }
   },
   "Jar of Quicksilver": {
     "name": {
       "en": "Jar of Quicksilver",
-      "zh": ""
-    },
-    "description": {
-      "en": "Each non-Metallic ally you summon has a one in three chance to be Metallic.\n",
       "zh": ""
     }
   },
@@ -1635,19 +1435,11 @@
     "name": {
       "en": "Jar of Ectoplasm",
       "zh": ""
-    },
-    "description": {
-      "en": "Each non-Undead ally you summon has a one in three chance to be Ghostly.\n",
-      "zh": ""
     }
   },
   "Poison Pipe": {
     "name": {
       "en": "Poison Pipe",
-      "zh": ""
-    },
-    "description": {
-      "en": "Every 3 turns, the nearest 3 enemy units are afflicted with Poison for 3 turns.\nDoes not target units already afflicted with Poison.",
       "zh": ""
     }
   },
@@ -1655,19 +1447,11 @@
     "name": {
       "en": "Time Pipe",
       "zh": ""
-    },
-    "description": {
-      "en": "Every 10 turns, the nearest 7 enemy units are afflicted with Stunned for 3 turns.\nDoes not target units already afflicted with Stunned.",
-      "zh": ""
     }
   },
   "Ink Pipe": {
     "name": {
       "en": "Ink Pipe",
-      "zh": ""
-    },
-    "description": {
-      "en": "Every 3 turns, the nearest 2 enemy units are afflicted with Blind for 4 turns.\nDoes not target units already afflicted with Blind.",
       "zh": ""
     }
   },
@@ -1675,19 +1459,11 @@
     "name": {
       "en": "Ice Pipe",
       "zh": ""
-    },
-    "description": {
-      "en": "Every 6 turns, the nearest 2 enemy units are afflicted with Frozen for 4 turns.\nDoes not target units already afflicted with Frozen.",
-      "zh": ""
     }
   },
   "Purple Curse Doll": {
     "name": {
       "en": "Purple Curse Doll",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever one of your [Arcane] minions dies, it casts your Magic Missile on the killer.",
       "zh": ""
     }
   },
@@ -1695,19 +1471,11 @@
     "name": {
       "en": "Ugly Curse Doll",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever one of your [Holy] minions dies, it casts your Ghostball on the killer.",
-      "zh": ""
     }
   },
   "Red Curse Doll": {
     "name": {
       "en": "Red Curse Doll",
-      "zh": ""
-    },
-    "description": {
-      "en": "Whenever one of your [Demon] minions dies, it casts your Annihilate on the killer.",
       "zh": ""
     }
   },
@@ -1715,29 +1483,17 @@
     "name": {
       "en": "Scaly Curse Doll",
       "zh": ""
-    },
-    "description": {
-      "en": "Whenever one of your [Dragon] minions dies, it casts your Death Shock on the killer.",
-      "zh": ""
     }
   },
   "Fae Toxin Pouch": {
     "name": {
       "en": "Fae Toxin Pouch",
       "zh": ""
-    },
-    "description": {
-      "en": "Each turn, deal 15 Arcane damage to one random enemy currently afflicted with Poison",
-      "zh": ""
     }
   },
   "Icy Cruciform": {
     "name": {
       "en": "Icy Cruciform",
-      "zh": ""
-    },
-    "description": {
-      "en": "Each turn, deal 15 Holy damage to one random enemy currently afflicted with Frozen",
       "zh": ""
     }
   },
