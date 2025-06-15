@@ -3,19 +3,11 @@
     "name": {
       "en": "Treasure Chest",
       "zh": ""
-    },
-    "description": {
-      "en": " ",
-      "zh": ""
     }
   },
   "Box of Wizard Caps": {
     "name": {
       "en": "Box of Wizard Caps",
-      "zh": ""
-    },
-    "description": {
-      "en": " ",
       "zh": ""
     }
   },
@@ -23,19 +15,11 @@
     "name": {
       "en": "Hat Chest",
       "zh": ""
-    },
-    "description": {
-      "en": " ",
-      "zh": ""
     }
   },
   "Staff Chest": {
     "name": {
       "en": "Staff Chest",
-      "zh": ""
-    },
-    "description": {
-      "en": " ",
       "zh": ""
     }
   },
@@ -43,29 +27,17 @@
     "name": {
       "en": "Shoe Box",
       "zh": ""
-    },
-    "description": {
-      "en": " ",
-      "zh": ""
     }
   },
   "Armor Chest": {
     "name": {
       "en": "Armor Chest",
       "zh": ""
-    },
-    "description": {
-      "en": " ",
-      "zh": ""
     }
   },
   "Trinket Box": {
     "name": {
       "en": "Trinket Box",
-      "zh": ""
-    },
-    "description": {
-      "en": " ",
       "zh": ""
     }
   },
@@ -83,19 +55,11 @@
     "name": {
       "en": "Exotic Pet Shop",
       "zh": ""
-    },
-    "description": {
-      "en": " ",
-      "zh": ""
     }
   },
   "Sigil Chest": {
     "name": {
       "en": "Sigil Chest",
-      "zh": ""
-    },
-    "description": {
-      "en": " ",
       "zh": ""
     }
   },

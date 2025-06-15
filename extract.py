@@ -74,7 +74,7 @@ def items2dict(items):
         description = getattr(item, "description", None)
         if hasattr(item, "get_description"):
             description = item.get_description()
-        if description and not description == "Undescribed":
+        if description and not description == "Undescribed" and not description.strip() == "":
             dic[name]["description"] = {
                 "en": description,
                 "zh": "",
